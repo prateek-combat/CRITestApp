@@ -1,0 +1,6 @@
+promptText,category,timerSeconds,correctAnswerIndex,answerOption1,answerOption2,answerOption3,answerOption4,promptImageUrl,sectionTag
+"What is 2 + 2?",NUMERICAL,30,1,3,4,5,6,,"Basic Math"
+"Choose the odd one out",LOGICAL,45,2,Apple,Orange,Car,Banana,,"Logic Puzzles"
+"Synonym of 'Happy'",VERBAL,30,0,Joyful,Sad,Angry,Tired,,"Vocabulary"
+"What comes next in the sequence: 2, 4, 8, 16, ?",LOGICAL,60,2,24,30,32,64,,"Number Patterns"
+"Which word is spelled correctly?",ATTENTION_TO_DETAIL,15,1,Recieve,Receive,Recive,Recieve,,"Spelling" 

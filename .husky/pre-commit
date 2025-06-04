@@ -1,0 +1,6 @@
+# Explicitly navigate to the app directory from the git root
+cd "$(dirname -- "$0")/../../iq-test-app"
+
+# Run lint-staged from within iq-test-app
+echo "Current directory: $(pwd)"
+npx lint-staged

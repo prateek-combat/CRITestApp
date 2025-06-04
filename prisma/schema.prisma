@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id @default(uuid())
+  email        String       @unique
+  passwordHash String
+  firstName    String?
+  lastName     String?
+  role         UserRole     @default(ADMIN)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  invitations  Invitation[]
+  tests        Test[]
+}
+
+model Test {
+  id                      String        @id @default(uuid())
+  title                   String
+  description             String?
+  lockOrder               Boolean       @default(false)
+  overallTimeLimitSeconds Int
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  createdById             String
+  invitations             Invitation[]
+  questions               Question[]
+  createdBy               User          @relation(fields: [createdById], references: [id])
+  testAttempts            TestAttempt[]
+}
+
+model Question {
+  id                 String            @id @default(uuid())
+  promptText         String
+  promptImageUrl     String?
+  timerSeconds       Int
+  answerOptions      String[]
+  correctAnswerIndex Int
+  sectionTag         String?
+  category           QuestionCategory
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  testId             String
+  test               Test              @relation(fields: [testId], references: [id], onDelete: Cascade)
+  submittedAnswers   SubmittedAnswer[]
+}
+
+model Invitation {
+  id             String           @id @default(uuid())
+  candidateEmail String?
+  candidateName  String?
+  expiresAt      DateTime
+  status         InvitationStatus @default(PENDING)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  testId         String
+  createdById    String
+  createdBy      User             @relation(fields: [createdById], references: [id])
+  test           Test             @relation(fields: [testId], references: [id], onDelete: Cascade)
+  testAttempt    TestAttempt?
+}
+
+model TestAttempt {
+  id                String            @id @default(uuid())
+  candidateName     String?
+  candidateEmail    String?
+  ipAddress         String?
+  startedAt         DateTime          @default(now())
+  completedAt       DateTime?
+  status            TestAttemptStatus @default(IN_PROGRESS)
+  rawScore          Int?
+  percentile        Float?
+  categorySubScores Json?
+  tabSwitches       Int               @default(0)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  invitationId      String            @unique
+  testId            String
+  submittedAnswers  SubmittedAnswer[]
+  invitation        Invitation        @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  test              Test              @relation(fields: [testId], references: [id], onDelete: Cascade)
+}
+
+model SubmittedAnswer {
+  id                  String      @id @default(uuid())
+  selectedAnswerIndex Int?
+  isCorrect           Boolean?
+  timeTakenSeconds    Int
+  submittedAt         DateTime    @default(now())
+  testAttemptId       String
+  questionId          String
+  question            Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  testAttempt         TestAttempt @relation(fields: [testAttemptId], references: [id], onDelete: Cascade)
+
+  @@unique([testAttemptId, questionId])
+}
+
+enum UserRole {
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum InvitationStatus {
+  PENDING
+  SENT
+  OPENED
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+enum TestAttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  TIMED_OUT
+  ABANDONED
+}
+
+enum QuestionCategory {
+  LOGICAL
+  VERBAL
+  NUMERICAL
+  ATTENTION_TO_DETAIL
+}
