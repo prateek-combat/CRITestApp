@@ -20,7 +20,7 @@ export default function RootLayout({
         className={`${inter.className} bg-gray-50`}
         suppressHydrationWarning
       >
-        <Providers session={null}>
+        <Providers>
           {/* 
               No global navbar here anymore. 
               Navigation for admin is handled by iq-test-app/src/app/admin/layout.tsx.

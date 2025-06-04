@@ -95,7 +95,8 @@ export const authOptions: NextAuthOptions = {
             });
           }
 
-          user.role = dbUser.role;
+          // Set the role on the user object
+          (user as any).role = dbUser.role;
           return true;
         } catch (error) {
           console.error('Google sign-in error:', error);
@@ -107,7 +108,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = user.role;
+        token.role = (user as any).role;
       }
       return token;
     },

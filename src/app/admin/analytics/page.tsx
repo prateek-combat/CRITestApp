@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { QuestionCategory } from '@prisma/client';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import {
   BarChart,
   Bar,
@@ -13,8 +14,6 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-
-const AUTH_KEY = 'isAdminLoggedIn_superSimple';
 
 interface CategoryScoreDetail {
   correct: number;
@@ -39,9 +38,9 @@ interface TestAttemptAnalytics {
 }
 
 export default function AnalyticsPage() {
+  const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isClient, setIsClient] = useState(false);
   const [analytics, setAnalytics] = useState<TestAttemptAnalytics[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,16 +69,11 @@ export default function AnalyticsPage() {
   }, [searchParams]);
 
   useEffect(() => {
-    setIsClient(true);
-    if (
-      typeof window !== 'undefined' &&
-      localStorage.getItem(AUTH_KEY) !== 'true'
-    ) {
-      router.replace('/admin/login');
-    } else {
+    if (status === 'loading') return; // Still loading session
+    if (status === 'authenticated') {
       fetchData();
     }
-  }, [router, fetchData]);
+  }, [status, fetchData]);
 
   // Calculate summary statistics
   const summaryStats = useMemo(() => {
@@ -167,10 +161,8 @@ export default function AnalyticsPage() {
     return `${mins}m ${secs}s`;
   };
 
-  if (
-    !isClient ||
-    (typeof window !== 'undefined' && localStorage.getItem(AUTH_KEY) !== 'true')
-  ) {
+  // Show loading while session is being checked
+  if (status === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-100">
         <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-brand-500"></div>

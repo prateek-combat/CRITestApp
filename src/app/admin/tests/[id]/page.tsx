@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { QuestionCategory } from '@prisma/client';
 
 interface Question {
   id: string;
@@ -72,6 +73,7 @@ export default function TestEditPage({
       correctAnswerIndex: parseInt(
         formData.get('correctAnswerIndex') as string
       ),
+      category: formData.get('category'),
       sectionTag: formData.get('sectionTag') || null,
       testId: id,
     };
@@ -660,6 +662,28 @@ export default function TestEditPage({
               className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
               placeholder="Enter the question text..."
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="category"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Category *
+            </label>
+            <select
+              name="category"
+              id="category"
+              required
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+            >
+              <option value="">Select a category</option>
+              {Object.values(QuestionCategory).map((category) => (
+                <option key={category} value={category}>
+                  {category.replace(/_/g, ' ')}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
