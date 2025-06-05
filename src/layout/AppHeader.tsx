@@ -9,6 +9,7 @@ const AppHeader: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { data: session } = useSession();
 
   const handleLogout = async () => {
@@ -40,6 +41,11 @@ const AppHeader: React.FC = () => {
       name: 'Analytics',
       path: '/admin/analytics',
       icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
+    },
+    {
+      name: 'Leaderboard',
+      path: '/admin/leaderboard',
+      icon: 'M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z',
     },
     ...(session?.user?.role === 'SUPER_ADMIN'
       ? [
@@ -83,20 +89,20 @@ const AppHeader: React.FC = () => {
             </Link>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="hidden space-x-8 md:flex">
+          {/* Navigation Links - Desktop */}
+          <nav className="hidden space-x-1 lg:flex">
             {navigationItems.map((item) => (
               <Link
                 key={item.name}
                 href={item.path}
                 className={`flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                   isActive(item.path)
-                    ? 'border-brand-200 bg-brand-100 text-brand-700'
+                    ? 'border border-brand-200 bg-brand-100 text-brand-700'
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
                 <svg
-                  className="mr-2 h-4 w-4"
+                  className="mr-2 h-4 w-4 flex-shrink-0"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -108,7 +114,7 @@ const AppHeader: React.FC = () => {
                     d={item.icon}
                   />
                 </svg>
-                {item.name}
+                <span className="truncate">{item.name}</span>
               </Link>
             ))}
           </nav>
@@ -157,7 +163,9 @@ const AppHeader: React.FC = () => {
                     />
                   </svg>
                 </div>
-                {session?.user?.name || 'Admin'}
+                <span className="hidden sm:block">
+                  {session?.user?.name || 'Admin'}
+                </span>
                 <svg
                   className="ml-1 h-4 w-4"
                   fill="none"
@@ -253,8 +261,8 @@ const AppHeader: React.FC = () => {
 
             {/* Mobile menu button */}
             <button
-              className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 md:hidden"
-              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 lg:hidden"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               <svg
                 className="h-6 w-6"
@@ -262,29 +270,62 @@ const AppHeader: React.FC = () => {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
+                {isMobileMenuOpen ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                )}
               </svg>
             </button>
           </div>
         </div>
 
         {/* Mobile Navigation */}
-        <div className="md:hidden">
-          <div className="space-y-1 border-t border-gray-200 px-2 pb-3 pt-2">
-            {navigationItems.map((item) => (
+        {isMobileMenuOpen && (
+          <div className="border-t border-gray-200 pb-3 pt-4 lg:hidden">
+            <div className="space-y-1">
+              {navigationItems.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.path}
+                  className={`flex items-center rounded-md px-3 py-2 text-base font-medium ${
+                    isActive(item.path)
+                      ? 'bg-brand-100 text-brand-700'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <svg
+                    className="mr-3 h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d={item.icon}
+                    />
+                  </svg>
+                  {item.name}
+                </Link>
+              ))}
+              {/* Mobile Quick Action */}
               <Link
-                key={item.name}
-                href={item.path}
-                className={`flex items-center rounded-md px-3 py-2 text-base font-medium ${
-                  isActive(item.path)
-                    ? 'bg-brand-100 text-brand-700'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                }`}
+                href="/admin/tests/new"
+                className="flex items-center rounded-md bg-brand-500 px-3 py-2 text-base font-medium text-white hover:bg-brand-600"
+                onClick={() => setIsMobileMenuOpen(false)}
               >
                 <svg
                   className="mr-3 h-5 w-5"
@@ -296,33 +337,14 @@ const AppHeader: React.FC = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d={item.icon}
+                    d="M12 4v16m8-8H4"
                   />
                 </svg>
-                {item.name}
+                New Test
               </Link>
-            ))}
-            <Link
-              href="/admin/tests/new"
-              className="flex items-center rounded-md bg-brand-500 px-3 py-2 text-base font-medium text-white hover:bg-brand-600"
-            >
-              <svg
-                className="mr-3 h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              New Test
-            </Link>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </header>
   );

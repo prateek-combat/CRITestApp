@@ -128,3 +128,22 @@ enum QuestionCategory {
   NUMERICAL
   ATTENTION_TO_DETAIL
 }
+
+// View for leaderboard and comparison features
+model CandidateScore {
+  attemptId       String   @id @map("attemptId")
+  invitationId    String?
+  candidateName   String
+  candidateEmail  String
+  completedAt     DateTime
+  durationSeconds Int
+  scoreLogical    Float
+  scoreVerbal     Float
+  scoreNumerical  Float
+  scoreAttention  Float
+  composite       Float
+  percentile      Float
+  rank            Int
+
+  @@map("vw_candidate_scores")
+}
