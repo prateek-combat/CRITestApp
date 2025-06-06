@@ -52,6 +52,7 @@ export async function GET() {
       },
       testAttempt: invitation.testAttempt
         ? {
+            id: invitation.testAttempt.id,
             videoRecordingUrl: invitation.testAttempt.videoRecordingUrl,
           }
         : null,

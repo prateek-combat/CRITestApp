@@ -5,7 +5,8 @@ const prisma = new PrismaClient();
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
+    const url = new URL(request.url, 'http://localhost');
+    const searchParams = url.searchParams;
     const email = searchParams.get('email');
 
     const commonSelect = {

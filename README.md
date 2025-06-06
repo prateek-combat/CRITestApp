@@ -40,8 +40,8 @@ A comprehensive web-based IQ testing platform built with Next.js, featuring admi
 
 2. **Environment Configuration**
    ```bash
-   cp env.production.example .env.local
-   # Edit .env.local with your actual values
+   npm run setup:env
+   # Then edit .env with your actual values
    ```
 
 3. **Database Setup**

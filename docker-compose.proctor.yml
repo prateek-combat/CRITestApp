@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  proctor-worker:
+    build:
+      context: ./workers/proctor
+      dockerfile: Dockerfile
+    container_name: proctor-worker
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    volumes:
+      - /tmp/proctor_processing:/tmp/proctor_processing
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+    networks:
+      - proctor-network
+
+networks:
+  proctor-network:
+    driver: bridge 

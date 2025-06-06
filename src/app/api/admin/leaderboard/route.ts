@@ -14,7 +14,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
+    const url = new URL(request.url, 'http://localhost');
+    const searchParams = url.searchParams;
     const page = Math.max(1, Number(searchParams.get('page') || '1'));
     const pageSize = Math.min(
       100,

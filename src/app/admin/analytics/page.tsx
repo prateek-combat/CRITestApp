@@ -28,7 +28,7 @@ interface CategoryScoreDetail {
 }
 
 interface TestAttemptAnalytics {
-  attemptId: string;
+  id: string; // This is the attempt ID
   candidateName: string | null;
   candidateEmail: string | null;
   testTitle: string;
@@ -744,12 +744,15 @@ export default function AnalyticsPage() {
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                       Completed
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      Proctoring
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {filteredAnalytics.slice(0, 20).map((attempt, index) => (
                     <tr
-                      key={`${attempt.attemptId}-${index}`}
+                      key={`${attempt.id}-${index}`}
                       className="hover:bg-gray-50"
                     >
                       <td className="whitespace-nowrap px-6 py-4">
@@ -809,6 +812,18 @@ export default function AnalyticsPage() {
                         {attempt.completedAt
                           ? new Date(attempt.completedAt).toLocaleDateString()
                           : 'N/A'}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                        {attempt.status === 'COMPLETED' ? (
+                          <a
+                            href={`/admin/proctor/${attempt.id}`}
+                            className="inline-flex items-center rounded-md bg-military-green px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-military-green focus:ring-offset-2"
+                          >
+                            🎥 View Analysis
+                          </a>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </td>
                     </tr>
                   ))}

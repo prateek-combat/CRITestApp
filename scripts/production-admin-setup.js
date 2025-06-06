@@ -1,8 +1,10 @@
+#!/usr/bin/env node
+
 // Production Admin Setup Script
 // Run this locally after deployment to add admin users
 
 const dotenv = require('dotenv');
-dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
 
 const PRODUCTION_URL = 'https://your-vercel-app-url.vercel.app'; // Update this!
 

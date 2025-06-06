@@ -89,12 +89,15 @@ model TestAttempt {
   proctoringStartedAt DateTime?
   proctoringEndedAt   DateTime?
   permissionsGranted  Boolean           @default(false)
+  riskScore           Float?
   
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
   invitationId        String            @unique
   testId              String
   submittedAnswers    SubmittedAnswer[]
+  proctorEvents       ProctorEvent[]
+  proctorAssets       ProctorAsset[]
   invitation          Invitation        @relation(fields: [invitationId], references: [id], onDelete: Cascade)
   test                Test              @relation(fields: [testId], references: [id], onDelete: Cascade)
 }
@@ -139,6 +142,27 @@ enum QuestionCategory {
   VERBAL
   NUMERICAL
   ATTENTION_TO_DETAIL
+}
+
+model ProctorEvent {
+  id        String   @id @default(cuid())
+  attemptId String
+  type      String
+  ts        DateTime @default(now())
+  extra     Json?
+  testAttempt TestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+}
+
+model ProctorAsset {
+  id        String   @id @default(cuid())
+  attemptId String
+  kind      String   // "VIDEO_FULL"
+  fileName  String
+  mimeType  String
+  fileSize  Int
+  data      Bytes    // Store video data directly
+  ts        DateTime @default(now())
+  testAttempt TestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
 }
 
 // View for leaderboard and comparison features

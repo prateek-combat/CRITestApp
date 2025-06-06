@@ -14,6 +14,7 @@ interface Invitation {
     title: string;
   };
   testAttempt?: {
+    id?: string;
     videoRecordingUrl?: string | null;
   } | null;
 }
@@ -266,6 +267,9 @@ export default function InvitationsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                     Completed
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Proctoring
+                  </th>
                   <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
                     Actions
                   </th>
@@ -300,6 +304,19 @@ export default function InvitationsPage() {
                         ? new Date(invitation.completedAt).toLocaleDateString()
                         : '-'}
                     </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                      {invitation.status === 'COMPLETED' &&
+                      invitation.testAttempt?.id ? (
+                        <Link
+                          href={`/admin/proctor/${invitation.testAttempt.id}`}
+                          className="inline-flex items-center rounded-md bg-military-green px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-military-green focus:ring-offset-2"
+                        >
+                          🎥 View Analysis
+                        </Link>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-3">
                         {canRevoke(invitation.status) && (
@@ -313,17 +330,7 @@ export default function InvitationsPage() {
                               : 'Revoke'}
                           </button>
                         )}
-                        {invitation.status === 'COMPLETED' &&
-                          invitation.testAttempt?.videoRecordingUrl && (
-                            <a
-                              href={invitation.testAttempt.videoRecordingUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="font-medium text-green-600 hover:text-green-500"
-                            >
-                              View Recording
-                            </a>
-                          )}
+
                         <Link
                           href={`/test/${invitation.id}`}
                           className="inline-flex items-center rounded-md border border-brand-300 bg-brand-50 px-3 py-1 text-sm font-medium text-brand-700 transition-colors duration-200 hover:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"

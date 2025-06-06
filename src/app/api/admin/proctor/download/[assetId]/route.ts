@@ -1,0 +1,56 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { assetId: string } }
+) {
+  try {
+    // Check authentication and admin access
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions' },
+        { status: 403 }
+      );
+    }
+
+    const { assetId } = await params;
+
+    // Fetch the asset
+    const asset = await prisma.proctorAsset.findUnique({
+      where: { id: assetId },
+    });
+
+    if (!asset) {
+      return NextResponse.json({ error: 'Asset not found' }, { status: 404 });
+    }
+
+    // Return the video data with download headers
+    return new NextResponse(asset.data, {
+      status: 200,
+      headers: {
+        'Content-Type': asset.mimeType,
+        'Content-Length': asset.fileSize.toString(),
+        'Content-Disposition': `attachment; filename="${asset.fileName}"`,
+        'Cache-Control': 'private, max-age=3600',
+      },
+    });
+  } catch (error) {
+    console.error('Error downloading asset:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

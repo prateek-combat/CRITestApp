@@ -27,8 +27,8 @@ const prisma = new PrismaClient({
  */
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const invitationId = searchParams.get('invitationId');
+    const url = new URL(request.url, 'http://localhost');
+    const invitationId = url.searchParams.get('invitationId');
 
     let testAttempts;
 

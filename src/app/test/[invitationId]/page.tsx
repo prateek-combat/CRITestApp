@@ -4,6 +4,15 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import QuestionTimer from '@/components/QuestionTimer';
 import Link from 'next/link';
+import {
+  startRecording,
+  stopAndUpload,
+  destroyRecording,
+} from '@/lib/proctor/recorder';
+import {
+  useLiveFlags,
+  stopProctoringGlobally,
+} from '@/lib/proctor/useLiveFlags';
 
 interface Question {
   id: string;
@@ -58,16 +67,19 @@ export default function TestPage() {
   const [permissionsRequested, setPermissionsRequested] = useState(false);
   const [hasPermissions, setHasPermissions] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isUploadingRecording, setIsUploadingRecording] = useState(false);
   const [testStarted, setTestStarted] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const [cameraActuallyStopped, setCameraActuallyStopped] = useState(false);
 
-  // Media refs
+  // Media refs - updated for new proctoring system
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recordedChunksRef = useRef<Blob[]>([]);
+  const recordingSessionRef = useRef<any | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const shouldDownloadRef = useRef<boolean>(false);
+
+  // Initialize live proctoring flags when test starts
+  useLiveFlags(testAttempt?.id || '');
 
   // Fetch invitation details
   const fetchInvitationDetails = useCallback(async () => {
@@ -225,147 +237,121 @@ export default function TestPage() {
     }
   }, []);
 
-  // Start recording
-  const startRecording = useCallback(async () => {
-    if (!streamRef.current) {
-      console.error('🎥 No stream available for recording');
-      return;
-    }
-
+  // Start recording using new proctoring system
+  const startRecordingSession = useCallback(async () => {
     try {
-      recordedChunksRef.current = [];
+      // Clear any existing timer first
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
 
-      const mediaRecorder = new MediaRecorder(streamRef.current, {
-        mimeType: 'video/webm;codecs=vp9,opus',
-      });
-
-      mediaRecorderRef.current = mediaRecorder;
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, {
-          type: 'video/webm',
-        });
-
-        // Upload recording to server if test is completed
-        if (shouldDownloadRef.current && blob.size > 0) {
-          try {
-            const formData = new FormData();
-            formData.append(
-              'file',
-              blob,
-              `proctoring-session-${invitationId}-${Date.now()}.webm`
-            );
-            formData.append('testAttemptId', testAttempt?.id || invitationId);
-
-            fetch('/api/upload-recording', {
-              method: 'POST',
-              body: formData,
-            })
-              .then(async (response) => {
-                if (!response.ok) {
-                  console.error(
-                    'Failed to upload recording:',
-                    await response.text()
-                  );
-                }
-              })
-              .catch((error) => {
-                console.error('Upload error:', error);
-              });
-
-            shouldDownloadRef.current = false; // Reset flag
-          } catch (error) {
-            console.error('Upload failed:', error);
-          }
-        }
-      };
-
-      mediaRecorder.start(1000); // Record in 1-second chunks
+      const recordingSession = await startRecording();
+      streamRef.current = recordingSession.stream;
+      recordingSessionRef.current = recordingSession;
       setIsRecording(true);
       setRecordingDuration(0);
 
+      // Set up video preview
+      if (videoRef.current) {
+        videoRef.current.srcObject = recordingSession.stream;
+        videoRef.current.muted = true;
+        videoRef.current.playsInline = true;
+        videoRef.current.autoplay = true;
+        videoRef.current.play().catch(console.warn);
+      }
+
       // Start timer
       timerRef.current = setInterval(() => {
-        setRecordingDuration((prev) => prev + 1);
+        setRecordingDuration((prev) => {
+          console.log('🕐 Recording duration:', prev + 1);
+          return prev + 1;
+        });
       }, 1000);
+
+      console.log('✅ Proctoring session started successfully, timer started');
     } catch (err) {
       console.error('🎥 Failed to start recording:', err);
       setError('Failed to start recording. Please try again.');
     }
-  }, [invitationId]);
+  }, []);
 
-  // Stop recording
-  const stopRecording = useCallback(
-    (shouldDownload = false) => {
-      console.log(
-        '🎥 stopRecording called with shouldDownload:',
-        shouldDownload
-      );
-      console.log(
-        '🎥 Current state - mediaRecorder exists:',
-        !!mediaRecorderRef.current
-      );
-      console.log(
-        '🎥 Current state - mediaRecorder state:',
-        mediaRecorderRef.current?.state
-      );
-      console.log('🎥 Current state - isRecording:', isRecording);
+  // Stop recording using new frame-based system
+  const stopRecordingSession = useCallback(
+    async (shouldUpload = false) => {
+      console.log('🎥 stopRecording called with shouldUpload:', shouldUpload);
 
-      if (mediaRecorderRef.current && isRecording) {
-        shouldDownloadRef.current = shouldDownload;
-        console.log('🎥 Stopping MediaRecorder...');
-        mediaRecorderRef.current.stop();
-        setIsRecording(false);
+      if (recordingSessionRef.current && testAttempt?.id) {
+        try {
+          // Stop timer immediately
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
 
+          if (shouldUpload) {
+            console.log('🎥 Uploading captured frames...');
+            await stopAndUpload(recordingSessionRef.current, testAttempt.id);
+          }
+
+          // Clean up resources - destroy session immediately
+          console.log('🎥 Cleaning up recording resources...');
+          destroyRecording(recordingSessionRef.current);
+          streamRef.current = null;
+
+          // Clear video element
+          if (videoRef.current) {
+            console.log('🎥 Clearing video element in stopRecordingSession...');
+            videoRef.current.srcObject = null;
+          }
+
+          recordingSessionRef.current = null;
+          setIsRecording(false);
+
+          console.log('🎥 Recording stopped successfully');
+        } catch (error) {
+          console.error('🎥 Error stopping recording:', error);
+        }
+      } else {
+        console.warn(
+          '🎥 Cannot stop recording - recording session or testAttempt missing'
+        );
+        // Still clean up timer if it exists
         if (timerRef.current) {
           clearInterval(timerRef.current);
           timerRef.current = null;
         }
-
-        console.log(
-          '🎥 Recording stopped after',
-          recordingDuration,
-          'seconds, shouldDownload:',
-          shouldDownload
-        );
-      } else {
-        console.warn(
-          '🎥 Cannot stop recording - mediaRecorder:',
-          !!mediaRecorderRef.current,
-          'isRecording:',
-          isRecording
-        );
+        setIsRecording(false);
       }
     },
-    [isRecording, recordingDuration]
+    [testAttempt?.id]
   );
 
   // Cleanup on unmount only
   useEffect(() => {
     return () => {
       // Stop recording if active
-      if (
-        mediaRecorderRef.current &&
-        mediaRecorderRef.current.state === 'recording'
-      ) {
-        mediaRecorderRef.current.stop();
+      if (recordingSessionRef.current && isRecording) {
+        try {
+          // Force stop without upload on unmount
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+          if (recordingSessionRef.current) {
+            destroyRecording(recordingSessionRef.current);
+          }
+        } catch (error) {
+          console.error('Error in cleanup:', error);
+        }
       }
+      // Stop timer
       if (timerRef.current) {
         clearInterval(timerRef.current);
-      }
-      // Stop all media tracks
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-        streamRef.current = null;
+        timerRef.current = null;
       }
     };
-  }, []); // Empty dependency array - only runs on unmount
+  }, []); // No dependencies to avoid re-creating cleanup function
 
   // Submit candidate details
   const handleDetailsSubmit = useCallback(
@@ -408,7 +394,7 @@ export default function TestPage() {
 
     try {
       // Start recording first
-      await startRecording();
+      await startRecordingSession();
 
       const response = await fetch('/api/test-attempts', {
         method: 'POST',
@@ -446,7 +432,7 @@ export default function TestPage() {
           : 'An error occurred while trying to start the test.'
       );
     }
-  }, [invitation, error, hasPermissions, startRecording]);
+  }, [invitation, error, hasPermissions, startRecordingSession]);
 
   // Handle answer selection
   const handleAnswer = useCallback(
@@ -495,6 +481,7 @@ export default function TestPage() {
   const submitTest = useCallback(async () => {
     if (isSubmitting || !invitation) return;
 
+    console.log('🚀 Starting test submission...');
     setIsSubmitting(true);
     setError(null);
     try {
@@ -521,25 +508,67 @@ export default function TestPage() {
         throw new Error(errorData.message || 'Failed to submit test answers.');
       }
 
-      // Stop recording and upload
-      stopRecording(true);
+      // Stop proctoring immediately using global function
+      stopProctoringGlobally();
 
-      // Update the test attempt status
+      // IMMEDIATELY stop camera and microphone tracks
+      if (streamRef.current) {
+        console.log('🎥 Immediately stopping camera and microphone tracks...');
+        streamRef.current.getTracks().forEach((track) => {
+          track.stop();
+          console.log(
+            '🎥 Stopped track:',
+            track.kind,
+            'readyState:',
+            track.readyState
+          );
+        });
+        setCameraActuallyStopped(true);
+      }
+
+      // IMMEDIATELY clear video element to stop showing camera feed
+      if (videoRef.current) {
+        console.log('🎥 Clearing video element...');
+        videoRef.current.srcObject = null;
+      }
+
+      // Stop recording UI immediately to show user recording has stopped
+      setIsRecording(false);
+
+      // Stop timer immediately
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+
+      // Update the test attempt status immediately to stop proctoring events
+      setTestAttempt((prev: any) => ({
+        ...prev,
+        status: 'COMPLETED',
+      }));
+
       const responseData = await response.json();
       if (responseData && responseData.id) {
         setTestAttempt((prev: any) => ({
           ...prev,
           ...responseData,
-          status: 'COMPLETED',
         }));
       }
+
+      // Stop recording and upload - wait for completion
+      setIsUploadingRecording(true);
+      await stopRecordingSession(true);
+      setIsUploadingRecording(false);
+
+      // Clean up any remaining references
+      streamRef.current = null;
 
       // Small delay then redirect
       setTimeout(() => {
         router.push(
           `/test/${invitation.id}/complete?invitationId=${invitation.id}`
         );
-      }, 1000);
+      }, 1500);
     } catch (err) {
       setError(
         err instanceof Error
@@ -554,7 +583,7 @@ export default function TestPage() {
     answers,
     questionStartTime,
     router,
-    stopRecording,
+    stopRecordingSession,
   ]);
 
   // Handle time expiry
@@ -679,9 +708,9 @@ export default function TestPage() {
                 This test is proctored and requires:
               </h3>
               <ul className="mt-2 list-inside list-disc text-sm text-blue-700">
-                <li>Camera access for video recording</li>
-                <li>Microphone access for audio recording</li>
-                <li>Continuous recording throughout the test</li>
+                <li>Camera access for monitoring</li>
+                <li>Microphone access for audio capture</li>
+                <li>Periodic frame capture throughout the test</li>
                 <li>No tab switching or window minimizing</li>
               </ul>
             </div>
@@ -852,7 +881,8 @@ export default function TestPage() {
                 </span>
               </div>
               <p className="text-sm text-amber-600">
-                Recording will begin automatically when you start the test.
+                Frame monitoring will begin automatically when you start the
+                test.
               </p>
             </div>
           </div>
@@ -870,7 +900,7 @@ export default function TestPage() {
                 questions in this test.
               </li>
               <li>Answer each question to the best of your ability.</li>
-              <li>Your session will be recorded throughout the test.</li>
+              <li>Your session will be monitored throughout the test.</li>
               <li>
                 Click 'Submit Test' on the last question when you are finished.
               </li>
@@ -894,14 +924,46 @@ export default function TestPage() {
     return (
       <div className="flex min-h-screen flex-col bg-off-white">
         {/* Recording status bar */}
-        {isRecording && (
-          <div className="bg-red-600 px-4 py-2 text-center text-white">
+        {(isRecording || isSubmitting || isUploadingRecording) && (
+          <div
+            className={`px-4 py-2 text-center text-white ${
+              isUploadingRecording
+                ? 'bg-blue-600'
+                : isSubmitting
+                  ? cameraActuallyStopped
+                    ? 'bg-green-600'
+                    : 'bg-yellow-600'
+                  : 'bg-red-600'
+            }`}
+          >
             <div className="flex items-center justify-center space-x-4 text-sm">
-              <span>🔴 RECORDING</span>
-              <span>
-                {Math.floor(recordingDuration / 60)}:
-                {(recordingDuration % 60).toString().padStart(2, '0')}
-              </span>
+              {isUploadingRecording ? (
+                <>
+                  <span>📤 UPLOADING RECORDING</span>
+                  <span>Please wait...</span>
+                </>
+              ) : isSubmitting ? (
+                <>
+                  <span>
+                    {cameraActuallyStopped
+                      ? '✅ CAMERA STOPPED'
+                      : '⏹️ STOPPING RECORDING'}
+                  </span>
+                  <span>
+                    {cameraActuallyStopped
+                      ? 'Finalizing submission...'
+                      : 'Stopping camera...'}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span>📸 MONITORING (2 FPS)</span>
+                  <span>
+                    {Math.floor(recordingDuration / 60)}:
+                    {(recordingDuration % 60).toString().padStart(2, '0')}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         )}

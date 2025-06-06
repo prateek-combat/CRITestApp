@@ -2,6 +2,9 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+// Load environment variables from .env file
+require('dotenv').config({ path: '.env' });
+
 console.log('🔍 Pre-Deployment Checklist for IQ Test Platform\n');
 
 const checks = [];
@@ -28,7 +31,7 @@ console.log('📋 Environment & Configuration');
 console.log('─'.repeat(50));
 
 checkItem('Environment file exists', () => {
-  return fs.existsSync('.env.local') || fs.existsSync('.env');
+  return fs.existsSync('.env') || fs.existsSync('.env.local');
 });
 
 checkItem('Package.json is valid', () => {

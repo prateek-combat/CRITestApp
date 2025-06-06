@@ -326,7 +326,8 @@ function generateExcelTemplate(): Buffer {
  */
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const url = new URL(request.url, 'http://localhost');
+    const searchParams = url.searchParams;
     const format = searchParams.get('format') || 'excel';
 
     if (format === 'csv') {

@@ -1,0 +1,99 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+
+export async function GET(request: NextRequest) {
+  try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user is admin
+    if (session.user.role !== 'ADMIN' && session.user.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const url = new URL(request.url, 'http://localhost');
+    const searchParams = url.searchParams;
+    const attemptId = searchParams.get('attemptId');
+
+    if (!attemptId) {
+      return NextResponse.json(
+        { error: 'attemptId parameter is required' },
+        { status: 400 }
+      );
+    }
+
+    // Get proctor events for the attempt
+    const events = await prisma.proctorEvent.findMany({
+      where: {
+        attemptId,
+      },
+      orderBy: {
+        ts: 'asc',
+      },
+    });
+
+    // Get test attempt details
+    const testAttempt = await prisma.testAttempt.findUnique({
+      where: { id: attemptId },
+      select: {
+        id: true,
+        candidateName: true,
+        candidateEmail: true,
+        riskScore: true,
+        startedAt: true,
+        completedAt: true,
+        videoRecordingUrl: true,
+      },
+    });
+
+    if (!testAttempt) {
+      return NextResponse.json(
+        { error: 'Test attempt not found' },
+        { status: 404 }
+      );
+    }
+
+    // Group events by type for summary
+    const eventSummary = events.reduce(
+      (acc, event) => {
+        acc[event.type] = (acc[event.type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
+    // Calculate timeline data
+    const timeline = events.map((event) => ({
+      id: event.id,
+      type: event.type,
+      timestamp: event.ts,
+      extra: event.extra,
+      // Calculate time offset from test start
+      offsetSeconds: testAttempt.startedAt
+        ? Math.floor(
+            (new Date(event.ts).getTime() -
+              new Date(testAttempt.startedAt).getTime()) /
+              1000
+          )
+        : 0,
+    }));
+
+    return NextResponse.json({
+      testAttempt,
+      events: timeline,
+      summary: eventSummary,
+      totalEvents: events.length,
+    });
+  } catch (error) {
+    console.error('Error fetching proctor events:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch proctor events' },
+      { status: 500 }
+    );
+  }
+}
