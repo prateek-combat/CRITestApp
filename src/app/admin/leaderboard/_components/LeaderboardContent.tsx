@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import LeaderboardTable from './LeaderboardTable';
 import LeaderboardFilters from './LeaderboardFilters';
@@ -54,7 +54,7 @@ export default function LeaderboardContent({
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -76,11 +76,11 @@ export default function LeaderboardContent({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchParams]);
 
   useEffect(() => {
     fetchData();
-  }, [searchParams]);
+  }, [fetchData]);
 
   const handleFilterChange = (
     newFilters: Record<string, string | undefined>

@@ -33,12 +33,7 @@ export async function GET() {
             title: true,
           },
         },
-        testAttempt: {
-          select: {
-            completedAt: true,
-            status: true,
-          },
-        },
+        testAttempt: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -55,6 +50,11 @@ export async function GET() {
         id: invitation.test.id,
         title: invitation.test.title,
       },
+      testAttempt: invitation.testAttempt
+        ? {
+            videoRecordingUrl: invitation.testAttempt.videoRecordingUrl,
+          }
+        : null,
     }));
 
     return NextResponse.json(formattedInvitations);

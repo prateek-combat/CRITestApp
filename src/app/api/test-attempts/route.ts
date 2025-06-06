@@ -124,7 +124,16 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { invitationId, answers, questionStartTime, status } = body;
+    const {
+      invitationId,
+      answers,
+      questionStartTime,
+      status,
+      proctoringEnabled,
+      proctoringEvents,
+      tabSwitches,
+      violations,
+    } = body;
 
     if (!invitationId) {
       return NextResponse.json(
@@ -197,6 +206,12 @@ export async function POST(request: Request) {
           candidateName: invitation.candidateName,
           startedAt: new Date(),
           status: 'IN_PROGRESS',
+          proctoringEnabled: proctoringEnabled ?? true,
+          proctoringStartedAt: proctoringEnabled ? new Date() : null,
+          proctoringEvents: proctoringEvents
+            ? JSON.stringify(proctoringEvents)
+            : undefined,
+          tabSwitches: tabSwitches ?? 0,
         },
       });
 
@@ -301,6 +316,11 @@ export async function POST(request: Request) {
           rawScore,
           percentile,
           categorySubScores: finalCategorySubScores as Prisma.JsonObject,
+          proctoringEndedAt: new Date(),
+          proctoringEvents: proctoringEvents
+            ? JSON.stringify(proctoringEvents)
+            : undefined,
+          tabSwitches: tabSwitches ?? existingAttempt.tabSwitches,
           submittedAnswers: {
             createMany: {
               data: submittedAnswersData.map((sa) => ({ ...sa })),

@@ -13,6 +13,9 @@ interface Invitation {
     id: string;
     title: string;
   };
+  testAttempt?: {
+    videoRecordingUrl?: string | null;
+  } | null;
 }
 
 export default function InvitationsPage() {
@@ -303,52 +306,24 @@ export default function InvitationsPage() {
                           <button
                             onClick={() => revokeInvitation(invitation.id)}
                             disabled={revokingInvites.has(invitation.id)}
-                            className="inline-flex items-center rounded-md border border-red-300 bg-red-50 px-3 py-1 text-sm font-medium text-red-700 transition-colors duration-200 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="font-medium text-red-600 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            {revokingInvites.has(invitation.id) ? (
-                              <>
-                                <svg
-                                  className="-ml-1 mr-2 h-4 w-4 animate-spin text-red-500"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                  ></circle>
-                                  <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                  ></path>
-                                </svg>
-                                Revoking...
-                              </>
-                            ) : (
-                              <>
-                                <svg
-                                  className="mr-1 h-4 w-4"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M6 18L18 6M6 6l12 12"
-                                  />
-                                </svg>
-                                Revoke
-                              </>
-                            )}
+                            {revokingInvites.has(invitation.id)
+                              ? 'Revoking...'
+                              : 'Revoke'}
                           </button>
                         )}
+                        {invitation.status === 'COMPLETED' &&
+                          invitation.testAttempt?.videoRecordingUrl && (
+                            <a
+                              href={invitation.testAttempt.videoRecordingUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-medium text-green-600 hover:text-green-500"
+                            >
+                              View Recording
+                            </a>
+                          )}
                         <Link
                           href={`/test/${invitation.id}`}
                           className="inline-flex items-center rounded-md border border-brand-300 bg-brand-50 px-3 py-1 text-sm font-medium text-brand-700 transition-colors duration-200 hover:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"

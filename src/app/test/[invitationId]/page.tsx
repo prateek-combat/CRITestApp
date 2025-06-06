@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import QuestionTimer from '@/components/QuestionTimer';
 import Link from 'next/link';
@@ -30,10 +30,11 @@ interface Invitation {
 }
 
 export default function TestPage() {
-  const params = useParams();
   const router = useRouter();
+  const params = useParams();
   const invitationId = params.invitationId as string;
 
+  // Core state
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,14 +46,30 @@ export default function TestPage() {
     Record<string, { epoch: number; key: string | number }>
   >({});
   const [testAttempt, setTestAttempt] = useState<any>(null);
-  const [testStarted, setTestStarted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Candidate details
   const [candidateName, setCandidateName] = useState('');
   const [candidateEmail, setCandidateEmail] = useState('');
   const [detailsSubmitted, setDetailsSubmitted] = useState(false);
   const [isUpdatingDetails, setIsUpdatingDetails] = useState(false);
 
+  // Proctoring state
+  const [permissionsRequested, setPermissionsRequested] = useState(false);
+  const [hasPermissions, setHasPermissions] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [testStarted, setTestStarted] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+
+  // Media refs
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const shouldDownloadRef = useRef<boolean>(false);
+
+  // Fetch invitation details
   const fetchInvitationDetails = useCallback(async () => {
     if (!invitationId) return;
     setIsLoading(true);
@@ -82,6 +99,7 @@ export default function TestPage() {
             if (relevantAttempt && relevantAttempt.id) {
               setTestAttempt(relevantAttempt);
               if (relevantAttempt.status === 'COMPLETED') {
+                // Test already completed
               } else if (relevantAttempt.status === 'IN_PROGRESS') {
                 setDetailsSubmitted(true);
                 setTestStarted(true);
@@ -103,45 +121,304 @@ export default function TestPage() {
     fetchInvitationDetails();
   }, [fetchInvitationDetails]);
 
-  const handleDetailsSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!candidateName.trim() || !candidateEmail.trim()) {
-      setError('Name and Email are required.');
+  // Request camera and microphone permissions
+  const requestPermissions = useCallback(async () => {
+    setPermissionsRequested(true);
+    setError(null);
+
+    try {
+      console.log('🔐 Requesting camera and microphone permissions...');
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 },
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100,
+        },
+      });
+
+      streamRef.current = stream;
+      console.log(
+        '📹 Stream obtained:',
+        stream.getVideoTracks().length,
+        'video tracks,',
+        stream.getAudioTracks().length,
+        'audio tracks'
+      );
+
+      // Log video track details
+      stream.getVideoTracks().forEach((track, index) => {
+        console.log(
+          `📹 Video track ${index}:`,
+          track.label,
+          'enabled:',
+          track.enabled,
+          'readyState:',
+          track.readyState
+        );
+      });
+
+      // Set up video preview (but don't fail if video element isn't ready yet)
+      const setupVideoPreview = () => {
+        if (videoRef.current) {
+          console.log('📹 Setting video srcObject');
+          videoRef.current.srcObject = stream;
+          videoRef.current.muted = true;
+          videoRef.current.playsInline = true;
+          videoRef.current.autoplay = true;
+
+          // Add event listeners for debugging
+          videoRef.current.onloadstart = () =>
+            console.log('📹 Video loadstart');
+          videoRef.current.onloadedmetadata = () =>
+            console.log('📹 Video metadata loaded');
+          videoRef.current.oncanplay = () => console.log('📹 Video can play');
+          videoRef.current.onplay = () =>
+            console.log('📹 Video started playing');
+          videoRef.current.onerror = (e) => console.error('📹 Video error:', e);
+
+          // Force play and handle any issues
+          videoRef.current
+            .play()
+            .then(() => {
+              console.log('✅ Video play() called successfully');
+            })
+            .catch((playError) => {
+              console.warn('Video play failed, trying again:', playError);
+              setTimeout(() => {
+                if (videoRef.current) {
+                  videoRef.current
+                    .play()
+                    .then(() => {
+                      console.log('✅ Video play retry successful');
+                    })
+                    .catch((retryError) => {
+                      console.error('❌ Video play retry failed:', retryError);
+                    });
+                }
+              }, 500);
+            });
+        } else {
+          console.warn('📹 Video element not ready yet, will retry...');
+          // Retry after a short delay
+          setTimeout(setupVideoPreview, 100);
+        }
+      };
+
+      setupVideoPreview();
+
+      setHasPermissions(true);
+      console.log('✅ Camera and microphone permissions granted!');
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Permission denied';
+      setError(
+        `Camera and microphone access is required for this proctored test: ${errorMessage}`
+      );
+      console.error('❌ Permission denied:', errorMessage);
+      setHasPermissions(false);
+    }
+  }, []);
+
+  // Start recording
+  const startRecording = useCallback(async () => {
+    if (!streamRef.current) {
+      console.error('🎥 No stream available for recording');
       return;
     }
-    setError(null);
-    setIsUpdatingDetails(true);
+
     try {
-      const res = await fetch(`/api/invitations/${invitationId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ candidateName, candidateEmail }),
+      recordedChunksRef.current = [];
+
+      const mediaRecorder = new MediaRecorder(streamRef.current, {
+        mimeType: 'video/webm;codecs=vp9,opus',
       });
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(
-          errorData.message || 'Failed to update candidate details.'
+
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, {
+          type: 'video/webm',
+        });
+
+        // Upload recording to server if test is completed
+        if (shouldDownloadRef.current && blob.size > 0) {
+          try {
+            const formData = new FormData();
+            formData.append(
+              'file',
+              blob,
+              `proctoring-session-${invitationId}-${Date.now()}.webm`
+            );
+            formData.append('testAttemptId', testAttempt?.id || invitationId);
+
+            fetch('/api/upload-recording', {
+              method: 'POST',
+              body: formData,
+            })
+              .then(async (response) => {
+                if (!response.ok) {
+                  console.error(
+                    'Failed to upload recording:',
+                    await response.text()
+                  );
+                }
+              })
+              .catch((error) => {
+                console.error('Upload error:', error);
+              });
+
+            shouldDownloadRef.current = false; // Reset flag
+          } catch (error) {
+            console.error('Upload failed:', error);
+          }
+        }
+      };
+
+      mediaRecorder.start(1000); // Record in 1-second chunks
+      setIsRecording(true);
+      setRecordingDuration(0);
+
+      // Start timer
+      timerRef.current = setInterval(() => {
+        setRecordingDuration((prev) => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error('🎥 Failed to start recording:', err);
+      setError('Failed to start recording. Please try again.');
+    }
+  }, [invitationId]);
+
+  // Stop recording
+  const stopRecording = useCallback(
+    (shouldDownload = false) => {
+      console.log(
+        '🎥 stopRecording called with shouldDownload:',
+        shouldDownload
+      );
+      console.log(
+        '🎥 Current state - mediaRecorder exists:',
+        !!mediaRecorderRef.current
+      );
+      console.log(
+        '🎥 Current state - mediaRecorder state:',
+        mediaRecorderRef.current?.state
+      );
+      console.log('🎥 Current state - isRecording:', isRecording);
+
+      if (mediaRecorderRef.current && isRecording) {
+        shouldDownloadRef.current = shouldDownload;
+        console.log('🎥 Stopping MediaRecorder...');
+        mediaRecorderRef.current.stop();
+        setIsRecording(false);
+
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+
+        console.log(
+          '🎥 Recording stopped after',
+          recordingDuration,
+          'seconds, shouldDownload:',
+          shouldDownload
+        );
+      } else {
+        console.warn(
+          '🎥 Cannot stop recording - mediaRecorder:',
+          !!mediaRecorderRef.current,
+          'isRecording:',
+          isRecording
         );
       }
-      setDetailsSubmitted(true);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsUpdatingDetails(false);
-    }
-  };
+    },
+    [isRecording, recordingDuration]
+  );
 
-  const startTest = async () => {
-    if (!invitation || error) return;
+  // Cleanup on unmount only
+  useEffect(() => {
+    return () => {
+      // Stop recording if active
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state === 'recording'
+      ) {
+        mediaRecorderRef.current.stop();
+      }
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      // Stop all media tracks
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
+    };
+  }, []); // Empty dependency array - only runs on unmount
+
+  // Submit candidate details
+  const handleDetailsSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!candidateName.trim() || !candidateEmail.trim()) {
+        setError('Please fill in all required fields.');
+        return;
+      }
+      setError(null);
+      setIsUpdatingDetails(true);
+      try {
+        const res = await fetch(`/api/invitations/${invitationId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            candidateName: candidateName.trim(),
+            candidateEmail: candidateEmail.trim(),
+          }),
+        });
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(
+            errorData.message || 'Failed to update candidate details.'
+          );
+        }
+        setDetailsSubmitted(true);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setIsUpdatingDetails(false);
+      }
+    },
+    [invitationId, candidateName, candidateEmail]
+  );
+
+  // Start test
+  const startTest = useCallback(async () => {
+    if (!invitation || error || !hasPermissions) return;
 
     try {
+      // Start recording first
+      await startRecording();
+
       const response = await fetch('/api/test-attempts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          invitationId: invitation.id,
+          invitationId,
+          status: 'IN_PROGRESS',
           answers: {},
           questionStartTime: {},
+          proctoringEnabled: true,
         }),
       });
 
@@ -152,7 +429,10 @@ export default function TestPage() {
         );
       }
 
+      const attemptData = await response.json();
+      setTestAttempt(attemptData);
       setTestStarted(true);
+
       const firstQuestion = invitation.test.questions[0];
       if (firstQuestion) {
         setQuestionStartTime({
@@ -166,53 +446,53 @@ export default function TestPage() {
           : 'An error occurred while trying to start the test.'
       );
     }
-  };
+  }, [invitation, error, hasPermissions, startRecording]);
 
-  const handleAnswer = (questionId: string, answerIndex: number) => {
-    const questionInitialStartTime =
-      questionStartTime[questionId]?.epoch || Date.now();
-    const timeTaken = Math.floor(
-      (Date.now() - questionInitialStartTime) / 1000
-    );
+  // Handle answer selection
+  const handleAnswer = useCallback(
+    (questionId: string, answerIndex: number) => {
+      const questionInitialStartTime =
+        questionStartTime[questionId]?.epoch || Date.now();
+      const timeTaken = Math.floor(
+        (Date.now() - questionInitialStartTime) / 1000
+      );
 
-    setAnswers((prev) => ({
-      ...prev,
-      [questionId]: { answerIndex, timeTaken },
-    }));
-  };
-
-  const navigateQuestion = (direction: 'next' | 'prev') => {
-    if (!invitation) return;
-    const newIndex =
-      direction === 'next'
-        ? Math.min(
-            currentQuestionIndex + 1,
-            invitation.test.questions.length - 1
-          )
-        : Math.max(currentQuestionIndex - 1, 0);
-
-    setCurrentQuestionIndex(newIndex);
-
-    // Set start time for the new question if not already set
-    const newQuestion = invitation.test.questions[newIndex];
-    if (newQuestion && !questionStartTime[newQuestion.id]) {
-      setQuestionStartTime((prev) => ({
+      setAnswers((prev) => ({
         ...prev,
-        [newQuestion.id]: { epoch: Date.now(), key: newQuestion.id },
+        [questionId]: { answerIndex, timeTaken },
       }));
-    }
-  };
+    },
+    [questionStartTime]
+  );
 
-  const handleTimeExpired = () => {
-    if (!invitation) return;
-    if (currentQuestionIndex < invitation.test.questions.length - 1) {
-      navigateQuestion('next');
-    } else {
-      submitTest();
-    }
-  };
+  // Navigate between questions
+  const navigateQuestion = useCallback(
+    (direction: 'next' | 'prev') => {
+      if (!invitation) return;
+      const newIndex =
+        direction === 'next'
+          ? Math.min(
+              currentQuestionIndex + 1,
+              invitation.test.questions.length - 1
+            )
+          : Math.max(currentQuestionIndex - 1, 0);
 
-  const submitTest = async () => {
+      setCurrentQuestionIndex(newIndex);
+
+      // Set start time for the new question if not already set
+      const newQuestion = invitation.test.questions[newIndex];
+      if (newQuestion && !questionStartTime[newQuestion.id]) {
+        setQuestionStartTime((prev) => ({
+          ...prev,
+          [newQuestion.id]: { epoch: Date.now(), key: newQuestion.id },
+        }));
+      }
+    },
+    [invitation, currentQuestionIndex, questionStartTime]
+  );
+
+  // Submit test
+  const submitTest = useCallback(async () => {
     if (isSubmitting || !invitation) return;
 
     setIsSubmitting(true);
@@ -229,7 +509,7 @@ export default function TestPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          invitationId: invitation.id,
+          invitationId,
           answers,
           questionStartTime: finalQuestionStartTimes,
           status: 'COMPLETED',
@@ -240,52 +520,82 @@ export default function TestPage() {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to submit test answers.');
       }
-      router.push(
-        `/test/${invitation.id}/complete?invitationId=${invitation.id}`
-      );
+
+      // Stop recording and upload
+      stopRecording(true);
+
+      // Update the test attempt status
+      const responseData = await response.json();
+      if (responseData && responseData.id) {
+        setTestAttempt((prev: any) => ({
+          ...prev,
+          ...responseData,
+          status: 'COMPLETED',
+        }));
+      }
+
+      // Small delay then redirect
+      setTimeout(() => {
+        router.push(
+          `/test/${invitation.id}/complete?invitationId=${invitation.id}`
+        );
+      }, 1000);
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
           : 'An error occurred during test submission.'
       );
-    } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [
+    isSubmitting,
+    invitation,
+    answers,
+    questionStartTime,
+    router,
+    stopRecording,
+  ]);
+
+  // Handle time expiry
+  const handleTimeExpired = useCallback(() => {
+    if (!invitation) return;
+    if (currentQuestionIndex < invitation.test.questions.length - 1) {
+      navigateQuestion('next');
+    } else {
+      submitTest();
+    }
+  }, [invitation, currentQuestionIndex, navigateQuestion, submitTest]);
 
   const buttonClasses = (
     variant: 'primary' | 'secondary' | 'answer' | 'selectedAnswer',
     disabled = false
   ) => {
-    let base =
-      'w-full text-left p-3 md:p-4 rounded-lg shadow-md transition-all duration-150 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2';
-    if (disabled) base += ' opacity-60 cursor-not-allowed';
-
+    const baseClasses =
+      'w-full text-left rounded-md p-4 transition-colors font-semibold text-lg';
+    if (disabled) {
+      return `${baseClasses} bg-gray-200 text-gray-400 cursor-not-allowed`;
+    }
     switch (variant) {
       case 'primary':
-        return `${base} bg-military-green text-primary-white hover:bg-military-green/90 focus:ring-military-green ${disabled ? 'hover:bg-military-green' : ''}`;
+        return `${baseClasses} bg-military-green text-primary-white hover:bg-opacity-90`;
       case 'secondary':
-        return `${base} bg-gray-200 text-text-dark hover:bg-gray-300 focus:ring-gray-400 ${disabled ? 'hover:bg-gray-200' : ''}`;
+        return `${baseClasses} bg-gray-200 text-text-dark hover:bg-gray-300`;
       case 'answer':
-        return `${base} bg-primary-white border border-gray-300 hover:border-accent-orange hover:bg-orange-50 text-text-dark focus:ring-accent-orange`;
+        return `${baseClasses} bg-off-white text-text-dark hover:bg-gray-100 border border-gray-300`;
       case 'selectedAnswer':
-        return `${base} bg-accent-orange border border-transparent text-primary-white ring-2 ring-accent-orange`;
+        return `${baseClasses} bg-military-green text-primary-white border border-military-green`;
       default:
-        return base;
+        return `${baseClasses} bg-gray-200 text-gray-400 cursor-not-allowed`;
     }
   };
 
-  if (isLoading || (!invitation && !error && !detailsSubmitted)) {
+  if (isLoading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-off-white p-4">
-        <div className="rounded-lg bg-primary-white p-8 text-center shadow-xl">
-          <h1 className="mb-4 text-3xl font-bold text-military-green">
-            Loading Test...
-          </h1>
-          <p className="text-text-light">
-            Please wait while we prepare your assessment.
-          </p>
+      <div className="flex min-h-screen items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-military-green"></div>
+          <p className="text-text-light">Loading test details...</p>
         </div>
       </div>
     );
@@ -331,51 +641,6 @@ export default function TestPage() {
     );
   }
 
-  // Check if invitation is revoked/cancelled
-  if (invitation.status === 'CANCELLED' || invitation.status === 'EXPIRED') {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-off-white p-4">
-        <div className="w-full max-w-md rounded-lg bg-primary-white p-8 text-center shadow-xl">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-            <svg
-              className="h-8 w-8 text-red-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </div>
-          <h1 className="mb-4 text-3xl font-bold text-red-600">
-            {invitation.status === 'CANCELLED'
-              ? 'Test Invitation Revoked'
-              : 'Test Invitation Expired'}
-          </h1>
-          <p className="mb-6 text-text-light">
-            {invitation.status === 'CANCELLED'
-              ? 'This test invitation has been cancelled by the administrator.'
-              : 'This test invitation has expired and is no longer valid.'}
-          </p>
-          <p className="mb-6 text-sm text-gray-500">
-            If you believe this is an error, please contact the administrator
-            for a new invitation.
-          </p>
-          <Link
-            href="/"
-            className="rounded-md bg-military-green px-6 py-3 text-primary-white transition-colors hover:bg-opacity-80"
-          >
-            Go to Homepage
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   if (
     testAttempt?.status === 'COMPLETED' ||
     invitation.status === 'COMPLETED'
@@ -400,12 +665,91 @@ export default function TestPage() {
     );
   }
 
-  if (
-    !detailsSubmitted &&
-    invitation &&
-    invitation.status !== 'COMPLETED' &&
-    testAttempt?.status !== 'COMPLETED'
-  ) {
+  // Permission request phase - must be completed before proceeding
+  if (!hasPermissions) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-off-white p-6">
+        <div className="w-full max-w-lg rounded-xl bg-primary-white p-8 shadow-2xl">
+          <h1 className="mb-6 text-center text-3xl font-bold text-military-green">
+            Proctored Test Setup
+          </h1>
+          <div className="mb-6 space-y-4">
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <h3 className="font-semibold text-blue-800">
+                This test is proctored and requires:
+              </h3>
+              <ul className="mt-2 list-inside list-disc text-sm text-blue-700">
+                <li>Camera access for video recording</li>
+                <li>Microphone access for audio recording</li>
+                <li>Continuous recording throughout the test</li>
+                <li>No tab switching or window minimizing</li>
+              </ul>
+            </div>
+
+            {permissionsRequested && !hasPermissions && (
+              <div className="rounded-lg bg-red-100 p-4 text-red-700">
+                <p className="font-semibold">Permission Required</p>
+                <p className="text-sm">
+                  Please allow camera and microphone access when prompted by
+                  your browser. If you accidentally denied access, click the
+                  camera icon in your address bar to enable it.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {hasPermissions && (
+            <div className="mb-6 text-center">
+              <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                <div className="mb-2 flex items-center justify-center">
+                  <div className="mr-2 h-3 w-3 animate-pulse rounded-full bg-green-500"></div>
+                  <span className="font-medium text-green-700">
+                    Camera and Microphone Active
+                  </span>
+                </div>
+                <p className="text-sm text-green-600">
+                  Your devices are ready for proctoring. You can now proceed to
+                  the test.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!hasPermissions ? (
+            <button
+              onClick={requestPermissions}
+              disabled={permissionsRequested}
+              className={
+                buttonClasses('primary', permissionsRequested) + ' py-3 text-lg'
+              }
+            >
+              {permissionsRequested
+                ? 'Requesting Permissions...'
+                : 'Grant Camera & Microphone Access'}
+            </button>
+          ) : (
+            <div className="space-y-4">
+              <div className="text-center font-medium text-green-600">
+                ✅ Permissions Granted Successfully
+              </div>
+              <button
+                onClick={() => {
+                  // Permissions are granted, move to next phase
+                  setPermissionsRequested(true);
+                }}
+                className={buttonClasses('primary') + ' py-3 text-lg'}
+              >
+                Continue to Test Details
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Details submission phase
+  if (!detailsSubmitted && hasPermissions) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-off-white p-6">
         <div className="w-full max-w-lg rounded-xl bg-primary-white p-8 shadow-2xl md:p-12">
@@ -415,6 +759,22 @@ export default function TestPage() {
           <p className="mb-8 text-center text-text-light">
             Please enter your details to begin the assessment.
           </p>
+
+          {/* Proctoring Status */}
+          <div className="mb-6 text-center">
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <div className="mb-2 flex items-center justify-center">
+                <div className="mr-2 h-3 w-3 animate-pulse rounded-full bg-blue-500"></div>
+                <span className="font-medium text-blue-700">
+                  Proctoring Active
+                </span>
+              </div>
+              <p className="text-sm text-blue-600">
+                Your session is being monitored for security purposes.
+              </p>
+            </div>
+          </div>
+
           {error && (
             <p className="mb-6 rounded-md bg-red-100 p-3 text-sm text-red-500">
               {error}
@@ -443,7 +803,7 @@ export default function TestPage() {
                 htmlFor="candidateEmail"
                 className="mb-1 block text-sm font-medium text-text-dark"
               >
-                Email Address
+                Email
               </label>
               <input
                 type="email"
@@ -457,37 +817,10 @@ export default function TestPage() {
             </div>
             <button
               type="submit"
-              disabled={
-                isUpdatingDetails ||
-                !candidateName.trim() ||
-                !candidateEmail.trim()
-              }
-              className="flex w-full items-center justify-center rounded-md bg-military-green px-6 py-3 font-semibold text-primary-white transition-colors hover:bg-opacity-90 disabled:cursor-not-allowed disabled:bg-gray-400"
+              disabled={isUpdatingDetails}
+              className={buttonClasses('primary', isUpdatingDetails)}
             >
-              {isUpdatingDetails ? (
-                <svg
-                  className="-ml-1 mr-3 h-5 w-5 animate-spin text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-              ) : (
-                'Proceed to Test'
-              )}
+              {isUpdatingDetails ? 'Submitting...' : 'Submit Details'}
             </button>
           </form>
         </div>
@@ -495,14 +828,8 @@ export default function TestPage() {
     );
   }
 
-  if (
-    !testStarted &&
-    detailsSubmitted &&
-    invitation &&
-    invitation.test &&
-    invitation.test.questions &&
-    invitation.test.questions.length > 0
-  ) {
+  // Test ready phase
+  if (!testStarted && detailsSubmitted && hasPermissions) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-off-white p-4">
         <div className="w-full max-w-2xl rounded-xl bg-primary-white p-6 shadow-2xl md:p-10">
@@ -514,9 +841,25 @@ export default function TestPage() {
               {invitation.test.description}
             </p>
           )}
-          <div className="mb-8 rounded-lg border border-gray-200 bg-off-white p-4">
-            <h2 className="mb-3 text-xl font-semibold text-text-dark">
-              Instructions
+
+          {/* Proctoring Status */}
+          <div className="mb-6 text-center">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <div className="mb-2 flex items-center justify-center">
+                <div className="mr-2 h-3 w-3 animate-pulse rounded-full bg-amber-500"></div>
+                <span className="font-medium text-amber-700">
+                  Proctoring Ready
+                </span>
+              </div>
+              <p className="text-sm text-amber-600">
+                Recording will begin automatically when you start the test.
+              </p>
+            </div>
+          </div>
+
+          <div className="mb-8 rounded-lg bg-gray-50 p-6">
+            <h2 className="mb-4 text-xl font-semibold text-text-dark">
+              Test Instructions
             </h2>
             <ul className="list-inside list-disc space-y-2 text-text-dark">
               <li>
@@ -527,7 +870,7 @@ export default function TestPage() {
                 questions in this test.
               </li>
               <li>Answer each question to the best of your ability.</li>
-              <li>Your progress is saved as you move between questions.</li>
+              <li>Your session will be recorded throughout the test.</li>
               <li>
                 Click 'Submit Test' on the last question when you are finished.
               </li>
@@ -537,314 +880,136 @@ export default function TestPage() {
             onClick={startTest}
             className={buttonClasses('primary') + ' py-3 text-lg md:py-4'}
           >
-            Start Test
+            Start Proctored Test
           </button>
         </div>
       </div>
     );
   }
 
-  if (!invitation) {
+  // Active test phase
+  if (testStarted && invitation) {
+    const currentQuestion = invitation.test.questions[currentQuestionIndex];
+
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-off-white p-4 text-center">
-        <div className="w-full max-w-lg rounded-lg bg-primary-white p-8 shadow-2xl">
-          <h2 className="mb-4 text-2xl font-bold text-military-green">
-            Test Over
-          </h2>
-          <p className="mb-6 text-text-dark">
-            Loading results or all questions answered. If you haven't been
-            redirected, please wait or click submit if available.
+      <div className="flex min-h-screen flex-col bg-off-white">
+        {/* Recording status bar */}
+        {isRecording && (
+          <div className="bg-red-600 px-4 py-2 text-center text-white">
+            <div className="flex items-center justify-center space-x-4 text-sm">
+              <span>🔴 RECORDING</span>
+              <span>
+                {Math.floor(recordingDuration / 60)}:
+                {(recordingDuration % 60).toString().padStart(2, '0')}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <header className="bg-primary-white p-4 shadow-md">
+          <p className="text-center text-lg font-semibold text-military-green">
+            {invitation.test.title}
           </p>
-          <button
-            onClick={submitTest}
-            disabled={isSubmitting}
-            className={buttonClasses('primary', isSubmitting)}
-          >
-            {isSubmitting ? 'Submitting... ' : 'View Results (or Submit Again)'}
-          </button>
-        </div>
+        </header>
+
+        <main className="flex flex-grow flex-col p-4">
+          <div className="mx-auto w-full max-w-4xl flex-grow">
+            <div className="mb-6">
+              <p className="text-sm text-text-light">
+                Question {currentQuestionIndex + 1} of{' '}
+                {invitation.test.questions.length}
+              </p>
+              <h2 className="text-2xl font-bold text-text-dark">
+                {currentQuestion.promptText}
+              </h2>
+            </div>
+
+            <QuestionTimer
+              key={currentQuestion.id}
+              questionKey={currentQuestion.id}
+              durationSeconds={currentQuestion.timerSeconds}
+              onTimeExpired={handleTimeExpired}
+              startTimeEpoch={questionStartTime[currentQuestion.id]?.epoch || 0}
+            />
+
+            {currentQuestion.promptImageUrl && (
+              <div className="mb-6">
+                <img
+                  src={currentQuestion.promptImageUrl}
+                  alt="Question prompt"
+                  className="max-w-full rounded-lg"
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {currentQuestion.answerOptions.map((option, index) => {
+                const isSelected =
+                  answers[currentQuestion.id]?.answerIndex === index;
+                return (
+                  <button
+                    key={index}
+                    onClick={() => handleAnswer(currentQuestion.id, index)}
+                    className={buttonClasses(
+                      isSelected ? 'selectedAnswer' : 'answer'
+                    )}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </main>
+
+        <footer className="bg-primary-white p-4 shadow-md">
+          <div className="mx-auto flex max-w-4xl items-center justify-between">
+            <button
+              onClick={() => navigateQuestion('prev')}
+              disabled={currentQuestionIndex === 0}
+              className={
+                buttonClasses('secondary', currentQuestionIndex === 0) +
+                ' w-32 py-2'
+              }
+            >
+              Previous
+            </button>
+
+            <div className="flex-grow"></div>
+
+            {currentQuestionIndex < invitation.test.questions.length - 1 ? (
+              <button
+                onClick={() => navigateQuestion('next')}
+                className={buttonClasses('primary') + ' w-32 py-2'}
+              >
+                Next
+              </button>
+            ) : (
+              <button
+                onClick={submitTest}
+                disabled={isSubmitting}
+                className={
+                  buttonClasses('primary', isSubmitting) + ' w-32 py-2'
+                }
+              >
+                {isSubmitting ? 'Submitting...' : 'Submit Test'}
+              </button>
+            )}
+          </div>
+        </footer>
+
+        {/* Hidden video element for recording */}
+        <video
+          ref={videoRef}
+          className="hidden"
+          muted
+          playsInline
+          autoPlay
+          controls={false}
+        />
       </div>
     );
   }
 
-  const currentQuestion = invitation.test.questions[currentQuestionIndex];
-  const currentQuestionStartTimeEpoch =
-    currentQuestion && questionStartTime[currentQuestion.id]
-      ? questionStartTime[currentQuestion.id].epoch
-      : 0;
-
-  return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
-      {/* Modern Header with Progress */}
-      <div className="sticky top-0 z-10 border-b border-gray-200 bg-white shadow-sm">
-        <div className="mx-auto max-w-4xl px-4 py-4">
-          <div className="mb-4 flex items-center justify-between">
-            {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-500">
-                <svg
-                  className="h-6 w-6 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h1 className="max-w-xs truncate text-lg font-bold text-gray-900 sm:max-w-md">
-                  {invitation.test.title}
-                </h1>
-                <p className="text-sm text-gray-500">Combat Test Assessment</p>
-              </div>
-            </div>
-
-            {/* Question Counter */}
-            <div className="text-right">
-              <div className="text-2xl font-bold text-brand-500">
-                {String(currentQuestionIndex + 1).padStart(2, '0')}
-              </div>
-              <div className="text-sm text-gray-500">
-                of {String(invitation.test.questions.length).padStart(2, '0')}
-              </div>
-            </div>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="mb-2 h-2 w-full rounded-full bg-gray-200">
-            <div
-              className="h-2 rounded-full bg-brand-500 transition-all duration-300 ease-out"
-              style={{
-                width: `${((currentQuestionIndex + 1) / invitation.test.questions.length) * 100}%`,
-              }}
-            />
-          </div>
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>Progress</span>
-            <span>
-              {Math.round(
-                ((currentQuestionIndex + 1) /
-                  invitation.test.questions.length) *
-                  100
-              )}
-              % Complete
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex flex-1 items-center justify-center p-4">
-        <div className="w-full max-w-4xl">
-          {/* Timer Section */}
-          {currentQuestionStartTimeEpoch > 0 && (
-            <div className="mb-6">
-              <QuestionTimer
-                questionKey={currentQuestion.id}
-                startTimeEpoch={currentQuestionStartTimeEpoch}
-                durationSeconds={currentQuestion.timerSeconds}
-                onTimeExpired={handleTimeExpired}
-              />
-            </div>
-          )}
-
-          {/* Question Card */}
-          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
-            {/* Question Header */}
-            <div className="bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-white">
-                  Question {currentQuestionIndex + 1}
-                </h2>
-                <div className="flex items-center space-x-2 text-white">
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                    />
-                  </svg>
-                  <span className="text-sm">Think carefully</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Question Content */}
-            <div className="p-6">
-              <div className="mb-8">
-                <h3 className="mb-6 text-xl font-medium leading-relaxed text-gray-900 md:text-2xl">
-                  {currentQuestion.promptText}
-                </h3>
-
-                {currentQuestion.promptImageUrl && (
-                  <div className="mb-6 flex justify-center">
-                    <div className="relative w-full max-w-lg overflow-hidden rounded-xl bg-gray-100 shadow-md">
-                      <img
-                        src={currentQuestion.promptImageUrl}
-                        alt="Question illustration"
-                        className="h-auto w-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Answer Options */}
-              <div className="space-y-3">
-                {currentQuestion.answerOptions.map((option, index) => {
-                  const isSelected =
-                    answers[currentQuestion.id]?.answerIndex === index;
-                  const optionLabel = String.fromCharCode(65 + index); // A, B, C, D
-
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => handleAnswer(currentQuestion.id, index)}
-                      className={`w-full rounded-xl border-2 p-4 text-left transition-all duration-200 ease-out ${
-                        isSelected
-                          ? 'scale-[1.02] transform border-brand-500 bg-brand-50 shadow-md'
-                          : 'hover:bg-brand-25 border-gray-200 bg-white hover:border-brand-300 hover:shadow-sm'
-                      } focus:ring-3 focus:outline-none focus:ring-brand-200`}
-                    >
-                      <div className="flex items-center space-x-4">
-                        <div
-                          className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-semibold ${
-                            isSelected
-                              ? 'border-brand-500 bg-brand-500 text-white'
-                              : 'border-gray-300 bg-gray-100 text-gray-600'
-                          } `}
-                        >
-                          {optionLabel}
-                        </div>
-                        <span
-                          className={`flex-1 text-lg font-medium ${isSelected ? 'text-brand-700' : 'text-gray-700'} `}
-                        >
-                          {option}
-                        </span>
-                        {isSelected && (
-                          <div className="h-6 w-6 text-brand-500">
-                            <svg
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          </div>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Navigation Footer */}
-            <div className="border-t border-gray-200 bg-gray-50 px-6 py-4">
-              <div className="flex items-center justify-between">
-                <button
-                  onClick={() => navigateQuestion('prev')}
-                  disabled={currentQuestionIndex === 0}
-                  className={`flex items-center space-x-2 rounded-lg px-6 py-3 font-medium transition-all duration-200 ${
-                    currentQuestionIndex === 0
-                      ? 'cursor-not-allowed bg-gray-200 text-gray-400'
-                      : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:shadow-sm'
-                  } `}
-                >
-                  <svg
-                    className="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
-                  <span>Previous</span>
-                </button>
-
-                {currentQuestionIndex ===
-                invitation.test.questions.length - 1 ? (
-                  <button
-                    onClick={submitTest}
-                    disabled={isSubmitting}
-                    className={`flex items-center space-x-2 rounded-lg px-8 py-3 font-semibold text-white transition-all duration-200 ${
-                      isSubmitting
-                        ? 'cursor-not-allowed bg-gray-400'
-                        : 'transform bg-brand-500 hover:scale-105 hover:bg-brand-600 hover:shadow-lg'
-                    } `}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        <span>Submitting...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Submit Test</span>
-                        <svg
-                          className="h-4 w-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                      </>
-                    )}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => navigateQuestion('next')}
-                    className="flex transform items-center space-x-2 rounded-lg bg-brand-500 px-8 py-3 font-semibold text-white transition-all duration-200 hover:scale-105 hover:bg-brand-600 hover:shadow-lg"
-                  >
-                    <span>Next Question</span>
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return null;
 }

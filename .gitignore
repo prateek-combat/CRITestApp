@@ -84,3 +84,6 @@ tmp/
 
 # Development
 .husky/_/
+
+# Uploaded files (recordings, etc.)
+uploads/

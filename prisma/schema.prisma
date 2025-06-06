@@ -67,24 +67,36 @@ model Invitation {
 }
 
 model TestAttempt {
-  id                String            @id @default(uuid())
-  candidateName     String?
-  candidateEmail    String?
-  ipAddress         String?
-  startedAt         DateTime          @default(now())
-  completedAt       DateTime?
-  status            TestAttemptStatus @default(IN_PROGRESS)
-  rawScore          Int?
-  percentile        Float?
-  categorySubScores Json?
-  tabSwitches       Int               @default(0)
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  invitationId      String            @unique
-  testId            String
-  submittedAnswers  SubmittedAnswer[]
-  invitation        Invitation        @relation(fields: [invitationId], references: [id], onDelete: Cascade)
-  test              Test              @relation(fields: [testId], references: [id], onDelete: Cascade)
+  id                  String            @id @default(uuid())
+  candidateName       String?
+  candidateEmail      String?
+  ipAddress           String?
+  startedAt           DateTime          @default(now())
+  completedAt         DateTime?
+  status              TestAttemptStatus @default(IN_PROGRESS)
+  rawScore            Int?
+  percentile          Float?
+  categorySubScores   Json?
+  tabSwitches         Int               @default(0)
+  
+  // Proctoring fields
+  proctoringEnabled   Boolean           @default(true)
+  videoRecordingUrl   String?
+  audioRecordingUrl   String?
+  proctoringEvents    Json?
+  faceCapturesUrls    String[]          @default([])
+  screenRecordingUrl  String?
+  proctoringStartedAt DateTime?
+  proctoringEndedAt   DateTime?
+  permissionsGranted  Boolean           @default(false)
+  
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  invitationId        String            @unique
+  testId              String
+  submittedAnswers    SubmittedAnswer[]
+  invitation          Invitation        @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  test                Test              @relation(fields: [testId], references: [id], onDelete: Cascade)
 }
 
 model SubmittedAnswer {
