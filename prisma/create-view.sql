@@ -7,31 +7,99 @@ SELECT
   COALESCE(inv."candidateEmail", '')         AS "candidateEmail",
   ta."completedAt",
   EXTRACT(EPOCH FROM (ta."completedAt" - ta."startedAt"))::int AS "durationSeconds",
-  -- Extract percentage scores from categorySubScores JSON
-  COALESCE((ta."categorySubScores"->>'LOGICAL')::float, 0)          AS "scoreLogical",
-  COALESCE((ta."categorySubScores"->>'VERBAL')::float, 0)           AS "scoreVerbal", 
-  COALESCE((ta."categorySubScores"->>'NUMERICAL')::float, 0)        AS "scoreNumerical",
-  COALESCE((ta."categorySubScores"->>'ATTENTION_TO_DETAIL')::float, 0) AS "scoreAttention",
-  -- Composite score (simple average, tweakable later)
-  ROUND((
-    COALESCE((ta."categorySubScores"->>'LOGICAL')::float, 0) +
-    COALESCE((ta."categorySubScores"->>'VERBAL')::float, 0) +
-    COALESCE((ta."categorySubScores"->>'NUMERICAL')::float, 0) +
-    COALESCE((ta."categorySubScores"->>'ATTENTION_TO_DETAIL')::float, 0)
-  ) / 4.0, 2) AS "composite",
+  -- Extract percentage scores from categorySubScores JSON (calculate from correct/total)
+  CASE 
+    WHEN (ta."categorySubScores"->'LOGICAL'->>'total')::float > 0 
+    THEN ((ta."categorySubScores"->'LOGICAL'->>'correct')::float / (ta."categorySubScores"->'LOGICAL'->>'total')::float * 100)
+    ELSE 0 
+  END AS "scoreLogical",
+  CASE 
+    WHEN (ta."categorySubScores"->'VERBAL'->>'total')::float > 0 
+    THEN ((ta."categorySubScores"->'VERBAL'->>'correct')::float / (ta."categorySubScores"->'VERBAL'->>'total')::float * 100)
+    ELSE 0 
+  END AS "scoreVerbal",
+  CASE 
+    WHEN (ta."categorySubScores"->'NUMERICAL'->>'total')::float > 0 
+    THEN ((ta."categorySubScores"->'NUMERICAL'->>'correct')::float / (ta."categorySubScores"->'NUMERICAL'->>'total')::float * 100)
+    ELSE 0 
+  END AS "scoreNumerical",
+  CASE 
+    WHEN (ta."categorySubScores"->'ATTENTION_TO_DETAIL'->>'total')::float > 0 
+    THEN ((ta."categorySubScores"->'ATTENTION_TO_DETAIL'->>'correct')::float / (ta."categorySubScores"->'ATTENTION_TO_DETAIL'->>'total')::float * 100)
+    ELSE 0 
+  END AS "scoreAttention",
+  -- Composite score (simple average of percentages)
+  ((
+    CASE 
+      WHEN (ta."categorySubScores"->'LOGICAL'->>'total')::float > 0 
+      THEN ((ta."categorySubScores"->'LOGICAL'->>'correct')::float / (ta."categorySubScores"->'LOGICAL'->>'total')::float * 100)
+      ELSE 0 
+    END +
+    CASE 
+      WHEN (ta."categorySubScores"->'VERBAL'->>'total')::float > 0 
+      THEN ((ta."categorySubScores"->'VERBAL'->>'correct')::float / (ta."categorySubScores"->'VERBAL'->>'total')::float * 100)
+      ELSE 0 
+    END +
+    CASE 
+      WHEN (ta."categorySubScores"->'NUMERICAL'->>'total')::float > 0 
+      THEN ((ta."categorySubScores"->'NUMERICAL'->>'correct')::float / (ta."categorySubScores"->'NUMERICAL'->>'total')::float * 100)
+      ELSE 0 
+    END +
+    CASE 
+      WHEN (ta."categorySubScores"->'ATTENTION_TO_DETAIL'->>'total')::float > 0 
+      THEN ((ta."categorySubScores"->'ATTENTION_TO_DETAIL'->>'correct')::float / (ta."categorySubScores"->'ATTENTION_TO_DETAIL'->>'total')::float * 100)
+      ELSE 0 
+    END
+  ) / 4.0) AS "composite",
   -- Percentile ranking
-  ROUND((PERCENT_RANK() OVER (ORDER BY
-    (COALESCE((ta."categorySubScores"->>'LOGICAL')::float, 0) +
-     COALESCE((ta."categorySubScores"->>'VERBAL')::float, 0) +
-     COALESCE((ta."categorySubScores"->>'NUMERICAL')::float, 0) +
-     COALESCE((ta."categorySubScores"->>'ATTENTION_TO_DETAIL')::float, 0)) / 4.0 DESC
-  ) * 100)::numeric, 1) AS "percentile",
+  ((PERCENT_RANK() OVER (ORDER BY
+    ((
+      CASE 
+        WHEN (ta."categorySubScores"->'LOGICAL'->>'total')::float > 0 
+        THEN ((ta."categorySubScores"->'LOGICAL'->>'correct')::float / (ta."categorySubScores"->'LOGICAL'->>'total')::float * 100)
+        ELSE 0 
+      END +
+      CASE 
+        WHEN (ta."categorySubScores"->'VERBAL'->>'total')::float > 0 
+        THEN ((ta."categorySubScores"->'VERBAL'->>'correct')::float / (ta."categorySubScores"->'VERBAL'->>'total')::float * 100)
+        ELSE 0 
+      END +
+      CASE 
+        WHEN (ta."categorySubScores"->'NUMERICAL'->>'total')::float > 0 
+        THEN ((ta."categorySubScores"->'NUMERICAL'->>'correct')::float / (ta."categorySubScores"->'NUMERICAL'->>'total')::float * 100)
+        ELSE 0 
+      END +
+      CASE 
+        WHEN (ta."categorySubScores"->'ATTENTION_TO_DETAIL'->>'total')::float > 0 
+        THEN ((ta."categorySubScores"->'ATTENTION_TO_DETAIL'->>'correct')::float / (ta."categorySubScores"->'ATTENTION_TO_DETAIL'->>'total')::float * 100)
+        ELSE 0 
+      END
+    ) / 4.0) DESC
+  ) * 100)) AS "percentile",
   -- Dense rank for leaderboard
   DENSE_RANK() OVER (ORDER BY
-    (COALESCE((ta."categorySubScores"->>'LOGICAL')::float, 0) +
-     COALESCE((ta."categorySubScores"->>'VERBAL')::float, 0) +
-     COALESCE((ta."categorySubScores"->>'NUMERICAL')::float, 0) +
-     COALESCE((ta."categorySubScores"->>'ATTENTION_TO_DETAIL')::float, 0)) / 4.0 DESC,
+    ((
+      CASE 
+        WHEN (ta."categorySubScores"->'LOGICAL'->>'total')::float > 0 
+        THEN ((ta."categorySubScores"->'LOGICAL'->>'correct')::float / (ta."categorySubScores"->'LOGICAL'->>'total')::float * 100)
+        ELSE 0 
+      END +
+      CASE 
+        WHEN (ta."categorySubScores"->'VERBAL'->>'total')::float > 0 
+        THEN ((ta."categorySubScores"->'VERBAL'->>'correct')::float / (ta."categorySubScores"->'VERBAL'->>'total')::float * 100)
+        ELSE 0 
+      END +
+      CASE 
+        WHEN (ta."categorySubScores"->'NUMERICAL'->>'total')::float > 0 
+        THEN ((ta."categorySubScores"->'NUMERICAL'->>'correct')::float / (ta."categorySubScores"->'NUMERICAL'->>'total')::float * 100)
+        ELSE 0 
+      END +
+      CASE 
+        WHEN (ta."categorySubScores"->'ATTENTION_TO_DETAIL'->>'total')::float > 0 
+        THEN ((ta."categorySubScores"->'ATTENTION_TO_DETAIL'->>'correct')::float / (ta."categorySubScores"->'ATTENTION_TO_DETAIL'->>'total')::float * 100)
+        ELSE 0 
+      END
+    ) / 4.0) DESC,
     EXTRACT(EPOCH FROM (ta."completedAt" - ta."startedAt")) ASC
   ) AS "rank"
 FROM "TestAttempt" ta
