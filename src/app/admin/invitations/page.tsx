@@ -117,7 +117,7 @@ export default function InvitationsPage() {
         fetchInvitations();
 
         // Copy link to clipboard
-        const inviteLink = `${window.location.origin}/test/start/${result.id}`;
+        const inviteLink = `${window.location.origin}/test/${result.id}`;
         try {
           await navigator.clipboard.writeText(inviteLink);
           alert(
