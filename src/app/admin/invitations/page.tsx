@@ -91,57 +91,6 @@ export default function InvitationsPage() {
     }
   };
 
-  const generateInvitationLink = async () => {
-    if (!newEmail || !selectedTestId) return;
-
-    setSendingInvite(true);
-    try {
-      const response = await fetch('/api/invitations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: newEmail,
-          testId: selectedTestId,
-          sendEmail: false,
-          customMessage: customMessage.trim() || undefined,
-        }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        setNewEmail('');
-        setSelectedTestId('');
-        setCustomMessage('');
-        fetchInvitations();
-
-        // Copy link to clipboard
-        const inviteLink = `${window.location.origin}/test/${result.id}`;
-        try {
-          await navigator.clipboard.writeText(inviteLink);
-          alert(
-            `✅ Invitation link generated and copied to clipboard!\n\nLink: ${inviteLink}\n\nShare this link with ${newEmail}`
-          );
-        } catch (clipboardError) {
-          alert(
-            `✅ Invitation link generated!\n\nLink: ${inviteLink}\n\nPlease copy this link manually and share it with ${newEmail}`
-          );
-        }
-      } else {
-        const error = await response.json();
-        alert(
-          `❌ Error: ${error.error || 'Failed to generate invitation link'}`
-        );
-      }
-    } catch (error) {
-      console.error('Error generating invitation link:', error);
-      alert('❌ Network error occurred');
-    } finally {
-      setSendingInvite(false);
-    }
-  };
-
   const sendInvitationEmail = async () => {
     if (!newEmail || !selectedTestId) return;
 
@@ -827,42 +776,11 @@ user4@example.com"
                 ))}
               </select>
             </div>
-            <div className="flex items-end space-x-3">
-              <button
-                onClick={generateInvitationLink}
-                disabled={!newEmail || !selectedTestId || sendingInvite}
-                className="flex-1 rounded-lg bg-gray-600 px-4 py-3 font-medium text-white transition-all hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-20 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {sendingInvite ? (
-                  <span className="flex items-center justify-center">
-                    <svg
-                      className="mr-2 h-4 w-4 animate-spin"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Sending...
-                  </span>
-                ) : (
-                  '🔗 Generate Link'
-                )}
-              </button>
+            <div className="flex items-end">
               <button
                 onClick={sendInvitationEmail}
                 disabled={!newEmail || !selectedTestId || sendingInvite}
-                className="flex-1 rounded-lg bg-brand-500 px-4 py-3 font-medium text-white transition-all hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-opacity-20 disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-lg bg-brand-500 px-4 py-3 font-medium text-white transition-all hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-opacity-20 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {sendingInvite ? (
                   <span className="flex items-center justify-center">
@@ -887,7 +805,7 @@ user4@example.com"
                     Sending...
                   </span>
                 ) : (
-                  '📧 Send via Email'
+                  '📧 Send Invitation Email'
                 )}
               </button>
             </div>
@@ -897,12 +815,9 @@ user4@example.com"
         <div className="mt-4 rounded-lg bg-blue-50 p-3">
           <div className="text-sm text-blue-800">
             <p>
-              <strong>🔗 Generate Link:</strong> Creates a personal invitation
-              link you can copy and share manually
-            </p>
-            <p>
-              <strong>📧 Send via Email:</strong> Sends the invitation directly
-              to the candidate's email address
+              <strong>📧 Send Invitation Email:</strong> Sends the invitation
+              directly to the candidate's email address with a personalized test
+              link.
             </p>
           </div>
         </div>
@@ -914,6 +829,12 @@ user4@example.com"
           <h2 className="text-xl font-semibold text-gray-900">
             🌐 Generate Public Test Link
           </h2>
+          <a
+            href="/admin/public-links"
+            className="inline-flex items-center rounded-lg bg-purple-100 px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-200"
+          >
+            📋 Manage Public Links
+          </a>
         </div>
 
         <div className="mb-4">
@@ -1001,7 +922,8 @@ user4@example.com"
         <div className="mt-4 text-sm text-gray-600">
           <p>
             This creates a public link that anyone can use to access the test
-            after entering their name and email.
+            after entering their name and email. Use "Manage Public Links" to
+            view, activate/deactivate, or delete existing public links.
           </p>
         </div>
       </div>
