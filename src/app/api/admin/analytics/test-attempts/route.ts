@@ -65,63 +65,110 @@ export async function GET(request: NextRequest) {
       whereClause.invitationId = invitationId;
     }
 
-    const completedAttempts = await prisma.testAttempt.findMany({
-      where: whereClause,
-      include: {
-        test: {
-          select: {
-            id: true,
-            title: true,
-            questions: {
-              select: {
-                id: true,
-                category: true,
+    // Query both regular and public test attempts
+    const [completedAttempts, completedPublicAttempts] = await Promise.all([
+      // Regular test attempts
+      prisma.testAttempt.findMany({
+        where: whereClause,
+        include: {
+          test: {
+            select: {
+              id: true,
+              title: true,
+              questions: {
+                select: {
+                  id: true,
+                  category: true,
+                },
+              },
+            },
+          },
+          invitation: {
+            select: {
+              id: true,
+              candidateEmail: true,
+              candidateName: true,
+              status: true,
+              expiresAt: true,
+              createdBy: {
+                select: {
+                  id: true,
+                  email: true,
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
+          },
+          submittedAnswers: {
+            select: {
+              id: true,
+              questionId: true,
+              isCorrect: true,
+              timeTakenSeconds: true,
+              question: {
+                select: {
+                  category: true,
+                },
               },
             },
           },
         },
-        invitation: {
-          select: {
-            id: true,
-            candidateEmail: true,
-            candidateName: true,
-            status: true,
-            expiresAt: true,
-            createdBy: {
-              select: {
-                id: true,
-                email: true,
-                firstName: true,
-                lastName: true,
+        orderBy: {
+          completedAt: 'desc',
+        },
+      }),
+      // Public test attempts (exclude invitationId filter since they don't have invitations)
+      prisma.publicTestAttempt.findMany({
+        where: {
+          status: TestAttemptStatus.COMPLETED,
+        },
+        include: {
+          publicLink: {
+            include: {
+              test: {
+                select: {
+                  id: true,
+                  title: true,
+                  questions: {
+                    select: {
+                      id: true,
+                      category: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          submittedAnswers: {
+            select: {
+              id: true,
+              questionId: true,
+              isCorrect: true,
+              timeTakenSeconds: true,
+              question: {
+                select: {
+                  category: true,
+                },
               },
             },
           },
         },
-        submittedAnswers: {
-          select: {
-            id: true,
-            questionId: true,
-            isCorrect: true,
-            timeTakenSeconds: true,
-            question: {
-              select: {
-                category: true,
-              },
-            },
-          },
+        orderBy: {
+          completedAt: 'desc',
         },
-      },
-      orderBy: {
-        completedAt: 'desc',
-      },
-    });
+      }),
+    ]);
 
-    const analyticsData = completedAttempts.map((attempt) => {
+    // Process regular test attempts
+    const processRegularAttempt = (attempt: any) => {
       const testQuestions = attempt.test?.questions || [];
       const submittedAns = attempt.submittedAnswers || [];
 
       const totalQuestions = testQuestions.length;
-      const correctAnswers = submittedAns.filter((sa) => sa.isCorrect).length;
+      const correctAnswers = submittedAns.filter(
+        (sa: any) => sa.isCorrect
+      ).length;
 
       const categoryScores: Record<
         QuestionCategory,
@@ -133,19 +180,19 @@ export async function GET(request: NextRequest) {
         ATTENTION_TO_DETAIL: { correct: 0, total: 0, score: 0 },
       };
 
-      testQuestions.forEach((q) => {
-        if (q.category && categoryScores[q.category]) {
-          categoryScores[q.category].total++;
+      testQuestions.forEach((q: any) => {
+        if (q.category && categoryScores[q.category as QuestionCategory]) {
+          categoryScores[q.category as QuestionCategory].total++;
         }
       });
 
-      submittedAns.forEach((sa) => {
+      submittedAns.forEach((sa: any) => {
         if (
           sa.isCorrect &&
           sa.question?.category &&
-          categoryScores[sa.question.category]
+          categoryScores[sa.question.category as QuestionCategory]
         ) {
-          categoryScores[sa.question.category].correct++;
+          categoryScores[sa.question.category as QuestionCategory].correct++;
         }
       });
 
@@ -188,7 +235,93 @@ export async function GET(request: NextRequest) {
         correctAnswers,
         creatorEmail: attempt.invitation?.createdBy?.email,
       };
-    });
+    };
+
+    // Process public test attempts
+    const processPublicAttempt = (attempt: any) => {
+      const testQuestions = attempt.publicLink?.test?.questions || [];
+      const submittedAns = attempt.submittedAnswers || [];
+
+      const totalQuestions = testQuestions.length;
+      const correctAnswers = submittedAns.filter(
+        (sa: any) => sa.isCorrect
+      ).length;
+
+      const categoryScores: Record<
+        QuestionCategory,
+        { correct: number; total: number; score: number }
+      > = {
+        LOGICAL: { correct: 0, total: 0, score: 0 },
+        VERBAL: { correct: 0, total: 0, score: 0 },
+        NUMERICAL: { correct: 0, total: 0, score: 0 },
+        ATTENTION_TO_DETAIL: { correct: 0, total: 0, score: 0 },
+      };
+
+      testQuestions.forEach((q: any) => {
+        if (q.category && categoryScores[q.category as QuestionCategory]) {
+          categoryScores[q.category as QuestionCategory].total++;
+        }
+      });
+
+      submittedAns.forEach((sa: any) => {
+        if (
+          sa.isCorrect &&
+          sa.question?.category &&
+          categoryScores[sa.question.category as QuestionCategory]
+        ) {
+          categoryScores[sa.question.category as QuestionCategory].correct++;
+        }
+      });
+
+      (Object.keys(categoryScores) as QuestionCategory[]).forEach((cat) => {
+        if (categoryScores[cat].total > 0) {
+          categoryScores[cat].score = parseFloat(
+            (
+              (categoryScores[cat].correct / categoryScores[cat].total) *
+              100
+            ).toFixed(2)
+          );
+        }
+      });
+
+      return {
+        id: attempt.id,
+        testId: attempt.publicLink?.testId,
+        testTitle: attempt.publicLink?.test?.title,
+        invitationId: null, // Public attempts don't have invitations
+        candidateName: attempt.candidateName,
+        candidateEmail: attempt.candidateEmail,
+        completedAt: attempt.completedAt,
+        status: attempt.status,
+        rawScore: attempt.rawScore,
+        percentile: attempt.percentile,
+        durationSeconds:
+          attempt.completedAt && attempt.startedAt
+            ? Math.floor(
+                (new Date(attempt.completedAt).getTime() -
+                  new Date(attempt.startedAt).getTime()) /
+                  1000
+              )
+            : null,
+        categoryScores,
+        ipAddress: attempt.ipAddress,
+        tabSwitches: attempt.tabSwitches,
+        totalQuestions,
+        correctAnswers,
+        creatorEmail: null, // Public attempts don't have creators
+      };
+    };
+
+    // Process both types of attempts and combine
+    const regularAnalytics = completedAttempts.map(processRegularAttempt);
+    const publicAnalytics = completedPublicAttempts.map(processPublicAttempt);
+
+    // Combine and sort by completion date
+    const analyticsData = [...regularAnalytics, ...publicAnalytics].sort(
+      (a, b) =>
+        new Date(b.completedAt || 0).getTime() -
+        new Date(a.completedAt || 0).getTime()
+    );
 
     return NextResponse.json(analyticsData);
   } catch (error) {

@@ -17,6 +17,7 @@ interface CandidateScore {
   composite: number;
   percentile: number;
   rank: number;
+  isPublicAttempt?: boolean;
 }
 
 interface LeaderboardData {

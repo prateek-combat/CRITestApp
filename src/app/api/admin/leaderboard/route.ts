@@ -142,13 +142,13 @@ export async function GET(request: NextRequest) {
         viewError
       );
 
-      // Fallback: Query TestAttempt table directly if view fails
+      // Fallback: Query both TestAttempt and PublicTestAttempt tables directly if view fails
       const whereCondition: any = {
         status: 'COMPLETED',
         completedAt: { not: null },
       };
 
-      // Add categorySubScores filter only if not null
+      // Add search filter for both regular and public attempts
       if (search) {
         whereCondition.OR = [
           { candidateName: { contains: search, mode: 'insensitive' } },
@@ -170,25 +170,45 @@ export async function GET(request: NextRequest) {
         };
       }
 
+      // For regular invitations, filter by invitationId if specified
+      const regularWhereCondition = { ...whereCondition };
       if (invitationId) {
-        whereCondition.invitationId = invitationId;
+        regularWhereCondition.invitationId = invitationId;
       }
 
-      const testAttempts = await prisma.testAttempt.findMany({
-        where: whereCondition,
-        include: {
-          invitation: true,
-        },
-        orderBy:
-          sortBy === 'completedAt'
-            ? { completedAt: sortOrder }
-            : { createdAt: 'desc' },
-        take: pageSize,
-        skip: (page - 1) * pageSize,
-      });
+      // For public attempts, skip invitationId filter since they don't have invitations
+      const publicWhereCondition = { ...whereCondition };
 
-      // Calculate scores manually
-      const processedRows = testAttempts.map((attempt, index) => {
+      // Query both regular and public test attempts
+      const [testAttempts, publicTestAttempts] = await Promise.all([
+        prisma.testAttempt.findMany({
+          where: regularWhereCondition,
+          include: {
+            invitation: true,
+          },
+          orderBy:
+            sortBy === 'completedAt'
+              ? { completedAt: sortOrder }
+              : { createdAt: 'desc' },
+        }),
+        prisma.publicTestAttempt.findMany({
+          where: publicWhereCondition,
+          include: {
+            publicLink: {
+              include: {
+                test: true,
+              },
+            },
+          },
+          orderBy:
+            sortBy === 'completedAt'
+              ? { completedAt: sortOrder }
+              : { createdAt: 'desc' },
+        }),
+      ]);
+
+      // Process regular test attempts
+      const processRegularAttempt = (attempt: any, index: number) => {
         const scores = attempt.categorySubScores as any;
 
         // Calculate percentage scores
@@ -234,28 +254,119 @@ export async function GET(request: NextRequest) {
           scoreAttention,
           composite,
           percentile: 50, // Default percentile for fallback
-          rank: index + 1 + (page - 1) * pageSize, // Simple ranking for fallback
+          rank: 0, // Will be calculated after combining and sorting
+          isPublicAttempt: false,
         };
-      });
+      };
 
-      // Sort if needed
-      if (sortBy === 'composite') {
-        processedRows.sort((a, b) =>
-          sortOrder === 'desc'
-            ? b.composite - a.composite
-            : a.composite - b.composite
-        );
+      // Process public test attempts
+      const processPublicAttempt = (attempt: any, index: number) => {
+        const scores = attempt.categorySubScores as any;
+
+        // Calculate percentage scores
+        const scoreLogical = scores?.LOGICAL
+          ? (scores.LOGICAL.correct / scores.LOGICAL.total) * 100
+          : 0;
+        const scoreVerbal = scores?.VERBAL
+          ? (scores.VERBAL.correct / scores.VERBAL.total) * 100
+          : 0;
+        const scoreNumerical = scores?.NUMERICAL
+          ? (scores.NUMERICAL.correct / scores.NUMERICAL.total) * 100
+          : 0;
+        const scoreAttention = scores?.ATTENTION_TO_DETAIL
+          ? (scores.ATTENTION_TO_DETAIL.correct /
+              scores.ATTENTION_TO_DETAIL.total) *
+            100
+          : 0;
+
+        const composite =
+          (scoreLogical + scoreVerbal + scoreNumerical + scoreAttention) / 4;
+        const durationSeconds =
+          attempt.completedAt && attempt.startedAt
+            ? Math.floor(
+                (attempt.completedAt.getTime() - attempt.startedAt.getTime()) /
+                  1000
+              )
+            : 0;
+
+        return {
+          attemptId: attempt.id,
+          invitationId: null, // Public attempts don't have invitations
+          candidateName: attempt.candidateName || 'Anonymous',
+          candidateEmail: attempt.candidateEmail || '',
+          completedAt: attempt.completedAt,
+          durationSeconds,
+          scoreLogical,
+          scoreVerbal,
+          scoreNumerical,
+          scoreAttention,
+          composite,
+          percentile: 50, // Default percentile for fallback
+          rank: 0, // Will be calculated after combining and sorting
+          isPublicAttempt: true,
+        };
+      };
+
+      // Process both types of attempts
+      const regularRows = testAttempts.map(processRegularAttempt);
+      const publicRows = publicTestAttempts.map(processPublicAttempt);
+
+      // Combine and sort all attempts by composite score
+      const allAttempts = [...regularRows, ...publicRows];
+      allAttempts.sort((a, b) => b.composite - a.composite);
+
+      // Assign ranks after sorting
+      const processedRows = allAttempts.map((attempt, index) => ({
+        ...attempt,
+        rank: index + 1,
+      }));
+
+      // Apply additional sorting if needed (already sorted by composite)
+      if (sortBy === 'completedAt') {
+        processedRows.sort((a, b) => {
+          const aTime = new Date(a.completedAt).getTime();
+          const bTime = new Date(b.completedAt).getTime();
+          return sortOrder === 'desc' ? bTime - aTime : aTime - bTime;
+        });
+      } else if (sortBy === 'candidateName') {
+        processedRows.sort((a, b) => {
+          const comparison = a.candidateName.localeCompare(b.candidateName);
+          return sortOrder === 'desc' ? -comparison : comparison;
+        });
+      } else if (sortBy === 'durationSeconds') {
+        processedRows.sort((a, b) => {
+          return sortOrder === 'desc'
+            ? b.durationSeconds - a.durationSeconds
+            : a.durationSeconds - b.durationSeconds;
+        });
       }
 
-      const total = await prisma.testAttempt.count({
-        where: {
-          status: 'COMPLETED',
-          completedAt: { not: null },
-        },
-      });
+      // Get total count for both tables
+      const [regularTotal, publicTotal] = await Promise.all([
+        prisma.testAttempt.count({
+          where: {
+            status: 'COMPLETED',
+            completedAt: { not: null },
+          },
+        }),
+        prisma.publicTestAttempt.count({
+          where: {
+            status: 'COMPLETED',
+            completedAt: { not: null },
+          },
+        }),
+      ]);
+
+      const total = regularTotal + publicTotal;
+
+      // Apply pagination after sorting
+      const paginatedRows = processedRows.slice(
+        (page - 1) * pageSize,
+        page * pageSize
+      );
 
       return NextResponse.json({
-        rows: processedRows,
+        rows: paginatedRows,
         pagination: {
           total,
           page,
