@@ -118,7 +118,7 @@ export async function POST(request: Request) {
       answerOptions.length < 2 ||
       answerOptions.length > 6
     ) {
-      // Adjusted min to 2 as per general IQ tests, can be 4-6 if strict
+      // Adjusted min to 2 as per general tests, can be 4-6 if strict
       return NextResponse.json(
         { message: 'answerOptions must be an array of 2 to 6 strings.' },
         { status: 400 }

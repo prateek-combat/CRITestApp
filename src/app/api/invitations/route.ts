@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
     if (!adminUser) {
       adminUser = await prisma.user.create({
         data: {
-          email: 'admin@combat.test',
+          email: 'admin@testplatform.com',
           passwordHash: 'dummy',
           firstName: 'Admin',
           lastName: 'User',

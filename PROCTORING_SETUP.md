@@ -1,6 +1,6 @@
 # Proctoring System Setup Guide
 
-This guide explains how to set up the comprehensive proctoring system for the IQ Test platform.
+This guide explains how to set up the comprehensive proctoring system for the Test platform.
 
 ## Overview
 

@@ -58,11 +58,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 p-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
-            <Lock className="h-8 w-8 text-blue-600" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary-100">
+            <Lock className="h-8 w-8 text-primary-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Admin Login</h1>
           <p className="mt-2 text-gray-600">
@@ -85,7 +85,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 py-3 pl-10 pr-4 transition-colors focus:border-transparent focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-gray-300 py-3 pl-10 pr-4 transition-colors focus:border-transparent focus:ring-2 focus:ring-primary-500"
                 placeholder="admin@company.com"
                 required
               />
@@ -106,7 +106,7 @@ export default function LoginPage() {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 py-3 pl-10 pr-12 transition-colors focus:border-transparent focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-lg border border-gray-300 py-3 pl-10 pr-12 transition-colors focus:border-transparent focus:ring-2 focus:ring-primary-500"
                 placeholder="Enter your password"
                 required
               />
@@ -133,7 +133,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full rounded-lg bg-blue-600 px-4 py-3 font-medium text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-blue-400"
+            className="w-full rounded-lg bg-primary-600 px-4 py-3 font-medium text-white transition-colors hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:bg-primary-400"
           >
             {isLoading ? (
               <div className="flex items-center justify-center">
@@ -162,7 +162,7 @@ export default function LoginPage() {
             <button
               onClick={handleGoogleSignIn}
               disabled={isLoading}
-              className="flex w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              className="flex w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
             >
               <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
                 <path
@@ -189,7 +189,7 @@ export default function LoginPage() {
 
         <div className="mt-8 border-t border-gray-200 pt-6 text-center">
           <p className="text-xs text-gray-500">
-            IQ Test Admin Panel • Secure Access Required
+            Test Platform Admin Panel • Secure Access Required
           </p>
         </div>
       </div>

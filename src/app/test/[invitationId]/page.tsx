@@ -681,7 +681,7 @@ export default function TestPage() {
             Test Completed!
           </h1>
           <p className="mb-8 text-xl text-text-dark">
-            Thank you for completing the Combat Test.
+            Thank you for completing the Test.
           </p>
           <Link
             href="/"
@@ -708,7 +708,7 @@ export default function TestPage() {
                 This test is proctored and requires:
               </h3>
               <ul className="mt-2 list-inside list-disc text-sm text-blue-700">
-                <li>Camera access for monitoring</li>
+                <li>Camera access for recording</li>
                 <li>Microphone access for audio capture</li>
                 <li>Periodic frame capture throughout the test</li>
                 <li>No tab switching or window minimizing</li>
@@ -782,8 +782,8 @@ export default function TestPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-off-white p-6">
         <div className="w-full max-w-lg rounded-xl bg-primary-white p-8 shadow-2xl md:p-12">
-          <h1 className="mb-6 text-center text-3xl font-bold text-military-green md:text-4xl">
-            Welcome to the Combat Test
+          <h1 className="mb-4 text-center text-3xl font-bold text-gray-800">
+            Welcome to the Test
           </h1>
           <p className="mb-8 text-center text-text-light">
             Please enter your details to begin the assessment.
@@ -881,8 +881,7 @@ export default function TestPage() {
                 </span>
               </div>
               <p className="text-sm text-amber-600">
-                Frame monitoring will begin automatically when you start the
-                test.
+                Recording will begin automatically when you start the test.
               </p>
             </div>
           </div>
@@ -900,7 +899,7 @@ export default function TestPage() {
                 questions in this test.
               </li>
               <li>Answer each question to the best of your ability.</li>
-              <li>Your session will be monitored throughout the test.</li>
+              <li>Your session will be recorded throughout the test.</li>
               <li>
                 Click 'Submit Test' on the last question when you are finished.
               </li>
@@ -923,47 +922,43 @@ export default function TestPage() {
 
     return (
       <div className="flex min-h-screen flex-col bg-off-white">
-        {/* Recording status bar */}
+        {/* Small recording indicator */}
         {(isRecording || isSubmitting || isUploadingRecording) && (
-          <div
-            className={`px-4 py-2 text-center text-white ${
-              isUploadingRecording
-                ? 'bg-blue-600'
-                : isSubmitting
-                  ? cameraActuallyStopped
-                    ? 'bg-green-600'
-                    : 'bg-yellow-600'
-                  : 'bg-red-600'
-            }`}
-          >
-            <div className="flex items-center justify-center space-x-4 text-sm">
-              {isUploadingRecording ? (
-                <>
-                  <span>📤 UPLOADING RECORDING</span>
-                  <span>Please wait...</span>
-                </>
-              ) : isSubmitting ? (
-                <>
-                  <span>
-                    {cameraActuallyStopped
-                      ? '✅ CAMERA STOPPED'
-                      : '⏹️ STOPPING RECORDING'}
-                  </span>
-                  <span>
-                    {cameraActuallyStopped
-                      ? 'Finalizing submission...'
-                      : 'Stopping camera...'}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span>📸 MONITORING (2 FPS)</span>
-                  <span>
-                    {Math.floor(recordingDuration / 60)}:
-                    {(recordingDuration % 60).toString().padStart(2, '0')}
-                  </span>
-                </>
-              )}
+          <div className="fixed right-4 top-4 z-50">
+            <div
+              className={`rounded-lg px-3 py-2 text-xs text-white shadow-lg ${
+                isUploadingRecording
+                  ? 'bg-blue-600'
+                  : isSubmitting
+                    ? cameraActuallyStopped
+                      ? 'bg-green-600'
+                      : 'bg-amber-600'
+                    : 'bg-red-600'
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                {isUploadingRecording ? (
+                  <>
+                    <span className="animate-pulse">📤</span>
+                    <span>Uploading</span>
+                  </>
+                ) : isSubmitting ? (
+                  <>
+                    <span>{cameraActuallyStopped ? '✅' : '⏹️'}</span>
+                    <span>
+                      {cameraActuallyStopped ? 'Complete' : 'Finishing'}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="animate-pulse">🔴</span>
+                    <span>
+                      {Math.floor(recordingDuration / 60)}:
+                      {(recordingDuration % 60).toString().padStart(2, '0')}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         )}

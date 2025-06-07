@@ -1,8 +1,8 @@
-# 🏗️ IQ Test Platform Architecture
+# 🏗️ Test Platform Architecture
 
 ## Overview
 
-This document describes the complete architecture of the IQ Test Platform with integrated proctoring system, designed with a **single-database approach** using PostgreSQL for all data storage and job processing.
+This document describes the complete architecture of the Test Platform with integrated proctoring system, designed with a **single-database approach** using PostgreSQL for all data storage and job processing.
 
 ## 🎯 Design Goals
 

@@ -8,7 +8,7 @@ export default function HomePage() {
       <div className="w-full max-w-md text-center">
         <div className="rounded-lg bg-white p-8 shadow-lg">
           <div className="mb-6 flex items-center justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-brand-500">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-500">
               <svg
                 className="h-6 w-6 text-white"
                 fill="none"
@@ -25,17 +25,17 @@ export default function HomePage() {
             </div>
           </div>
 
-          <h1 className="mb-4 text-3xl font-bold text-gray-900">
-            IQ Test Platform
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl">
+            Test Platform
           </h1>
-          <p className="mb-8 text-gray-600">
-            Welcome to the Combat Robotics IQ Testing Platform
+          <p className="mt-6 text-lg leading-8 text-gray-600">
+            Welcome to the Testing Platform
           </p>
 
           <div className="space-y-4">
             <Link
               href="/login"
-              className="flex w-full items-center justify-center rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="flex w-full items-center justify-center rounded-lg bg-primary-500 px-6 py-3 font-medium text-white transition-colors hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
             >
               <svg
                 className="mr-2 h-5 w-5"

@@ -1,6 +1,6 @@
-# 🧠 IQ Test Platform
+# 🧠 Test Platform
 
-A comprehensive web-based IQ testing platform built with Next.js, featuring admin management, Google OAuth authentication, AI-powered proctoring, and robust question import capabilities.
+A comprehensive web-based testing platform built with Next.js, featuring admin management, Google OAuth authentication, AI-powered proctoring, and robust question import capabilities.
 
 **Last Deployment:** June 6, 2025 - Production Ready with AI Proctoring ✅
 
@@ -8,7 +8,7 @@ A comprehensive web-based IQ testing platform built with Next.js, featuring admi
 
 - **🔐 Admin Authentication**: Secure Google OAuth integration with role-based access
 - **🤖 AI Proctoring**: Real-time face detection and object detection using custom AI models
-- **📊 Test Management**: Create, edit, and manage IQ tests with multiple question types
+- **📊 Test Management**: Create, edit, and manage tests with multiple question types
 - **📝 Question Import**: Excel/CSV import with validation and error handling
 - **👥 User Management**: Super admin can manage other admin users
 - **📈 Analytics**: Comprehensive test performance analytics with AI analysis
@@ -37,7 +37,7 @@ A comprehensive web-based IQ testing platform built with Next.js, featuring admi
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd iq-test-app
+   cd test-app
    npm install
    ```
 
@@ -145,7 +145,7 @@ gcloud run deploy ai-service --source=./ai-service --region=us-central1
 ## 🏗️ Project Structure
 
 ```
-iq-test-app/
+test-app/
 ├── src/
 │   ├── app/                 # Next.js app directory
 │   │   ├── admin/          # Admin panel pages
@@ -244,4 +244,4 @@ npm run dev
 
 ---
 
-**Built with ❤️ for Combat Robotics**
+**Built with modern technology stack for reliable testing platforms**

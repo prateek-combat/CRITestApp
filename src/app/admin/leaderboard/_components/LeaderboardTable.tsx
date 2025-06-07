@@ -48,7 +48,7 @@ const InlineBar = ({ value, max = 100 }: { value: number; max?: number }) => {
     <div className="flex items-center space-x-2">
       <div className="h-2 flex-1 rounded-full bg-gray-200">
         <div
-          className="h-2 rounded-full bg-blue-500 transition-all duration-300"
+          className="h-2 rounded-full bg-primary-500 transition-all duration-300"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -117,7 +117,7 @@ export default function LeaderboardTable({
     if (rank === 1) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
     if (rank === 2) return 'bg-gray-100 text-gray-800 border-gray-200';
     if (rank === 3) return 'bg-orange-100 text-orange-800 border-orange-200';
-    if (rank <= 10) return 'bg-blue-100 text-blue-800 border-blue-200';
+    if (rank <= 10) return 'bg-primary-100 text-primary-800 border-primary-200';
     return 'bg-gray-50 text-gray-600 border-gray-200';
   };
 
@@ -125,9 +125,9 @@ export default function LeaderboardTable({
     <div className="overflow-hidden rounded-lg bg-white shadow">
       {/* Compare Bar */}
       {selected.length > 0 && (
-        <div className="border-b border-blue-200 bg-blue-50 px-6 py-3">
+        <div className="border-b border-primary-200 bg-primary-50 px-6 py-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-blue-900">
+            <span className="text-sm font-medium text-primary-900">
               {selected.length} candidate{selected.length !== 1 ? 's' : ''}{' '}
               selected for comparison
             </span>
@@ -207,7 +207,7 @@ export default function LeaderboardTable({
               <tr
                 key={candidate.attemptId}
                 className={`transition-colors hover:bg-gray-50 ${
-                  isSelected(candidate.attemptId) ? 'bg-blue-50' : ''
+                  isSelected(candidate.attemptId) ? 'bg-primary-50' : ''
                 }`}
               >
                 <td className="whitespace-nowrap px-6 py-4">
@@ -271,7 +271,7 @@ export default function LeaderboardTable({
                     }
                     className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
                       isSelected(candidate.attemptId)
-                        ? 'bg-blue-600 text-white hover:bg-blue-700'
+                        ? 'bg-primary-600 text-white hover:bg-primary-700'
                         : selected.length >= 5
                           ? 'cursor-not-allowed bg-gray-100 text-gray-400'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -323,7 +323,7 @@ export default function LeaderboardTable({
                     onClick={() => onPageChange(page)}
                     className={`rounded-md px-3 py-2 text-xs font-medium ${
                       page === data.pagination.page
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-primary-600 text-white'
                         : 'border border-gray-300 bg-white text-gray-500 hover:bg-gray-50'
                     }`}
                   >

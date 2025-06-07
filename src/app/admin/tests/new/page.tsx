@@ -167,7 +167,7 @@ export default function CreateTestPage() {
       </div>
 
       <div
-        className="rounded-md border-l-4 border-blue-500 bg-blue-100 p-4 text-blue-700"
+        className="rounded-md border-l-4 border-primary-500 bg-primary-100 p-4 text-primary-700"
         role="alert"
       >
         <div className="flex">

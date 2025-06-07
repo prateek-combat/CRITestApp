@@ -1,7 +1,7 @@
-# 🚀 Deployment Guide - IQ Test Platform
+# �� Deployment Guide - Test Platform
 
 ## Overview
-This guide will help you deploy your Next.js IQ Test Platform to production using Vercel with your existing Supabase database.
+This guide will help you deploy your Next.js Test Platform to production using Vercel with your existing Supabase database.
 
 ## 📋 Prerequisites Checklist
 
@@ -84,7 +84,7 @@ git push origin main
 2. **Configure Build Settings**:
    ```
    Framework Preset: Next.js
-   Root Directory: iq-test-app
+   Root Directory: test-app
    Build Command: npm run build
    Output Directory: .next
    Install Command: npm install

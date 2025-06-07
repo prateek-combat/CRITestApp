@@ -1,12 +1,13 @@
 import './globals.css';
 import { Inter } from 'next/font/google';
 import { Providers } from '@/components/Providers';
+import { Metadata } from 'next';
 
 const inter = Inter({ subsets: ['latin'] });
 
-export const metadata = {
-  title: 'IQ Test Platform',
-  description: 'A platform for conducting IQ tests',
+export const metadata: Metadata = {
+  title: 'Test Platform',
+  description: 'A platform for conducting tests',
 };
 
 export default function RootLayout({
@@ -22,10 +23,9 @@ export default function RootLayout({
       >
         <Providers>
           {/* 
-              No global navbar here anymore. 
-              Navigation for admin is handled by iq-test-app/src/app/admin/layout.tsx.
-              If you need a navbar for public (non-admin) pages, it would be added here
-              or in a layout specific to those public pages.
+              Navigation for admin is handled by test-app/src/app/admin/layout.tsx.
+              This layout provides the basic HTML structure and global styles for the entire application.
+              Each page can have its own specific layout if needed.
             */}
           {children}
         </Providers>

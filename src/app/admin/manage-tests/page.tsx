@@ -417,9 +417,7 @@ export default function ManageTestsPage() {
   return (
     <div className="min-h-screen bg-off-white p-4 md:p-6 lg:p-8">
       <header className="mb-8">
-        <h1 className="text-4xl font-bold text-military-green">
-          Manage IQ Tests
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900">Manage Tests</h1>
       </header>
 
       <section className="mb-10 rounded-lg bg-primary-white p-6 shadow-xl">

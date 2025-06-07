@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 export default function TestCompletePage() {
   const searchParams = useSearchParams();
   const [candidateName, setCandidateName] = useState<string>('');
-  const [testTitle, setTestTitle] = useState<string>('Combat Test');
+  const [testTitle, setTestTitle] = useState<string>('Test');
   const [loading, setLoading] = useState(true);
   const invitationId = searchParams.get('invitationId');
 
@@ -24,7 +24,7 @@ export default function TestCompletePage() {
 
           if (latestAttempt) {
             setCandidateName(latestAttempt.candidateName || '');
-            setTestTitle(latestAttempt.test?.title || 'Combat Test');
+            setTestTitle(latestAttempt.test?.title || 'Test');
           }
         }
       } catch (err) {
@@ -46,7 +46,7 @@ export default function TestCompletePage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
         <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-lg">
-          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-brand-500 border-t-transparent"></div>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"></div>
           <h2 className="mb-2 text-xl font-semibold text-gray-900">
             Finalizing Your Submission...
           </h2>
@@ -62,7 +62,7 @@ export default function TestCompletePage() {
         {/* Main Thank You Card */}
         <div className="overflow-hidden rounded-2xl bg-white shadow-lg">
           {/* Header with Success Icon */}
-          <div className="bg-gradient-to-r from-brand-500 to-brand-600 p-8 text-center">
+          <div className="bg-gradient-to-r from-primary-500 to-primary-600 p-8 text-center">
             <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white bg-opacity-20">
               <svg
                 className="h-10 w-10 text-white"
@@ -81,7 +81,7 @@ export default function TestCompletePage() {
             <h1 className="mb-2 text-3xl font-bold text-white md:text-4xl">
               Thank You!
             </h1>
-            <p className="text-lg text-brand-100">
+            <p className="text-lg text-primary-100">
               Your test has been completed successfully
             </p>
           </div>
@@ -96,14 +96,16 @@ export default function TestCompletePage() {
               </h2>
               <p className="mb-6 text-lg leading-relaxed text-gray-600">
                 You have successfully completed the{' '}
-                <span className="font-medium text-brand-600">{testTitle}</span>.
-                Your responses have been recorded and will be reviewed by our
+                <span className="font-medium text-primary-600">
+                  {testTitle}
+                </span>
+                . Your responses have been recorded and will be reviewed by our
                 team.
               </p>
 
-              <div className="mb-8 rounded-lg border border-brand-200 bg-brand-50 p-6">
+              <div className="mb-8 rounded-lg border border-primary-200 bg-primary-50 p-6">
                 <div className="flex items-start">
-                  <div className="mr-3 mt-0.5 h-6 w-6 text-brand-600">
+                  <div className="mr-3 mt-0.5 h-6 w-6 text-primary-600">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
@@ -114,10 +116,10 @@ export default function TestCompletePage() {
                     </svg>
                   </div>
                   <div className="text-left">
-                    <h3 className="mb-1 font-medium text-brand-800">
+                    <h3 className="mb-1 font-medium text-primary-800">
                       What happens next?
                     </h3>
-                    <p className="text-sm text-brand-700">
+                    <p className="text-sm text-primary-700">
                       Our team will review your submission and may contact you
                       regarding next steps. Thank you for taking the time to
                       complete this assessment.
@@ -131,7 +133,7 @@ export default function TestCompletePage() {
             <div className="text-center">
               <Link
                 href="/"
-                className="inline-flex transform items-center rounded-lg bg-brand-500 px-8 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:bg-brand-600"
+                className="inline-flex transform items-center rounded-lg bg-primary-500 px-8 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:bg-primary-600"
               >
                 <svg
                   className="mr-2 h-5 w-5"

@@ -63,7 +63,7 @@ export default function DashboardPage() {
     <div className="min-h-screen space-y-6 bg-gray-100 p-4 md:p-6 lg:p-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600">Welcome to Combat Test Platform</p>
+        <p className="text-gray-600">Welcome to Test Platform</p>
       </div>
 
       {/* Stats Cards */}
@@ -171,7 +171,7 @@ export default function DashboardPage() {
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-md transition-shadow duration-300 hover:shadow-lg">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-500">
                 <svg
                   className="h-6 w-6 text-white"
                   fill="none"
@@ -291,7 +291,7 @@ export default function DashboardPage() {
               className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50"
             >
               <div className="flex items-center">
-                <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500">
+                <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-primary-500">
                   <svg
                     className="h-4 w-4 text-white"
                     fill="none"

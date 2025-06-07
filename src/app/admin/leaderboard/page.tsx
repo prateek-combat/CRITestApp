@@ -59,6 +59,6 @@ export default async function LeaderboardPage({
 }
 
 export const metadata = {
-  title: 'Candidate Leaderboard - IQ Test Platform',
+  title: 'Candidate Leaderboard - Test Platform',
   description: 'View and compare candidate performance rankings',
 };

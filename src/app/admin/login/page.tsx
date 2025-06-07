@@ -15,13 +15,11 @@ export default function AdminLogin() {
     setLoading(true);
     setError('');
 
-    // Simple hardcoded login for demo
-    // In production, you'd authenticate against your backend
-    if (email === 'admin@combat.test' && password === 'admin123') {
-      localStorage.setItem('isAdminLoggedIn_superSimple', 'true');
+    // Demo authentication (replace with real auth)
+    if (email === 'admin@testplatform.com' && password === 'admin123') {
+      // Mock successful login
       router.push('/admin/dashboard');
-    } else {
-      setError('Invalid credentials');
+      return;
     }
 
     setLoading(false);
@@ -32,12 +30,12 @@ export default function AdminLogin() {
       <div className="w-full max-w-md space-y-8 rounded-lg border border-gray-200 bg-white p-6 shadow-md transition-shadow duration-300 hover:shadow-lg md:p-10">
         <div className="text-center">
           <img
+            src="/api/placeholder/120/120"
+            alt="Test Platform Logo"
             className="mx-auto h-12 w-auto"
-            src="/images/logo/logo-dark.svg"
-            alt="Combat Test Platform Logo"
           />
-          <h2 className="mt-6 text-2xl font-bold text-gray-900">
-            Combat Test Platform
+          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+            Test Platform
           </h2>
           <p className="mt-2 text-sm text-gray-600">Admin Access</p>
         </div>
@@ -138,11 +136,14 @@ export default function AdminLogin() {
               )}
             </button>
           </div>
-          <div className="text-center text-sm">
-            <p className="text-gray-500">
-              Use: <strong className="text-gray-600">admin@combat.test</strong>{' '}
-              / <strong className="text-gray-600">admin123</strong>
-            </p>
+          <div className="mb-4 text-center text-xs text-gray-500">
+            <strong>Demo credentials for testing:</strong>
+            <br />
+            Use:{' '}
+            <strong className="text-gray-600">
+              admin@testplatform.com
+            </strong>{' '}
+            with password: <strong className="text-gray-600">admin123</strong>
           </div>
         </form>
       </div>

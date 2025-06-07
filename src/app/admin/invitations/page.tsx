@@ -127,7 +127,7 @@ export default function InvitationsPage() {
       case 'PENDING':
         return 'bg-yellow-100 text-yellow-800';
       case 'SENT':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-primary-100 text-primary-800';
       case 'OPENED':
         return 'bg-indigo-100 text-indigo-800';
       case 'CANCELLED':

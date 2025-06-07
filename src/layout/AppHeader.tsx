@@ -66,7 +66,7 @@ const AppHeader: React.FC = () => {
           <div className="flex items-center">
             <Link href="/admin/dashboard" className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-500">
                   <svg
                     className="h-5 w-5 text-white"
                     fill="none"
@@ -83,7 +83,9 @@ const AppHeader: React.FC = () => {
                 </div>
               </div>
               <div className="ml-3">
-                <h1 className="text-xl font-bold text-gray-900">IQ Test</h1>
+                <h1 className="text-xl font-bold text-gray-900">
+                  Test Platform
+                </h1>
                 <p className="text-xs text-gray-500">Admin Panel</p>
               </div>
             </Link>
@@ -97,7 +99,7 @@ const AppHeader: React.FC = () => {
                 href={item.path}
                 className={`flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                   isActive(item.path)
-                    ? 'border border-brand-200 bg-brand-100 text-brand-700'
+                    ? 'border border-primary-200 bg-primary-100 text-primary-700'
                     : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                 }`}
               >
@@ -121,32 +123,11 @@ const AppHeader: React.FC = () => {
 
           {/* Right side - User menu and actions */}
           <div className="flex items-center space-x-4">
-            {/* Quick Action Button */}
-            <Link
-              href="/admin/tests/new"
-              className="hidden items-center rounded-md border border-transparent bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 sm:inline-flex"
-            >
-              <svg
-                className="mr-1 h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              New Test
-            </Link>
-
             {/* User Menu */}
             <div className="relative">
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                className="flex items-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
               >
                 <div className="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-gray-300">
                   <svg
@@ -190,7 +171,7 @@ const AppHeader: React.FC = () => {
                         {session?.user?.name || 'Administrator'}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {session?.user?.email || 'admin@iqtest.com'}
+                        {session?.user?.email || 'admin@testplatform.com'}
                       </p>
                     </div>
                     <Link
@@ -300,7 +281,7 @@ const AppHeader: React.FC = () => {
                   href={item.path}
                   className={`flex items-center rounded-md px-3 py-2 text-base font-medium ${
                     isActive(item.path)
-                      ? 'bg-brand-100 text-brand-700'
+                      ? 'bg-primary-100 text-primary-700'
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -321,27 +302,6 @@ const AppHeader: React.FC = () => {
                   {item.name}
                 </Link>
               ))}
-              {/* Mobile Quick Action */}
-              <Link
-                href="/admin/tests/new"
-                className="flex items-center rounded-md bg-brand-500 px-3 py-2 text-base font-medium text-white hover:bg-brand-600"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <svg
-                  className="mr-3 h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-                New Test
-              </Link>
             </div>
           </div>
         )}

@@ -148,7 +148,7 @@ export default function AdminUsersPage() {
       <div className="mb-6">
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+          className="rounded-lg bg-primary-600 px-4 py-2 text-white transition-colors hover:bg-primary-700"
         >
           {showAddForm ? 'Cancel' : '+ Add New Admin'}
         </button>
@@ -227,8 +227,8 @@ export default function AdminUsersPage() {
               </button>
             </div>
           </form>
-          <div className="mt-4 rounded-lg bg-blue-50 p-4">
-            <p className="text-sm text-blue-800">
+          <div className="mt-4 rounded-lg bg-primary-50 p-4">
+            <p className="text-sm text-primary-800">
               <strong>Note:</strong> The user must sign in with their Google
               account first. Only pre-registered admin emails can access the
               admin panel.

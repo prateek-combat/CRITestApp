@@ -5,7 +5,7 @@ const path = require('path');
 // Load environment variables from .env file
 require('dotenv').config({ path: '.env' });
 
-console.log('🔍 Pre-Deployment Checklist for IQ Test Platform\n');
+console.log('🔍 Pre-Deployment Checklist for Test Platform\n');
 
 const checks = [];
 let passed = 0;
