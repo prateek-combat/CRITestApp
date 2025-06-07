@@ -8,47 +8,50 @@ datasource db {
 }
 
 model User {
-  id           String       @id @default(uuid())
-  email        String       @unique
-  passwordHash String
-  firstName    String?
-  lastName     String?
-  role         UserRole     @default(ADMIN)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  invitations  Invitation[]
-  tests        Test[]
+  id              String          @id @default(uuid())
+  email           String          @unique
+  passwordHash    String
+  firstName       String?
+  lastName        String?
+  role            UserRole        @default(ADMIN)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  invitations     Invitation[]
+  tests           Test[]
+  publicTestLinks PublicTestLink[]
 }
 
 model Test {
-  id                      String        @id @default(uuid())
+  id                      String          @id @default(uuid())
   title                   String
   description             String?
-  lockOrder               Boolean       @default(false)
+  lockOrder               Boolean         @default(false)
   overallTimeLimitSeconds Int
-  createdAt               DateTime      @default(now())
-  updatedAt               DateTime      @updatedAt
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
   createdById             String
   invitations             Invitation[]
   questions               Question[]
-  createdBy               User          @relation(fields: [createdById], references: [id])
+  createdBy               User            @relation(fields: [createdById], references: [id])
   testAttempts            TestAttempt[]
+  publicTestLinks         PublicTestLink[]
 }
 
 model Question {
-  id                 String            @id @default(uuid())
-  promptText         String
-  promptImageUrl     String?
-  timerSeconds       Int
-  answerOptions      String[]
-  correctAnswerIndex Int
-  sectionTag         String?
-  category           QuestionCategory
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  testId             String
-  test               Test              @relation(fields: [testId], references: [id], onDelete: Cascade)
-  submittedAnswers   SubmittedAnswer[]
+  id                      String                  @id @default(uuid())
+  promptText              String
+  promptImageUrl          String?
+  timerSeconds            Int
+  answerOptions           String[]
+  correctAnswerIndex      Int
+  sectionTag              String?
+  category                QuestionCategory
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
+  testId                  String
+  test                    Test                    @relation(fields: [testId], references: [id], onDelete: Cascade)
+  submittedAnswers        SubmittedAnswer[]
+  publicSubmittedAnswers  PublicSubmittedAnswer[]
 }
 
 model Invitation {
@@ -166,20 +169,111 @@ model ProctorAsset {
 }
 
 // View for leaderboard and comparison features
-model CandidateScore {
-  attemptId       String   @id @map("attemptId")
-  invitationId    String?
-  candidateName   String
-  candidateEmail  String
-  completedAt     DateTime
-  durationSeconds Int
-  scoreLogical    Float
-  scoreVerbal     Float
-  scoreNumerical  Float
-  scoreAttention  Float
-  composite       Float
-  percentile      Float
-  rank            Int
-
-  @@map("vw_candidate_scores")
+model PublicTestLink {
+  id          String    @id @default(uuid())
+  testId      String
+  linkToken   String    @unique
+  title       String?
+  description String?
+  isActive    Boolean   @default(true)
+  expiresAt   DateTime?
+  maxUses     Int?
+  usedCount   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdById String
+  
+  test        Test      @relation(fields: [testId], references: [id], onDelete: Cascade)
+  createdBy   User      @relation(fields: [createdById], references: [id])
+  attempts    PublicTestAttempt[]
 }
+
+model PublicTestAttempt {
+  id                  String            @id @default(uuid())
+  publicLinkId        String
+  candidateName       String
+  candidateEmail      String
+  ipAddress           String?
+  startedAt           DateTime          @default(now())
+  completedAt         DateTime?
+  status              TestAttemptStatus @default(IN_PROGRESS)
+  rawScore            Int?
+  percentile          Float?
+  categorySubScores   Json?
+  tabSwitches         Int               @default(0)
+  
+  // Proctoring fields
+  proctoringEnabled   Boolean           @default(true)
+  videoRecordingUrl   String?
+  audioRecordingUrl   String?
+  proctoringEvents    Json?
+  faceCapturesUrls    String[]          @default([])
+  screenRecordingUrl  String?
+  proctoringStartedAt DateTime?
+  proctoringEndedAt   DateTime?
+  permissionsGranted  Boolean           @default(false)
+  riskScore           Float?
+  
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  
+  publicLink          PublicTestLink    @relation(fields: [publicLinkId], references: [id], onDelete: Cascade)
+  submittedAnswers    PublicSubmittedAnswer[]
+  proctorEvents       PublicProctorEvent[]
+  proctorAssets       PublicProctorAsset[]
+}
+
+model PublicSubmittedAnswer {
+  id                  String            @id @default(uuid())
+  selectedAnswerIndex Int?
+  isCorrect           Boolean?
+  timeTakenSeconds    Int
+  submittedAt         DateTime          @default(now())
+  attemptId           String
+  questionId          String
+  
+  question            Question          @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  attempt             PublicTestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+}
+
+model PublicProctorEvent {
+  id        String            @id @default(cuid())
+  attemptId String
+  type      String
+  ts        DateTime          @default(now())
+  extra     Json?
+  attempt   PublicTestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+}
+
+model PublicProctorAsset {
+  id        String            @id @default(cuid())
+  attemptId String
+  kind      String            // "VIDEO_FULL"
+  fileName  String
+  mimeType  String
+  fileSize  Int
+  data      Bytes             // Store video data directly
+  ts        DateTime          @default(now())
+  attempt   PublicTestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+}
+
+// View for leaderboard and comparison features
+// model CandidateScore {
+//   attemptId       String   @id @map("attemptId")
+//   invitationId    String?
+//   candidateName   String
+//   candidateEmail  String
+//   completedAt     DateTime
+//   durationSeconds Int
+//   scoreLogical    Float
+//   scoreVerbal     Float
+//   scoreNumerical  Float
+//   scoreAttention  Float
+//   composite       Float
+//   percentile      Float
+//   rank            Int
+
+//   @@map("vw_candidate_scores")
+// }

@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import {
+  sendInvitationEmail,
+  sendBulkInvitations,
+  parseMultipleEmails,
+  validateEmail,
+  type InvitationEmailData,
+} from '@/lib/email';
 
 const prisma = new PrismaClient();
 
@@ -72,8 +79,8 @@ export async function GET() {
  * @swagger
  * /api/invitations:
  *   post:
- *     summary: Create a new invitation
- *     description: Adds a new test invitation to the database.
+ *     summary: Create a new invitation or bulk invitations
+ *     description: Adds new test invitation(s) to the database and optionally sends email(s).
  *     tags:
  *       - Invitations
  *     requestBody:
@@ -81,79 +88,332 @@ export async function GET() {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/CreateInvitationInput'
+ *             oneOf:
+ *               - $ref: '#/components/schemas/CreateInvitationInput'
+ *               - $ref: '#/components/schemas/CreateBulkInvitationInput'
  *     responses:
  *       201:
- *         description: Invitation created successfully.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Invitation'
+ *         description: Invitation(s) created successfully.
  *       400:
- *         description: Bad request (e.g., missing required fields, invalid expiry date).
+ *         description: Bad request (e.g., missing required fields, invalid emails).
  *       404:
- *         description: Test or creator user not found.
+ *         description: Test not found.
  *       500:
- *         description: Failed to create invitation.
+ *         description: Failed to create invitation(s).
  */
 export async function POST(request: NextRequest) {
   try {
-    const { email, testId } = await request.json();
+    const body = await request.json();
 
-    if (!email?.trim() || !testId?.trim()) {
-      return NextResponse.json(
-        { error: 'Email and test ID are required' },
-        { status: 400 }
-      );
+    // Check if this is a bulk invitation request
+    if (body.emails || body.emailText) {
+      return await handleBulkInvitations(body);
+    } else {
+      return await handleSingleInvitation(body);
     }
-
-    // Get admin user
-    let adminUser = await prisma.user.findFirst({
-      where: { role: 'ADMIN' },
-    });
-
-    if (!adminUser) {
-      adminUser = await prisma.user.create({
-        data: {
-          email: 'admin@testplatform.com',
-          passwordHash: 'dummy',
-          firstName: 'Admin',
-          lastName: 'User',
-          role: 'ADMIN',
-        },
-      });
-    }
-
-    // Check if test exists
-    const test = await prisma.test.findUnique({
-      where: { id: testId },
-    });
-
-    if (!test) {
-      return NextResponse.json({ error: 'Test not found' }, { status: 404 });
-    }
-
-    // Create invitation
-    const invitation = await prisma.invitation.create({
-      data: {
-        candidateEmail: email.trim(),
-        testId: testId,
-        createdById: adminUser.id,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-      },
-    });
-
-    return NextResponse.json({
-      id: invitation.id,
-      email: invitation.candidateEmail,
-      status: 'PENDING',
-      createdAt: invitation.createdAt.toISOString(),
-    });
   } catch (error) {
-    console.error('Error creating invitation:', error);
+    console.error('Error processing invitation request:', error);
     return NextResponse.json(
-      { error: 'Failed to create invitation' },
+      { error: 'Failed to process invitation request' },
       { status: 500 }
     );
   }
+}
+
+// Handle single invitation
+async function handleSingleInvitation(body: any) {
+  const { email, testId, sendEmail = true, customMessage } = body;
+
+  if (!email?.trim() || !testId?.trim()) {
+    return NextResponse.json(
+      { error: 'Email and test ID are required' },
+      { status: 400 }
+    );
+  }
+
+  if (!validateEmail(email.trim())) {
+    return NextResponse.json(
+      { error: 'Invalid email address' },
+      { status: 400 }
+    );
+  }
+
+  // Get admin user
+  let adminUser = await prisma.user.findFirst({
+    where: { role: 'ADMIN' },
+  });
+
+  if (!adminUser) {
+    adminUser = await prisma.user.create({
+      data: {
+        email: 'admin@testplatform.com',
+        passwordHash: 'dummy',
+        firstName: 'Admin',
+        lastName: 'User',
+        role: 'ADMIN',
+      },
+    });
+  }
+
+  // Check if test exists
+  const test = await prisma.test.findUnique({
+    where: { id: testId },
+  });
+
+  if (!test) {
+    return NextResponse.json({ error: 'Test not found' }, { status: 404 });
+  }
+
+  // Check if invitation already exists for this email and test
+  const existingInvitation = await prisma.invitation.findFirst({
+    where: {
+      candidateEmail: email.trim(),
+      testId: testId,
+      status: {
+        in: ['PENDING', 'SENT', 'OPENED'],
+      },
+    },
+  });
+
+  if (existingInvitation) {
+    return NextResponse.json(
+      { error: 'An active invitation already exists for this email and test' },
+      { status: 400 }
+    );
+  }
+
+  // Create invitation
+  const invitation = await prisma.invitation.create({
+    data: {
+      candidateEmail: email.trim(),
+      testId: testId,
+      createdById: adminUser.id,
+      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+    },
+  });
+
+  let emailResult = null;
+
+  // Send email if requested
+  if (sendEmail) {
+    const testLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/test/${invitation.id}`;
+
+    const emailData: InvitationEmailData = {
+      candidateEmail: email.trim(),
+      testTitle: test.title,
+      testLink,
+      expiresAt: invitation.expiresAt,
+      customMessage,
+    };
+
+    emailResult = await sendInvitationEmail(emailData);
+
+    // Update invitation status if email was sent successfully
+    if (emailResult.success) {
+      await prisma.invitation.update({
+        where: { id: invitation.id },
+        data: { status: 'SENT' },
+      });
+    }
+  }
+
+  return NextResponse.json(
+    {
+      id: invitation.id,
+      email: invitation.candidateEmail,
+      status: emailResult?.success ? 'SENT' : 'PENDING',
+      createdAt: invitation.createdAt.toISOString(),
+      emailSent: sendEmail,
+      emailResult: emailResult
+        ? {
+            success: emailResult.success,
+            messageId: emailResult.messageId,
+            error: emailResult.error,
+          }
+        : null,
+    },
+    { status: 201 }
+  );
+}
+
+// Handle bulk invitations
+async function handleBulkInvitations(body: any) {
+  const { emails, emailText, testId, sendEmail = true, customMessage } = body;
+
+  if (!testId?.trim()) {
+    return NextResponse.json({ error: 'Test ID is required' }, { status: 400 });
+  }
+
+  // Parse emails
+  let emailList: string[] = [];
+
+  if (emails && Array.isArray(emails)) {
+    emailList = emails;
+  } else if (emailText && typeof emailText === 'string') {
+    const { valid, invalid } = parseMultipleEmails(emailText);
+    if (invalid.length > 0) {
+      return NextResponse.json(
+        {
+          error: 'Some email addresses are invalid',
+          invalidEmails: invalid,
+        },
+        { status: 400 }
+      );
+    }
+    emailList = valid;
+  } else {
+    return NextResponse.json(
+      { error: 'Either emails array or emailText is required' },
+      { status: 400 }
+    );
+  }
+
+  if (emailList.length === 0) {
+    return NextResponse.json(
+      { error: 'No valid email addresses provided' },
+      { status: 400 }
+    );
+  }
+
+  // Check if test exists
+  const test = await prisma.test.findUnique({
+    where: { id: testId },
+  });
+
+  if (!test) {
+    return NextResponse.json({ error: 'Test not found' }, { status: 404 });
+  }
+
+  // Get admin user
+  let adminUser = await prisma.user.findFirst({
+    where: { role: 'ADMIN' },
+  });
+
+  if (!adminUser) {
+    adminUser = await prisma.user.create({
+      data: {
+        email: 'admin@testplatform.com',
+        passwordHash: 'dummy',
+        firstName: 'Admin',
+        lastName: 'User',
+        role: 'ADMIN',
+      },
+    });
+  }
+
+  const results: any[] = [];
+  const emailInvitations: InvitationEmailData[] = [];
+
+  // Process each email
+  for (const email of emailList) {
+    try {
+      // Check if invitation already exists
+      const existingInvitation = await prisma.invitation.findFirst({
+        where: {
+          candidateEmail: email.trim(),
+          testId: testId,
+          status: {
+            in: ['PENDING', 'SENT', 'OPENED'],
+          },
+        },
+      });
+
+      if (existingInvitation) {
+        results.push({
+          email: email.trim(),
+          success: false,
+          error: 'Active invitation already exists',
+          invitationId: null,
+        });
+        continue;
+      }
+
+      // Create invitation
+      const invitation = await prisma.invitation.create({
+        data: {
+          candidateEmail: email.trim(),
+          testId: testId,
+          createdById: adminUser.id,
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
+      });
+
+      // Prepare for bulk email sending
+      if (sendEmail) {
+        const testLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/test/${invitation.id}`;
+
+        emailInvitations.push({
+          candidateEmail: email.trim(),
+          testTitle: test.title,
+          testLink,
+          expiresAt: invitation.expiresAt,
+          customMessage,
+        });
+      }
+
+      results.push({
+        email: email.trim(),
+        success: true,
+        invitationId: invitation.id,
+        status: 'PENDING',
+      });
+    } catch (error) {
+      results.push({
+        email: email.trim(),
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        invitationId: null,
+      });
+    }
+  }
+
+  // Send bulk emails if requested
+  let emailResults = null;
+  if (sendEmail && emailInvitations.length > 0) {
+    emailResults = await sendBulkInvitations(emailInvitations);
+
+    // Update invitation statuses based on email results
+    for (const emailResult of emailResults.results) {
+      const invitation = results.find(
+        (r) => r.email === emailResult.email && r.success
+      );
+      if (invitation && emailResult.success) {
+        // Update status in database
+        await prisma.invitation.update({
+          where: { id: invitation.invitationId },
+          data: { status: 'SENT' },
+        });
+        invitation.status = 'SENT';
+        invitation.emailSent = true;
+      }
+    }
+  }
+
+  const totalCreated = results.filter((r) => r.success).length;
+  const totalFailed = results.filter((r) => !r.success).length;
+  const totalEmailsSent = emailResults?.totalSent || 0;
+  const totalEmailsFailed = emailResults?.totalFailed || 0;
+
+  return NextResponse.json(
+    {
+      message: `Bulk invitation process completed`,
+      summary: {
+        totalProcessed: emailList.length,
+        totalCreated,
+        totalFailed,
+        totalEmailsSent,
+        totalEmailsFailed,
+      },
+      results,
+      emailResults: emailResults
+        ? {
+            success: emailResults.success,
+            totalSent: emailResults.totalSent,
+            totalFailed: emailResults.totalFailed,
+            details: emailResults.results,
+          }
+        : null,
+    },
+    { status: 201 }
+  );
 }

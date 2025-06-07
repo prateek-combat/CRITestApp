@@ -95,8 +95,9 @@ export const authOptions: NextAuthOptions = {
             });
           }
 
-          // Set the role on the user object
+          // Set the role and database ID on the user object
           (user as any).role = dbUser.role;
+          (user as any).dbId = dbUser.id; // Store the database ID
           return true;
         } catch (error) {
           console.error('Google sign-in error:', error);
@@ -107,7 +108,8 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
+        // Use database ID if available, otherwise use the provider ID
+        token.id = (user as any).dbId || user.id;
         token.role = (user as any).role;
       }
       return token;
