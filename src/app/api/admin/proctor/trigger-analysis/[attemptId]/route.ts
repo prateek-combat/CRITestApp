@@ -16,8 +16,9 @@ async function analyzeFrame(frameData: Buffer, frameId: string) {
     const AI_SERVICE_URL = process.env.CUSTOM_AI_SERVICE_URL;
 
     if (!AI_SERVICE_URL) {
-      // Fallback to simulated analysis if custom AI service is not configured
-      return simulateFrameAnalysis(frameId, frameSize, isLargeFrame);
+      throw new Error(
+        'CUSTOM_AI_SERVICE_URL not configured - real AI analysis required'
+      );
     }
 
     // Convert buffer to base64
@@ -81,61 +82,11 @@ async function analyzeFrame(frameData: Buffer, frameId: string) {
     };
   } catch (error) {
     console.error(`❌ Custom AI service error for frame ${frameId}:`, error);
-
-    // Fallback to simulated analysis on error
-    return simulateFrameAnalysis(frameId, frameSize, isLargeFrame);
+    throw error; // Don't fallback to simulation, let it fail
   }
 }
 
-// Fallback simulated analysis
-function simulateFrameAnalysis(
-  frameId: string,
-  frameSize: number,
-  isLargeFrame: boolean
-) {
-  const faceDetected = Math.random() > 0.15; // 85% chance of face detected
-  const faceCount = faceDetected ? (Math.random() > 0.95 ? 2 : 1) : 0; // 5% chance of multiple faces
-  const confidence = faceDetected ? 0.8 + Math.random() * 0.2 : 0; // 80-100% confidence when detected
-
-  const suspiciousObjects: Array<{ type: string; confidence: number }> = [];
-  if (Math.random() > 0.97) {
-    // 3% chance of detecting phone
-    suspiciousObjects.push({
-      type: 'phone',
-      confidence: 0.85 + Math.random() * 0.15,
-    });
-  }
-  if (Math.random() > 0.98) {
-    // 2% chance of detecting book/paper
-    suspiciousObjects.push({
-      type: 'book',
-      confidence: 0.75 + Math.random() * 0.25,
-    });
-  }
-
-  console.log(
-    `🎭 Simulated analysis for frame ${frameId}: faces=${faceCount}, suspicious=${suspiciousObjects.length}`
-  );
-
-  return {
-    frameId,
-    faceDetected,
-    faceCount,
-    confidence,
-    suspiciousObjects,
-    reason: !faceDetected
-      ? Math.random() > 0.5
-        ? 'looking_away'
-        : 'face_not_visible'
-      : null,
-    metadata: {
-      frameSize,
-      isLargeFrame,
-      analysisTime: new Date().toISOString(),
-      analysisMethod: 'simulated',
-    },
-  };
-}
+// Real AI analysis only - no simulation fallback
 
 // Cloud AI Service integration (optional)
 async function analyzeVideoWithCloudAI(videoData: Buffer, fileName: string) {
@@ -274,10 +225,95 @@ export async function POST(
 
     const { attemptId } = await params;
 
-    // Get the test attempt
-    const testAttempt = await prisma.testAttempt.findUnique({
+    // Check if this is a regular test attempt first
+    let testAttempt = await prisma.testAttempt.findUnique({
       where: { id: attemptId },
     });
+
+    let isPublicAttempt = false;
+    let proctorEvents: any[] = [];
+    let proctorAssets: any[] = [];
+
+    if (testAttempt) {
+      // Regular test attempt - fetch regular proctor data
+      proctorEvents = await prisma.proctorEvent.findMany({
+        where: { attemptId },
+      });
+
+      proctorAssets = await prisma.proctorAsset.findMany({
+        where: {
+          attemptId,
+          kind: 'FRAME_CAPTURE', // Only get frame captures
+        },
+        select: {
+          id: true,
+          fileSize: true,
+          ts: true,
+          kind: true,
+          data: true, // Get frame data for analysis
+        },
+        orderBy: {
+          ts: 'asc',
+        },
+      });
+    } else {
+      // Check if it's a public test attempt
+      const publicAttempt = await prisma.publicTestAttempt.findUnique({
+        where: { id: attemptId },
+      });
+
+      if (publicAttempt) {
+        isPublicAttempt = true;
+        // Transform public attempt to match testAttempt interface
+        testAttempt = {
+          id: publicAttempt.id,
+          candidateName: publicAttempt.candidateName,
+          candidateEmail: publicAttempt.candidateEmail,
+          ipAddress: publicAttempt.ipAddress,
+          startedAt: publicAttempt.startedAt,
+          completedAt: publicAttempt.completedAt,
+          status: publicAttempt.status,
+          rawScore: publicAttempt.rawScore,
+          percentile: publicAttempt.percentile,
+          categorySubScores: publicAttempt.categorySubScores,
+          tabSwitches: publicAttempt.tabSwitches,
+          proctoringEnabled: publicAttempt.proctoringEnabled,
+          videoRecordingUrl: publicAttempt.videoRecordingUrl,
+          audioRecordingUrl: publicAttempt.audioRecordingUrl,
+          proctoringEvents: publicAttempt.proctoringEvents,
+          faceCapturesUrls: publicAttempt.faceCapturesUrls,
+          screenRecordingUrl: publicAttempt.screenRecordingUrl,
+          proctoringStartedAt: publicAttempt.proctoringStartedAt,
+          proctoringEndedAt: publicAttempt.proctoringEndedAt,
+          permissionsGranted: publicAttempt.permissionsGranted,
+          riskScore: publicAttempt.riskScore,
+          createdAt: publicAttempt.createdAt,
+          updatedAt: publicAttempt.updatedAt,
+        } as any;
+
+        // Fetch public proctor data
+        proctorEvents = await prisma.publicProctorEvent.findMany({
+          where: { attemptId },
+        });
+
+        proctorAssets = await prisma.publicProctorAsset.findMany({
+          where: {
+            attemptId,
+            kind: 'FRAME_CAPTURE', // Only get frame captures
+          },
+          select: {
+            id: true,
+            fileSize: true,
+            ts: true,
+            kind: true,
+            data: true, // Get frame data for analysis
+          },
+          orderBy: {
+            ts: 'asc',
+          },
+        });
+      }
+    }
 
     if (!testAttempt) {
       return NextResponse.json(
@@ -286,31 +322,8 @@ export async function POST(
       );
     }
 
-    // Get proctoring events to calculate risk score
-    const proctorEvents = await prisma.proctorEvent.findMany({
-      where: { attemptId },
-    });
-
-    // Get proctoring assets (captured frames)
-    const proctorAssets = await prisma.proctorAsset.findMany({
-      where: {
-        attemptId,
-        kind: 'FRAME_CAPTURE', // Only get frame captures
-      },
-      select: {
-        id: true,
-        fileSize: true,
-        ts: true,
-        kind: true,
-        data: true, // Get frame data for analysis
-      },
-      orderBy: {
-        ts: 'asc',
-      },
-    });
-
     console.log(
-      `🔍 Analyzing ${proctorAssets.length} captured frames for attempt ${attemptId}`
+      `🔍 Analyzing ${proctorAssets.length} captured frames for attempt ${attemptId} (${isPublicAttempt ? 'PUBLIC' : 'REGULAR'} attempt)`
     );
 
     // Analyze captured frames for face detection and objects
@@ -328,7 +341,9 @@ export async function POST(
 
       // Basic frame analysis (simulated for now, but can be replaced with real AI)
       // In production, you could use TensorFlow.js, Face-API.js, or cloud services
-      const frameAnalysis = await analyzeFrame(frame.data, frame.id);
+      // Use attemptId + frameId for unique analysis
+      const uniqueFrameId = `${attemptId}-${frame.id}`;
+      const frameAnalysis = await analyzeFrame(frame.data, uniqueFrameId);
 
       if (frameAnalysis.faceDetected) {
         framesWithFace++;
@@ -520,10 +535,8 @@ export async function POST(
           framesAnalyzed: proctorAssets.length,
           framesSampled: sampleFrames.length,
           analysisMethod: 'frame_based_capture',
-          aiProvider: process.env.CUSTOM_AI_SERVICE_URL
-            ? 'Custom AI Service (GCP)'
-            : 'Simulated Analysis',
-          customAIEnabled: !!process.env.CUSTOM_AI_SERVICE_URL,
+          aiProvider: 'Custom AI Service (GCP)',
+          customAIEnabled: true,
         },
       },
     };
@@ -581,15 +594,26 @@ export async function POST(
     }
 
     // Update test attempt with analysis results
-    const updatedAttempt = await prisma.testAttempt.update({
-      where: { id: attemptId },
-      data: {
-        riskScore: Math.round(finalRiskScore * 10) / 10, // Round to 1 decimal
-      },
-    });
+    const updatedAttempt = isPublicAttempt
+      ? await prisma.publicTestAttempt.update({
+          where: { id: attemptId },
+          data: {
+            riskScore: Math.round(finalRiskScore * 10) / 10, // Round to 1 decimal
+          },
+        })
+      : await prisma.testAttempt.update({
+          where: { id: attemptId },
+          data: {
+            riskScore: Math.round(finalRiskScore * 10) / 10, // Round to 1 decimal
+          },
+        });
 
     // Store analysis results (you could create a separate table for this)
     // For now, we'll just return them and they'll be cached on the frontend
+
+    console.log(
+      `✅ Analysis complete for ${attemptId}: Risk=${finalRiskScore}, Frames=${proctorAssets.length}, Events=${proctorEvents.length}, Face Detection=${Math.round(faceDetectionRate)}%`
+    );
 
     return NextResponse.json({
       success: true,

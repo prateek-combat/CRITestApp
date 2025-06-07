@@ -528,39 +528,41 @@ export default function ProctorAnalysisPage() {
               <h3 className="text-lg font-medium text-gray-900">
                 AI Analysis Results
               </h3>
-              {!analysisResults && (
-                <button
-                  onClick={async () => {
-                    try {
-                      setLoading(true);
-                      const response = await fetch(
-                        `/api/admin/proctor/trigger-analysis/${attemptId}`,
-                        {
-                          method: 'POST',
-                        }
-                      );
-                      if (response.ok) {
-                        // Reload data to get the analysis results
-                        const dataResponse = await fetch(
-                          `/api/admin/proctor/analysis/${attemptId}`
-                        );
-                        if (dataResponse.ok) {
-                          const result = await dataResponse.json();
-                          setData(result);
-                        }
+              <button
+                onClick={async () => {
+                  try {
+                    setLoading(true);
+                    const response = await fetch(
+                      `/api/admin/proctor/trigger-analysis/${attemptId}`,
+                      {
+                        method: 'POST',
                       }
-                    } catch (error) {
-                      console.error('Failed to trigger analysis:', error);
-                    } finally {
-                      setLoading(false);
+                    );
+                    if (response.ok) {
+                      // Reload data to get the analysis results
+                      const dataResponse = await fetch(
+                        `/api/admin/proctor/analysis/${attemptId}`
+                      );
+                      if (dataResponse.ok) {
+                        const result = await dataResponse.json();
+                        setData(result);
+                      }
                     }
-                  }}
-                  disabled={loading}
-                  className="rounded-md bg-military-green px-4 py-2 text-sm font-medium text-white hover:bg-opacity-90 disabled:opacity-50"
-                >
-                  {loading ? 'Analyzing...' : 'Run AI Analysis'}
-                </button>
-              )}
+                  } catch (error) {
+                    console.error('Failed to trigger analysis:', error);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="rounded-md bg-military-green px-4 py-2 text-sm font-medium text-white hover:bg-opacity-90 disabled:opacity-50"
+              >
+                {loading
+                  ? 'Analyzing...'
+                  : analysisResults
+                    ? 'Re-run AI Analysis'
+                    : 'Run AI Analysis'}
+              </button>
             </div>
             {analysisResults ? (
               <div className="space-y-6">

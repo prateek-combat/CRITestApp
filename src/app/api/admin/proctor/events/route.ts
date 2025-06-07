@@ -27,18 +27,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get proctor events for the attempt
-    const events = await prisma.proctorEvent.findMany({
-      where: {
-        attemptId,
-      },
-      orderBy: {
-        ts: 'asc',
-      },
-    });
-
-    // Get test attempt details
-    const testAttempt = await prisma.testAttempt.findUnique({
+    // Check if this is a regular test attempt first
+    let testAttempt = await prisma.testAttempt.findUnique({
       where: { id: attemptId },
       select: {
         id: true,
@@ -50,6 +40,47 @@ export async function GET(request: NextRequest) {
         videoRecordingUrl: true,
       },
     });
+
+    let events: any[] = [];
+
+    if (testAttempt) {
+      // Regular test attempt - get regular proctor events
+      events = await prisma.proctorEvent.findMany({
+        where: {
+          attemptId,
+        },
+        orderBy: {
+          ts: 'asc',
+        },
+      });
+    } else {
+      // Check if it's a public test attempt
+      const publicAttempt = await prisma.publicTestAttempt.findUnique({
+        where: { id: attemptId },
+        select: {
+          id: true,
+          candidateName: true,
+          candidateEmail: true,
+          riskScore: true,
+          startedAt: true,
+          completedAt: true,
+          videoRecordingUrl: true,
+        },
+      });
+
+      if (publicAttempt) {
+        testAttempt = publicAttempt;
+        // Get public proctor events
+        events = await prisma.publicProctorEvent.findMany({
+          where: {
+            attemptId,
+          },
+          orderBy: {
+            ts: 'asc',
+          },
+        });
+      }
+    }
 
     if (!testAttempt) {
       return NextResponse.json(

@@ -27,10 +27,17 @@ export async function GET(
 
     const { assetId } = await params;
 
-    // Fetch the asset
-    const asset = await prisma.proctorAsset.findUnique({
+    // Try to fetch from regular proctor assets first
+    let asset = await prisma.proctorAsset.findUnique({
       where: { id: assetId },
     });
+
+    // If not found, try public proctor assets
+    if (!asset) {
+      asset = await prisma.publicProctorAsset.findUnique({
+        where: { id: assetId },
+      });
+    }
 
     if (!asset) {
       return NextResponse.json({ error: 'Asset not found' }, { status: 404 });
