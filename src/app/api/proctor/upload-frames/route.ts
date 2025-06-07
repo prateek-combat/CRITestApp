@@ -16,6 +16,22 @@ export async function POST(request: NextRequest) {
       `📸 Processing frame batch ${batchIndex + 1}/${totalBatches} for attempt ${attemptId}`
     );
 
+    // Check if this is a regular or public test attempt
+    const testAttempt = await prisma.testAttempt.findUnique({
+      where: { id: attemptId },
+    });
+
+    const publicTestAttempt = await prisma.publicTestAttempt.findUnique({
+      where: { id: attemptId },
+    });
+
+    if (!testAttempt && !publicTestAttempt) {
+      return NextResponse.json(
+        { error: 'Test attempt not found' },
+        { status: 404 }
+      );
+    }
+
     // Log all form data keys for debugging
     const allKeys = Array.from(formData.keys());
     console.log('📋 Form data keys:', allKeys);
@@ -52,40 +68,66 @@ export async function POST(request: NextRequest) {
     // Sort frames by index to maintain order
     frameFiles.sort((a, b) => a.index - b.index);
 
-    // Store each frame as a ProctorAsset
+    // Store each frame in the appropriate ProctorAsset table
     const savedAssets = [];
 
     for (const { index, file } of frameFiles) {
       const buffer = Buffer.from(await file.arrayBuffer());
 
-      const asset = await prisma.proctorAsset.create({
-        data: {
-          attemptId,
-          kind: 'FRAME_CAPTURE',
-          fileName: `frame_${index.toString().padStart(4, '0')}.jpg`,
-          mimeType: 'image/jpeg',
-          fileSize: buffer.length,
-          data: buffer,
-          ts: new Date(),
-        },
-      });
-
-      savedAssets.push(asset);
+      if (testAttempt) {
+        // Regular test attempt - use ProctorAsset table
+        const asset = await prisma.proctorAsset.create({
+          data: {
+            attemptId,
+            kind: 'FRAME_CAPTURE',
+            fileName: `frame_${index.toString().padStart(4, '0')}.jpg`,
+            mimeType: 'image/jpeg',
+            fileSize: buffer.length,
+            data: buffer,
+            ts: new Date(),
+          },
+        });
+        savedAssets.push(asset);
+      } else if (publicTestAttempt) {
+        // Public test attempt - use PublicProctorAsset table
+        const asset = await prisma.publicProctorAsset.create({
+          data: {
+            attemptId,
+            kind: 'FRAME_CAPTURE',
+            fileName: `frame_${index.toString().padStart(4, '0')}.jpg`,
+            mimeType: 'image/jpeg',
+            fileSize: buffer.length,
+            data: buffer,
+            ts: new Date(),
+          },
+        });
+        savedAssets.push(asset);
+      }
     }
 
     console.log(
       `✅ Saved ${savedAssets.length} frames for batch ${batchIndex + 1}/${totalBatches}`
     );
 
-    // If this is the last batch, update the test attempt
+    // If this is the last batch, update the appropriate test attempt
     if (batchIndex === totalBatches - 1) {
-      await prisma.testAttempt.update({
-        where: { id: attemptId },
-        data: {
-          proctoringEndedAt: new Date(),
-          updatedAt: new Date(),
-        },
-      });
+      if (testAttempt) {
+        await prisma.testAttempt.update({
+          where: { id: attemptId },
+          data: {
+            proctoringEndedAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+      } else if (publicTestAttempt) {
+        await prisma.publicTestAttempt.update({
+          where: { id: attemptId },
+          data: {
+            proctoringEndedAt: new Date(),
+            updatedAt: new Date(),
+          },
+        });
+      }
 
       console.log(
         `✅ All ${totalBatches} frame batches uploaded successfully for attempt ${attemptId}`
