@@ -5,7 +5,9 @@ import Link from 'next/link';
 
 interface Invitation {
   id: string;
+  type: 'invitation' | 'public';
   email: string;
+  candidateName?: string;
   status: 'PENDING' | 'SENT' | 'OPENED' | 'COMPLETED' | 'EXPIRED' | 'CANCELLED';
   createdAt: string;
   completedAt?: string;
@@ -15,8 +17,13 @@ interface Invitation {
   };
   testAttempt?: {
     id?: string;
+    status?: string;
+    completedAt?: string;
+    rawScore?: number;
+    percentile?: number;
     videoRecordingUrl?: string | null;
   } | null;
+  publicLinkTitle?: string | null;
 }
 
 type FilterStatus =
@@ -67,7 +74,7 @@ export default function InvitationsPage() {
 
   const fetchInvitations = async () => {
     try {
-      const response = await fetch('/api/invitations');
+      const response = await fetch('/api/invitations/combined');
       if (response.ok) {
         const data = await response.json();
         setInvitations(data);
@@ -398,7 +405,17 @@ export default function InvitationsPage() {
       const matchesSearch =
         searchTerm === '' ||
         invitation.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        invitation.test.title.toLowerCase().includes(searchTerm.toLowerCase());
+        invitation.test.title
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        (invitation.candidateName &&
+          invitation.candidateName
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())) ||
+        (invitation.publicLinkTitle &&
+          invitation.publicLinkTitle
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()));
 
       // Status filter
       const matchesStatus =
@@ -1211,16 +1228,31 @@ user4@example.com"
                     </td>
                     <td className="px-6 py-4">
                       <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {invitation.email}
+                        <div className="flex items-center space-x-2">
+                          <div className="text-sm font-medium text-gray-900">
+                            {invitation.candidateName || invitation.email}
+                          </div>
+                          {invitation.type === 'public' && (
+                            <span className="inline-flex items-center rounded-full bg-purple-100 px-2 py-1 text-xs font-medium text-purple-700">
+                              🌐 Public
+                            </span>
+                          )}
                         </div>
                         <div className="text-sm text-gray-500">
+                          {invitation.candidateName && (
+                            <div>{invitation.email}</div>
+                          )}
                           <Link
                             href={`/admin/tests/${invitation.test.id}`}
                             className="text-brand-600 hover:text-brand-700"
                           >
                             {invitation.test.title}
                           </Link>
+                          {invitation.publicLinkTitle && (
+                            <div className="text-xs text-purple-600">
+                              via: {invitation.publicLinkTitle}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -1237,28 +1269,29 @@ user4@example.com"
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-900">
                         <div>
-                          Sent:{' '}
+                          {invitation.type === 'public' ? 'Started' : 'Sent'}:{' '}
                           {new Date(invitation.createdAt).toLocaleDateString()}
                         </div>
-                        {invitation.completedAt && (
-                          <div className="text-green-600">
-                            <div>
-                              Done:{' '}
-                              {new Date(
-                                invitation.completedAt
-                              ).toLocaleDateString()}
+                        {invitation.completedAt &&
+                          invitation.status === 'COMPLETED' && (
+                            <div className="text-green-600">
+                              <div>
+                                Done:{' '}
+                                {new Date(
+                                  invitation.completedAt
+                                ).toLocaleDateString()}
+                              </div>
+                              <div className="text-xs text-green-500">
+                                {new Date(
+                                  invitation.completedAt
+                                ).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  hour12: true,
+                                })}
+                              </div>
                             </div>
-                            <div className="text-xs text-green-500">
-                              {new Date(
-                                invitation.completedAt
-                              ).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: true,
-                              })}
-                            </div>
-                          </div>
-                        )}
+                          )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -1276,38 +1309,62 @@ user4@example.com"
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end space-x-2">
-                        {canRevoke(invitation.status) && (
-                          <button
-                            onClick={() => revokeInvitation(invitation.id)}
-                            disabled={revokingInvites.has(invitation.id)}
-                            className="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {revokingInvites.has(invitation.id)
-                              ? 'Revoking...'
-                              : 'Revoke'}
-                          </button>
-                        )}
+                        {invitation.type === 'invitation' &&
+                          canRevoke(invitation.status) && (
+                            <button
+                              onClick={() => revokeInvitation(invitation.id)}
+                              disabled={revokingInvites.has(invitation.id)}
+                              className="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {revokingInvites.has(invitation.id)
+                                ? 'Revoking...'
+                                : 'Revoke'}
+                            </button>
+                          )}
 
-                        <Link
-                          href={`/test/${invitation.id}`}
-                          className="inline-flex items-center rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
-                          target="_blank"
-                        >
-                          <svg
-                            className="mr-1 h-3 w-3"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                        {invitation.type === 'invitation' ? (
+                          <Link
+                            href={`/test/${invitation.id}`}
+                            className="inline-flex items-center rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
+                            target="_blank"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                            />
-                          </svg>
-                          View
-                        </Link>
+                            <svg
+                              className="mr-1 h-3 w-3"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                              />
+                            </svg>
+                            View
+                          </Link>
+                        ) : (
+                          <Link
+                            href={`/test/${invitation.id}?type=public`}
+                            className="inline-flex items-center rounded-lg border border-purple-300 bg-purple-50 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                            target="_blank"
+                          >
+                            <svg
+                              className="mr-1 h-3 w-3"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                              />
+                            </svg>
+                            View Public
+                          </Link>
+                        )}
                       </div>
                     </td>
                   </tr>

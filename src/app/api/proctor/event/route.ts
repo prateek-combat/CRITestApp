@@ -22,34 +22,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify that the test attempt exists
+    // Verify that the test attempt exists (check both regular and public attempts)
     const testAttempt = await prisma.testAttempt.findUnique({
       where: { id: attemptId },
     });
 
-    if (!testAttempt) {
+    const publicTestAttempt = await prisma.publicTestAttempt.findUnique({
+      where: { id: attemptId },
+    });
+
+    if (!testAttempt && !publicTestAttempt) {
       return NextResponse.json(
         { error: 'Test attempt not found' },
         { status: 404 }
       );
     }
 
-    // Create proctor events
-    const proctorEvents = events.map((event) => ({
-      attemptId,
-      type: event.type,
-      ts: new Date(event.timestamp),
-      extra: event.extra || null,
-    }));
+    // Create proctor events in the appropriate table
+    if (testAttempt) {
+      // Regular test attempt - use ProctorEvent table
+      const proctorEvents = events.map((event) => ({
+        attemptId,
+        type: event.type,
+        ts: new Date(event.timestamp),
+        extra: event.extra || undefined,
+      }));
 
-    await prisma.proctorEvent.createMany({
-      data: proctorEvents,
-      skipDuplicates: true,
-    });
+      await prisma.proctorEvent.createMany({
+        data: proctorEvents,
+        skipDuplicates: true,
+      });
+    } else if (publicTestAttempt) {
+      // Public test attempt - use PublicProctorEvent table
+      const publicProctorEvents = events.map((event) => ({
+        attemptId,
+        type: event.type,
+        ts: new Date(event.timestamp),
+        extra: event.extra || undefined,
+      }));
+
+      await prisma.publicProctorEvent.createMany({
+        data: publicProctorEvents,
+        skipDuplicates: true,
+      });
+    }
 
     return NextResponse.json({
       success: true,
-      eventsCreated: proctorEvents.length,
+      eventsCreated: events.length,
     });
   } catch (error) {
     console.error('Error creating proctor events:', error);

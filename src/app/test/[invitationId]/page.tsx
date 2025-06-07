@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import QuestionTimer from '@/components/QuestionTimer';
 import SystemCompatibilityChecker from '@/components/SystemCompatibilityChecker';
 import QuestionBookmark from '@/components/QuestionBookmark';
@@ -47,7 +47,9 @@ interface Invitation {
 export default function TestPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const invitationId = params.invitationId as string;
+  const isPublicAttempt = searchParams.get('type') === 'public';
 
   // Core state
   const [invitation, setInvitation] = useState<Invitation | null>(null);
@@ -149,45 +151,77 @@ export default function TestPage() {
     [invitation]
   );
 
-  // Fetch invitation details
-  const fetchInvitationDetails = useCallback(async () => {
+  // Fetch test details (invitation or public attempt)
+  const fetchTestDetails = useCallback(async () => {
     if (!invitationId) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/invitations/${invitationId}`);
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(
-          errorData.message || `Failed to fetch invitation (${res.status})`
-        );
-      }
-      const data = await res.json();
-      setInvitation(data);
-      setCandidateName(data.candidateName || '');
-      setCandidateEmail(data.candidateEmail || '');
+      if (isPublicAttempt) {
+        // Fetch public test attempt details
+        const res = await fetch(`/api/public-test-attempts/${invitationId}`);
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(
+            errorData.message || `Failed to fetch test attempt (${res.status})`
+          );
+        }
+        const data = await res.json();
+        // Transform public attempt data to match invitation interface
+        setInvitation({
+          id: data.id,
+          status: data.status,
+          test: data.test,
+          candidateName: data.candidateName,
+          candidateEmail: data.candidateEmail,
+        });
+        setCandidateName(data.candidateName || '');
+        setCandidateEmail(data.candidateEmail || '');
+        setDetailsSubmitted(true); // Public attempts already have details
 
-      if (data.id) {
-        const attemptRes = await fetch(
-          `/api/test-attempts?invitationId=${data.id}`
-        );
-        if (attemptRes.ok) {
-          const attemptData = await attemptRes.json();
-          if (attemptData && attemptData.id) {
-            const relevantAttempt = Array.isArray(attemptData)
-              ? attemptData[0]
-              : attemptData;
-            if (relevantAttempt && relevantAttempt.id) {
-              setTestAttempt(relevantAttempt);
-              if (relevantAttempt.status === 'COMPLETED') {
-                // Test already completed
-              } else if (relevantAttempt.status === 'IN_PROGRESS') {
-                setDetailsSubmitted(true);
-                setTestStarted(true);
+        // Set test attempt to the public attempt itself
+        setTestAttempt(data);
+        if (data.status === 'COMPLETED') {
+          setTestCompleted(true);
+        }
+        // For public tests, don't auto-start - let them go through system checks and permissions first
+        // setTestStarted will be called when user clicks "Start Proctored Test"
+      } else {
+        // Original invitation logic
+        const res = await fetch(`/api/invitations/${invitationId}`);
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(
+            errorData.message || `Failed to fetch invitation (${res.status})`
+          );
+        }
+        const data = await res.json();
+        setInvitation(data);
+        setCandidateName(data.candidateName || '');
+        setCandidateEmail(data.candidateEmail || '');
+
+        if (data.id) {
+          const attemptRes = await fetch(
+            `/api/test-attempts?invitationId=${data.id}`
+          );
+          if (attemptRes.ok) {
+            const attemptData = await attemptRes.json();
+            if (attemptData && attemptData.id) {
+              const relevantAttempt = Array.isArray(attemptData)
+                ? attemptData[0]
+                : attemptData;
+              if (relevantAttempt && relevantAttempt.id) {
+                setTestAttempt(relevantAttempt);
+                if (relevantAttempt.status === 'COMPLETED') {
+                  setTestCompleted(true);
+                } else if (relevantAttempt.status === 'IN_PROGRESS') {
+                  setDetailsSubmitted(true);
+                  setTestStarted(true);
+                }
               }
             }
+          } else {
+            console.warn('Could not fetch existing test attempt details.');
           }
-        } else {
-          console.warn('Could not fetch existing test attempt details.');
         }
       }
     } catch (err: any) {
@@ -195,11 +229,11 @@ export default function TestPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [invitationId]);
+  }, [invitationId, isPublicAttempt]);
 
   useEffect(() => {
-    fetchInvitationDetails();
-  }, [fetchInvitationDetails]);
+    fetchTestDetails();
+  }, [fetchTestDetails]);
 
   // Request camera and microphone permissions
   const requestPermissions = useCallback(async () => {
@@ -464,17 +498,31 @@ export default function TestPage() {
       // Start recording first
       await startRecordingSession();
 
-      const response = await fetch('/api/test-attempts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          invitationId,
-          status: 'IN_PROGRESS',
-          answers: {},
-          questionStartTime: {},
-          proctoringEnabled: true,
-        }),
-      });
+      let response;
+      if (isPublicAttempt) {
+        // For public tests, update the existing attempt to IN_PROGRESS
+        response = await fetch(`/api/public-test-attempts/${invitationId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'IN_PROGRESS',
+            proctoringEnabled: true,
+          }),
+        });
+      } else {
+        // For regular invitations, create a new test attempt
+        response = await fetch('/api/test-attempts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            invitationId,
+            status: 'IN_PROGRESS',
+            answers: {},
+            questionStartTime: {},
+            proctoringEnabled: true,
+          }),
+        });
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -500,7 +548,14 @@ export default function TestPage() {
           : 'An error occurred while trying to start the test.'
       );
     }
-  }, [invitation, error, hasPermissions, startRecordingSession]);
+  }, [
+    invitation,
+    error,
+    hasPermissions,
+    startRecordingSession,
+    isPublicAttempt,
+    invitationId,
+  ]);
 
   // Handle answer selection
   const handleAnswer = useCallback(
@@ -560,16 +615,31 @@ export default function TestPage() {
         }
       });
 
-      const response = await fetch('/api/test-attempts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          invitationId,
-          answers,
-          questionStartTime: finalQuestionStartTimes,
-          status: 'COMPLETED',
-        }),
-      });
+      let response;
+      if (isPublicAttempt) {
+        // Public test submission
+        response = await fetch(`/api/public-test-attempts/${invitationId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            answers,
+            questionStartTime: finalQuestionStartTimes,
+            status: 'COMPLETED',
+          }),
+        });
+      } else {
+        // Regular invitation-based test submission
+        response = await fetch('/api/test-attempts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            invitationId,
+            answers,
+            questionStartTime: finalQuestionStartTimes,
+            status: 'COMPLETED',
+          }),
+        });
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -652,6 +722,8 @@ export default function TestPage() {
     questionStartTime,
     router,
     stopRecordingSession,
+    isPublicAttempt,
+    invitationId,
   ]);
 
   // Handle time expiry

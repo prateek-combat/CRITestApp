@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { nanoid } from 'nanoid';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (
@@ -13,6 +13,11 @@ export async function GET() {
     ) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // Get the base URL from the request headers
+    const host = request.headers.get('host') || 'localhost:3000';
+    const protocol = request.headers.get('x-forwarded-proto') || 'http';
+    const baseUrl = `${protocol}://${host}`;
 
     const publicLinks = await prisma.publicTestLink.findMany({
       include: {
@@ -46,7 +51,7 @@ export async function GET() {
       usedCount: link.usedCount,
       attemptsCount: link._count.attempts,
       createdAt: link.createdAt.toISOString(),
-      publicUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3001'}/public-test/${link.linkToken}`,
+      publicUrl: `${baseUrl}/public-test/${link.linkToken}`,
     }));
 
     return NextResponse.json(formattedLinks);
@@ -114,7 +119,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const publicUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3001'}/public-test/${linkToken}`;
+    // Get the base URL from the request headers
+    const host = request.headers.get('host') || 'localhost:3000';
+    const protocol = request.headers.get('x-forwarded-proto') || 'http';
+    const baseUrl = `${protocol}://${host}`;
+
+    const publicUrl = `${baseUrl}/public-test/${linkToken}`;
 
     return NextResponse.json({
       id: publicLink.id,

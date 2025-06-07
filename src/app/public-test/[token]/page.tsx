@@ -80,8 +80,8 @@ export default function PublicTestPage() {
 
       if (response.ok) {
         const data = await response.json();
-        // Redirect to the test page
-        router.push(`/test/${data.attemptId}`);
+        // Redirect to the test page with public attempt indicator
+        router.push(`/test/${data.attemptId}?type=public`);
       } else {
         const error = await response.json();
         setError(error.error || 'Failed to start test');
