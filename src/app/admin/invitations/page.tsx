@@ -1210,9 +1210,6 @@ user4@example.com"
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                     Proctoring
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Actions
-                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
@@ -1306,66 +1303,6 @@ user4@example.com"
                       ) : (
                         <span className="text-sm text-gray-400">-</span>
                       )}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        {invitation.type === 'invitation' &&
-                          canRevoke(invitation.status) && (
-                            <button
-                              onClick={() => revokeInvitation(invitation.id)}
-                              disabled={revokingInvites.has(invitation.id)}
-                              className="rounded-lg border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              {revokingInvites.has(invitation.id)
-                                ? 'Revoking...'
-                                : 'Revoke'}
-                            </button>
-                          )}
-
-                        {invitation.type === 'invitation' ? (
-                          <Link
-                            href={`/test/${invitation.id}`}
-                            className="inline-flex items-center rounded-lg border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-100 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
-                            target="_blank"
-                          >
-                            <svg
-                              className="mr-1 h-3 w-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                              />
-                            </svg>
-                            View
-                          </Link>
-                        ) : (
-                          <Link
-                            href={`/test/${invitation.id}?type=public`}
-                            className="inline-flex items-center rounded-lg border border-purple-300 bg-purple-50 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-                            target="_blank"
-                          >
-                            <svg
-                              className="mr-1 h-3 w-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                              />
-                            </svg>
-                            View Public
-                          </Link>
-                        )}
-                      </div>
                     </td>
                   </tr>
                 ))}
