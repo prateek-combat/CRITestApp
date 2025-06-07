@@ -3,7 +3,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import QuestionTimer from '@/components/QuestionTimer';
+import SystemCompatibilityChecker from '@/components/SystemCompatibilityChecker';
+import QuestionBookmark from '@/components/QuestionBookmark';
+import TestProgressBar from '@/components/TestProgressBar';
+
+import BookmarkedQuestionsReview from '@/components/BookmarkedQuestionsReview';
 import Link from 'next/link';
+import { Eye, BarChart3 } from 'lucide-react';
 import {
   startRecording,
   stopAndUpload,
@@ -56,6 +62,7 @@ export default function TestPage() {
   >({});
   const [testAttempt, setTestAttempt] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [testCompleted, setTestCompleted] = useState(false);
 
   // Candidate details
   const [candidateName, setCandidateName] = useState('');
@@ -72,6 +79,17 @@ export default function TestPage() {
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [cameraActuallyStopped, setCameraActuallyStopped] = useState(false);
 
+  // New feature states
+  const [systemCompatibilityPassed, setSystemCompatibilityPassed] =
+    useState(false);
+  const [showCompatibilityChecker, setShowCompatibilityChecker] =
+    useState(true);
+  const [bookmarkedQuestions, setBookmarkedQuestions] = useState<Set<string>>(
+    new Set()
+  );
+  const [showBookmarkedReview, setShowBookmarkedReview] = useState(false);
+  const [showProgressBar, setShowProgressBar] = useState(false);
+
   // Media refs - updated for new proctoring system
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -80,6 +98,56 @@ export default function TestPage() {
 
   // Initialize live proctoring flags when test starts
   useLiveFlags(testAttempt?.id || '');
+
+  // Helper functions for new features
+  const handleSystemCompatibilityComplete = useCallback(
+    (passed: boolean, results: any) => {
+      setSystemCompatibilityPassed(passed);
+      if (passed) {
+        // Don't hide the checker immediately - user needs to click "Continue to Test"
+        setHasPermissions(true); // Since compatibility check includes permission grants
+      }
+    },
+    []
+  );
+
+  const handleContinueFromCompatibility = useCallback(() => {
+    setShowCompatibilityChecker(false);
+  }, []);
+
+  const handleBookmarkToggle = useCallback((questionId: string) => {
+    setBookmarkedQuestions((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(questionId)) {
+        newSet.delete(questionId);
+      } else {
+        newSet.add(questionId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const getAnsweredQuestions = useCallback(() => {
+    return new Set(Object.keys(answers));
+  }, [answers]);
+
+  const navigateToQuestion = useCallback(
+    (index: number) => {
+      if (
+        index >= 0 &&
+        invitation &&
+        index < invitation.test.questions.length
+      ) {
+        setCurrentQuestionIndex(index);
+        const question = invitation.test.questions[index];
+        setQuestionStartTime((prev) => ({
+          ...prev,
+          [question.id]: { epoch: Date.now(), key: question.id },
+        }));
+      }
+    },
+    [invitation]
+  );
 
   // Fetch invitation details
   const fetchInvitationDetails = useCallback(async () => {
@@ -563,12 +631,12 @@ export default function TestPage() {
       // Clean up any remaining references
       streamRef.current = null;
 
-      // Small delay then redirect
-      setTimeout(() => {
-        router.push(
-          `/test/${invitation.id}/complete?invitationId=${invitation.id}`
-        );
-      }, 1500);
+      // WAIT for a moment to ensure all backend processing is complete
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Instead of redirecting immediately, show completion state
+      setTestCompleted(true);
+      setIsSubmitting(false);
     } catch (err) {
       setError(
         err instanceof Error
@@ -595,29 +663,6 @@ export default function TestPage() {
       submitTest();
     }
   }, [invitation, currentQuestionIndex, navigateQuestion, submitTest]);
-
-  const buttonClasses = (
-    variant: 'primary' | 'secondary' | 'answer' | 'selectedAnswer',
-    disabled = false
-  ) => {
-    const baseClasses =
-      'w-full text-left rounded-md p-4 transition-colors font-semibold text-lg';
-    if (disabled) {
-      return `${baseClasses} bg-gray-200 text-gray-400 cursor-not-allowed`;
-    }
-    switch (variant) {
-      case 'primary':
-        return `${baseClasses} bg-military-green text-primary-white hover:bg-opacity-90`;
-      case 'secondary':
-        return `${baseClasses} bg-gray-200 text-text-dark hover:bg-gray-300`;
-      case 'answer':
-        return `${baseClasses} bg-off-white text-text-dark hover:bg-gray-100 border border-gray-300`;
-      case 'selectedAnswer':
-        return `${baseClasses} bg-military-green text-primary-white border border-military-green`;
-      default:
-        return `${baseClasses} bg-gray-200 text-gray-400 cursor-not-allowed`;
-    }
-  };
 
   if (isLoading) {
     return (
@@ -670,22 +715,24 @@ export default function TestPage() {
     );
   }
 
+  // Check if test was completed in a previous session (not current session)
   if (
-    testAttempt?.status === 'COMPLETED' ||
-    invitation.status === 'COMPLETED'
+    !testCompleted &&
+    !testStarted &&
+    (testAttempt?.status === 'COMPLETED' || invitation.status === 'COMPLETED')
   ) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-off-white p-4">
-        <div className="w-full max-w-md rounded-lg bg-primary-white p-12 text-center shadow-xl">
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
+        <div className="w-full max-w-md rounded-lg bg-white p-12 text-center shadow-xl">
           <h1 className="mb-6 text-4xl font-bold text-military-green">
-            Test Completed!
+            Test Already Completed
           </h1>
-          <p className="mb-8 text-xl text-text-dark">
-            Thank you for completing the Test.
+          <p className="mb-8 text-xl text-gray-700">
+            This test has already been submitted.
           </p>
           <Link
             href="/"
-            className="w-full rounded-md bg-military-green px-6 py-3 text-lg font-semibold text-primary-white transition-colors hover:bg-opacity-90"
+            className="w-full rounded-md bg-military-green px-6 py-3 text-lg font-semibold text-white transition-colors hover:bg-opacity-90"
           >
             Return to Homepage
           </Link>
@@ -694,115 +741,17 @@ export default function TestPage() {
     );
   }
 
-  // Permission request phase - must be completed before proceeding
-  if (!hasPermissions) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-off-white p-6">
-        <div className="w-full max-w-lg rounded-xl bg-primary-white p-8 shadow-2xl">
-          <h1 className="mb-6 text-center text-3xl font-bold text-military-green">
-            Proctored Test Setup
-          </h1>
-          <div className="mb-6 space-y-4">
-            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-              <h3 className="font-semibold text-blue-800">
-                This test is proctored and requires:
-              </h3>
-              <ul className="mt-2 list-inside list-disc text-sm text-blue-700">
-                <li>Camera access for recording</li>
-                <li>Microphone access for audio capture</li>
-                <li>Periodic frame capture throughout the test</li>
-                <li>No tab switching or window minimizing</li>
-              </ul>
-            </div>
-
-            {permissionsRequested && !hasPermissions && (
-              <div className="rounded-lg bg-red-100 p-4 text-red-700">
-                <p className="font-semibold">Permission Required</p>
-                <p className="text-sm">
-                  Please allow camera and microphone access when prompted by
-                  your browser. If you accidentally denied access, click the
-                  camera icon in your address bar to enable it.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {hasPermissions && (
-            <div className="mb-6 text-center">
-              <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-                <div className="mb-2 flex items-center justify-center">
-                  <div className="mr-2 h-3 w-3 animate-pulse rounded-full bg-green-500"></div>
-                  <span className="font-medium text-green-700">
-                    Camera and Microphone Active
-                  </span>
-                </div>
-                <p className="text-sm text-green-600">
-                  Your devices are ready for proctoring. You can now proceed to
-                  the test.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {!hasPermissions ? (
-            <button
-              onClick={requestPermissions}
-              disabled={permissionsRequested}
-              className={
-                buttonClasses('primary', permissionsRequested) + ' py-3 text-lg'
-              }
-            >
-              {permissionsRequested
-                ? 'Requesting Permissions...'
-                : 'Grant Camera & Microphone Access'}
-            </button>
-          ) : (
-            <div className="space-y-4">
-              <div className="text-center font-medium text-green-600">
-                ✅ Permissions Granted Successfully
-              </div>
-              <button
-                onClick={() => {
-                  // Permissions are granted, move to next phase
-                  setPermissionsRequested(true);
-                }}
-                className={buttonClasses('primary') + ' py-3 text-lg'}
-              >
-                Continue to Test Details
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Details submission phase
-  if (!detailsSubmitted && hasPermissions) {
+  // Details submission phase - FIRST STEP before any system checks
+  if (!detailsSubmitted && invitation) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-off-white p-6">
         <div className="w-full max-w-lg rounded-xl bg-primary-white p-8 shadow-2xl md:p-12">
           <h1 className="mb-4 text-center text-3xl font-bold text-gray-800">
-            Welcome to the Test
+            Welcome to {invitation.test.title}
           </h1>
           <p className="mb-8 text-center text-text-light">
             Please enter your details to begin the assessment.
           </p>
-
-          {/* Proctoring Status */}
-          <div className="mb-6 text-center">
-            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-              <div className="mb-2 flex items-center justify-center">
-                <div className="mr-2 h-3 w-3 animate-pulse rounded-full bg-blue-500"></div>
-                <span className="font-medium text-blue-700">
-                  Proctoring Active
-                </span>
-              </div>
-              <p className="text-sm text-blue-600">
-                Your session is being monitored for security purposes.
-              </p>
-            </div>
-          </div>
 
           {error && (
             <p className="mb-6 rounded-md bg-red-100 p-3 text-sm text-red-500">
@@ -847,7 +796,7 @@ export default function TestPage() {
             <button
               type="submit"
               disabled={isUpdatingDetails}
-              className={buttonClasses('primary', isUpdatingDetails)}
+              className={`w-full rounded-lg bg-military-green px-6 py-3 text-lg font-semibold text-white transition-colors hover:bg-opacity-90 disabled:cursor-not-allowed disabled:opacity-50`}
             >
               {isUpdatingDetails ? 'Submitting...' : 'Submit Details'}
             </button>
@@ -857,8 +806,33 @@ export default function TestPage() {
     );
   }
 
+  // System compatibility check phase - AFTER details submission
+  if (
+    detailsSubmitted &&
+    showCompatibilityChecker &&
+    invitation &&
+    !systemCompatibilityPassed
+  ) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-off-white p-4">
+        <div className="w-full max-w-4xl">
+          <SystemCompatibilityChecker
+            onComplete={handleSystemCompatibilityComplete}
+            onStartTest={handleContinueFromCompatibility}
+            className="rounded-xl bg-primary-white p-6 shadow-2xl md:p-10"
+          />
+        </div>
+      </div>
+    );
+  }
+
   // Test ready phase
-  if (!testStarted && detailsSubmitted && hasPermissions) {
+  if (
+    !testStarted &&
+    detailsSubmitted &&
+    hasPermissions &&
+    systemCompatibilityPassed
+  ) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-off-white p-4">
         <div className="w-full max-w-2xl rounded-xl bg-primary-white p-6 shadow-2xl md:p-10">
@@ -886,31 +860,223 @@ export default function TestPage() {
             </div>
           </div>
 
-          <div className="mb-8 rounded-lg bg-gray-50 p-6">
-            <h2 className="mb-4 text-xl font-semibold text-text-dark">
-              Test Instructions
-            </h2>
-            <ul className="list-inside list-disc space-y-2 text-text-dark">
-              <li>
-                Each question has its own time limit, shown by the timer bar.
-              </li>
-              <li>
-                There are <strong>{invitation.test.questions.length}</strong>{' '}
-                questions in this test.
-              </li>
-              <li>Answer each question to the best of your ability.</li>
-              <li>Your session will be recorded throughout the test.</li>
-              <li>
-                Click 'Submit Test' on the last question when you are finished.
-              </li>
-            </ul>
+          <div className="mb-8 space-y-6">
+            <div className="rounded-lg bg-gray-50 p-6">
+              <h2 className="mb-4 text-xl font-semibold text-text-dark">
+                Test Instructions
+              </h2>
+              <ul className="list-inside list-disc space-y-2 text-text-dark">
+                <li>
+                  Each question has its own time limit, shown by the timer bar.
+                </li>
+                <li>
+                  There are <strong>{invitation.test.questions.length}</strong>{' '}
+                  questions in this test.
+                </li>
+                <li>Answer each question to the best of your ability.</li>
+                <li>Your session will be recorded throughout the test.</li>
+                <li>
+                  Click 'Submit Test' on the last question when you are
+                  finished.
+                </li>
+              </ul>
+            </div>
+
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
+              <h2 className="mb-4 text-xl font-semibold text-blue-800">
+                Test Features
+              </h2>
+              <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+                <div className="flex items-start space-x-3">
+                  <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-500">
+                    <span className="text-xs text-white">📍</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-blue-800">
+                      Question Bookmarking
+                    </p>
+                    <p className="text-blue-700">
+                      Click the bookmark icon to flag questions for later review
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-500">
+                    <span className="text-xs text-white">👁️</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-blue-800">Review Mode</p>
+                    <p className="text-blue-700">
+                      Click "Review" button to view and modify bookmarked
+                      questions
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-500">
+                    <span className="text-xs text-white">📊</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-blue-800">
+                      Progress Tracking
+                    </p>
+                    <p className="text-blue-700">
+                      View your test progress and navigate between questions
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-500">
+                    <span className="text-xs text-white">🔒</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-blue-800">
+                      Secure Recording
+                    </p>
+                    <p className="text-blue-700">
+                      Session recording for post-test analysis and verification
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           <button
             onClick={startTest}
-            className={buttonClasses('primary') + ' py-3 text-lg md:py-4'}
+            className="w-full rounded-lg bg-military-green px-6 py-3 text-lg font-semibold text-white transition-colors hover:bg-opacity-90 md:py-4"
           >
             Start Proctored Test
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Bookmarked questions review modal
+  if (showBookmarkedReview && invitation) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div className="max-h-[90vh] w-full max-w-6xl overflow-hidden">
+          <BookmarkedQuestionsReview
+            questions={invitation.test.questions}
+            bookmarkedQuestionIds={bookmarkedQuestions}
+            answers={answers}
+            onAnswerChange={handleAnswer}
+            onRemoveBookmark={handleBookmarkToggle}
+            onClose={() => setShowBookmarkedReview(false)}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Test completed state
+  if (testCompleted && invitation) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8">
+        <div className="mx-auto max-w-2xl">
+          {/* Main Thank You Card */}
+          <div className="overflow-hidden rounded-2xl bg-white shadow-lg">
+            {/* Header with Success Icon */}
+            <div className="bg-gradient-to-r from-military-green to-primary-600 p-8 text-center">
+              <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white bg-opacity-20">
+                <svg
+                  className="h-10 w-10 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+              <h1 className="mb-2 text-3xl font-bold text-white md:text-4xl">
+                Test Completed!
+              </h1>
+              <p className="text-lg text-primary-100">
+                Your submission has been successfully recorded
+              </p>
+            </div>
+
+            {/* Content */}
+            <div className="p-8">
+              <div className="mb-8 text-center">
+                <h2 className="mb-4 text-2xl font-semibold text-gray-900">
+                  {candidateName
+                    ? `Thank you, ${candidateName}!`
+                    : 'Thank you for your participation!'}
+                </h2>
+                <p className="mb-6 text-lg leading-relaxed text-gray-600">
+                  You have successfully completed the{' '}
+                  <span className="font-medium text-military-green">
+                    {invitation.test.title}
+                  </span>
+                  . Your responses and proctoring data have been securely
+                  recorded.
+                </p>
+
+                <div className="mb-8 rounded-lg border border-green-200 bg-green-50 p-6">
+                  <div className="flex items-start">
+                    <div className="mr-3 mt-0.5 h-6 w-6 text-green-600">
+                      <svg
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <h3 className="mb-1 font-medium text-green-800">
+                        What happens next?
+                      </h3>
+                      <p className="text-sm text-green-700">
+                        Our team will review your submission and may contact you
+                        regarding the next steps. Thank you for taking the time
+                        to complete this assessment.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <div className="text-center">
+                <Link
+                  href="/"
+                  className="inline-flex items-center rounded-lg bg-military-green px-8 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:bg-opacity-90"
+                >
+                  <svg
+                    className="mr-2 h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011 1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                    />
+                  </svg>
+                  Return to Homepage
+                </Link>
+
+                <p className="mt-4 text-sm text-gray-500">
+                  You can safely close this window.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -921,12 +1087,34 @@ export default function TestPage() {
     const currentQuestion = invitation.test.questions[currentQuestionIndex];
 
     return (
-      <div className="flex min-h-screen flex-col bg-off-white">
-        {/* Small recording indicator */}
+      <div className="flex h-screen flex-col overflow-hidden bg-gray-50">
+        {/* Submitting Overlay - Higher z-index to cover everything */}
+        {isSubmitting && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900 bg-opacity-75 backdrop-blur-sm">
+            <div className="mx-4 max-w-md rounded-xl border border-gray-200 bg-white p-8 text-center shadow-2xl">
+              <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-military-green border-t-transparent"></div>
+              <h3 className="mb-2 text-xl font-semibold text-gray-900">
+                Submitting Your Test
+              </h3>
+              <p className="mb-4 text-gray-600">
+                Please wait while we process your submission and upload your
+                proctoring data...
+              </p>
+              <div className="space-y-2 text-sm text-gray-500">
+                {isUploadingRecording && <p>📤 Uploading recording data...</p>}
+                <p>✅ Stopping recording session</p>
+                <p>💾 Saving your answers</p>
+                <p>🔒 Securing your data</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Recording indicator - Bottom Right */}
         {(isRecording || isSubmitting || isUploadingRecording) && (
-          <div className="fixed right-4 top-4 z-50">
+          <div className="fixed bottom-6 right-6 z-50">
             <div
-              className={`rounded-lg px-3 py-2 text-xs text-white shadow-lg ${
+              className={`rounded-lg border border-gray-600 px-3 py-2 text-xs text-white shadow-lg ${
                 isUploadingRecording
                   ? 'bg-blue-600'
                   : isSubmitting
@@ -939,19 +1127,22 @@ export default function TestPage() {
               <div className="flex items-center space-x-2">
                 {isUploadingRecording ? (
                   <>
-                    <span className="animate-pulse">📤</span>
+                    <div className="h-2 w-2 animate-pulse rounded-full bg-blue-300"></div>
                     <span>Uploading</span>
                   </>
                 ) : isSubmitting ? (
                   <>
-                    <span>{cameraActuallyStopped ? '✅' : '⏹️'}</span>
+                    <div
+                      className={`h-2 w-2 rounded-full ${cameraActuallyStopped ? 'bg-green-300' : 'bg-amber-300'}`}
+                    ></div>
                     <span>
-                      {cameraActuallyStopped ? 'Complete' : 'Finishing'}
+                      {cameraActuallyStopped ? 'Complete' : 'Finalizing'}
                     </span>
                   </>
                 ) : (
                   <>
-                    <span className="animate-pulse">🔴</span>
+                    <div className="h-2 w-2 animate-pulse rounded-full bg-red-300"></div>
+                    <span>REC</span>
                     <span>
                       {Math.floor(recordingDuration / 60)}:
                       {(recordingDuration % 60).toString().padStart(2, '0')}
@@ -963,97 +1154,391 @@ export default function TestPage() {
           </div>
         )}
 
-        <header className="bg-primary-white p-4 shadow-md">
-          <p className="text-center text-lg font-semibold text-military-green">
-            {invitation.test.title}
-          </p>
-        </header>
+        {/* Compact header matching website theme */}
+        <header className="sticky top-0 z-40 bg-military-green text-white shadow-sm">
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <h1 className="text-lg font-semibold">
+                  {invitation.test.title}
+                </h1>
+                <span className="text-sm text-green-100">
+                  Question {currentQuestionIndex + 1} of{' '}
+                  {invitation.test.questions.length}
+                </span>
+              </div>
 
-        <main className="flex flex-grow flex-col p-4">
-          <div className="mx-auto w-full max-w-4xl flex-grow">
-            <div className="mb-6">
-              <p className="text-sm text-text-light">
-                Question {currentQuestionIndex + 1} of{' '}
-                {invitation.test.questions.length}
-              </p>
-              <h2 className="text-2xl font-bold text-text-dark">
-                {currentQuestion.promptText}
-              </h2>
-            </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setShowProgressBar(!showProgressBar)}
+                  className="flex items-center space-x-1 rounded bg-white/10 px-2 py-1 text-xs transition-colors hover:bg-white/20"
+                  title="Toggle progress"
+                >
+                  <BarChart3 className="h-3 w-3" />
+                  <span>Progress</span>
+                </button>
 
-            <QuestionTimer
-              key={currentQuestion.id}
-              questionKey={currentQuestion.id}
-              durationSeconds={currentQuestion.timerSeconds}
-              onTimeExpired={handleTimeExpired}
-              startTimeEpoch={questionStartTime[currentQuestion.id]?.epoch || 0}
-            />
-
-            {currentQuestion.promptImageUrl && (
-              <div className="mb-6">
-                <img
-                  src={currentQuestion.promptImageUrl}
-                  alt="Question prompt"
-                  className="max-w-full rounded-lg"
+                <QuestionBookmark
+                  questionId={currentQuestion.id}
+                  isBookmarked={bookmarkedQuestions.has(currentQuestion.id)}
+                  onToggle={handleBookmarkToggle}
+                  size="md"
                 />
               </div>
-            )}
+            </div>
+          </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {currentQuestion.answerOptions.map((option, index) => {
-                const isSelected =
-                  answers[currentQuestion.id]?.answerIndex === index;
-                return (
-                  <button
-                    key={index}
-                    onClick={() => handleAnswer(currentQuestion.id, index)}
-                    className={buttonClasses(
-                      isSelected ? 'selectedAnswer' : 'answer'
+          {/* Thin progress bar */}
+          <div className="h-0.5 bg-white/20">
+            <div
+              className="h-full bg-white transition-all duration-300"
+              style={{
+                width: `${((currentQuestionIndex + 1) / invitation.test.questions.length) * 100}%`,
+              }}
+            />
+          </div>
+        </header>
+
+        {/* Expandable Progress Overview */}
+        {showProgressBar && (
+          <div className="border-b border-gray-100 bg-white p-6 shadow-sm">
+            <TestProgressBar
+              totalQuestions={invitation.test.questions.length}
+              currentQuestionIndex={currentQuestionIndex}
+              answeredQuestions={getAnsweredQuestions()}
+              bookmarkedQuestions={bookmarkedQuestions}
+              questionIds={invitation.test.questions.map((q) => q.id)}
+              onQuestionSelect={navigateToQuestion}
+            />
+          </div>
+        )}
+
+        {/* Main content area - Fitted to screen */}
+        <main className="flex-grow overflow-y-auto bg-gray-50">
+          <div className="mx-auto max-w-4xl px-4 py-6">
+            {/* Question Card */}
+            <div className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+              {/* Question Header */}
+              <div className="border-b border-gray-200 bg-gray-50 px-6 py-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="mb-2 flex items-center space-x-3">
+                      <span className="inline-flex items-center rounded-full bg-military-green px-2 py-1 text-xs font-medium text-white">
+                        Question {currentQuestionIndex + 1}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        {currentQuestion.category}
+                      </span>
+                    </div>
+                    <h2 className="text-xl font-bold leading-tight text-gray-900">
+                      {currentQuestion.promptText}
+                    </h2>
+                  </div>
+                </div>
+
+                {/* Timer */}
+                <div className="mt-4">
+                  <QuestionTimer
+                    key={currentQuestion.id}
+                    questionKey={currentQuestion.id}
+                    durationSeconds={currentQuestion.timerSeconds}
+                    onTimeExpired={handleTimeExpired}
+                    startTimeEpoch={
+                      questionStartTime[currentQuestion.id]?.epoch || 0
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Question Image */}
+              {currentQuestion.promptImageUrl && (
+                <div className="bg-gray-50 px-8 py-6">
+                  <div className="overflow-hidden rounded-xl shadow-md">
+                    <img
+                      src={currentQuestion.promptImageUrl}
+                      alt="Question prompt"
+                      className="h-auto w-full"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Answer Options */}
+              <div className="flex-1 overflow-y-auto px-6 py-4">
+                <div className="grid grid-cols-1 gap-3">
+                  {currentQuestion.answerOptions.map((option, index) => {
+                    const isSelected =
+                      answers[currentQuestion.id]?.answerIndex === index;
+                    const optionLetter = String.fromCharCode(65 + index); // A, B, C, D...
+
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => handleAnswer(currentQuestion.id, index)}
+                        className={`group relative flex items-start space-x-3 rounded-lg border-2 p-4 text-left transition-all duration-200 ${
+                          isSelected
+                            ? 'border-military-green bg-green-50 shadow-md ring-2 ring-military-green/20'
+                            : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                        } `}
+                      >
+                        {/* Option Letter */}
+                        <div
+                          className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all duration-200 ${
+                            isSelected
+                              ? 'bg-military-green text-white'
+                              : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
+                          } `}
+                        >
+                          {optionLetter}
+                        </div>
+
+                        {/* Option Text */}
+                        <div className="flex-1">
+                          <p
+                            className={`text-base leading-relaxed transition-colors duration-200 ${isSelected ? 'font-medium text-gray-900' : 'text-gray-700'} `}
+                          >
+                            {option}
+                          </p>
+                        </div>
+
+                        {/* Selection Indicator */}
+                        {isSelected && (
+                          <div className="flex-shrink-0">
+                            <svg
+                              className="h-6 w-6 text-military-green"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Answer Status */}
+                <div className="mt-4 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    {answers[currentQuestion.id] ? (
+                      <div className="flex items-center space-x-2 text-green-600">
+                        <svg
+                          className="h-4 w-4"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        <span className="text-sm font-medium">
+                          Answer selected
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2 text-gray-400">
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <span className="text-sm">Select an answer</span>
+                      </div>
                     )}
-                  >
-                    {option}
-                  </button>
-                );
-              })}
+                  </div>
+
+                  {bookmarkedQuestions.has(currentQuestion.id) && (
+                    <div className="flex items-center space-x-2 text-amber-600">
+                      <svg
+                        className="h-4 w-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+                      </svg>
+                      <span className="text-sm font-medium">
+                        Bookmarked for review
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Navigation Controls - Moved from footer */}
+                <div className="mt-6 border-t border-gray-200 pt-6">
+                  <div className="flex items-center justify-between">
+                    {/* Left: Previous Button */}
+                    <button
+                      onClick={() => navigateQuestion('prev')}
+                      disabled={currentQuestionIndex === 0}
+                      className={`flex items-center space-x-1 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                        currentQuestionIndex === 0
+                          ? 'cursor-not-allowed bg-gray-100 text-gray-400'
+                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                      } `}
+                    >
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 19l-7-7 7-7"
+                        />
+                      </svg>
+                      <span>Previous</span>
+                    </button>
+
+                    {/* Center: Progress and Review Later */}
+                    <div className="flex items-center space-x-3">
+                      <div className="text-center">
+                        <div className="text-sm font-medium text-gray-900">
+                          {Object.keys(answers).length} of{' '}
+                          {invitation.test.questions.length} answered
+                        </div>
+                        {bookmarkedQuestions.size > 0 && (
+                          <div className="text-xs font-medium text-military-green">
+                            {bookmarkedQuestions.size} bookmarked for review
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Review Later Button */}
+                      <button
+                        onClick={() => {
+                          // Add to bookmarks if not already bookmarked
+                          if (!bookmarkedQuestions.has(currentQuestion.id)) {
+                            handleBookmarkToggle(currentQuestion.id);
+                          }
+                          // Navigate to next question or show review if last question
+                          if (
+                            currentQuestionIndex <
+                            invitation.test.questions.length - 1
+                          ) {
+                            navigateQuestion('next');
+                          } else {
+                            setShowBookmarkedReview(true);
+                          }
+                        }}
+                        className="flex items-center space-x-1 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700 transition-all duration-200 hover:bg-amber-100"
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                          />
+                        </svg>
+                        <span>Review Later</span>
+                      </button>
+
+                      {/* Review Bookmarked Button */}
+                      {bookmarkedQuestions.size > 0 && (
+                        <button
+                          onClick={() => setShowBookmarkedReview(true)}
+                          className="flex items-center space-x-1 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-military-green transition-all duration-200 hover:bg-green-100"
+                        >
+                          <svg
+                            className="h-4 w-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                            />
+                          </svg>
+                          <span>Review ({bookmarkedQuestions.size})</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Right: Next/Submit Button */}
+                    {currentQuestionIndex <
+                    invitation.test.questions.length - 1 ? (
+                      <button
+                        onClick={() => navigateQuestion('next')}
+                        className="flex items-center space-x-1 rounded-md bg-military-green px-3 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-opacity-90"
+                      >
+                        <span>Next</span>
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={submitTest}
+                        disabled={isSubmitting}
+                        className="flex items-center space-x-1 rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                            <span>Submitting...</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg
+                              className="h-4 w-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                            <span>Submit Test</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </main>
-
-        <footer className="bg-primary-white p-4 shadow-md">
-          <div className="mx-auto flex max-w-4xl items-center justify-between">
-            <button
-              onClick={() => navigateQuestion('prev')}
-              disabled={currentQuestionIndex === 0}
-              className={
-                buttonClasses('secondary', currentQuestionIndex === 0) +
-                ' w-32 py-2'
-              }
-            >
-              Previous
-            </button>
-
-            <div className="flex-grow"></div>
-
-            {currentQuestionIndex < invitation.test.questions.length - 1 ? (
-              <button
-                onClick={() => navigateQuestion('next')}
-                className={buttonClasses('primary') + ' w-32 py-2'}
-              >
-                Next
-              </button>
-            ) : (
-              <button
-                onClick={submitTest}
-                disabled={isSubmitting}
-                className={
-                  buttonClasses('primary', isSubmitting) + ' w-32 py-2'
-                }
-              >
-                {isSubmitting ? 'Submitting...' : 'Submit Test'}
-              </button>
-            )}
-          </div>
-        </footer>
 
         {/* Hidden video element for recording */}
         <video
