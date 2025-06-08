@@ -92,15 +92,17 @@ fi
 cd ../..
 
 # ==================================================
-# Phase 5: Integration Tests
+# Phase 5: E2E Tests (Local)
 # ==================================================
-print_step "Phase 5: Integration Tests"
+print_step "Phase 5: E2E Tests (Local)"
 
-echo "Running integration tests..."
-if npm run test:ci -- src/__tests__/integration/; then
-    print_success "Integration tests passed"
+print_warning "E2E tests run on ephemeral Neon branches in GitHub PRs"
+print_warning "Add 'e2e' label to your PR to trigger full E2E testing"
+echo "Running local integration tests as substitute..."
+if npm run test:e2e; then
+    print_success "Local E2E tests passed"
 else
-    print_error "Integration tests failed"
+    print_error "Local E2E tests failed"
     exit 1
 fi
 
@@ -135,6 +137,6 @@ echo "✅ Phase 1: Static JS/TS checks"
 echo "✅ Phase 2: JS/TS unit tests"  
 echo "✅ Phase 3: Python worker tests"
 echo "✅ Phase 4: Docker builds"
-echo "✅ Phase 5: Integration tests"
+echo "✅ Phase 5: E2E tests (local)"
 echo ""
 echo -e "${BLUE}You can now safely run: ${BOLD}git push${NC}" 

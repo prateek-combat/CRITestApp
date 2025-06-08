@@ -45,9 +45,9 @@ python3 -m pytest -q
 cd ../..
 print_success "Phase 3 passed"
 
-# Phase 5: Integration tests
-print_step "Phase 5: Integration Tests"
-npm run test:ci -- src/__tests__/integration/
+# Phase 5: E2E tests (local substitute)
+print_step "Phase 5: E2E Tests (Local)"
+npm run test:e2e
 print_success "Phase 5 passed"
 
 echo ""

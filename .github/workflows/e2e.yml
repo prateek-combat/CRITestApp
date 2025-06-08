@@ -1,0 +1,52 @@
+name: e2e-tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+
+jobs:
+  e2e:
+    # only run if the PR has a label named "e2e"
+    if: contains(github.event.pull_request.labels.*.name, 'e2e')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1️⃣  Create a temporary Neon branch for this PR
+      - name: Create Neon branch
+        id: create_db
+        uses: neondatabase/create-branch-action@v1
+        with:
+          project_id: ${{ secrets.NEON_PROJECT_DEV_ID }}
+          branch_name: pr-${{ github.event.pull_request.number }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+
+      # 2️⃣  Expose the branch's connection string as DATABASE_URL
+      - name: Set DATABASE_URL env
+        run: echo "DATABASE_URL=${{ steps.create_db.outputs.connection_string }}" >> $GITHUB_ENV
+
+      # 3️⃣  Install repo dependencies
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install packages
+        run: npm ci
+
+      # 4️⃣  Apply Prisma migrations to the fresh DB
+      - name: Prisma migrate deploy
+        run: npx prisma migrate deploy
+
+      # 5️⃣  Run integration/E2E tests
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+      # 6️⃣  Always clean up the Neon branch, even if tests fail
+      - name: Delete Neon branch
+        if: always()
+        uses: neondatabase/delete-branch-action@v1
+        with:
+          project_id: ${{ secrets.NEON_PROJECT_DEV_ID }}
+          branch_id: ${{ steps.create_db.outputs.branch_id }}
+          api_key: ${{ secrets.NEON_API_KEY }} 
