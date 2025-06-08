@@ -153,7 +153,7 @@ export default function LeaderboardSidebarLayout({
     if (selectedTestId) {
       fetchLeaderboardData();
     }
-  }, [fetchLeaderboardData]);
+  }, [fetchLeaderboardData, selectedTestId]);
 
   const handleTestSelect = (testId: string) => {
     setSelectedTestId(testId);

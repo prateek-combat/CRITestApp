@@ -409,8 +409,8 @@ export default function AnalyticsPage() {
                   <span className="font-medium text-primary-600">
                     {searchResults.length}
                   </span>{' '}
-                  result{searchResults.length !== 1 ? 's' : ''} for "
-                  {searchQuery}"
+                  result{searchResults.length !== 1 ? 's' : ''} for &quot;
+                  {searchQuery}&quot;
                 </span>
               )}
             </div>

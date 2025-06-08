@@ -10,24 +10,24 @@
   ::file-selector-button {
     border-color: rgb(229 231 235);
   }
-  
+
   button:not(:disabled),
-  [role="button"]:not(:disabled) {
+  [role='button']:not(:disabled) {
     cursor: pointer;
   }
-  
+
   body {
     font-family: Inter, ui-sans-serif, system-ui, sans-serif;
     position: relative;
     font-weight: normal;
     z-index: 1;
-    background-color: #F8F9FA;
+    background-color: #f8f9fa;
   }
 }
 
 @layer components {
   .menu-item {
-    @apply relative flex items-center w-full gap-3 px-3 py-2 font-medium rounded-lg text-sm;
+    @apply relative flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium;
   }
 
   .menu-item-active {
@@ -51,7 +51,7 @@
   }
 
   .menu-dropdown-item {
-    @apply block px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 hover:text-gray-900;
+    @apply block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900;
   }
 
   .menu-dropdown-item-active {
@@ -63,7 +63,7 @@
   }
 
   .menu-dropdown-badge {
-    @apply px-2 py-0.5 text-xs font-medium rounded-full;
+    @apply rounded-full px-2 py-0.5 text-xs font-medium;
   }
 }
 
@@ -95,26 +95,26 @@
   }
 
   .bg-military-green {
-    background-color: #4A5D23;
+    background-color: #4a5d23;
   }
 
   .text-military-green {
-    color: #4A5D23;
+    color: #4a5d23;
   }
 
   .bg-accent-orange {
-    background-color: #F5821F;
+    background-color: #f5821f;
   }
 
   .text-accent-orange {
-    color: #F5821F;
+    color: #f5821f;
   }
 
   .border-military-green {
-    border-color: #4A5D23;
+    border-color: #4a5d23;
   }
 
   .border-accent-orange {
-    border-color: #F5821F;
+    border-color: #f5821f;
   }
-} 
+}
