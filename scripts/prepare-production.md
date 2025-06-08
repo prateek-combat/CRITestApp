@@ -21,9 +21,11 @@ grep -r "process.env.NODE_ENV.*development" src/
 ## 📝 **Manual Removal Checklist**
 
 ### ❌ **1. Remove Local Admin Login Button**
+
 **File**: `src/app/login/page.tsx`
 
 **Search for and REMOVE**:
+
 ```jsx
 {process.env.NODE_ENV === 'development' && (
   <button
@@ -34,14 +36,18 @@ grep -r "process.env.NODE_ENV.*development" src/
 ```
 
 ### ❌ **2. Remove Local Admin Authentication Logic**
+
 **File**: `src/lib/auth.ts`
 
 **Search for and REMOVE**:
+
 ```javascript
 // Special case for local development - admin login with no credentials
-if (process.env.NODE_ENV === 'development' && 
-    credentials?.email === 'local-admin' && 
-    credentials?.password === 'local-admin') {
+if (
+  process.env.NODE_ENV === 'development' &&
+  credentials?.email === 'local-admin' &&
+  credentials?.password === 'local-admin'
+) {
   return {
     id: 'local-admin-id',
     email: 'admin@local.dev',
@@ -52,9 +58,11 @@ if (process.env.NODE_ENV === 'development' &&
 ```
 
 ### ❌ **3. Remove Local Admin Login Function**
+
 **File**: `src/app/login/page.tsx`
 
 **Search for and REMOVE**:
+
 ```javascript
 const handleLocalAdminLogin = async () => {
   // ... entire function body
@@ -62,13 +70,17 @@ const handleLocalAdminLogin = async () => {
 ```
 
 ### ❌ **4. Update Space-y-3 to Space-y-0 (Optional)**
+
 **File**: `src/app/login/page.tsx`
 
 **Change**:
+
 ```jsx
 <div className="mt-6 space-y-3">
 ```
+
 **To**:
+
 ```jsx
 <div className="mt-6">
 ```
@@ -163,6 +175,7 @@ echo "🚨 If any results above, remove them before production deployment!"
 ```
 
 Save as `scripts/check-production.sh` and run with:
+
 ```bash
 chmod +x scripts/check-production.sh
 ./scripts/check-production.sh
@@ -175,7 +188,7 @@ chmod +x scripts/check-production.sh
 Before deploying to production:
 
 1. ✅ **No local admin login visible** in browser
-2. ✅ **Only Google OAuth works** for authentication  
+2. ✅ **Only Google OAuth works** for authentication
 3. ✅ **Build completes** without errors (`npm run build`)
 4. ✅ **No development references** in search results
 5. ✅ **Environment variables** set to production values
@@ -183,4 +196,4 @@ Before deploying to production:
 
 ---
 
-**🔥 IMPORTANT**: Test locally with `NODE_ENV=production` before deploying to ensure local admin features are properly hidden! 
+**🔥 IMPORTANT**: Test locally with `NODE_ENV=production` before deploying to ensure local admin features are properly hidden!
