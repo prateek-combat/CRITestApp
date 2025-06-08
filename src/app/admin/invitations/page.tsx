@@ -785,7 +785,7 @@ user4@example.com"
                 onChange={(e) => setSelectedTestId(e.target.value)}
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 focus:ring-opacity-20"
               >
-                <option value="">Choose a test...</option>
+                <option value="">Choose a test&hellip;</option>
                 {tests.map((test) => (
                   <option key={test.id} value={test.id}>
                     {test.title}
@@ -833,8 +833,8 @@ user4@example.com"
           <div className="text-sm text-blue-800">
             <p>
               <strong>📧 Send Invitation Email:</strong> Sends the invitation
-              directly to the candidate's email address with a personalized test
-              link.
+              directly to the candidate&apos;s email address with a personalized
+              test link.
             </p>
           </div>
         </div>
@@ -875,7 +875,7 @@ user4@example.com"
               onChange={(e) => setSelectedTestId(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 focus:ring-opacity-20"
             >
-              <option value="">Choose a test...</option>
+              <option value="">Choose a test&hellip;</option>
               {tests.map((test) => (
                 <option key={test.id} value={test.id}>
                   {test.title}
