@@ -45,6 +45,11 @@ python3 -m pytest -q
 cd ../..
 print_success "Phase 3 passed"
 
+# Phase 5: Integration tests
+print_step "Phase 5: Integration Tests"
+npm run test:ci -- src/__tests__/integration/
+print_success "Phase 5 passed"
+
 echo ""
 echo -e "${GREEN}${BOLD}🎉 Quick tests passed!${NC}"
 echo -e "${BLUE}Run ${BOLD}./scripts/test-all-local.sh${NC}${BLUE} for full Docker builds${NC}" 

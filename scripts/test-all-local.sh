@@ -92,6 +92,19 @@ fi
 cd ../..
 
 # ==================================================
+# Phase 5: Integration Tests
+# ==================================================
+print_step "Phase 5: Integration Tests"
+
+echo "Running integration tests..."
+if npm run test:ci -- src/__tests__/integration/; then
+    print_success "Integration tests passed"
+else
+    print_error "Integration tests failed"
+    exit 1
+fi
+
+# ==================================================
 # Phase 4: Docker Builds
 # ==================================================
 print_step "Phase 4: Docker Builds"
@@ -122,5 +135,6 @@ echo "✅ Phase 1: Static JS/TS checks"
 echo "✅ Phase 2: JS/TS unit tests"  
 echo "✅ Phase 3: Python worker tests"
 echo "✅ Phase 4: Docker builds"
+echo "✅ Phase 5: Integration tests"
 echo ""
 echo -e "${BLUE}You can now safely run: ${BOLD}git push${NC}" 
