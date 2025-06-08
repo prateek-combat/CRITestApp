@@ -323,17 +323,21 @@ This document explains how to set up and configure the complete CI/CD pipeline f
 This project uses React 19, which requires special handling for some testing dependencies:
 
 ### Dependency Configuration
+
 - **@testing-library/react**: Updated to v16.0.0 for React 19 compatibility
 - **npm ci**: Uses `--legacy-peer-deps` flag in CI/CD pipeline
 - **.npmrc**: Configured with `legacy-peer-deps=true` for local development
 
 ### Why This Is Needed
+
 Some testing libraries haven't updated their peer dependencies to support React 19 yet. The `--legacy-peer-deps` flag tells npm to use the older (more permissive) dependency resolution algorithm.
 
 ## 🚀 Quick Setup
 
 ### 1. Environment Variables
+
 Create a `.env.local` file with:
+
 ```env
 DATABASE_URL="postgresql://user:password@localhost:5432/dbname"
 NEXTAUTH_SECRET="your-secret-key"
@@ -341,17 +345,20 @@ NEXTAUTH_URL="http://localhost:3000"
 ```
 
 ### 2. Install Dependencies
+
 ```bash
 npm install --legacy-peer-deps
 ```
 
 ### 3. Database Setup
+
 ```bash
 npx prisma generate
 npx prisma db push
 ```
 
 ### 4. Test the Setup
+
 ```bash
 npm test
 npm run build
@@ -359,31 +366,37 @@ npm run build
 
 ## 📦 Pipeline Components
 
-### 1. **Code Quality & Linting** 
+### 1. **Code Quality & Linting**
+
 - ESLint with Next.js rules
 - Prettier code formatting
 - TypeScript compilation checks
 
 ### 2. **Testing**
+
 - Jest unit tests with React Testing Library
 - Test coverage reporting
 - Integration tests (optional)
 
 ### 3. **Build & Security**
+
 - Next.js production build
 - Security vulnerability scanning
 - Bundle analysis
 
 ### 4. **Database**
+
 - Prisma schema validation
 - Migration testing
 - Database reset tests
 
 ### 5. **End-to-End Testing**
+
 - Playwright browser tests
 - Full application flow testing
 
 ### 6. **Deployment**
+
 - Staging deployment (dev branch)
 - Production deployment (main branch)
 - Artifact management
@@ -405,6 +418,7 @@ The pipeline is defined in `.github/workflows/ci-cd.yml` with these jobs:
 ## ⚙️ Local Testing
 
 ### Individual Components
+
 ```bash
 # Code quality
 npm run lint
@@ -421,11 +435,13 @@ npm audit --audit-level moderate
 ```
 
 ### Full Pipeline Simulation
+
 ```bash
 ./scripts/test-pipeline-locally.sh
 ```
 
 ### E2E Testing
+
 ```bash
 ./scripts/test-e2e-full.sh
 ```
@@ -435,29 +451,37 @@ npm audit --audit-level moderate
 ### Common Issues
 
 #### 1. Dependency Conflicts (React 19)
+
 **Problem**: `npm ci` fails with peer dependency conflicts
-**Solution**: 
+**Solution**:
+
 - Use `--legacy-peer-deps` flag
 - Check `.npmrc` file exists with `legacy-peer-deps=true`
 - Ensure React Testing Library is v16.0.0+
 
 #### 2. TypeScript Errors
+
 **Problem**: Missing module errors in CI
-**Solution**: 
+**Solution**:
+
 - Add `--skipLibCheck` to TypeScript compilation
 - Install missing type definitions
 - Use module path mapping in `tsconfig.json`
 
 #### 3. Test Failures
+
 **Problem**: Tests pass locally but fail in CI
 **Solution**:
+
 - Check environment variables
 - Verify database connection
 - Review test timeouts and async handling
 
 #### 4. Build Failures
+
 **Problem**: Next.js build fails in production
 **Solution**:
+
 - Check environment variable configuration
 - Verify all imports are correct
 - Review build logs for specific errors
@@ -465,6 +489,7 @@ npm audit --audit-level moderate
 ## 🔒 Security Configuration
 
 ### GitHub Secrets Required
+
 ```
 NEXTAUTH_SECRET=your-production-secret
 DATABASE_URL=your-production-database-url
@@ -472,6 +497,7 @@ VERCEL_TOKEN=your-deployment-token (if using Vercel)
 ```
 
 ### Security Scanning
+
 - npm audit for dependency vulnerabilities
 - Snyk scanning (optional)
 - Bundle size analysis
@@ -479,6 +505,7 @@ VERCEL_TOKEN=your-deployment-token (if using Vercel)
 ## 📊 Performance Monitoring
 
 The pipeline includes performance checks:
+
 - Bundle size analysis
 - Build time monitoring
 - Test execution time
@@ -487,11 +514,13 @@ The pipeline includes performance checks:
 ## 🚀 Deployment Strategies
 
 ### Staging (dev branch)
+
 - Automatic deployment on push
 - Runs full test suite
 - Safe environment for testing
 
 ### Production (main branch)
+
 - Requires all tests to pass
 - Manual deployment approval
 - Comprehensive security checks
@@ -506,6 +535,7 @@ The pipeline includes performance checks:
 ## 🆘 Getting Help
 
 If you encounter issues:
+
 1. Check the troubleshooting section above
 2. Review GitHub Actions logs
 3. Run `./scripts/test-pipeline-locally.sh` for local debugging
