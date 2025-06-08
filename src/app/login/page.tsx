@@ -57,6 +57,33 @@ export default function LoginPage() {
     }
   };
 
+  const handleLocalAdminLogin = async () => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const result = await signIn('credentials', {
+        email: 'local-admin',
+        password: 'local-admin',
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError('Local admin login failed');
+      } else {
+        const session = await getSession();
+        if (session) {
+          router.push('/admin/dashboard');
+          router.refresh();
+        }
+      }
+    } catch (error) {
+      setError('An error occurred with local admin login');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 p-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
@@ -158,7 +185,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="mt-6">
+          <div className="mt-6 space-y-3">
             <button
               onClick={handleGoogleSignIn}
               disabled={isLoading}
@@ -184,6 +211,17 @@ export default function LoginPage() {
               </svg>
               Sign in with Google
             </button>
+
+            {process.env.NODE_ENV === 'development' && (
+              <button
+                onClick={handleLocalAdminLogin}
+                disabled={isLoading}
+                className="flex w-full items-center justify-center rounded-lg border border-blue-300 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700 shadow-sm transition-colors hover:bg-blue-100 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              >
+                <Lock className="mr-2 h-5 w-5" />
+                Local Admin Login (Dev Only)
+              </button>
+            )}
           </div>
         </div>
 
