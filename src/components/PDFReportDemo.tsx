@@ -165,7 +165,8 @@ const PDFReportDemo: React.FC = () => {
                 Results Page
               </span>
               <span className="text-yellow-800">
-                Click "Export PDF Report" button in the test results header
+                Click &quot;Export PDF Report&quot; button in the test results
+                header
               </span>
             </div>
 
@@ -174,7 +175,8 @@ const PDFReportDemo: React.FC = () => {
                 Admin Analytics
               </span>
               <span className="text-yellow-800">
-                Access via "📊 Results" buttons for completed test attempts
+                Access via &quot;📊 Results&quot; buttons for completed test
+                attempts
               </span>
             </div>
 

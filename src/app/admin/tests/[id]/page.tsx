@@ -3,7 +3,13 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { QuestionCategory } from '@prisma/client';
+// Define question categories locally to avoid Prisma client issues
+const QUESTION_CATEGORIES = [
+  'LOGICAL',
+  'VERBAL',
+  'NUMERICAL',
+  'ATTENTION_TO_DETAIL',
+] as const;
 
 interface PersonalityDimension {
   id: string;
@@ -1116,7 +1122,7 @@ export default function TestEditPage({
                   className="mr-2 h-4 w-4 text-brand-600 focus:ring-brand-500"
                 />
                 <span className="text-sm font-medium text-gray-700">
-                  📝 Objective (Right/Wrong)
+                  📝 General (Right/Wrong)
                 </span>
               </label>
               <label className="flex items-center">
@@ -1170,7 +1176,7 @@ export default function TestEditPage({
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
             >
               <option value="">Select a category</option>
-              {Object.values(QuestionCategory).map((category) => (
+              {QUESTION_CATEGORIES.map((category) => (
                 <option key={category} value={category}>
                   {category.replace(/_/g, ' ')}
                 </option>
@@ -1397,7 +1403,7 @@ export default function TestEditPage({
                   className="mr-2 h-4 w-4 text-brand-600 focus:ring-brand-500"
                 />
                 <span className="text-sm font-medium text-gray-700">
-                  📝 Objective (Right/Wrong)
+                  📝 General (Right/Wrong)
                 </span>
               </label>
               <label className="flex items-center">
@@ -1435,7 +1441,7 @@ export default function TestEditPage({
               className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
             >
               <option value="">Select a category</option>
-              {Object.values(QuestionCategory).map((category) => (
+              {QUESTION_CATEGORIES.map((category) => (
                 <option key={category} value={category}>
                   {category.replace(/_/g, ' ')}
                 </option>
@@ -1625,7 +1631,7 @@ export default function TestEditPage({
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               }`}
             >
-              📝 Objective ({getPersonalityStats().totalObjective})
+              📝 General ({getPersonalityStats().totalObjective})
             </button>
             <button
               onClick={() => setQuestionFilter('PERSONALITY')}
@@ -1691,7 +1697,7 @@ export default function TestEditPage({
                         </span>
                       ) : (
                         <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-0.5 text-xs font-medium text-blue-800">
-                          Objective
+                          General
                         </span>
                       )}
                       {question.sectionTag && (
