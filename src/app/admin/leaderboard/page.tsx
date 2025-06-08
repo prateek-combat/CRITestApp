@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation';
 import LeaderboardSidebarLayout from './_components/LeaderboardSidebarLayout';
 
 interface LeaderboardPageProps {
-  searchParams: {
+  searchParams: Promise<{
     testId?: string;
     page?: string;
     pageSize?: string;
@@ -15,7 +15,7 @@ interface LeaderboardPageProps {
     search?: string;
     sortBy?: string;
     sortOrder?: string;
-  };
+  }>;
 }
 
 export default async function LeaderboardPage({

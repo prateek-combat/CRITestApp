@@ -20,7 +20,8 @@ export async function PATCH(
     }
 
     const { role } = await request.json();
-    const userId = params.id;
+    const resolvedParams = await params;
+    const userId = resolvedParams.id;
 
     if (!role) {
       return NextResponse.json(

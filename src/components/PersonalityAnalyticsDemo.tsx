@@ -180,8 +180,8 @@ export default function PersonalityAnalyticsDemo() {
           <div className="flex items-start space-x-3">
             <span className="font-semibold">1.</span>
             <div>
-              <strong>From Admin Analytics:</strong> Click the "🧠 Personality
-              Analytics" button in the main analytics dashboard
+              <strong>From Admin Analytics:</strong> Click the &quot;🧠
+              Personality Analytics&quot; button in the main analytics dashboard
             </div>
           </div>
           <div className="flex items-start space-x-3">
