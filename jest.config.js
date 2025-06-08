@@ -8,12 +8,12 @@ const createJestConfig = nextJest({
 // Add any custom config to be passed to Jest
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-  testEnvironment: 'jest-environment-jsdom',
-  moduleNameMapping: {
+  testEnvironment: 'jsdom',
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^@/app/(.*)$': '<rootDir>/src/app/$1',
     '^@/components/(.*)$': '<rootDir>/src/components/$1',
     '^@/lib/(.*)$': '<rootDir>/src/lib/$1',
-    '^@/app/(.*)$': '<rootDir>/src/app/$1',
   },
   testMatch: [
     '**/__tests__/**/*.(js|jsx|ts|tsx)',
@@ -28,7 +28,6 @@ const customJestConfig = {
     'src/**/*.{js,jsx,ts,tsx}',
     '!src/**/*.d.ts',
     '!src/**/*.stories.{js,jsx,ts,tsx}',
-    '!src/**/index.{js,jsx,ts,tsx}',
   ],
   coverageThreshold: {
     global: {

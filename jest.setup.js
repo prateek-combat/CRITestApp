@@ -12,7 +12,7 @@ jest.mock('next/router', () => ({
       pop: jest.fn(),
       reload: jest.fn(),
       back: jest.fn(),
-      prefetch: jest.fn().mockResolvedValue(undefined),
+      prefetch: jest.fn(),
       beforePopState: jest.fn(),
       events: {
         on: jest.fn(),
@@ -53,43 +53,6 @@ jest.mock('next-auth/react', () => ({
   signIn: jest.fn(),
   signOut: jest.fn(),
   getSession: jest.fn(),
-}));
-
-// Mock Prisma client
-jest.mock('@/lib/prisma', () => ({
-  __esModule: true,
-  default: {
-    user: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    },
-    test: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    },
-    question: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    },
-    testAttempt: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    },
-    $connect: jest.fn(),
-    $disconnect: jest.fn(),
-  },
 }));
 
 // Mock environment variables

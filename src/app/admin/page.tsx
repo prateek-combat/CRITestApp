@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 interface DashboardStats {
   totalTests: number;
@@ -155,7 +156,7 @@ export default function AdminDashboard() {
           Quick Actions
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <a
+          <Link
             href="/admin/tests/new"
             className="flex items-center rounded-lg border border-brand-200 bg-brand-50 p-4 transition-colors hover:bg-brand-100"
           >
@@ -178,9 +179,9 @@ export default function AdminDashboard() {
               </p>
               <p className="text-sm text-brand-600">Set up a new assessment</p>
             </div>
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/admin/tests"
             className="flex items-center rounded-lg border border-orange-200 bg-orange-50 p-4 transition-colors hover:bg-orange-100"
           >
@@ -205,9 +206,9 @@ export default function AdminDashboard() {
                 View and edit existing tests
               </p>
             </div>
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/admin/analytics"
             className="bg-success-50 border-success-200 hover:bg-success-100 flex items-center rounded-lg border p-4 transition-colors"
           >
@@ -227,7 +228,7 @@ export default function AdminDashboard() {
               </p>
               <p className="text-success-600 text-sm">Analyze test results</p>
             </div>
-          </a>
+          </Link>
         </div>
       </div>
 

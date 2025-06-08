@@ -1,9 +1,11 @@
 # Custom AI Models on Google Cloud Platform
 
 ## Overview
+
 Deploy your own face detection and object detection models on GCP for **10x cheaper** analysis than Google Vision API.
 
 **Cost Comparison:**
+
 - Google Vision API: ~$3.00 per 1,000 images
 - Custom GCP deployment: ~$0.10-0.30 per 1,000 images
 
@@ -18,6 +20,7 @@ mkdir ai-service && cd ai-service
 ```
 
 Create `requirements.txt`:
+
 ```txt
 flask==2.3.3
 opencv-python-headless==4.8.1.78
@@ -29,6 +32,7 @@ gunicorn==21.2.0
 ```
 
 Create `app.py`:
+
 ```python
 import os
 import cv2
@@ -62,18 +66,18 @@ def health_check():
 def analyze_frame():
     try:
         data = request.get_json()
-        
+
         # Decode base64 image
         image_data = base64.b64decode(data['image'])
         image = Image.open(io.BytesIO(image_data))
         image_np = np.array(image)
-        
+
         # Convert BGR to RGB for MediaPipe
         rgb_image = cv2.cvtColor(image_np, cv2.COLOR_BGR2RGB)
-        
+
         # Face Detection using MediaPipe
         face_results = face_detection.process(rgb_image)
-        
+
         faces = []
         if face_results.detections:
             for detection in face_results.detections:
@@ -87,7 +91,7 @@ def analyze_frame():
                         'height': detection.location_data.relative_bounding_box.height
                     }
                 })
-        
+
         # Object Detection using YOLO
         objects = []
         if yolo_model:
@@ -99,7 +103,7 @@ def analyze_frame():
                         class_id = int(box.cls[0])
                         confidence = float(box.conf[0])
                         class_name = yolo_model.names[class_id].lower()
-                        
+
                         # Filter for suspicious objects
                         suspicious_items = ['cell phone', 'book', 'laptop', 'tablet', 'remote']
                         if any(item in class_name for item in suspicious_items):
@@ -108,7 +112,7 @@ def analyze_frame():
                                 'confidence': confidence,
                                 'bbox': box.xyxy[0].tolist()
                             })
-        
+
         # Analysis results
         result = {
             'face_detection': {
@@ -127,9 +131,9 @@ def analyze_frame():
                 }
             }
         }
-        
+
         return jsonify(result)
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -139,6 +143,7 @@ if __name__ == '__main__':
 ```
 
 Create `Dockerfile`:
+
 ```dockerfile
 FROM python:3.9-slim
 
@@ -270,17 +275,17 @@ Update your Next.js app to use the custom AI service:
 async function analyzeFrame(frameData: Buffer, frameId: string) {
   const frameSize = frameData.length;
   const isLargeFrame = frameSize > 50000;
-  
+
   try {
     const AI_SERVICE_URL = process.env.CUSTOM_AI_SERVICE_URL;
-    
+
     if (!AI_SERVICE_URL) {
       return simulateFrameAnalysis(frameId, frameSize, isLargeFrame);
     }
 
     // Convert buffer to base64
     const base64Image = frameData.toString('base64');
-    
+
     // Call your custom AI service
     const response = await fetch(`${AI_SERVICE_URL}/analyze-frame`, {
       method: 'POST',
@@ -289,8 +294,8 @@ async function analyzeFrame(frameData: Buffer, frameId: string) {
       },
       body: JSON.stringify({
         image: base64Image,
-        frameId: frameId
-      })
+        frameId: frameId,
+      }),
     });
 
     if (!response.ok) {
@@ -298,21 +303,27 @@ async function analyzeFrame(frameData: Buffer, frameId: string) {
     }
 
     const aiResult = await response.json();
-    
+
     // Process results
     const faceDetected = aiResult.face_detection.faces_detected > 0;
     const faceCount = aiResult.face_detection.faces_detected;
     const confidence = aiResult.face_detection.average_confidence;
-    
+
     // Map detected objects to suspicious objects
-    const suspiciousObjects = aiResult.object_detection.objects.map(obj => ({
-      type: obj.type.includes('phone') ? 'phone' : 
-            obj.type.includes('book') ? 'book' : 
-            obj.type.includes('laptop') ? 'electronic_device' : obj.type,
-      confidence: obj.confidence
+    const suspiciousObjects = aiResult.object_detection.objects.map((obj) => ({
+      type: obj.type.includes('phone')
+        ? 'phone'
+        : obj.type.includes('book')
+          ? 'book'
+          : obj.type.includes('laptop')
+            ? 'electronic_device'
+            : obj.type,
+      confidence: obj.confidence,
     }));
 
-    console.log(`🤖 Custom AI analyzed frame ${frameId}: faces=${faceCount}, objects=${suspiciousObjects.length}`);
+    console.log(
+      `🤖 Custom AI analyzed frame ${frameId}: faces=${faceCount}, objects=${suspiciousObjects.length}`
+    );
 
     return {
       frameId,
@@ -326,10 +337,9 @@ async function analyzeFrame(frameData: Buffer, frameId: string) {
         isLargeFrame,
         analysisTime: new Date().toISOString(),
         totalObjectsDetected: aiResult.object_detection.objects.length,
-        analysisMethod: 'custom_ai_service'
-      }
+        analysisMethod: 'custom_ai_service',
+      },
     };
-
   } catch (error) {
     console.error(`❌ Custom AI service error for frame ${frameId}:`, error);
     return simulateFrameAnalysis(frameId, frameSize, isLargeFrame);
@@ -349,16 +359,19 @@ CUSTOM_AI_SERVICE_URL=https://your-ai-service-url.run.app
 ## Cost Analysis
 
 ### Cloud Run Pricing (Pay per use):
+
 - **CPU**: $0.000024 per vCPU-second
 - **Memory**: $0.0000025 per GiB-second
 - **Requests**: $0.0000004 per request
 
 **Example cost for 1,000 images:**
+
 - Processing time: ~2 seconds per image
 - Total CPU-seconds: 2,000
 - Total cost: ~$0.048 + request costs = **~$0.05**
 
 ### Compute Engine (Always-on):
+
 - **n1-standard-2**: $0.095 per hour
 - **Monthly cost**: ~$70 for 24/7 operation
 - **Cost per 1,000 images**: ~$0.10 (if processing 10,000+ images/month)
@@ -366,6 +379,7 @@ CUSTOM_AI_SERVICE_URL=https://your-ai-service-url.run.app
 ## Advanced Features
 
 ### 1. Model Caching
+
 ```python
 # Add Redis caching for frequently analyzed frames
 import redis
@@ -373,6 +387,7 @@ redis_client = redis.Redis(host='localhost', port=6379, db=0)
 ```
 
 ### 2. Batch Processing
+
 ```python
 @app.route('/analyze-batch', methods=['POST'])
 def analyze_batch():
@@ -381,6 +396,7 @@ def analyze_batch():
 ```
 
 ### 3. Model Updates
+
 ```bash
 # Script to update models
 #!/bin/bash
@@ -393,6 +409,7 @@ sudo systemctl restart ai-service
 ## Monitoring & Scaling
 
 ### Set up monitoring:
+
 ```bash
 # Cloud Monitoring
 gcloud logging sinks create ai-service-logs \
@@ -400,15 +417,16 @@ gcloud logging sinks create ai-service-logs \
 ```
 
 ### Auto-scaling configuration:
+
 ```yaml
 # cloud-run-service.yaml
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   annotations:
-    run.googleapis.com/cpu-throttling: "false"
-    autoscaling.knative.dev/maxScale: "10"
-    autoscaling.knative.dev/minScale: "0"
+    run.googleapis.com/cpu-throttling: 'false'
+    autoscaling.knative.dev/maxScale: '10'
+    autoscaling.knative.dev/minScale: '0'
 ```
 
 ## Next Steps
@@ -419,4 +437,4 @@ metadata:
 4. **Monitor costs** in GCP Console
 5. **Scale as needed** based on usage patterns
 
-This setup will give you **enterprise-grade AI analysis at 10x lower cost** than Google Vision API! 
+This setup will give you **enterprise-grade AI analysis at 10x lower cost** than Google Vision API!

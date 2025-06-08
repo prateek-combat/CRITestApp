@@ -9,6 +9,7 @@ This project uses a comprehensive CI/CD pipeline built with GitHub Actions to en
 The CI/CD pipeline consists of 9 jobs that run in parallel and sequence:
 
 ### 1. Code Quality Checks (`lint-and-format`)
+
 - **Purpose**: Validates code quality and formatting
 - **Runs on**: All triggers
 - **Tasks**:
@@ -17,6 +18,7 @@ The CI/CD pipeline consists of 9 jobs that run in parallel and sequence:
   - TypeScript type checking
 
 ### 2. Unit & Integration Tests (`test`)
+
 - **Purpose**: Runs application tests with database
 - **Depends on**: `lint-and-format`
 - **Features**:
@@ -26,6 +28,7 @@ The CI/CD pipeline consists of 9 jobs that run in parallel and sequence:
   - Test coverage reporting
 
 ### 3. Build & Security (`build-and-security`)
+
 - **Purpose**: Builds application and runs security audits
 - **Depends on**: `lint-and-format`
 - **Tasks**:
@@ -34,6 +37,7 @@ The CI/CD pipeline consists of 9 jobs that run in parallel and sequence:
   - Artifact generation
 
 ### 4. Database Migration Tests (`database-migration`)
+
 - **Purpose**: Validates database schema and migrations
 - **Depends on**: `lint-and-format`
 - **Features**:
@@ -42,6 +46,7 @@ The CI/CD pipeline consists of 9 jobs that run in parallel and sequence:
   - Database reset verification
 
 ### 5. End-to-End Tests (`e2e-tests`)
+
 - **Purpose**: Full application testing
 - **Depends on**: `build-and-security`, `test`
 - **Runs on**: PRs and main branch only
@@ -51,16 +56,19 @@ The CI/CD pipeline consists of 9 jobs that run in parallel and sequence:
   - User journey testing
 
 ### 6. Deploy to Staging (`deploy-staging`)
+
 - **Purpose**: Deploys to staging environment
 - **Depends on**: `build-and-security`, `test`, `database-migration`
 - **Triggers**: Push to `dev` branch only
 
 ### 7. Deploy to Production (`deploy-production`)
+
 - **Purpose**: Deploys to production environment
 - **Depends on**: All previous jobs
 - **Triggers**: Push to `main` branch only
 
 ### 8. Security Analysis (`security-analysis`)
+
 - **Purpose**: Advanced security scanning
 - **Depends on**: `lint-and-format`
 - **Features**:
@@ -68,6 +76,7 @@ The CI/CD pipeline consists of 9 jobs that run in parallel and sequence:
   - Bundle size analysis
 
 ### 9. Cleanup (`cleanup`)
+
 - **Purpose**: Removes old artifacts
 - **Runs**: Always after deployment jobs
 
@@ -124,11 +133,13 @@ npx playwright test
 ## Test Configuration
 
 ### Jest Configuration (`jest.config.js`)
+
 - Uses Next.js Jest configuration
 - Includes test coverage thresholds
 - Mocks for Next.js, NextAuth, and Prisma
 
 ### Test Structure
+
 ```
 src/
 ├── __tests__/          # Unit tests
@@ -155,12 +166,14 @@ Each database is isolated and cleaned up after tests.
 ## Deployment Workflows
 
 ### Staging Deployment (Dev Branch)
+
 1. Code pushed to `dev` branch
 2. All quality checks pass
 3. Automatic deployment to staging environment
 4. Environment: `staging`
 
 ### Production Deployment (Main Branch)
+
 1. Code pushed to `main` branch
 2. All tests and E2E tests pass
 3. Manual approval required (environment protection)
@@ -172,6 +185,7 @@ Each database is isolated and cleaned up after tests.
 ### Adding New Tests
 
 **Unit Tests:**
+
 ```typescript
 // src/__tests__/example.test.tsx
 import { render, screen } from '@testing-library/react'
@@ -186,15 +200,16 @@ describe('Component', () => {
 ```
 
 **E2E Tests:**
+
 ```typescript
 // e2e/example.spec.ts
-import { test, expect } from '@playwright/test'
+import { test, expect } from '@playwright/test';
 
 test('should navigate correctly', async ({ page }) => {
-  await page.goto('/')
-  await page.click('text=Login')
-  await expect(page).toHaveURL(/login/)
-})
+  await page.goto('/');
+  await page.click('text=Login');
+  await expect(page).toHaveURL(/login/);
+});
 ```
 
 ### Deployment Customization
@@ -211,12 +226,14 @@ Update the deployment steps in `.github/workflows/ci-cd.yml`:
 ## Monitoring and Debugging
 
 ### Viewing Pipeline Results
+
 1. Go to GitHub repository
 2. Click "Actions" tab
 3. Select workflow run
 4. View job details and logs
 
 ### Debugging Failed Tests
+
 - Check the "Artifacts" section for test results
 - Download coverage reports
 - Review screenshot/video artifacts from E2E tests
@@ -224,16 +241,19 @@ Update the deployment steps in `.github/workflows/ci-cd.yml`:
 ### Common Issues
 
 **Database Connection Failures:**
+
 - Ensure PostgreSQL service is healthy
 - Check environment variables
 - Verify network connectivity
 
 **Build Failures:**
+
 - Check TypeScript errors
 - Verify all dependencies are installed
 - Review ESLint configuration
 
 **Test Failures:**
+
 - Check test isolation
 - Verify mock configurations
 - Review test data setup
@@ -241,12 +261,14 @@ Update the deployment steps in `.github/workflows/ci-cd.yml`:
 ## Performance Optimization
 
 ### Pipeline Speed
+
 - Jobs run in parallel where possible
 - Cached Node.js dependencies
 - Optimized Docker images
 - Minimal artifact retention
 
 ### Cost Optimization
+
 - Conditional job execution
 - Artifact cleanup
 - Resource-appropriate runners
@@ -262,12 +284,14 @@ Update the deployment steps in `.github/workflows/ci-cd.yml`:
 ## Maintenance
 
 ### Regular Tasks
+
 - Update dependencies monthly
 - Review security audit results
 - Update test coverage thresholds
 - Clean up old artifacts
 
 ### Monitoring
+
 - Track pipeline success rates
 - Monitor deployment frequency
 - Review test execution times
@@ -276,8 +300,9 @@ Update the deployment steps in `.github/workflows/ci-cd.yml`:
 ## Support
 
 For issues with the CI/CD pipeline:
+
 1. Check the GitHub Actions logs
 2. Review this documentation
 3. Verify environment configuration
 4. Test locally first
-5. Open an issue with detailed logs 
+5. Open an issue with detailed logs

@@ -846,12 +846,12 @@ user4@example.com"
           <h2 className="text-xl font-semibold text-gray-900">
             🌐 Generate Public Test Link
           </h2>
-          <a
+          <Link
             href="/admin/public-links"
             className="inline-flex items-center rounded-lg bg-purple-100 px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-200"
           >
             📋 Manage Public Links
-          </a>
+          </Link>
         </div>
 
         <div className="mb-4">
@@ -939,8 +939,9 @@ user4@example.com"
         <div className="mt-4 text-sm text-gray-600">
           <p>
             This creates a public link that anyone can use to access the test
-            after entering their name and email. Use "Manage Public Links" to
-            view, activate/deactivate, or delete existing public links.
+            after entering their name and email. Use &quot;Manage Public
+            Links&quot; to view, activate/deactivate, or delete existing public
+            links.
           </p>
         </div>
       </div>
