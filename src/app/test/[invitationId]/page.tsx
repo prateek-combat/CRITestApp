@@ -948,8 +948,8 @@ export default function TestPage() {
                 <li>Answer each question to the best of your ability.</li>
                 <li>Your session will be recorded throughout the test.</li>
                 <li>
-                  Click 'Submit Test' on the last question when you are
-                  finished.
+                  Click &apos;Submit Test&apos; on the last question when you
+                  are finished.
                 </li>
               </ul>
             </div>
@@ -979,8 +979,8 @@ export default function TestPage() {
                   <div>
                     <p className="font-medium text-blue-800">Review Mode</p>
                     <p className="text-blue-700">
-                      Click "Review" button to view and modify bookmarked
-                      questions
+                      Click &quot;Review&quot; button to view and modify
+                      bookmarked questions
                     </p>
                   </div>
                 </div>

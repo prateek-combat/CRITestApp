@@ -521,8 +521,8 @@ export default function SystemCompatibilityChecker({
             </h2>
             <p className="mx-auto max-w-md text-primary-600">
               Before starting your test, we need to verify that your system is
-              compatible. We'll need to check your camera, microphone, browser
-              capabilities, and network connection.
+              compatible. We&apos;ll need to check your camera, microphone,
+              browser capabilities, and network connection.
             </p>
           </div>
         </div>
@@ -536,7 +536,8 @@ export default function SystemCompatibilityChecker({
               </h3>
               <p className="text-sm text-amber-700">
                 Your browser will ask for camera and microphone permissions.
-                Please click "Allow" to proceed with the compatibility check.
+                Please click &quot;Allow&quot; to proceed with the compatibility
+                check.
               </p>
             </div>
           </div>

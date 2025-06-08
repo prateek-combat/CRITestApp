@@ -528,7 +528,7 @@ export default function TestEditPage({
                     ❗ What went wrong:
                   </h5>
                   <p className="text-sm text-red-700">
-                    Your file contains data that doesn't match the expected
+                    Your file contains data that doesn&apos;t match the expected
                     format. Please review the errors below and fix them in your
                     file.
                   </p>
@@ -603,7 +603,7 @@ export default function TestEditPage({
                         <div className="mb-2 text-sm text-red-600">
                           <strong>Current Value:</strong>{' '}
                           <code className="rounded bg-red-100 px-1">
-                            "{error.value}"
+                            &quot;{error.value}&quot;
                           </code>
                         </div>
                       )}
@@ -653,8 +653,8 @@ export default function TestEditPage({
                       answerOption2)
                     </li>
                     <li>
-                      • Download the template again if you're unsure about the
-                      format
+                      • Download the template again if you&apos;re unsure about
+                      the format
                     </li>
                   </ul>
                 </div>
