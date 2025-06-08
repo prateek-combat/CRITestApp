@@ -35,12 +35,13 @@ else
     exit 1
 fi
 
-echo "Step 2: Run database migrations (migrate deploy)..."
-npx prisma migrate deploy > /dev/null 2>&1
+echo "Step 2: Sync database schema (using push workflow)..."
+npx prisma db push > /dev/null 2>&1
 if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Database Migration Deploy: SUCCESS${NC}"
+    echo -e "${GREEN}✅ Database Schema Sync: SUCCESS${NC}"
 else
-    echo -e "${YELLOW}⚠️  Database Migration Deploy: No migrations found (expected with db push workflow)${NC}"
+    echo -e "${RED}❌ Database Schema Sync: FAILED${NC}"
+    exit 1
 fi
 
 echo "Step 3: Validate database schema..."
