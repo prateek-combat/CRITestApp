@@ -43,23 +43,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint-and-format
 
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: testdb
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     env:
-      DATABASE_URL: postgresql://testuser:testpass@localhost:5432/testdb
+      DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
       NEXTAUTH_SECRET: test-secret-key-for-ci
       NEXTAUTH_URL: http://localhost:3000
 
@@ -156,23 +141,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint-and-format
 
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: migrationuser
-          POSTGRES_PASSWORD: migrationpass
-          POSTGRES_DB: migrationdb
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5433:5432
-
     env:
-      DATABASE_URL: postgresql://migrationuser:migrationpass@localhost:5433/migrationdb
+      DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
 
     steps:
       - name: Checkout code
@@ -208,13 +178,14 @@ jobs:
           npx prisma db execute --stdin <<< "SELECT COUNT(*) FROM \"User\" WHERE role = 'ADMIN';" || echo "No admin users found or table doesn't exist"
         continue-on-error: true
 
-      - name: Test database reset capability
-        run: npx prisma migrate reset --force
-
-      - name: Verify reset worked
+      - name: Test database reset and recreation
         run: |
-          npx prisma db execute --stdin <<< "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';" || echo "Reset verification failed"
-        continue-on-error: true
+          echo "Testing database reset..."
+          npx prisma migrate reset --force --skip-seed
+          echo "Reset completed, now reapplying schema..."
+          npx prisma migrate deploy
+          echo "Testing seeding after reset..."
+          npx prisma db seed
 
   # Job 5: End-to-End Tests (Optional)
   e2e-tests:
@@ -223,23 +194,8 @@ jobs:
     needs: [build-and-security, test]
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
 
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: e2euser
-          POSTGRES_PASSWORD: e2epass
-          POSTGRES_DB: e2edb
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5434:5432
-
     env:
-      DATABASE_URL: postgresql://e2euser:e2epass@localhost:5434/e2edb
+      DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
       NEXTAUTH_SECRET: e2e-secret-key
       NEXTAUTH_URL: http://localhost:3000
 
