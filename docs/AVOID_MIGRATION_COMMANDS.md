@@ -93,23 +93,35 @@ npx prisma db execute --stdin <<< "SELECT 1;"
 
 If you accidentally used migration commands and got errors:
 
-### **Step 1: Clean Reset**
+### **Quick Fix (Simple Cases)**
 
 ```bash
+# Step 1: Clean reset
 npx prisma db push --force-reset --accept-data-loss
-```
 
-### **Step 2: Reseed**
-
-```bash
+# Step 2: Reseed
 npx prisma db seed
-```
 
-### **Step 3: Verify**
-
-```bash
+# Step 3: Verify
 npm run build && npm test
 ```
+
+### **Robust Fix (Persistent Issues)**
+
+If you're getting enum conflicts like "type 'UserRole' already exists":
+
+```bash
+# Use the comprehensive reset script
+./scripts/neon-database-reset.sh
+```
+
+This script handles:
+
+- ✅ Prisma process cleanup
+- ✅ Cache clearing
+- ✅ Multiple reset attempts
+- ✅ Complete verification
+- ✅ Proper error handling
 
 ## 📋 **Quick Reference**
 
