@@ -12,6 +12,7 @@ import {
   Users,
   LayoutDashboard,
   Zap,
+  Brain,
 } from 'lucide-react';
 
 export default function AdminLayout({
@@ -63,6 +64,11 @@ export default function AdminLayout({
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Tests', href: '/admin/tests', icon: FileText },
+    {
+      name: 'Personality Dimensions',
+      href: '/admin/personality-dimensions',
+      icon: Brain,
+    },
     { name: 'Invitations', href: '/admin/invitations', icon: Mail },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Leaderboard', href: '/admin/leaderboard', icon: Trophy },
