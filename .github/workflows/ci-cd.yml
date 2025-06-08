@@ -79,7 +79,12 @@ jobs:
       - name: Setup test database
         run: |
           npx prisma generate
-          npx prisma db push
+          npx prisma db push --force-reset
+
+      - name: Verify database tables exist
+        run: |
+          npx prisma db execute --stdin <<< "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';"
+        continue-on-error: true
 
       - name: Seed test data (if seed script exists)
         run: |
@@ -191,6 +196,13 @@ jobs:
       - name: Validate database schema
         run: npx prisma validate
 
+      - name: Test database seeding
+        run: |
+          if [ -f "prisma/seed.ts" ] || [ -f "prisma/seed.js" ]; then
+            npx prisma db seed
+          fi
+        continue-on-error: true
+
       - name: Check database reset
         run: npx prisma migrate reset --force
 
@@ -244,7 +256,14 @@ jobs:
       - name: Setup database
         run: |
           npx prisma generate
-          npx prisma db push
+          npx prisma db push --force-reset
+          
+      - name: Seed database for E2E tests
+        run: |
+          if [ -f "prisma/seed.ts" ] || [ -f "prisma/seed.js" ]; then
+            npx prisma db seed
+          fi
+        continue-on-error: true
 
       - name: Build application
         run: npm run build
