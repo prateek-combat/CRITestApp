@@ -915,7 +915,8 @@ export default function ProctorAnalysisPage() {
                 <div className="mb-2 text-blue-600">🤖</div>
                 <p className="text-gray-600">No AI analysis available yet</p>
                 <p className="mt-1 text-sm text-gray-500">
-                  Click "Run AI Analysis" to generate detailed analysis results.
+                  Click &quot;Run AI Analysis&quot; to generate detailed
+                  analysis results.
                 </p>
               </div>
             )}
