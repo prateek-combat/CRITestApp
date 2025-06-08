@@ -46,8 +46,9 @@ echo -e "${BLUE}🔍 Testing Code Quality${NC}"
 echo "------------------------"
 
 # Test prettier
-npx prettier --check "**/*.{js,jsx,ts,tsx,json,css,md}" > /dev/null 2>&1
-print_status $? "Prettier Formatting"
+npx prettier --check "**/*.{js,jsx,ts,tsx,json,css,md}" --ignore-path .gitignore > /dev/null 2>&1
+prettier_result=$?
+print_status $prettier_result "Prettier Formatting"
 
 # Test ESLint (non-blocking)
 if npm run lint > /dev/null 2>&1; then

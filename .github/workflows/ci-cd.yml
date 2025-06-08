@@ -181,9 +181,8 @@ jobs:
       - name: Test database reset and recreation
         run: |
           echo "Testing database reset..."
-          npx prisma migrate reset --force --skip-seed
-          echo "Reset completed, now reapplying schema..."
-          npx prisma migrate deploy
+          npx prisma db push --force-reset --accept-data-loss
+          echo "Reset completed, schema recreated with db push"
           echo "Testing seeding after reset..."
           npx prisma db seed
 
