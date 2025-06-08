@@ -231,7 +231,7 @@ Quick deployment to Vercel:
 
 - **Behavioral Analysis**: Video-based confidence and stress pattern detection
 - **Cheating Detection AI**: Advanced eye movement and behavior analysis
-- **Personality Insights**: Test-taking pattern analysis
+- **Behavioral Analysis**: Test-taking pattern analysis
 - **Cultural Fit Scoring**: Response pattern compatibility assessment
 - **Automated Candidate Ranking**: ML-powered performance scoring
 

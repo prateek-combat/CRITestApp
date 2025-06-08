@@ -27,6 +27,15 @@ interface Question {
   timerSeconds: number;
   answerOptions: string[];
   category: string;
+  questionType?: 'OBJECTIVE' | 'PERSONALITY';
+  personalityDimensionId?: string | null;
+  answerWeights?: Record<string, number> | null;
+  personalityDimension?: {
+    id: string;
+    name: string;
+    code: string;
+    description: string | null;
+  };
 }
 
 interface Test {
@@ -91,6 +100,13 @@ export default function TestPage() {
   );
   const [showBookmarkedReview, setShowBookmarkedReview] = useState(false);
   const [showProgressBar, setShowProgressBar] = useState(false);
+
+  // Personality question states
+  const [confidenceScores, setConfidenceScores] = useState<
+    Record<string, number>
+  >({});
+  const [showTransitionScreen, setShowTransitionScreen] = useState(false);
+  const [hasSeenPersonalityIntro, setHasSeenPersonalityIntro] = useState(false);
 
   // Media refs - updated for new proctoring system
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -586,6 +602,21 @@ export default function TestPage() {
             )
           : Math.max(currentQuestionIndex - 1, 0);
 
+      // Check if transitioning to personality questions
+      if (direction === 'next' && newIndex < invitation.test.questions.length) {
+        const currentQuestion = invitation.test.questions[currentQuestionIndex];
+        const nextQuestion = invitation.test.questions[newIndex];
+
+        if (
+          currentQuestion?.questionType !== 'PERSONALITY' &&
+          nextQuestion?.questionType === 'PERSONALITY' &&
+          !hasSeenPersonalityIntro
+        ) {
+          setShowTransitionScreen(true);
+          return;
+        }
+      }
+
       setCurrentQuestionIndex(newIndex);
 
       // Set start time for the new question if not already set
@@ -597,8 +628,82 @@ export default function TestPage() {
         }));
       }
     },
-    [invitation, currentQuestionIndex, questionStartTime]
+    [
+      invitation,
+      currentQuestionIndex,
+      questionStartTime,
+      hasSeenPersonalityIntro,
+    ]
   );
+
+  // Handle confidence scoring for personality questions
+  const handleConfidenceChange = useCallback(
+    (questionId: string, confidence: number) => {
+      setConfidenceScores((prev) => ({
+        ...prev,
+        [questionId]: confidence,
+      }));
+    },
+    []
+  );
+
+  // Check if current question is personality type
+  const isPersonalityQuestion = useCallback((question: Question) => {
+    return question.questionType === 'PERSONALITY';
+  }, []);
+
+  // Get personality vs objective progress
+  const getQuestionProgress = useCallback(() => {
+    if (!invitation)
+      return {
+        objective: 0,
+        personality: 0,
+        totalObjective: 0,
+        totalPersonality: 0,
+      };
+
+    const objectiveQuestions = invitation.test.questions.filter(
+      (q) => q.questionType !== 'PERSONALITY'
+    );
+    const personalityQuestions = invitation.test.questions.filter(
+      (q) => q.questionType === 'PERSONALITY'
+    );
+
+    const answeredObjective = objectiveQuestions.filter(
+      (q) => answers[q.id]
+    ).length;
+    const answeredPersonality = personalityQuestions.filter(
+      (q) => answers[q.id]
+    ).length;
+
+    return {
+      objective: answeredObjective,
+      personality: answeredPersonality,
+      totalObjective: objectiveQuestions.length,
+      totalPersonality: personalityQuestions.length,
+    };
+  }, [invitation, answers]);
+
+  // Handle transition screen continue
+  const handleTransitionContinue = useCallback(() => {
+    setShowTransitionScreen(false);
+    setHasSeenPersonalityIntro(true);
+    // Navigate to the first personality question
+    if (!invitation?.test?.questions) return;
+    const nextIndex = Math.min(
+      currentQuestionIndex + 1,
+      invitation.test.questions.length - 1
+    );
+    setCurrentQuestionIndex(nextIndex);
+
+    const nextQuestion = invitation.test.questions[nextIndex];
+    if (nextQuestion && !questionStartTime[nextQuestion.id]) {
+      setQuestionStartTime((prev) => ({
+        ...prev,
+        [nextQuestion.id]: { epoch: Date.now(), key: nextQuestion.id },
+      }));
+    }
+  }, [currentQuestionIndex, invitation, questionStartTime]);
 
   // Submit test
   const submitTest = useCallback(async () => {
@@ -1042,6 +1147,120 @@ export default function TestPage() {
     );
   }
 
+  // Personality questions transition screen
+  if (showTransitionScreen && invitation) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
+        <div className="mx-auto max-w-2xl">
+          <div className="overflow-hidden rounded-2xl bg-white shadow-xl">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-center">
+              <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white bg-opacity-20">
+                <svg
+                  className="h-10 w-10 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                  />
+                </svg>
+              </div>
+              <h1 className="mb-2 text-3xl font-bold text-white">
+                Personality Assessment
+              </h1>
+              <p className="text-lg text-blue-100">
+                Transitioning to work style evaluation
+              </p>
+            </div>
+
+            {/* Content */}
+            <div className="p-8">
+              <div className="mb-8 text-center">
+                <h2 className="mb-4 text-2xl font-semibold text-gray-900">
+                  Assessment Approach Change
+                </h2>
+                <p className="mb-6 text-lg leading-relaxed text-gray-600">
+                  The following questions assess your work style and
+                  preferences.
+                  <strong className="text-blue-600">
+                    {' '}
+                    There are no right or wrong answers.
+                  </strong>
+                </p>
+
+                <div className="mb-8 rounded-lg border border-blue-200 bg-blue-50 p-6">
+                  <div className="flex items-start">
+                    <div className="mr-3 mt-0.5 h-6 w-6 text-blue-600">
+                      <svg
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <h3 className="mb-2 font-medium text-blue-800">
+                        How to approach these questions:
+                      </h3>
+                      <ul className="space-y-1 text-sm text-blue-700">
+                        <li>
+                          • Select the option that best describes your natural
+                          approach
+                        </li>
+                        <li>
+                          • Think about how you typically behave in work
+                          situations
+                        </li>
+                        <li>
+                          • Be honest - this helps create an accurate profile
+                        </li>
+                        <li>• You can change your answers if needed</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <div className="text-center">
+                <button
+                  onClick={handleTransitionContinue}
+                  className="inline-flex items-center rounded-lg bg-blue-600 px-8 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:bg-blue-700"
+                >
+                  <svg
+                    className="mr-2 h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
+                  </svg>
+                  Continue to Personality Questions
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Test completed state
   if (testCompleted && invitation) {
     return (
@@ -1238,6 +1457,12 @@ export default function TestPage() {
                   Question {currentQuestionIndex + 1} of{' '}
                   {invitation.test.questions.length}
                 </span>
+                {/* Question type indicator */}
+                {isPersonalityQuestion(currentQuestion) && (
+                  <span className="inline-flex items-center rounded-full bg-blue-500/20 px-2 py-1 text-xs font-medium text-blue-100">
+                    🧠 Personality
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center space-x-2">
@@ -1260,15 +1485,66 @@ export default function TestPage() {
             </div>
           </div>
 
-          {/* Thin progress bar */}
-          <div className="h-0.5 bg-white/20">
-            <div
-              className="h-full bg-white transition-all duration-300"
-              style={{
-                width: `${((currentQuestionIndex + 1) / invitation.test.questions.length) * 100}%`,
-              }}
-            />
-          </div>
+          {/* Dual progress bars for objective and personality questions */}
+          {(() => {
+            const progress = getQuestionProgress();
+            const hasPersonalityQuestions = progress.totalPersonality > 0;
+
+            if (hasPersonalityQuestions) {
+              return (
+                <div className="space-y-1 px-4 pb-2">
+                  {/* Objective questions progress */}
+                  {progress.totalObjective > 0 && (
+                    <div className="flex items-center space-x-2">
+                      <span className="w-16 text-xs text-green-100">
+                        📝 Objective
+                      </span>
+                      <div className="h-1 flex-1 rounded-full bg-white/20">
+                        <div
+                          className="h-full rounded-full bg-green-300 transition-all duration-300"
+                          style={{
+                            width: `${(progress.objective / progress.totalObjective) * 100}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="w-8 text-xs text-green-100">
+                        {progress.objective}/{progress.totalObjective}
+                      </span>
+                    </div>
+                  )}
+                  {/* Personality questions progress */}
+                  <div className="flex items-center space-x-2">
+                    <span className="w-16 text-xs text-blue-100">
+                      🧠 Personality
+                    </span>
+                    <div className="h-1 flex-1 rounded-full bg-white/20">
+                      <div
+                        className="h-full rounded-full bg-blue-300 transition-all duration-300"
+                        style={{
+                          width: `${(progress.personality / progress.totalPersonality) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="w-8 text-xs text-blue-100">
+                      {progress.personality}/{progress.totalPersonality}
+                    </span>
+                  </div>
+                </div>
+              );
+            } else {
+              // Single progress bar for objective-only tests
+              return (
+                <div className="h-0.5 bg-white/20">
+                  <div
+                    className="h-full bg-white transition-all duration-300"
+                    style={{
+                      width: `${((currentQuestionIndex + 1) / invitation.test.questions.length) * 100}%`,
+                    }}
+                  />
+                </div>
+              );
+            }
+          })()}
         </header>
 
         {/* Expandable Progress Overview */}
@@ -1289,22 +1565,59 @@ export default function TestPage() {
         <main className="flex-grow overflow-y-auto bg-gray-50">
           <div className="mx-auto max-w-4xl px-4 py-6">
             {/* Question Card */}
-            <div className="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+            <div
+              className={`flex flex-col overflow-hidden rounded-lg border shadow-sm ${
+                isPersonalityQuestion(currentQuestion)
+                  ? 'border-blue-200 bg-gradient-to-br from-blue-50 to-white'
+                  : 'border-gray-200 bg-white'
+              }`}
+            >
               {/* Question Header */}
-              <div className="border-b border-gray-200 bg-gray-50 px-6 py-3">
+              <div
+                className={`border-b px-6 py-3 ${
+                  isPersonalityQuestion(currentQuestion)
+                    ? 'border-blue-200 bg-gradient-to-r from-blue-100 to-blue-50'
+                    : 'border-gray-200 bg-gray-50'
+                }`}
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="mb-2 flex items-center space-x-3">
-                      <span className="inline-flex items-center rounded-full bg-military-green px-2 py-1 text-xs font-medium text-white">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium text-white ${
+                          isPersonalityQuestion(currentQuestion)
+                            ? 'bg-blue-600'
+                            : 'bg-military-green'
+                        }`}
+                      >
+                        {isPersonalityQuestion(currentQuestion) ? '🧠' : '📝'}{' '}
                         Question {currentQuestionIndex + 1}
                       </span>
                       <span className="text-sm text-gray-500">
                         {currentQuestion.category}
                       </span>
+                      {isPersonalityQuestion(currentQuestion) &&
+                        currentQuestion.personalityDimension && (
+                          <span className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-700">
+                            {currentQuestion.personalityDimension.name}
+                          </span>
+                        )}
                     </div>
                     <h2 className="text-xl font-bold leading-tight text-gray-900">
                       {currentQuestion.promptText}
                     </h2>
+                    {/* Different instruction text for personality questions */}
+                    <p
+                      className={`mt-2 text-sm ${
+                        isPersonalityQuestion(currentQuestion)
+                          ? 'font-medium text-blue-600'
+                          : 'text-gray-500'
+                      }`}
+                    >
+                      {isPersonalityQuestion(currentQuestion)
+                        ? 'Select the option that best describes your approach'
+                        : 'Select the correct answer'}
+                    </p>
                   </div>
                 </div>
 
@@ -1342,6 +1655,8 @@ export default function TestPage() {
                     const isSelected =
                       answers[currentQuestion.id]?.answerIndex === index;
                     const optionLetter = String.fromCharCode(65 + index); // A, B, C, D...
+                    const isPersonality =
+                      isPersonalityQuestion(currentQuestion);
 
                     return (
                       <button
@@ -1349,16 +1664,24 @@ export default function TestPage() {
                         onClick={() => handleAnswer(currentQuestion.id, index)}
                         className={`group relative flex items-start space-x-3 rounded-lg border-2 p-4 text-left transition-all duration-200 ${
                           isSelected
-                            ? 'border-military-green bg-green-50 shadow-md ring-2 ring-military-green/20'
-                            : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                            ? isPersonality
+                              ? 'border-blue-500 bg-blue-50 shadow-md ring-2 ring-blue-500/20'
+                              : 'border-military-green bg-green-50 shadow-md ring-2 ring-military-green/20'
+                            : isPersonality
+                              ? 'hover:bg-blue-25 border-blue-200 bg-white hover:border-blue-300 hover:shadow-sm'
+                              : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
                         } `}
                       >
                         {/* Option Letter */}
                         <div
                           className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all duration-200 ${
                             isSelected
-                              ? 'bg-military-green text-white'
-                              : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
+                              ? isPersonality
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-military-green text-white'
+                              : isPersonality
+                                ? 'bg-blue-100 text-blue-600 group-hover:bg-blue-200'
+                                : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
                           } `}
                         >
                           {optionLetter}
@@ -1373,20 +1696,36 @@ export default function TestPage() {
                           </p>
                         </div>
 
-                        {/* Selection Indicator */}
+                        {/* Selection Indicator - Different for personality questions */}
                         {isSelected && (
                           <div className="flex-shrink-0">
-                            <svg
-                              className="h-6 w-6 text-military-green"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
+                            {isPersonality ? (
+                              <svg
+                                className="h-6 w-6 text-blue-500"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                            ) : (
+                              <svg
+                                className="h-6 w-6 text-military-green"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            )}
                           </div>
                         )}
                       </button>
@@ -1394,11 +1733,52 @@ export default function TestPage() {
                   })}
                 </div>
 
+                {/* Confidence Slider for Personality Questions */}
+                {isPersonalityQuestion(currentQuestion) &&
+                  answers[currentQuestion.id] && (
+                    <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50/50 p-4">
+                      <div className="mb-3 flex items-center justify-between">
+                        <label className="text-sm font-medium text-blue-800">
+                          How confident are you in this choice?
+                        </label>
+                        <span className="text-sm text-blue-600">
+                          {confidenceScores[currentQuestion.id] || 3}/5
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <span className="text-xs text-blue-600">Not sure</span>
+                        <input
+                          type="range"
+                          min="1"
+                          max="5"
+                          value={confidenceScores[currentQuestion.id] || 3}
+                          onChange={(e) =>
+                            handleConfidenceChange(
+                              currentQuestion.id,
+                              parseInt(e.target.value)
+                            )
+                          }
+                          className="slider h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-blue-200"
+                          style={{
+                            background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((confidenceScores[currentQuestion.id] || 3) - 1) * 25}%, #cbd5e1 ${((confidenceScores[currentQuestion.id] || 3) - 1) * 25}%, #cbd5e1 100%)`,
+                          }}
+                        />
+                        <span className="text-xs text-blue-600">Very sure</span>
+                      </div>
+                    </div>
+                  )}
+
                 {/* Answer Status */}
                 <div className="mt-4 flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     {answers[currentQuestion.id] ? (
-                      <div className="flex items-center space-x-2 text-green-600">
+                      <div
+                        className={`flex items-center space-x-2 ${
+                          isPersonalityQuestion(currentQuestion)
+                            ? 'text-blue-600'
+                            : 'text-green-600'
+                        }`}
+                      >
                         <svg
                           className="h-4 w-4"
                           fill="currentColor"
@@ -1411,7 +1791,9 @@ export default function TestPage() {
                           />
                         </svg>
                         <span className="text-sm font-medium">
-                          Answer selected
+                          {isPersonalityQuestion(currentQuestion)
+                            ? 'Response recorded'
+                            : 'Answer selected'}
                         </span>
                       </div>
                     ) : (
@@ -1429,7 +1811,11 @@ export default function TestPage() {
                             d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                           />
                         </svg>
-                        <span className="text-sm">Select an answer</span>
+                        <span className="text-sm">
+                          {isPersonalityQuestion(currentQuestion)
+                            ? 'Select your response'
+                            : 'Select an answer'}
+                        </span>
                       </div>
                     )}
                   </div>
