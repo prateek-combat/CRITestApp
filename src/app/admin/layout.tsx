@@ -4,6 +4,15 @@ import { useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import Link from 'next/link';
+import {
+  BarChart3,
+  FileText,
+  Mail,
+  Trophy,
+  Users,
+  LayoutDashboard,
+  Zap,
+} from 'lucide-react';
 
 export default function AdminLayout({
   children,
@@ -51,49 +60,72 @@ export default function AdminLayout({
     return null;
   }
 
+  const navigation = [
+    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+    { name: 'Tests', href: '/admin/tests', icon: FileText },
+    { name: 'Invitations', href: '/admin/invitations', icon: Mail },
+    { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+    { name: 'Leaderboard', href: '/admin/leaderboard', icon: Trophy },
+    { name: 'Users', href: '/admin/users', icon: Users },
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="border-b bg-white shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-4">
-            <div className="flex items-center">
-              <Link
-                href="/admin/dashboard"
-                className="text-xl font-bold text-gray-900"
-              >
-                Test Platform Admin
-              </Link>
-            </div>
-            <nav className="flex space-x-4">
-              <Link
-                href="/admin/dashboard"
-                className="text-gray-600 hover:text-gray-900"
-              >
-                Dashboard
-              </Link>
-              <Link
-                href="/admin/tests"
-                className="text-gray-600 hover:text-gray-900"
-              >
-                Tests
-              </Link>
-              <Link
-                href="/admin/invitations"
-                className="text-gray-600 hover:text-gray-900"
-              >
-                Invitations
-              </Link>
-              <Link
-                href="/admin/leaderboard"
-                className="text-gray-600 hover:text-gray-900"
-              >
-                Leaderboard
-              </Link>
-            </nav>
+    <div className="flex min-h-screen bg-gray-100">
+      {/* Sidebar */}
+      <div className="flex w-64 flex-col">
+        <div className="flex flex-grow flex-col overflow-y-auto bg-white shadow-sm">
+          {/* Logo */}
+          <div className="flex flex-shrink-0 items-center px-4 py-6">
+            <Link
+              href="/admin/dashboard"
+              className="flex items-center space-x-2"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-600">
+                <Zap className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-gray-900">
+                  Test Platform
+                </h1>
+                <p className="text-xs text-gray-500">Admin Panel</p>
+              </div>
+            </Link>
           </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 space-y-1 px-2 pb-4">
+            {navigation.map((item) => {
+              const isActive =
+                pathname === item.href || pathname.startsWith(item.href + '/');
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`group flex items-center rounded-md px-2 py-2 text-sm font-medium ${
+                    isActive
+                      ? 'bg-blue-100 text-blue-900'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  }`}
+                >
+                  <item.icon
+                    className={`mr-3 h-5 w-5 flex-shrink-0 ${
+                      isActive
+                        ? 'text-blue-500'
+                        : 'text-gray-400 group-hover:text-gray-500'
+                    }`}
+                  />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
         </div>
-      </header>
-      <main className="mx-auto max-w-7xl">{children}</main>
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1">
+        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+      </div>
     </div>
   );
 }
