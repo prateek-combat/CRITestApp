@@ -19,7 +19,9 @@
     "setup:email": "node scripts/setup-email.js",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test:local": "./scripts/test-all-local.sh",
+    "test:quick": "./scripts/test-quick.sh"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.17",
