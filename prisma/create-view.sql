@@ -1,4 +1,5 @@
 -- Create view for candidate leaderboard scores (includes both regular and public attempts)
+-- Fixed version that properly handles PublicTestAttempt structure
 CREATE OR REPLACE VIEW vw_candidate_scores AS
 WITH combined_attempts AS (
   -- Regular test attempts
@@ -18,7 +19,7 @@ WITH combined_attempts AS (
 
   UNION ALL
 
-  -- Public test attempts
+  -- Public test attempts (fixed to handle the publicLinkId relationship)
   SELECT
     pta.id AS "attemptId",
     NULL AS "invitationId",
@@ -28,6 +29,7 @@ WITH combined_attempts AS (
     EXTRACT(EPOCH FROM (pta."completedAt" - pta."startedAt"))::int AS "durationSeconds",
     pta."categorySubScores"
   FROM "PublicTestAttempt" pta
+  INNER JOIN "PublicTestLink" ptl ON ptl.id = pta."publicLinkId"
   WHERE pta.status = 'COMPLETED'
     AND pta."completedAt" IS NOT NULL
     AND pta."categorySubScores" IS NOT NULL

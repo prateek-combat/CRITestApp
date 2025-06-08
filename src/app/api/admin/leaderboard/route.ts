@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
     const invitationId = searchParams.get('invitationId');
+    const testId = searchParams.get('testId');
     const search = searchParams.get('search')?.trim();
     const sortBy = searchParams.get('sortBy') || 'rank';
     const sortOrder = searchParams.get('sortOrder') === 'desc' ? 'desc' : 'asc';
@@ -39,6 +40,9 @@ export async function GET(request: NextRequest) {
     }
     if (invitationId) {
       whereConditions.push(`"invitationId" = '${invitationId}'`);
+    }
+    if (testId) {
+      whereConditions.push(`"testId" = '${testId}'`);
     }
     if (search) {
       whereConditions.push(
@@ -69,7 +73,7 @@ export async function GET(request: NextRequest) {
 
     try {
       // First, try to use the view
-      const [rows, totalResult] = await Promise.all([
+      const [rows, totalResult, statsResult] = await Promise.all([
         prisma.$queryRawUnsafe(`
           SELECT 
             "attemptId",
@@ -95,9 +99,20 @@ export async function GET(request: NextRequest) {
           FROM vw_candidate_scores 
           WHERE ${whereClause}
         `),
+        // Stats query
+        prisma.$queryRawUnsafe(`
+          SELECT 
+            COUNT(*) as totalCandidates,
+            ROUND(AVG("composite")::numeric, 1) as avgScore,
+            MAX("composite") as topScore,
+            COUNT(CASE WHEN "completedAt" >= date_trunc('month', CURRENT_DATE) THEN 1 END) as thisMonth
+          FROM vw_candidate_scores 
+          WHERE ${whereClause}
+        `),
       ]);
 
       const total = Number((totalResult as any)[0]?.count || 0);
+      const stats = (statsResult as any)[0] || {};
 
       // Convert BigInt values to numbers for JSON serialization
       const serializedRows = (rows as any[]).map((row: any) => ({
@@ -131,9 +146,16 @@ export async function GET(request: NextRequest) {
           dateFrom,
           dateTo,
           invitationId,
+          testId,
           search,
           sortBy,
           sortOrder,
+        },
+        stats: {
+          totalCandidates: Number(stats.totalCandidates || 0),
+          avgScore: Number(stats.avgScore || 0),
+          topScore: Number(stats.topScore || 0),
+          thisMonth: Number(stats.thisMonth || 0),
         },
       });
     } catch (viewError) {
@@ -176,8 +198,18 @@ export async function GET(request: NextRequest) {
         regularWhereCondition.invitationId = invitationId;
       }
 
-      // For public attempts, skip invitationId filter since they don't have invitations
+      // Add testId filter for regular attempts
+      if (testId) {
+        regularWhereCondition.testId = testId;
+      }
+
+      // For public attempts, we need to filter by testId through the publicLink
       const publicWhereCondition = { ...whereCondition };
+      if (testId) {
+        publicWhereCondition.publicLink = {
+          testId: testId,
+        };
+      }
 
       // Query both regular and public test attempts
       const [testAttempts, publicTestAttempts] = await Promise.all([
@@ -341,23 +373,38 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      // Get total count for both tables
+      // Get total count for both tables with the same filters
       const [regularTotal, publicTotal] = await Promise.all([
         prisma.testAttempt.count({
-          where: {
-            status: 'COMPLETED',
-            completedAt: { not: null },
-          },
+          where: regularWhereCondition,
         }),
         prisma.publicTestAttempt.count({
-          where: {
-            status: 'COMPLETED',
-            completedAt: { not: null },
-          },
+          where: publicWhereCondition,
         }),
       ]);
 
       const total = regularTotal + publicTotal;
+
+      // Calculate stats
+      const allStats = {
+        totalCandidates: total,
+        avgScore:
+          allAttempts.length > 0
+            ? allAttempts.reduce((sum, a) => sum + a.composite, 0) /
+              allAttempts.length
+            : 0,
+        topScore:
+          allAttempts.length > 0
+            ? Math.max(...allAttempts.map((a) => a.composite))
+            : 0,
+        thisMonth: allAttempts.filter((a) => {
+          const completedAt = new Date(a.completedAt);
+          const startOfMonth = new Date();
+          startOfMonth.setDate(1);
+          startOfMonth.setHours(0, 0, 0, 0);
+          return completedAt >= startOfMonth;
+        }).length,
+      };
 
       // Apply pagination after sorting
       const paginatedRows = processedRows.slice(
@@ -379,9 +426,16 @@ export async function GET(request: NextRequest) {
           dateFrom,
           dateTo,
           invitationId,
+          testId,
           search,
           sortBy,
           sortOrder,
+        },
+        stats: {
+          totalCandidates: Math.round(allStats.totalCandidates),
+          avgScore: Math.round(allStats.avgScore * 10) / 10,
+          topScore: Math.round(allStats.topScore * 10) / 10,
+          thisMonth: allStats.thisMonth,
         },
       });
     }

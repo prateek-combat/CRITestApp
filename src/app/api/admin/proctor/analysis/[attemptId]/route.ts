@@ -35,6 +35,7 @@ export async function GET(
           select: {
             id: true,
             title: true,
+            questions: true,
           },
         },
         invitation: {
@@ -42,6 +43,14 @@ export async function GET(
             id: true,
             candidateName: true,
             candidateEmail: true,
+          },
+        },
+        submittedAnswers: {
+          include: {
+            question: true,
+          },
+          orderBy: {
+            submittedAt: 'asc',
           },
         },
       },
@@ -82,8 +91,17 @@ export async function GET(
                 select: {
                   id: true,
                   title: true,
+                  questions: true,
                 },
               },
+            },
+          },
+          submittedAnswers: {
+            include: {
+              question: true,
+            },
+            orderBy: {
+              submittedAt: 'asc',
             },
           },
         },
@@ -122,6 +140,7 @@ export async function GET(
             candidateName: publicAttempt.candidateName,
             candidateEmail: publicAttempt.candidateEmail,
           },
+          submittedAnswers: publicAttempt.submittedAnswers,
         } as any;
 
         // Fetch public proctor data
@@ -156,7 +175,7 @@ export async function GET(
     // Generate analysis results only if real AI analysis was run (indicated by riskScore)
     let analysisResults = null;
 
-    if (testAttempt.riskScore !== null) {
+    if ((testAttempt as any).riskScore !== null) {
       // Calculate actual face detection rate from assets
       const totalFrames = proctorAssets.length;
       const sampleFrames = proctorAssets.filter((_, index) => index % 5 === 0);
@@ -203,10 +222,13 @@ export async function GET(
         },
         audioAnalysis: {
           totalDuration:
-            testAttempt.proctoringStartedAt && testAttempt.proctoringEndedAt
+            (testAttempt as any).proctoringStartedAt &&
+            (testAttempt as any).proctoringEndedAt
               ? Math.floor(
-                  (new Date(testAttempt.proctoringEndedAt).getTime() -
-                    new Date(testAttempt.proctoringStartedAt).getTime()) /
+                  (new Date((testAttempt as any).proctoringEndedAt).getTime() -
+                    new Date(
+                      (testAttempt as any).proctoringStartedAt
+                    ).getTime()) /
                     1000
                 )
               : 300,

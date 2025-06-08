@@ -36,9 +36,16 @@ interface LeaderboardData {
     dateFrom?: string;
     dateTo?: string;
     invitationId?: string;
+    testId?: string;
     search?: string;
     sortBy: string;
     sortOrder: string;
+  };
+  stats: {
+    totalCandidates: number;
+    avgScore: number;
+    topScore: number;
+    thisMonth: number;
   };
 }
 
@@ -163,6 +170,7 @@ export default function LeaderboardContent({
       <LeaderboardFilters
         filters={data.filters}
         onFilterChange={handleFilterChange}
+        stats={data.stats}
       />
 
       <LeaderboardTable

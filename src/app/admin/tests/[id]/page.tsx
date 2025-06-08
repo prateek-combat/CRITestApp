@@ -13,6 +13,7 @@ interface Question {
   answerOptions: string[];
   correctAnswerIndex: number;
   sectionTag: string | null;
+  category: string;
 }
 
 interface Test {
@@ -38,6 +39,8 @@ export default function TestEditPage({
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<any>(null);
   const [importErrors, setImportErrors] = useState<any[]>([]);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [showEditForm, setShowEditForm] = useState(false);
 
   useEffect(() => {
     fetchTest();
@@ -198,6 +201,85 @@ export default function TestEditPage({
 
   const handleDownloadExcel = () => downloadTemplate('excel');
   const handleDownloadCSV = () => downloadTemplate('csv');
+
+  const handleEditQuestion = (question: Question) => {
+    setEditingQuestion(question);
+    setShowEditForm(true);
+    setShowQuestionForm(false);
+  };
+
+  const handleUpdateQuestion = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingQuestion) return;
+
+    const formData = new FormData(e.currentTarget);
+    const answerOptions = [];
+    for (let i = 0; i < 4; i++) {
+      const option = formData.get(`option${i}`);
+      if (option) answerOptions.push(option.toString());
+    }
+
+    const questionData = {
+      promptText: formData.get('promptText'),
+      timerSeconds: parseInt(formData.get('timerSeconds') as string),
+      answerOptions,
+      correctAnswerIndex: parseInt(
+        formData.get('correctAnswerIndex') as string
+      ),
+      category: formData.get('category'),
+      sectionTag: formData.get('sectionTag') || null,
+    };
+
+    try {
+      const response = await fetch(`/api/questions/${editingQuestion.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(questionData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update question');
+      }
+
+      await fetchTest(); // Refresh the test data
+      setShowEditForm(false);
+      setEditingQuestion(null);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Failed to update question'
+      );
+    }
+  };
+
+  const handleDeleteQuestion = async (questionId: string) => {
+    if (
+      !confirm(
+        'Are you sure you want to delete this question? This action cannot be undone.'
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/questions/${questionId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete question');
+      }
+
+      await fetchTest(); // Refresh the test data
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Failed to delete question'
+      );
+    }
+  };
 
   const getFieldHelp = (field: string, message: string): string => {
     switch (field) {
@@ -768,6 +850,170 @@ export default function TestEditPage({
         </form>
       )}
 
+      {/* Edit Question Form */}
+      {showEditForm && editingQuestion && (
+        <form
+          onSubmit={handleUpdateQuestion}
+          className="mt-6 space-y-6 rounded-lg border border-gray-200 bg-white p-6 shadow-md"
+        >
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Edit Question
+            </h3>
+            <button
+              type="button"
+              onClick={() => {
+                setShowEditForm(false);
+                setEditingQuestion(null);
+              }}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          </div>
+
+          {error && (
+            <div
+              className="mb-6 rounded-md border-l-4 border-red-500 bg-red-100 p-4 text-red-700"
+              role="alert"
+            >
+              <p className="font-bold">Error updating question:</p>
+              <p>{error}</p>
+            </div>
+          )}
+
+          <div>
+            <label
+              htmlFor="edit-promptText"
+              className="mb-1 block text-sm font-medium text-gray-700"
+            >
+              Question Text
+            </label>
+            <textarea
+              name="promptText"
+              id="edit-promptText"
+              required
+              rows={3}
+              defaultValue={editingQuestion.promptText}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+              placeholder="Enter the question text..."
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="edit-category"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Category *
+            </label>
+            <select
+              name="category"
+              id="edit-category"
+              required
+              defaultValue={editingQuestion.category}
+              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+            >
+              <option value="">Select a category</option>
+              {Object.values(QuestionCategory).map((category) => (
+                <option key={category} value={category}>
+                  {category.replace(/_/g, ' ')}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Answer Options (Mark the correct one)
+            </label>
+            <div className="mt-2 space-y-3">
+              {[0, 1, 2, 3].map((index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    name={`option${index}`}
+                    required
+                    defaultValue={editingQuestion.answerOptions[index] || ''}
+                    className="flex-grow rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+                    placeholder={`Option ${index + 1}`}
+                  />
+                  <input
+                    type="radio"
+                    name="correctAnswerIndex"
+                    value={index}
+                    required
+                    defaultChecked={
+                      index === editingQuestion.correctAnswerIndex
+                    }
+                    className="h-5 w-5 border-gray-300 text-brand-600 focus:ring-brand-500"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="edit-timerSeconds"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Time Limit (seconds)
+              </label>
+              <select
+                name="timerSeconds"
+                id="edit-timerSeconds"
+                required
+                defaultValue={editingQuestion.timerSeconds}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+              >
+                <option value="15">15 seconds</option>
+                <option value="30">30 seconds</option>
+                <option value="45">45 seconds</option>
+                <option value="60">60 seconds</option>
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="edit-sectionTag"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Section Tag
+              </label>
+              <input
+                type="text"
+                name="sectionTag"
+                id="edit-sectionTag"
+                defaultValue={editingQuestion.sectionTag || ''}
+                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+                placeholder="e.g., Logical, Mathematical, etc."
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 border-t border-gray-200 pt-6">
+            <button
+              type="button"
+              onClick={() => {
+                setShowEditForm(false);
+                setEditingQuestion(null);
+              }}
+              className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="rounded-lg bg-brand-500 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Update Question
+            </button>
+          </div>
+        </form>
+      )}
+
       <div className="mt-8">
         <h2 className="mb-4 text-xl font-semibold text-gray-900">
           Questions ({test.questions.length})
@@ -812,10 +1058,20 @@ export default function TestEditPage({
                       </span>
                     )}
                   </h3>
-                  {/* Placeholder for Edit/Delete Question buttons */}
-                  <div className="text-sm">
-                    {/* <button className="text-brand-600 hover:text-brand-800 mr-3">Edit</button>
-                     <button className="text-red-600 hover:text-red-800">Delete</button> */}
+                  {/* Edit/Delete Question buttons */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEditQuestion(question)}
+                      className="rounded-md bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteQuestion(question.id)}
+                      className="rounded-md bg-red-100 px-3 py-1 text-sm font-medium text-red-700 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
                 <p className="mt-2 text-sm text-gray-600">

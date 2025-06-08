@@ -30,12 +30,12 @@ interface CandidateScore {
 }
 
 export default function CompareDrawer() {
-  const { selected, clear } = useCompareStore();
+  const { selected, isComparing, clear, stopCompare } = useCompareStore();
   const [candidates, setCandidates] = useState<CandidateScore[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isOpen = selected.length >= 2;
+  const isOpen = isComparing && selected.length >= 2;
 
   useEffect(() => {
     if (!isOpen || selected.length === 0) {
@@ -85,7 +85,10 @@ export default function CompareDrawer() {
       {/* Backdrop */}
       <div
         className="fixed inset-0 z-40 bg-black bg-opacity-50"
-        onClick={clear}
+        onClick={() => {
+          stopCompare();
+          clear();
+        }}
       />
 
       {/* Drawer */}
@@ -103,7 +106,10 @@ export default function CompareDrawer() {
               </p>
             </div>
             <button
-              onClick={clear}
+              onClick={() => {
+                stopCompare();
+                clear();
+              }}
               className="rounded-full p-2 transition-colors hover:bg-gray-100"
             >
               <X className="h-6 w-6 text-gray-400" />
