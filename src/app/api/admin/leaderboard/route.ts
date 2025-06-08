@@ -42,11 +42,22 @@ export async function GET(request: NextRequest) {
       whereConditions.push(`"invitationId" = '${invitationId}'`);
     }
     if (testId) {
+      // Validate UUID format to prevent SQL injection
+      const uuidRegex =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(testId)) {
+        return NextResponse.json(
+          { message: 'Invalid testId format' },
+          { status: 400 }
+        );
+      }
       whereConditions.push(`"testId" = '${testId}'`);
     }
     if (search) {
+      // Escape special characters to prevent SQL injection
+      const escapedSearch = search.replace(/'/g, "''");
       whereConditions.push(
-        `("candidateName" ILIKE '%${search}%' OR "candidateEmail" ILIKE '%${search}%')`
+        `("candidateName" ILIKE '%${escapedSearch}%' OR "candidateEmail" ILIKE '%${escapedSearch}%')`
       );
     }
 

@@ -222,8 +222,7 @@ export async function GET(
         },
         audioAnalysis: {
           totalDuration:
-            (testAttempt as any).proctoringStartedAt &&
-            (testAttempt as any).proctoringEndedAt
+            testAttempt.proctoringStartedAt && testAttempt.proctoringEndedAt
               ? Math.floor(
                   (new Date((testAttempt as any).proctoringEndedAt).getTime() -
                     new Date(
@@ -281,19 +280,19 @@ export async function GET(
             },
           ],
           recommendations:
-            testAttempt.riskScore >= 8
+            (testAttempt.riskScore ?? 0) >= 8
               ? [
                   'High risk detected - Manual review recommended',
                   'Multiple suspicious behaviors identified',
                   'Consider invalidating test results',
                 ]
-              : testAttempt.riskScore >= 5
+              : (testAttempt.riskScore ?? 0) >= 5
                 ? [
                     'Medium risk detected - Review flagged events',
                     'Monitor for patterns of suspicious behavior',
                     'Consider additional verification',
                   ]
-                : testAttempt.riskScore >= 2
+                : (testAttempt.riskScore ?? 0) >= 2
                   ? [
                       'Low risk detected - Minor irregularities noted',
                       'Standard monitoring protocols sufficient',

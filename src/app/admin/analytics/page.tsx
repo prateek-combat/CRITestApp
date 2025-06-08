@@ -252,7 +252,9 @@ export default function AnalyticsPage() {
       .filter((a) => a.status === 'COMPLETED' && a.rawScore !== null)
       .forEach((attempt) => {
         const percentage = Math.round(
-          ((attempt.rawScore || 0) / attempt.totalQuestions) * 100
+          attempt.totalQuestions > 0
+            ? ((attempt.rawScore || 0) / attempt.totalQuestions) * 100
+            : 0
         );
         ranges.forEach((range) => {
           if (percentage >= range.min && percentage <= range.max) {
@@ -733,7 +735,7 @@ export default function AnalyticsPage() {
                           return label;
                         }}
                       />
-                      <Scatter dataKey="avgScore" fill="#8884d8" />
+                      <Scatter data={testDifficultyData} fill="#8884d8" />
                     </ScatterChart>
                   </ResponsiveContainer>
                   <div className="mt-3 text-sm text-gray-600">
