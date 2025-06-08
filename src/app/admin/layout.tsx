@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
-import AppHeader from '@/layout/AppHeader';
+import Link from 'next/link';
 
 export default function AdminLayout({
   children,
@@ -53,7 +53,46 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <AppHeader />
+      <header className="border-b bg-white shadow-sm">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between py-4">
+            <div className="flex items-center">
+              <Link
+                href="/admin/dashboard"
+                className="text-xl font-bold text-gray-900"
+              >
+                Test Platform Admin
+              </Link>
+            </div>
+            <nav className="flex space-x-4">
+              <Link
+                href="/admin/dashboard"
+                className="text-gray-600 hover:text-gray-900"
+              >
+                Dashboard
+              </Link>
+              <Link
+                href="/admin/tests"
+                className="text-gray-600 hover:text-gray-900"
+              >
+                Tests
+              </Link>
+              <Link
+                href="/admin/invitations"
+                className="text-gray-600 hover:text-gray-900"
+              >
+                Invitations
+              </Link>
+              <Link
+                href="/admin/leaderboard"
+                className="text-gray-600 hover:text-gray-900"
+              >
+                Leaderboard
+              </Link>
+            </nav>
+          </div>
+        </div>
+      </header>
       <main className="mx-auto max-w-7xl">{children}</main>
     </div>
   );
