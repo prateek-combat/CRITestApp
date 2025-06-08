@@ -7,12 +7,14 @@ This document outlines the local development setup, testing procedures, and prod
 ## 🌟 Branch Strategy
 
 ### **Dev Branch (`dev`)**
+
 - **Purpose**: Local development and testing
 - **Features**: Includes local admin login and development helpers
 - **Database**: Uses development database with test data
 - **Authentication**: Local admin login + Google OAuth
 
 ### **Main Branch (`main`)**
+
 - **Purpose**: Production-ready code
 - **Features**: Production authentication only
 - **Database**: Production database
@@ -79,6 +81,7 @@ npm run dev
 ### **Local Development Authentication**
 
 #### **Local Admin Login (Dev Only)**
+
 - **How it works**: One-click button that bypasses credential entry
 - **Credentials**: `local-admin` / `local-admin` (automatic)
 - **Role**: SUPER_ADMIN
@@ -86,6 +89,7 @@ npm run dev
 - **Location**: Login page - blue button below Google login
 
 #### **Google OAuth (Production & Dev)**
+
 - **Email**: `prateek@combatrobotics.in`
 - **Role**: SUPER_ADMIN
 - **Requirements**: Pre-registered in database
@@ -93,6 +97,7 @@ npm run dev
 ## 📁 Files Modified for Local Development
 
 ### **Authentication Files**
+
 ```
 src/lib/auth.ts              # Local admin credentials
 src/app/login/page.tsx       # Local admin login button
@@ -100,12 +105,14 @@ scripts/add-admin.js         # User management script
 ```
 
 ### **Database Files**
+
 ```
 prisma/migrations/           # SUPER_ADMIN role migration
 prisma/schema.prisma         # SUPER_ADMIN enum
 ```
 
 ### **Environment Files**
+
 ```
 .env.local                   # Development environment variables
 ```
@@ -115,29 +122,37 @@ prisma/schema.prisma         # SUPER_ADMIN enum
 ### **❌ Features to REMOVE for Production:**
 
 #### **1. Local Admin Login Button**
+
 **File**: `src/app/login/page.tsx`
+
 ```jsx
 // REMOVE THIS ENTIRE SECTION:
-{process.env.NODE_ENV === 'development' && (
-  <button
-    onClick={handleLocalAdminLogin}
-    disabled={isLoading}
-    className="flex w-full items-center justify-center rounded-lg border border-blue-300 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700 shadow-sm transition-colors hover:bg-blue-100 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-  >
-    <Lock className="mr-2 h-5 w-5" />
-    Local Admin Login (Dev Only)
-  </button>
-)}
+{
+  process.env.NODE_ENV === 'development' && (
+    <button
+      onClick={handleLocalAdminLogin}
+      disabled={isLoading}
+      className="flex w-full items-center justify-center rounded-lg border border-blue-300 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700 shadow-sm transition-colors hover:bg-blue-100 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+    >
+      <Lock className="mr-2 h-5 w-5" />
+      Local Admin Login (Dev Only)
+    </button>
+  );
+}
 ```
 
 #### **2. Local Admin Authentication Logic**
+
 **File**: `src/lib/auth.ts`
+
 ```javascript
 // REMOVE THIS SECTION:
 // Special case for local development - admin login with no credentials
-if (process.env.NODE_ENV === 'development' && 
-    credentials?.email === 'local-admin' && 
-    credentials?.password === 'local-admin') {
+if (
+  process.env.NODE_ENV === 'development' &&
+  credentials?.email === 'local-admin' &&
+  credentials?.password === 'local-admin'
+) {
   return {
     id: 'local-admin-id',
     email: 'admin@local.dev',
@@ -148,7 +163,9 @@ if (process.env.NODE_ENV === 'development' &&
 ```
 
 #### **3. handleLocalAdminLogin Function**
+
 **File**: `src/app/login/page.tsx`
+
 ```javascript
 // REMOVE THIS ENTIRE FUNCTION:
 const handleLocalAdminLogin = async () => {
@@ -179,6 +196,7 @@ NODE_ENV="production"
 ### **🔄 Production Deployment Steps**
 
 1. **Create Production Branch**
+
    ```bash
    git checkout main
    git pull origin main
@@ -186,11 +204,13 @@ NODE_ENV="production"
    ```
 
 2. **Remove Local Development Features**
+
    - Remove local admin login button
    - Remove local admin authentication logic
    - Remove development-only functions
 
 3. **Update Environment Variables**
+
    - Set production DATABASE_URL
    - Set production NEXTAUTH_URL
    - Set NODE_ENV="production"
@@ -215,6 +235,7 @@ node scripts/add-admin.js user@example.com "First Name" "Last Name" SUPER_ADMIN
 ```
 
 ### **Current Super Admins**
+
 - `prateek@combatrobotics.in` - SUPER_ADMIN (Google OAuth)
 
 ## 🛠 Development Commands
@@ -240,6 +261,7 @@ npm run test:watch       # Run tests in watch mode
 ## 📝 Git Workflow
 
 ### **Development Workflow**
+
 ```bash
 # 1. Switch to dev branch
 git checkout dev
@@ -256,6 +278,7 @@ git push origin dev
 ```
 
 ### **Production Release Workflow**
+
 ```bash
 # 1. Merge dev to main (via PR or direct merge)
 git checkout main
@@ -276,11 +299,13 @@ git push origin main
 ## 🚨 Security Notes
 
 ### **Development Security**
+
 - **Local admin login**: Only works in development mode
 - **Database**: Uses development database with test data
 - **Credentials**: Hardcoded for development convenience
 
 ### **Production Security**
+
 - **No local admin login**: Removed completely
 - **Google OAuth only**: Pre-registered users only
 - **Environment variables**: Secured through deployment platform
@@ -304,4 +329,4 @@ For any issues with local development setup:
 
 ---
 
-**🎯 Remember**: Always test in development first, then remove local development features before production deployment! 
+**🎯 Remember**: Always test in development first, then remove local development features before production deployment!
