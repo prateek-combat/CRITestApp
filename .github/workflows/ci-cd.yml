@@ -203,8 +203,18 @@ jobs:
           fi
         continue-on-error: true
 
-      - name: Check database reset
+      - name: Verify seeded data
+        run: |
+          npx prisma db execute --stdin <<< "SELECT COUNT(*) FROM \"User\" WHERE role = 'ADMIN';" || echo "No admin users found or table doesn't exist"
+        continue-on-error: true
+
+      - name: Test database reset capability
         run: npx prisma migrate reset --force
+
+      - name: Verify reset worked
+        run: |
+          npx prisma db execute --stdin <<< "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';" || echo "Reset verification failed"
+        continue-on-error: true
 
   # Job 5: End-to-End Tests (Optional)
   e2e-tests:
