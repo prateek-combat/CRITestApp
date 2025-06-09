@@ -35,6 +35,7 @@ interface Test {
   description: string | null;
   questions: Question[];
   overallTimeLimitSeconds: number;
+  allowReview?: boolean;
   // Fields from API list view
   createdBy?: { firstName?: string | null; lastName?: string | null };
   _count?: { questions: number };
@@ -59,6 +60,7 @@ export default function ManageTestsPage() {
   const [errorTests, setErrorTests] = useState<string | null>(null);
   const [newTestTitle, setNewTestTitle] = useState('');
   const [newTestDescription, setNewTestDescription] = useState('');
+  const [allowReview, setAllowReview] = useState(true);
   const [isCreatingTest, setIsCreatingTest] = useState(false);
   const [errorCreateTest, setErrorCreateTest] = useState<string | null>(null);
 
@@ -192,6 +194,7 @@ export default function ManageTestsPage() {
           createdById: ADMIN_USER_ID,
           overallTimeLimitSeconds: 1800, // Default: 30 mins
           lockOrder: false,
+          allowReview: allowReview,
         }),
       });
       if (!response.ok) {
@@ -200,6 +203,7 @@ export default function ManageTestsPage() {
       }
       setNewTestTitle('');
       setNewTestDescription('');
+      setAllowReview(true);
       fetchTests(); // Refresh the list
     } catch (err) {
       setErrorCreateTest(
@@ -457,6 +461,18 @@ export default function ManageTestsPage() {
               className={inputClasses}
               placeholder="A brief overview"
             />
+          </div>
+          <div className="flex items-center space-x-3">
+            <input
+              type="checkbox"
+              id="allowReview"
+              checked={allowReview}
+              onChange={(e) => setAllowReview(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-accent-orange focus:ring-accent-orange"
+            />
+            <label htmlFor="allowReview" className={labelClasses + ' mb-0'}>
+              Allow review functionality (candidates can review their answers)
+            </label>
           </div>
           {errorCreateTest && (
             <p className="text-sm text-red-500">{errorCreateTest}</p>

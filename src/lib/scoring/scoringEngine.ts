@@ -139,6 +139,7 @@ function calculateObjectiveScore(
       VERBAL: { correct: 0, total: 0 },
       NUMERICAL: { correct: 0, total: 0 },
       ATTENTION_TO_DETAIL: { correct: 0, total: 0 },
+      OTHER: { correct: 0, total: 0 },
     };
 
   // Count total questions per category

@@ -20,8 +20,8 @@ export async function GET(
 
     const { id } = await params;
 
-    // Fetch test attempt with all related data
-    const testAttempt = (await prisma.testAttempt.findUnique({
+    // Try to fetch from regular test attempts first
+    let testAttempt = (await prisma.testAttempt.findUnique({
       where: { id },
       include: {
         test: {
@@ -46,6 +46,45 @@ export async function GET(
         },
       },
     })) as any;
+
+    let isPublicAttempt = false;
+
+    // If not found in regular attempts, try public attempts
+    if (!testAttempt) {
+      testAttempt = (await prisma.publicTestAttempt.findUnique({
+        where: { id },
+        include: {
+          publicLink: {
+            include: {
+              test: {
+                include: {
+                  questions: {
+                    include: {
+                      personalityDimension: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          submittedAnswers: {
+            include: {
+              question: true,
+            },
+          },
+        },
+      })) as any;
+
+      if (testAttempt) {
+        isPublicAttempt = true;
+        // Restructure public attempt to match regular attempt format
+        testAttempt.test = testAttempt.publicLink.test;
+        testAttempt.invitation = {
+          candidateName: testAttempt.candidateName,
+          candidateEmail: testAttempt.candidateEmail,
+        };
+      }
+    }
 
     if (!testAttempt) {
       return NextResponse.json(
@@ -115,6 +154,7 @@ export async function GET(
       status: testAttempt.status,
       createdAt: testAttempt.createdAt,
       updatedAt: testAttempt.updatedAt,
+      isPublicAttempt, // Add flag to indicate type
       test: {
         id: testAttempt.test.id,
         title: testAttempt.test.title,

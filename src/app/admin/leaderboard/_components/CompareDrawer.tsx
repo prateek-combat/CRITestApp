@@ -24,6 +24,7 @@ interface CandidateScore {
   scoreVerbal: number;
   scoreNumerical: number;
   scoreAttention: number;
+  scoreOther: number;
   percentile: number;
   rank: number;
   durationSeconds: number;
@@ -269,6 +270,20 @@ export default function CompareDrawer() {
                       </tr>
 
                       <tr className="bg-gray-50">
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                          Other
+                        </td>
+                        {candidates.map((candidate) => (
+                          <td
+                            key={candidate.attemptId}
+                            className="whitespace-nowrap px-6 py-4 text-center text-sm text-gray-900"
+                          >
+                            {candidate.scoreOther.toFixed(1)}
+                          </td>
+                        ))}
+                      </tr>
+
+                      <tr>
                         <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
                           Test Duration
                         </td>
