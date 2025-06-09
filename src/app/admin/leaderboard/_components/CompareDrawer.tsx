@@ -24,18 +24,19 @@ interface CandidateScore {
   scoreVerbal: number;
   scoreNumerical: number;
   scoreAttention: number;
+  scoreOther: number;
   percentile: number;
   rank: number;
   durationSeconds: number;
 }
 
 export default function CompareDrawer() {
-  const { selected, clear } = useCompareStore();
+  const { selected, isComparing, clear, stopCompare } = useCompareStore();
   const [candidates, setCandidates] = useState<CandidateScore[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isOpen = selected.length >= 2;
+  const isOpen = isComparing && selected.length >= 2;
 
   useEffect(() => {
     if (!isOpen || selected.length === 0) {
@@ -85,7 +86,10 @@ export default function CompareDrawer() {
       {/* Backdrop */}
       <div
         className="fixed inset-0 z-40 bg-black bg-opacity-50"
-        onClick={clear}
+        onClick={() => {
+          stopCompare();
+          clear();
+        }}
       />
 
       {/* Drawer */}
@@ -103,7 +107,10 @@ export default function CompareDrawer() {
               </p>
             </div>
             <button
-              onClick={clear}
+              onClick={() => {
+                stopCompare();
+                clear();
+              }}
               className="rounded-full p-2 transition-colors hover:bg-gray-100"
             >
               <X className="h-6 w-6 text-gray-400" />
@@ -263,6 +270,20 @@ export default function CompareDrawer() {
                       </tr>
 
                       <tr className="bg-gray-50">
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                          Other
+                        </td>
+                        {candidates.map((candidate) => (
+                          <td
+                            key={candidate.attemptId}
+                            className="whitespace-nowrap px-6 py-4 text-center text-sm text-gray-900"
+                          >
+                            {candidate.scoreOther.toFixed(1)}
+                          </td>
+                        ))}
+                      </tr>
+
+                      <tr>
                         <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
                           Test Duration
                         </td>

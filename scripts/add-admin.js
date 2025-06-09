@@ -1,3 +1,6 @@
+// Load environment variables from .env.local
+require('dotenv').config({ path: '.env.local' });
+
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();

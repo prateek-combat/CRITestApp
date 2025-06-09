@@ -15,12 +15,14 @@ Your app now has **enhanced lightweight AI analysis** that works perfectly on Ve
 ### Option 1: Current Enhanced Analysis (Recommended for Start)
 
 **What it does:**
+
 - Analyzes behavioral patterns from proctoring events
 - Calculates risk scores based on suspicious activities
 - Provides recommendations based on risk levels
 - Uses real data: tab switches, focus loss, copy/paste, dev tools, etc.
 
 **Deployment:**
+
 ```bash
 # Deploy to Vercel (current setup)
 vercel --prod
@@ -38,6 +40,7 @@ vercel --prod
 For **real video/image analysis**, integrate with cloud AI services:
 
 #### AWS Rekognition Setup
+
 ```bash
 # Install AWS SDK
 npm install aws-sdk
@@ -51,6 +54,7 @@ AWS_ROLE_ARN=arn:aws:iam::123456789:role/RekognitionServiceRole
 ```
 
 #### Google Vision API Setup
+
 ```bash
 # Install Google Cloud Vision
 npm install @google-cloud/vision
@@ -60,7 +64,8 @@ GOOGLE_CLOUD_PROJECT_ID=your_project_id
 GOOGLE_CLOUD_KEY_PATH=./google-cloud-key.json
 ```
 
-**Cost:** 
+**Cost:**
+
 - AWS Rekognition: ~$0.10-0.15 per minute of video
 - Google Vision: ~$1.50 per 1000 images
 
@@ -74,6 +79,7 @@ GOOGLE_CLOUD_KEY_PATH=./google-cloud-key.json
 For **advanced video analysis** (face recognition, object detection):
 
 #### Using Upstash Redis Queue
+
 ```bash
 # Install Upstash Redis
 npm install @upstash/redis
@@ -84,17 +90,20 @@ UPSTASH_REDIS_REST_TOKEN=your_token
 ```
 
 #### Using Inngest (Serverless Jobs)
+
 ```bash
 # Install Inngest
 npm install inngest
 
-# Add to .env.local  
+# Add to .env.local
 INNGEST_EVENT_KEY=your_event_key
 INNGEST_SIGNING_KEY=your_signing_key
 ```
 
 #### External Processing Server
+
 Deploy the Python worker on:
+
 - **Railway** (recommended): `railway up`
 - **Google Cloud Run**: Deploy Docker container
 - **AWS Lambda**: For short video clips
@@ -106,7 +115,8 @@ Deploy the Python worker on:
 
 ### Hybrid Approach (Best of Both Worlds)
 
-1. **Immediate Analysis (Vercel)**: 
+1. **Immediate Analysis (Vercel)**:
+
    - Behavioral analysis (current implementation)
    - Quick risk assessment
    - User gets immediate feedback
@@ -147,22 +157,23 @@ UPSTASH_REDIS_REST_URL=your_redis_url
 
 ## Cost Comparison
 
-| Option | Setup Effort | Monthly Cost | Analysis Quality |
-|--------|-------------|--------------|------------------|
-| Current Enhanced | ✅ None | 🆓 $0 | ⭐⭐⭐ Good behavioral analysis |
-| + Cloud AI | 🔧 Medium | 💰 $10-50 | ⭐⭐⭐⭐ Good video analysis |
-| + External Processing | 🔧 High | 💰 $5-20 | ⭐⭐⭐⭐⭐ Excellent full analysis |
+| Option                | Setup Effort | Monthly Cost | Analysis Quality                   |
+| --------------------- | ------------ | ------------ | ---------------------------------- |
+| Current Enhanced      | ✅ None      | 🆓 $0        | ⭐⭐⭐ Good behavioral analysis    |
+| + Cloud AI            | 🔧 Medium    | 💰 $10-50    | ⭐⭐⭐⭐ Good video analysis       |
+| + External Processing | 🔧 High      | 💰 $5-20     | ⭐⭐⭐⭐⭐ Excellent full analysis |
 
 ## Quick Start (Current Setup)
 
 Your app is **already ready** for production! The enhanced analysis provides:
 
 1. **Real-time behavioral analysis**
-2. **Risk scoring and recommendations** 
+2. **Risk scoring and recommendations**
 3. **Beautiful admin interface**
 4. **Scalable architecture**
 
 Just deploy to Vercel:
+
 ```bash
 vercel --prod
 ```
@@ -174,4 +185,4 @@ vercel --prod
 3. **Add cloud AI gradually** - Only if you need video analysis
 4. **Scale as needed** - Start simple, add complexity when necessary
 
-The current implementation gives you 80% of the value with 20% of the complexity! 🚀 
+The current implementation gives you 80% of the value with 20% of the complexity! 🚀
