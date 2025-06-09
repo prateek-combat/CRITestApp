@@ -88,7 +88,7 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { title, description } = await request.json();
+    const { title, description, allowReview } = await request.json();
 
     if (!title?.trim()) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
@@ -118,6 +118,7 @@ export async function POST(request: NextRequest) {
         title: title.trim(),
         description: description?.trim() || null,
         overallTimeLimitSeconds: 3600, // Default 1 hour
+        allowReview: allowReview !== undefined ? allowReview : true, // Default to true
         createdById: adminUser.id,
       },
     });
@@ -126,6 +127,7 @@ export async function POST(request: NextRequest) {
       id: test.id,
       title: test.title,
       description: test.description,
+      allowReview: test.allowReview,
       createdAt: test.createdAt.toISOString(),
     });
   } catch (error) {
