@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { QuestionCategory } from '@prisma/client';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 
 // Define the template headers based on the current schema
 const TEMPLATE_HEADERS = [
