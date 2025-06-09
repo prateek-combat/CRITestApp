@@ -43,6 +43,7 @@ interface Test {
   title: string;
   description: string | null;
   questions: Question[];
+  allowReview?: boolean;
 }
 
 interface Invitation {
@@ -1064,31 +1065,36 @@ export default function TestPage() {
                 Test Features
               </h2>
               <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
-                <div className="flex items-start space-x-3">
-                  <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-500">
-                    <span className="text-xs text-white">📍</span>
+                {invitation.test.allowReview && (
+                  <div className="flex items-start space-x-3">
+                    <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-500">
+                      <span className="text-xs text-white">📍</span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-blue-800">
+                        Question Bookmarking
+                      </p>
+                      <p className="text-blue-700">
+                        Click the bookmark icon to flag questions for later
+                        review
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-blue-800">
-                      Question Bookmarking
-                    </p>
-                    <p className="text-blue-700">
-                      Click the bookmark icon to flag questions for later review
-                    </p>
+                )}
+                {invitation.test.allowReview && (
+                  <div className="flex items-start space-x-3">
+                    <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-500">
+                      <span className="text-xs text-white">👁️</span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-blue-800">Review Mode</p>
+                      <p className="text-blue-700">
+                        Click &quot;Review&quot; button to view and modify
+                        bookmarked questions
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-500">
-                    <span className="text-xs text-white">👁️</span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-blue-800">Review Mode</p>
-                    <p className="text-blue-700">
-                      Click &quot;Review&quot; button to view and modify
-                      bookmarked questions
-                    </p>
-                  </div>
-                </div>
+                )}
                 <div className="flex items-start space-x-3">
                   <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-500">
                     <span className="text-xs text-white">📊</span>
@@ -1130,7 +1136,7 @@ export default function TestPage() {
   }
 
   // Bookmarked questions review modal
-  if (showBookmarkedReview && invitation) {
+  if (showBookmarkedReview && invitation && invitation.test.allowReview) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
         <div className="max-h-[90vh] w-full max-w-6xl overflow-hidden">
@@ -1322,7 +1328,8 @@ export default function TestPage() {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth={2}
-                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
                         />
                       </svg>
                     </div>
@@ -1475,12 +1482,14 @@ export default function TestPage() {
                   <span>Progress</span>
                 </button>
 
-                <QuestionBookmark
-                  questionId={currentQuestion.id}
-                  isBookmarked={bookmarkedQuestions.has(currentQuestion.id)}
-                  onToggle={handleBookmarkToggle}
-                  size="md"
-                />
+                {invitation.test.allowReview && (
+                  <QuestionBookmark
+                    questionId={currentQuestion.id}
+                    isBookmarked={bookmarkedQuestions.has(currentQuestion.id)}
+                    onToggle={handleBookmarkToggle}
+                    size="md"
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -1820,20 +1829,21 @@ export default function TestPage() {
                     )}
                   </div>
 
-                  {bookmarkedQuestions.has(currentQuestion.id) && (
-                    <div className="flex items-center space-x-2 text-amber-600">
-                      <svg
-                        className="h-4 w-4"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
-                      </svg>
-                      <span className="text-sm font-medium">
-                        Bookmarked for review
-                      </span>
-                    </div>
-                  )}
+                  {invitation.test.allowReview &&
+                    bookmarkedQuestions.has(currentQuestion.id) && (
+                      <div className="flex items-center space-x-2 text-amber-600">
+                        <svg
+                          className="h-4 w-4"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+                        </svg>
+                        <span className="text-sm font-medium">
+                          Bookmarked for review
+                        </span>
+                      </div>
+                    )}
                 </div>
 
                 {/* Navigation Controls - Moved from footer */}
@@ -1872,53 +1882,33 @@ export default function TestPage() {
                           {Object.keys(answers).length} of{' '}
                           {invitation.test.questions.length} answered
                         </div>
-                        {bookmarkedQuestions.size > 0 && (
-                          <div className="text-xs font-medium text-military-green">
-                            {bookmarkedQuestions.size} bookmarked for review
-                          </div>
-                        )}
+                        {invitation.test.allowReview &&
+                          bookmarkedQuestions.size > 0 && (
+                            <div className="text-xs font-medium text-military-green">
+                              {bookmarkedQuestions.size} bookmarked for review
+                            </div>
+                          )}
                       </div>
 
                       {/* Review Later Button */}
-                      <button
-                        onClick={() => {
-                          // Add to bookmarks if not already bookmarked
-                          if (!bookmarkedQuestions.has(currentQuestion.id)) {
-                            handleBookmarkToggle(currentQuestion.id);
-                          }
-                          // Navigate to next question or show review if last question
-                          if (
-                            currentQuestionIndex <
-                            invitation.test.questions.length - 1
-                          ) {
-                            navigateQuestion('next');
-                          } else {
-                            setShowBookmarkedReview(true);
-                          }
-                        }}
-                        className="flex items-center space-x-1 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700 transition-all duration-200 hover:bg-amber-100"
-                      >
-                        <svg
-                          className="h-4 w-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                          />
-                        </svg>
-                        <span>Review Later</span>
-                      </button>
-
-                      {/* Review Bookmarked Button */}
-                      {bookmarkedQuestions.size > 0 && (
+                      {invitation.test.allowReview && (
                         <button
-                          onClick={() => setShowBookmarkedReview(true)}
-                          className="flex items-center space-x-1 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-military-green transition-all duration-200 hover:bg-green-100"
+                          onClick={() => {
+                            // Add to bookmarks if not already bookmarked
+                            if (!bookmarkedQuestions.has(currentQuestion.id)) {
+                              handleBookmarkToggle(currentQuestion.id);
+                            }
+                            // Navigate to next question or show review if last question
+                            if (
+                              currentQuestionIndex <
+                              invitation.test.questions.length - 1
+                            ) {
+                              navigateQuestion('next');
+                            } else {
+                              setShowBookmarkedReview(true);
+                            }
+                          }}
+                          className="flex items-center space-x-1 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700 transition-all duration-200 hover:bg-amber-100"
                         >
                           <svg
                             className="h-4 w-4"
@@ -1930,12 +1920,36 @@ export default function TestPage() {
                               strokeLinecap="round"
                               strokeLinejoin="round"
                               strokeWidth={2}
-                              d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                              d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
                             />
                           </svg>
-                          <span>Review ({bookmarkedQuestions.size})</span>
+                          <span>Review Later</span>
                         </button>
                       )}
+
+                      {/* Review Bookmarked Button */}
+                      {invitation.test.allowReview &&
+                        bookmarkedQuestions.size > 0 && (
+                          <button
+                            onClick={() => setShowBookmarkedReview(true)}
+                            className="flex items-center space-x-1 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-military-green transition-all duration-200 hover:bg-green-100"
+                          >
+                            <svg
+                              className="h-4 w-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                              />
+                            </svg>
+                            <span>Review ({bookmarkedQuestions.size})</span>
+                          </button>
+                        )}
                     </div>
 
                     {/* Right: Next/Submit Button */}

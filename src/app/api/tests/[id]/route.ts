@@ -98,13 +98,14 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   const { id } = await params;
   try {
     const body = await request.json();
-    const { title, description, lockOrder } = body;
+    const { title, description, lockOrder, allowReview } = body;
 
     const dataToUpdate: any = {};
 
     if (title !== undefined) dataToUpdate.title = title;
     if (description !== undefined) dataToUpdate.description = description;
     if (lockOrder !== undefined) dataToUpdate.lockOrder = lockOrder;
+    if (allowReview !== undefined) dataToUpdate.allowReview = allowReview;
 
     const updatedTest = await prisma.test.update({
       where: { id },
