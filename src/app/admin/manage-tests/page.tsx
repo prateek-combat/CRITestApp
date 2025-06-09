@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { QuestionCategory } from '@prisma/client';
+// Define question categories locally to avoid Prisma client issues
+const QUESTION_CATEGORIES = [
+  'LOGICAL',
+  'VERBAL',
+  'NUMERICAL',
+  'ATTENTION_TO_DETAIL',
+] as const;
 import { useRouter } from 'next/navigation';
 
 // --- Constants ---
@@ -17,7 +23,7 @@ interface Question {
   promptImageUrl?: string | null;
   answerOptions: string[];
   correctAnswerIndex: number;
-  category: QuestionCategory;
+  category: (typeof QUESTION_CATEGORIES)[number];
   timerSeconds: number;
   testId: string;
   // Add other relevant fields from your actual Question model if needed
@@ -41,7 +47,7 @@ interface NewQuestionForm {
   answerOptions: string[];
   correctAnswerIndex: string; // Store as string for form input, parse on submit
   timerSeconds: string; // Store as string for form input
-  category: QuestionCategory | ''; // Allow empty for initial state
+  category: (typeof QUESTION_CATEGORIES)[number] | ''; // Allow empty for initial state
 }
 
 export default function ManageTestsPage() {
@@ -72,7 +78,7 @@ export default function ManageTestsPage() {
     answerOptions: [...DEFAULT_ANSWER_OPTIONS],
     correctAnswerIndex: '0',
     timerSeconds: QUESTION_TIMERS[0].toString(),
-    category: '' as QuestionCategory | '',
+    category: '' as (typeof QUESTION_CATEGORIES)[number] | '',
   };
   const [newQuestion, setNewQuestion] = useState<NewQuestionForm>(
     initialNewQuestionState
@@ -580,9 +586,9 @@ export default function ManageTestsPage() {
                             {index + 1}. {q.promptText}
                           </p>
                           <p className="mt-1 text-xs text-text-light">
-                            Category:{' '}
+                            Type:{' '}
                             <span className="font-semibold text-accent-orange">
-                              {q.category}
+                              General
                             </span>{' '}
                             | Timer: {q.timerSeconds}s
                           </p>
@@ -794,7 +800,7 @@ export default function ManageTestsPage() {
                         <option value="" disabled>
                           Select a category
                         </option>
-                        {Object.values(QuestionCategory).map((cat) => (
+                        {QUESTION_CATEGORIES.map((cat) => (
                           <option key={cat} value={cat}>
                             {cat.replace(/_/g, ' ')}
                           </option>

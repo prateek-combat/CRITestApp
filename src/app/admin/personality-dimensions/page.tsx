@@ -470,7 +470,7 @@ export default function PersonalityDimensionsAdminPage() {
                   Edit Personality Dimension
                 </h3>
                 <p className="text-sm text-gray-600">
-                  Modify the details of "{editingDimension.name}"
+                  Modify the details of &quot;{editingDimension.name}&quot;
                 </p>
               </div>
               <button
