@@ -97,6 +97,7 @@ export async function GET(request: NextRequest) {
             "scoreVerbal", 
             "scoreNumerical",
             "scoreAttention",
+            "scoreOther",
             "composite",
             "percentile",
             "rank"
@@ -133,6 +134,7 @@ export async function GET(request: NextRequest) {
         scoreVerbal: Number(row.scoreVerbal),
         scoreNumerical: Number(row.scoreNumerical),
         scoreAttention: Number(row.scoreAttention),
+        scoreOther: Number(row.scoreOther),
         composite: Number(row.composite),
         percentile: Number(row.percentile),
         rank: Number(row.rank),
@@ -286,6 +288,7 @@ export async function GET(request: NextRequest) {
         let scoreVerbal = 0;
         let scoreNumerical = 0;
         let scoreAttention = 0;
+        let scoreOther = 0;
         let composite = 0;
 
         if (scores && typeof scores === 'object') {
@@ -304,6 +307,9 @@ export async function GET(request: NextRequest) {
                 Math.max(scores.ATTENTION_TO_DETAIL.total, 1)) *
               100
             : 0;
+          scoreOther = scores?.OTHER
+            ? (scores.OTHER.correct / Math.max(scores.OTHER.total, 1)) * 100
+            : 0;
 
           // Only calculate composite if we have valid category scores
           const validScores = [
@@ -311,6 +317,7 @@ export async function GET(request: NextRequest) {
             scoreVerbal,
             scoreNumerical,
             scoreAttention,
+            scoreOther,
           ].filter((s) => s > 0);
           if (validScores.length > 0) {
             composite =
@@ -335,6 +342,7 @@ export async function GET(request: NextRequest) {
           scoreVerbal,
           scoreNumerical,
           scoreAttention,
+          scoreOther,
         ].some((score) => !isNaN(score) && score > 0);
         if (
           (composite === 0 || !hasValidCategoryScores) &&
@@ -385,6 +393,10 @@ export async function GET(request: NextRequest) {
               ((categoryCorrect.ATTENTION_TO_DETAIL || 0) /
                 categoryTotals.ATTENTION_TO_DETAIL) *
               100;
+          }
+          if (categoryTotals.OTHER) {
+            scoreOther =
+              ((categoryCorrect.OTHER || 0) / categoryTotals.OTHER) * 100;
           }
         }
 
@@ -411,6 +423,7 @@ export async function GET(request: NextRequest) {
           scoreVerbal,
           scoreNumerical,
           scoreAttention,
+          scoreOther,
           composite,
           percentile: 50, // Default percentile for fallback
           rank: 0, // Will be calculated after combining and sorting
@@ -427,6 +440,7 @@ export async function GET(request: NextRequest) {
         let scoreVerbal = 0;
         let scoreNumerical = 0;
         let scoreAttention = 0;
+        let scoreOther = 0;
         let composite = 0;
 
         if (scores && typeof scores === 'object') {
@@ -445,6 +459,9 @@ export async function GET(request: NextRequest) {
                 Math.max(scores.ATTENTION_TO_DETAIL.total, 1)) *
               100
             : 0;
+          scoreOther = scores?.OTHER
+            ? (scores.OTHER.correct / Math.max(scores.OTHER.total, 1)) * 100
+            : 0;
 
           // Only calculate composite if we have valid category scores
           const validScores = [
@@ -452,6 +469,7 @@ export async function GET(request: NextRequest) {
             scoreVerbal,
             scoreNumerical,
             scoreAttention,
+            scoreOther,
           ].filter((s) => s > 0);
           if (validScores.length > 0) {
             composite =
@@ -476,6 +494,7 @@ export async function GET(request: NextRequest) {
           scoreVerbal,
           scoreNumerical,
           scoreAttention,
+          scoreOther,
         ].some((score) => !isNaN(score) && score > 0);
         if (
           (composite === 0 || !hasValidCategoryScores) &&
@@ -527,6 +546,10 @@ export async function GET(request: NextRequest) {
                 categoryTotals.ATTENTION_TO_DETAIL) *
               100;
           }
+          if (categoryTotals.OTHER) {
+            scoreOther =
+              ((categoryCorrect.OTHER || 0) / categoryTotals.OTHER) * 100;
+          }
         }
 
         const durationSeconds =
@@ -548,6 +571,7 @@ export async function GET(request: NextRequest) {
           scoreVerbal,
           scoreNumerical,
           scoreAttention,
+          scoreOther,
           composite,
           percentile: 50, // Default percentile for fallback
           rank: 0, // Will be calculated after combining and sorting

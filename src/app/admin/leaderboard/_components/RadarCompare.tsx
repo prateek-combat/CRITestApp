@@ -16,6 +16,7 @@ interface CandidateScore {
   scoreVerbal: number;
   scoreNumerical: number;
   scoreAttention: number;
+  scoreOther: number;
 }
 
 interface RadarCompareProps {
@@ -38,6 +39,7 @@ export default function RadarCompare({ candidates }: RadarCompareProps) {
     { name: 'Verbal', key: 'scoreVerbal' },
     { name: 'Numerical', key: 'scoreNumerical' },
     { name: 'Attention', key: 'scoreAttention' },
+    { name: 'Other', key: 'scoreOther' },
   ];
 
   const data = categories.map((category) => {
