@@ -15,6 +15,7 @@ interface CandidateScore {
   scoreVerbal: number;
   scoreNumerical: number;
   scoreAttention: number;
+  scoreOther: number;
   composite: number;
   percentile: number;
   rank: number;
@@ -193,6 +194,9 @@ export default function LeaderboardTable({
               <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                 Attention
               </th>
+              <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                Other
+              </th>
               <th className="px-3 py-2 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
                 <SortButton
                   column="completedAt"
@@ -261,6 +265,10 @@ export default function LeaderboardTable({
 
                 <td className="whitespace-nowrap px-3 py-2">
                   <InlineBar value={candidate.scoreAttention} />
+                </td>
+
+                <td className="whitespace-nowrap px-3 py-2">
+                  <InlineBar value={candidate.scoreOther} />
                 </td>
 
                 <td className="whitespace-nowrap px-3 py-2 text-center text-xs text-gray-500">

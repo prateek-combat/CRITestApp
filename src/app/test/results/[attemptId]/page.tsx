@@ -96,7 +96,12 @@ export default function TestResultsPage() {
 
   const fetchTestAttempt = async () => {
     try {
-      const response = await fetch(`/api/test-attempts/${attemptId}`);
+      const response = await fetch(`/api/test-attempts/${attemptId}`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch test attempt');
       }
