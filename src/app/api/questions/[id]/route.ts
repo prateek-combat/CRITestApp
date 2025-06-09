@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient, QuestionCategory } from '@prisma/client';
+import { NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 const prisma = new PrismaClient({
   log: ['query', 'info', 'warn', 'error'], // Optional: configure logging
@@ -98,10 +101,31 @@ export async function GET(request: Request, { params }: RouteParams) {
  *       500:
  *         description: Failed to update question.
  */
-export async function PUT(request: Request, { params }: RouteParams) {
-  const { id } = await params;
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
+    // Check authentication and admin access
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions' },
+        { status: 403 }
+      );
+    }
+
+    const { id } = await params;
     const body = await request.json();
+
     const {
       promptText,
       promptImageUrl,
@@ -109,113 +133,55 @@ export async function PUT(request: Request, { params }: RouteParams) {
       answerOptions,
       correctAnswerIndex,
       category,
-      testId,
+      sectionTag,
     } = body;
 
-    // Basic validation for fields if they are provided
-    if (
-      answerOptions !== undefined &&
-      (!Array.isArray(answerOptions) ||
-        answerOptions.length < 2 ||
-        answerOptions.length > 6)
-    ) {
+    // Validate required fields
+    if (!promptText || !answerOptions || answerOptions.length < 2) {
       return NextResponse.json(
-        {
-          message:
-            'If provided, answerOptions must be an array of 2 to 6 strings.',
-        },
+        { error: 'Prompt text and at least 2 answer options are required' },
         { status: 400 }
       );
     }
 
-    const validTimers = [15, 30, 45, 60];
-    if (timerSeconds !== undefined && !validTimers.includes(timerSeconds)) {
+    if (correctAnswerIndex < 0 || correctAnswerIndex >= answerOptions.length) {
       return NextResponse.json(
-        {
-          message: `If provided, timerSeconds must be one of ${validTimers.join(', ')}.`,
-        },
+        { error: 'Correct answer index is invalid' },
         { status: 400 }
       );
     }
 
-    if (
-      correctAnswerIndex !== undefined &&
-      answerOptions !== undefined &&
-      (correctAnswerIndex < 0 || correctAnswerIndex >= answerOptions.length)
-    ) {
-      return NextResponse.json(
-        {
-          message:
-            'correctAnswerIndex is out of bounds for the provided answerOptions.',
-        },
-        { status: 400 }
-      );
-    }
-
-    // Validate category if provided
-    if (
-      category !== undefined &&
-      !Object.values(QuestionCategory).includes(category as QuestionCategory)
-    ) {
-      return NextResponse.json(
-        {
-          message: `If provided, category must be one of: ${Object.values(QuestionCategory).join(', ')}`,
-        },
-        { status: 400 }
-      );
-    }
-
-    // If testId is provided, ensure the target test exists
-    if (testId) {
-      const testExists = await prisma.test.findUnique({
-        where: { id: testId },
-      });
-      if (!testExists) {
-        return NextResponse.json(
-          { message: `Target Test with ID ${testId} not found.` },
-          { status: 404 }
-        );
-      }
-    }
-
-    const dataToUpdate: any = {};
-    if (promptText !== undefined) dataToUpdate.promptText = promptText;
-    if (promptImageUrl !== undefined)
-      dataToUpdate.promptImageUrl = promptImageUrl;
-    if (timerSeconds !== undefined) dataToUpdate.timerSeconds = timerSeconds;
-    if (answerOptions !== undefined) dataToUpdate.answerOptions = answerOptions;
-    if (correctAnswerIndex !== undefined)
-      dataToUpdate.correctAnswerIndex = correctAnswerIndex;
-    if (category !== undefined)
-      dataToUpdate.category = category as QuestionCategory;
-    if (testId !== undefined) dataToUpdate.testId = testId;
-
-    if (Object.keys(dataToUpdate).length === 0) {
-      return NextResponse.json(
-        { message: 'No fields provided to update.' },
-        { status: 400 }
-      );
-    }
-
-    const updatedQuestion = await prisma.question.update({
+    // Check if question exists
+    const existingQuestion = await prisma.question.findUnique({
       where: { id },
-      data: dataToUpdate,
     });
-    return NextResponse.json(updatedQuestion);
-  } catch (error: any) {
-    console.error(
-      `[API /api/questions/${id} PUT] Failed to update question:`,
-      error
-    );
-    if (error.code === 'P2025') {
-      // Record to update not found
+
+    if (!existingQuestion) {
       return NextResponse.json(
-        { message: 'Question not found' },
+        { error: 'Question not found' },
         { status: 404 }
       );
     }
+
+    // Update the question
+    const updatedQuestion = await prisma.question.update({
+      where: { id },
+      data: {
+        promptText,
+        promptImageUrl: promptImageUrl || null,
+        timerSeconds: parseInt(timerSeconds),
+        answerOptions,
+        correctAnswerIndex: parseInt(correctAnswerIndex),
+        category,
+        sectionTag: sectionTag || null,
+      },
+    });
+
+    return NextResponse.json(updatedQuestion);
+  } catch (error) {
+    console.error('Error updating question:', error);
     return NextResponse.json(
-      { message: 'Failed to update question', error: String(error) },
+      { error: 'Failed to update question' },
       { status: 500 }
     );
   }
@@ -253,27 +219,52 @@ export async function PUT(request: Request, { params }: RouteParams) {
  *       500:
  *         description: Failed to delete question.
  */
-export async function DELETE(request: Request, { params }: RouteParams) {
-  const { id } = await params;
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    await prisma.question.delete({
+    // Check authentication and admin access
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions' },
+        { status: 403 }
+      );
+    }
+
+    const { id } = await params;
+
+    // Check if question exists
+    const existingQuestion = await prisma.question.findUnique({
       where: { id },
     });
-    return NextResponse.json({ message: 'Question deleted successfully' });
-  } catch (error: any) {
-    console.error(
-      `[API /api/questions/${id} DELETE] Failed to delete question:`,
-      error
-    );
-    if (error.code === 'P2025') {
-      // Record to delete not found
+
+    if (!existingQuestion) {
       return NextResponse.json(
-        { message: 'Question not found' },
+        { error: 'Question not found' },
         { status: 404 }
       );
     }
+
+    // Delete the question (this will cascade delete related submitted answers)
+    await prisma.question.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ message: 'Question deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting question:', error);
     return NextResponse.json(
-      { message: 'Failed to delete question', error: String(error) },
+      { error: 'Failed to delete question' },
       { status: 500 }
     );
   }

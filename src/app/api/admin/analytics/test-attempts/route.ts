@@ -178,6 +178,7 @@ export async function GET(request: NextRequest) {
         VERBAL: { correct: 0, total: 0, score: 0 },
         NUMERICAL: { correct: 0, total: 0, score: 0 },
         ATTENTION_TO_DETAIL: { correct: 0, total: 0, score: 0 },
+        OTHER: { correct: 0, total: 0, score: 0 },
       };
 
       testQuestions.forEach((q: any) => {
@@ -255,6 +256,7 @@ export async function GET(request: NextRequest) {
         VERBAL: { correct: 0, total: 0, score: 0 },
         NUMERICAL: { correct: 0, total: 0, score: 0 },
         ATTENTION_TO_DETAIL: { correct: 0, total: 0, score: 0 },
+        OTHER: { correct: 0, total: 0, score: 0 },
       };
 
       testQuestions.forEach((q: any) => {

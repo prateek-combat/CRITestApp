@@ -2,10 +2,11 @@ import { Suspense } from 'react';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import LeaderboardContent from './_components/LeaderboardContent';
+import LeaderboardSidebarLayout from './_components/LeaderboardSidebarLayout';
 
 interface LeaderboardPageProps {
-  searchParams: {
+  searchParams: Promise<{
+    testId?: string;
     page?: string;
     pageSize?: string;
     dateFrom?: string;
@@ -14,7 +15,7 @@ interface LeaderboardPageProps {
     search?: string;
     sortBy?: string;
     sortOrder?: string;
-  };
+  }>;
 }
 
 export default async function LeaderboardPage({
@@ -33,13 +34,12 @@ export default async function LeaderboardPage({
     <div className="min-h-screen bg-gray-100">
       <div className="p-6">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">
             Candidate Leaderboard
           </h1>
           <p className="mt-2 text-gray-600">
-            View and compare candidate performance rankings across all completed
-            tests
+            View and compare candidate performance rankings by test
           </p>
         </div>
 
@@ -51,7 +51,7 @@ export default async function LeaderboardPage({
             </div>
           }
         >
-          <LeaderboardContent searchParams={resolvedSearchParams} />
+          <LeaderboardSidebarLayout searchParams={resolvedSearchParams} />
         </Suspense>
       </div>
     </div>
@@ -60,5 +60,5 @@ export default async function LeaderboardPage({
 
 export const metadata = {
   title: 'Candidate Leaderboard - Test Platform',
-  description: 'View and compare candidate performance rankings',
+  description: 'View and compare candidate performance rankings by test',
 };

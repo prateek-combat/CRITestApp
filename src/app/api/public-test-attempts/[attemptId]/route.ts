@@ -51,6 +51,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         id: publicAttempt.publicLink.test.id,
         title: publicAttempt.publicLink.test.title,
         description: publicAttempt.publicLink.test.description,
+        allowReview: publicAttempt.publicLink.test.allowReview,
         questions: publicAttempt.publicLink.test.questions,
       },
     };
@@ -140,17 +141,62 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           data: answerRecords,
         });
 
-        // Calculate score (simplified - you may want to enhance this)
-        const totalQuestions = publicLink.test.questions.length;
-        const answeredQuestions = Object.keys(answers).length;
-        const rawScore = Math.round((answeredQuestions / totalQuestions) * 100);
+        // Calculate detailed score with category breakdown (matching regular test attempts)
+        let correctAnswers = 0;
+        const submissionTimeEpoch = new Date().getTime();
 
-        // Update attempt with score
+        // Initialize category scores
+        const finalCategorySubScores: Record<
+          string,
+          { correct: number; total: number }
+        > = {
+          LOGICAL: { correct: 0, total: 0 },
+          VERBAL: { correct: 0, total: 0 },
+          NUMERICAL: { correct: 0, total: 0 },
+          ATTENTION_TO_DETAIL: { correct: 0, total: 0 },
+          OTHER: { correct: 0, total: 0 },
+        };
+
+        // First, populate total questions for each category
+        publicLink.test.questions.forEach((q: any) => {
+          const category = q.category;
+          if (finalCategorySubScores[category]) {
+            finalCategorySubScores[category].total++;
+          }
+        });
+
+        // Calculate correct answers and category scores
+        for (const question of publicLink.test.questions) {
+          const questionId = question.id;
+          const clientAnswerData = answers[questionId];
+          const category = question.category;
+
+          if (clientAnswerData && clientAnswerData.answerIndex !== undefined) {
+            const selectedAnswerIndexValue = clientAnswerData.answerIndex;
+            const isCorrect =
+              selectedAnswerIndexValue === question.correctAnswerIndex;
+
+            if (isCorrect) {
+              correctAnswers++;
+              if (finalCategorySubScores[category]) {
+                finalCategorySubScores[category].correct++;
+              }
+            }
+          }
+        }
+
+        const totalQuestions = publicLink.test.questions.length;
+        const rawScore = correctAnswers;
+        const percentile =
+          totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+
+        // Update attempt with detailed score
         await prisma.publicTestAttempt.update({
           where: { id: attemptId },
           data: {
             rawScore,
-            // You can add percentile calculation here if needed
+            percentile,
+            categorySubScores: finalCategorySubScores,
           },
         });
       }

@@ -39,12 +39,32 @@ interface TestAttempt {
   test: {
     id: string;
     title: string;
+    questions?: Array<{
+      id: string;
+      promptText: string;
+      promptImageUrl: string | null;
+      answerOptions: string[];
+      correctAnswerIndex: number;
+      category: string;
+    }>;
   };
   invitation: {
     id: string;
     candidateName: string;
     candidateEmail: string;
   };
+  submittedAnswers?: Array<{
+    id: string;
+    questionId: string;
+    selectedAnswerIndex: number | null;
+    isCorrect: boolean | null;
+    timeTakenSeconds: number;
+    submittedAt: Date;
+    question: {
+      id: string;
+      promptText: string;
+    };
+  }>;
 }
 
 interface AnalysisData {
@@ -91,15 +111,17 @@ export default function ProctorAnalysisPage() {
   const attemptId = params.attemptId as string;
 
   const [data, setData] = useState<AnalysisData | null>(null);
+  const [questionsData, setQuestionsData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<
-    'overview' | 'video' | 'events' | 'analysis'
+    'overview' | 'video' | 'events' | 'analysis' | 'questions'
   >('overview');
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Fetch proctoring data
         const response = await fetch(
           `/api/admin/proctor/analysis/${attemptId}`
         );
@@ -108,6 +130,20 @@ export default function ProctorAnalysisPage() {
         }
         const result = await response.json();
         setData(result);
+
+        // Fetch questions and answers data separately
+        try {
+          const questionsResponse = await fetch(
+            `/api/admin/test-analysis/${attemptId}`
+          );
+          if (questionsResponse.ok) {
+            const questionsResult = await questionsResponse.json();
+            setQuestionsData(questionsResult);
+          }
+        } catch (questionsErr) {
+          // Non-critical error, questions tab will show fallback message
+          console.warn('Failed to fetch questions data:', questionsErr);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
@@ -225,6 +261,7 @@ export default function ProctorAnalysisPage() {
           <nav className="-mb-px flex space-x-8">
             {[
               { id: 'overview', label: 'Overview' },
+              { id: 'questions', label: 'Questions & Answers' },
               { id: 'video', label: 'Captured Frames' },
               { id: 'events', label: 'Proctoring Events' },
               { id: 'analysis', label: 'AI Analysis' },
@@ -347,6 +384,133 @@ export default function ProctorAnalysisPage() {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {selectedTab === 'questions' && (
+          <div className="rounded-lg bg-white p-6 shadow">
+            <h3 className="mb-4 text-lg font-medium text-gray-900">
+              Questions & Answers
+            </h3>
+            {questionsData?.attempt?.test?.questions &&
+            questionsData?.attempt?.submittedAnswers ? (
+              <div className="space-y-6">
+                {questionsData.attempt.test.questions.map(
+                  (question: any, index: number) => {
+                    const submittedAnswer =
+                      questionsData.attempt.submittedAnswers?.find(
+                        (answer: any) => answer.questionId === question.id
+                      );
+                    const isCorrect = submittedAnswer?.isCorrect || false;
+                    const selectedAnswerIndex =
+                      submittedAnswer?.selectedAnswerIndex;
+
+                    return (
+                      <div
+                        key={question.id}
+                        className="border-b border-gray-200 pb-6 last:border-b-0"
+                      >
+                        <div className="mb-3 flex items-start justify-between">
+                          <h4 className="text-lg font-semibold text-gray-800">
+                            Question {index + 1}
+                          </h4>
+                          <div
+                            className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
+                              isCorrect
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                          </div>
+                        </div>
+
+                        <p className="mb-4 text-gray-700">
+                          {question.promptText}
+                        </p>
+
+                        {question.promptImageUrl && (
+                          <div className="mb-4">
+                            <img
+                              src={question.promptImageUrl}
+                              alt="Question image"
+                              className="max-w-md rounded-md"
+                            />
+                          </div>
+                        )}
+
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium text-gray-600">
+                            Answer Options:
+                          </p>
+                          <ul className="space-y-2">
+                            {question.answerOptions.map(
+                              (option: string, optionIndex: number) => {
+                                const isCorrectAnswer =
+                                  optionIndex === question.correctAnswerIndex;
+                                const isSelectedAnswer =
+                                  optionIndex === selectedAnswerIndex;
+
+                                return (
+                                  <li
+                                    key={optionIndex}
+                                    className={`rounded-md p-3 text-sm ${
+                                      isSelectedAnswer && isCorrectAnswer
+                                        ? 'border border-green-300 bg-green-100' // Selected and correct
+                                        : isSelectedAnswer && !isCorrectAnswer
+                                          ? 'border border-red-300 bg-red-100' // Selected but wrong
+                                          : isCorrectAnswer
+                                            ? 'border border-green-200 bg-green-50' // Not selected but correct
+                                            : 'border border-gray-200 bg-gray-50' // Not selected and not correct
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <span className="flex-grow">
+                                        {String.fromCharCode(65 + optionIndex)}.{' '}
+                                        {option}
+                                      </span>
+                                      <div className="flex items-center space-x-2">
+                                        {isSelectedAnswer && (
+                                          <span className="font-medium text-blue-600">
+                                            👤 Selected
+                                          </span>
+                                        )}
+                                        {isCorrectAnswer && (
+                                          <span className="font-medium text-green-600">
+                                            ✓ Correct
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </li>
+                                );
+                              }
+                            )}
+                          </ul>
+                        </div>
+
+                        {submittedAnswer && (
+                          <div className="mt-4 text-sm text-gray-600">
+                            <p>
+                              <span className="font-medium">Time taken:</span>{' '}
+                              {submittedAnswer.timeTakenSeconds} seconds
+                            </p>
+                            <p>
+                              <span className="font-medium">Submitted at:</span>{' '}
+                              {new Date(
+                                submittedAnswer.submittedAt
+                              ).toLocaleString()}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+                )}
+              </div>
+            ) : (
+              <p className="text-gray-500">No question data available.</p>
+            )}
           </div>
         )}
 
@@ -751,7 +915,8 @@ export default function ProctorAnalysisPage() {
                 <div className="mb-2 text-blue-600">🤖</div>
                 <p className="text-gray-600">No AI analysis available yet</p>
                 <p className="mt-1 text-sm text-gray-500">
-                  Click "Run AI Analysis" to generate detailed analysis results.
+                  Click &quot;Run AI Analysis&quot; to generate detailed
+                  analysis results.
                 </p>
               </div>
             )}

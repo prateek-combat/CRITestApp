@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 interface PublicTestLink {
   id: string;
@@ -234,12 +235,12 @@ export default function PublicLinksPage() {
               Create public test links from the Invitations page to allow
               multiple candidates to access tests.
             </p>
-            <a
+            <Link
               href="/admin/invitations"
               className="inline-flex items-center rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
             >
               Go to Invitations
-            </a>
+            </Link>
           </div>
         ) : (
           <div className="overflow-hidden">

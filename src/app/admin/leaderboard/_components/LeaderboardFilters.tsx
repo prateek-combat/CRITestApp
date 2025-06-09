@@ -1,26 +1,56 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter, Calendar } from 'lucide-react';
+
+interface Test {
+  id: string;
+  title: string;
+}
 
 interface LeaderboardFiltersProps {
   filters: {
     dateFrom?: string;
     dateTo?: string;
     invitationId?: string;
+    testId?: string;
     search?: string;
     sortBy: string;
     sortOrder: string;
   };
   onFilterChange: (filters: Record<string, string | undefined>) => void;
+  stats?: {
+    totalCandidates: number;
+    avgScore: number;
+    topScore: number;
+    thisMonth: number;
+  };
 }
 
 export default function LeaderboardFilters({
   filters,
   onFilterChange,
+  stats,
 }: LeaderboardFiltersProps) {
   const [localSearch, setLocalSearch] = useState(filters.search || '');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [tests, setTests] = useState<Test[]>([]);
+
+  useEffect(() => {
+    fetchTests();
+  }, []);
+
+  const fetchTests = async () => {
+    try {
+      const response = await fetch('/api/tests');
+      if (response.ok) {
+        const data = await response.json();
+        setTests(data);
+      }
+    } catch (error) {
+      console.error('Error fetching tests:', error);
+    }
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +68,7 @@ export default function LeaderboardFilters({
       dateFrom: undefined,
       dateTo: undefined,
       invitationId: undefined,
+      testId: undefined,
       page: '1',
     });
   };
@@ -46,7 +77,8 @@ export default function LeaderboardFilters({
     filters.search ||
     filters.dateFrom ||
     filters.dateTo ||
-    filters.invitationId;
+    filters.invitationId ||
+    filters.testId;
 
   return (
     <div className="space-y-4 rounded-lg bg-white p-6 shadow">
@@ -128,27 +160,32 @@ export default function LeaderboardFilters({
               </div>
             </div>
 
-            {/* Invitation ID */}
+            {/* Test Filter */}
             <div>
               <label
-                htmlFor="invitationId"
+                htmlFor="testId"
                 className="mb-1 block text-sm font-medium text-gray-700"
               >
-                Invitation ID
+                Test
               </label>
-              <input
-                type="text"
-                id="invitationId"
-                placeholder="Filter by invitation ID..."
-                value={filters.invitationId || ''}
+              <select
+                id="testId"
+                value={filters.testId || ''}
                 onChange={(e) =>
                   onFilterChange({
-                    invitationId: e.target.value || undefined,
+                    testId: e.target.value || undefined,
                     page: '1',
                   })
                 }
-                className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 leading-5 placeholder-gray-500 focus:border-blue-500 focus:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
+                className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="">All Tests</option>
+                {tests.map((test) => (
+                  <option key={test.id} value={test.id}>
+                    {test.title}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -177,19 +214,27 @@ export default function LeaderboardFilters({
       <div className="border-t border-gray-200 pt-4">
         <div className="grid grid-cols-2 gap-4 text-center md:grid-cols-4">
           <div>
-            <div className="text-2xl font-bold text-gray-900">-</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {stats?.totalCandidates || 0}
+            </div>
             <div className="text-xs text-gray-500">Total Candidates</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-gray-900">-</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {stats?.avgScore ? `${stats.avgScore}%` : '0%'}
+            </div>
             <div className="text-xs text-gray-500">Avg Score</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-gray-900">-</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {stats?.topScore ? `${stats.topScore}%` : '0%'}
+            </div>
             <div className="text-xs text-gray-500">Top Performer</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-gray-900">-</div>
+            <div className="text-2xl font-bold text-gray-900">
+              {stats?.thisMonth || 0}
+            </div>
             <div className="text-xs text-gray-500">This Month</div>
           </div>
         </div>

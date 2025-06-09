@@ -238,13 +238,46 @@ export default function AnalyticsPage() {
     };
   }, [filteredAnalytics, testSummaries]);
 
-  // Top performers
-  const topPerformers = useMemo(() => {
-    return filteredAnalytics
+  // Performance distribution data
+  const performanceDistribution = useMemo(() => {
+    const ranges = [
+      { range: '0-20%', min: 0, max: 20, count: 0 },
+      { range: '21-40%', min: 21, max: 40, count: 0 },
+      { range: '41-60%', min: 41, max: 60, count: 0 },
+      { range: '61-80%', min: 61, max: 80, count: 0 },
+      { range: '81-100%', min: 81, max: 100, count: 0 },
+    ];
+
+    filteredAnalytics
       .filter((a) => a.status === 'COMPLETED' && a.rawScore !== null)
-      .sort((a, b) => (b.rawScore || 0) - (a.rawScore || 0))
-      .slice(0, 10);
+      .forEach((attempt) => {
+        const percentage = Math.round(
+          attempt.totalQuestions > 0
+            ? ((attempt.rawScore || 0) / attempt.totalQuestions) * 100
+            : 0
+        );
+        ranges.forEach((range) => {
+          if (percentage >= range.min && percentage <= range.max) {
+            range.count++;
+          }
+        });
+      });
+
+    return ranges;
   }, [filteredAnalytics]);
+
+  // Test difficulty analysis
+  const testDifficultyData = useMemo(() => {
+    return testSummaries.map((test) => ({
+      testTitle:
+        test.testTitle.length > 20
+          ? test.testTitle.substring(0, 20) + '...'
+          : test.testTitle,
+      avgScore: test.avgScore,
+      completionRate: test.completionRate,
+      attempts: test.totalAttempts,
+    }));
+  }, [testSummaries]);
 
   // Category performance across all tests
   const categoryPerformance = useMemo(() => {
@@ -288,6 +321,12 @@ export default function AnalyticsPage() {
           </p>
         </div>
         <div className="flex items-center space-x-3">
+          <button
+            onClick={() => router.push('/admin/analytics/personality')}
+            className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition duration-150 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+          >
+            🧠 Personality Analytics
+          </button>
           <select
             value={selectedTimeFrame}
             onChange={(e) => setSelectedTimeFrame(e.target.value)}
@@ -376,8 +415,8 @@ export default function AnalyticsPage() {
                   <span className="font-medium text-primary-600">
                     {searchResults.length}
                   </span>{' '}
-                  result{searchResults.length !== 1 ? 's' : ''} for "
-                  {searchQuery}"
+                  result{searchResults.length !== 1 ? 's' : ''} for &quot;
+                  {searchQuery}&quot;
                 </span>
               )}
             </div>
@@ -645,96 +684,70 @@ export default function AnalyticsPage() {
                 </div>
               </div>
 
-              {/* Top Performers */}
+              {/* Performance Distribution */}
               <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
                 <div className="border-b border-gray-200 px-5 py-4">
                   <h3 className="text-lg font-semibold text-gray-900">
-                    🏆 Top Performers
+                    📊 Score Distribution
                   </h3>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                          Rank
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                          Candidate
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                          Test
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                          Score
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                          Duration
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                          Date
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
-                      {topPerformers.slice(0, 10).map((candidate, index) => (
-                        <tr key={candidate.id} className="hover:bg-gray-50">
-                          <td className="whitespace-nowrap px-4 py-3 text-sm">
-                            <span
-                              className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
-                                index === 0
-                                  ? 'bg-secondary-100 text-secondary-800'
-                                  : index === 1
-                                    ? 'bg-gray-100 text-gray-800'
-                                    : index === 2
-                                      ? 'bg-secondary-200 text-secondary-900'
-                                      : 'bg-primary-100 text-primary-800'
-                              }`}
-                            >
-                              {index + 1}
-                            </span>
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3">
-                            <div className="text-sm font-medium text-gray-900">
-                              {candidate.candidateName || 'Anonymous'}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {candidate.candidateEmail}
-                            </div>
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
-                            {candidate.testTitle}
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3">
-                            <div className="text-sm font-medium text-gray-900">
-                              {candidate.rawScore}/{candidate.totalQuestions}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {Math.round(
-                                ((candidate.rawScore || 0) /
-                                  candidate.totalQuestions) *
-                                  100
-                              )}
-                              %
-                            </div>
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
-                            {candidate.durationSeconds
-                              ? Math.round(candidate.durationSeconds / 60)
-                              : 'N/A'}
-                            m
-                          </td>
-                          <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
-                            {candidate.completedAt
-                              ? new Date(
-                                  candidate.completedAt
-                                ).toLocaleDateString()
-                              : 'N/A'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="p-5">
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={performanceDistribution}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="range" />
+                      <YAxis />
+                      <Tooltip
+                        formatter={(value) => [`${value} candidates`, 'Count']}
+                      />
+                      <Bar dataKey="count" fill="#3B82F6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Test Difficulty Analysis */}
+              <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+                <div className="border-b border-gray-200 px-5 py-4">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    🎯 Test Difficulty Analysis
+                  </h3>
+                </div>
+                <div className="p-5">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <ScatterChart data={testDifficultyData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="avgScore"
+                        type="number"
+                        domain={[0, 100]}
+                        name="Average Score (%)"
+                      />
+                      <YAxis
+                        dataKey="completionRate"
+                        type="number"
+                        domain={[0, 100]}
+                        name="Completion Rate (%)"
+                      />
+                      <Tooltip
+                        formatter={(value, name) => [
+                          `${value}${name === 'avgScore' ? '%' : '%'}`,
+                          name === 'avgScore' ? 'Avg Score' : 'Completion Rate',
+                        ]}
+                        labelFormatter={(label, payload) => {
+                          if (payload && payload[0]) {
+                            return `${payload[0].payload.testTitle} (${payload[0].payload.attempts} attempts)`;
+                          }
+                          return label;
+                        }}
+                      />
+                      <Scatter data={testDifficultyData} fill="#8884d8" />
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                  <div className="mt-3 text-sm text-gray-600">
+                    Each point represents a test. X-axis: Average Score, Y-axis:
+                    Completion Rate
+                  </div>
                 </div>
               </div>
             </div>
@@ -814,18 +827,30 @@ export default function AnalyticsPage() {
                                 </div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className="text-sm font-medium text-gray-900">
-                                {candidate.rawScore}/{candidate.totalQuestions}
+                            <div className="flex items-center space-x-3">
+                              <div className="text-right">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {candidate.rawScore}/
+                                  {candidate.totalQuestions}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {Math.round(
+                                    ((candidate.rawScore || 0) /
+                                      candidate.totalQuestions) *
+                                      100
+                                  )}
+                                  %
+                                </div>
                               </div>
-                              <div className="text-xs text-gray-500">
-                                {Math.round(
-                                  ((candidate.rawScore || 0) /
-                                    candidate.totalQuestions) *
-                                    100
-                                )}
-                                %
-                              </div>
+                              {candidate.status === 'COMPLETED' && (
+                                <a
+                                  href={`/test/results/${candidate.id}`}
+                                  className="inline-flex items-center rounded-md bg-blue-500 px-2 py-1 text-xs font-medium text-white shadow-sm hover:bg-blue-600"
+                                  title="View detailed results"
+                                >
+                                  📊
+                                </a>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -949,12 +974,20 @@ export default function AnalyticsPage() {
                             </td>
                             <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
                               {candidate.status === 'COMPLETED' ? (
-                                <a
-                                  href={`/admin/proctor/${candidate.id}`}
-                                  className="inline-flex items-center rounded-md bg-primary-500 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                                >
-                                  View Details
-                                </a>
+                                <div className="flex space-x-2">
+                                  <a
+                                    href={`/test/results/${candidate.id}`}
+                                    className="inline-flex items-center rounded-md bg-blue-500 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                  >
+                                    📊 Results
+                                  </a>
+                                  <a
+                                    href={`/admin/proctor/${candidate.id}`}
+                                    className="inline-flex items-center rounded-md bg-primary-500 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                                  >
+                                    🎥 Proctor
+                                  </a>
+                                </div>
                               ) : (
                                 <span className="text-gray-400">-</span>
                               )}

@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { attemptId: string } }
+  { params }: { params: Promise<{ attemptId: string }> }
 ) {
   try {
     // Check authentication and admin access
@@ -35,6 +35,7 @@ export async function GET(
           select: {
             id: true,
             title: true,
+            questions: true,
           },
         },
         invitation: {
@@ -42,6 +43,14 @@ export async function GET(
             id: true,
             candidateName: true,
             candidateEmail: true,
+          },
+        },
+        submittedAnswers: {
+          include: {
+            question: true,
+          },
+          orderBy: {
+            submittedAt: 'asc',
           },
         },
       },
@@ -82,8 +91,17 @@ export async function GET(
                 select: {
                   id: true,
                   title: true,
+                  questions: true,
                 },
               },
+            },
+          },
+          submittedAnswers: {
+            include: {
+              question: true,
+            },
+            orderBy: {
+              submittedAt: 'asc',
             },
           },
         },
@@ -122,6 +140,7 @@ export async function GET(
             candidateName: publicAttempt.candidateName,
             candidateEmail: publicAttempt.candidateEmail,
           },
+          submittedAnswers: publicAttempt.submittedAnswers,
         } as any;
 
         // Fetch public proctor data
@@ -156,7 +175,7 @@ export async function GET(
     // Generate analysis results only if real AI analysis was run (indicated by riskScore)
     let analysisResults = null;
 
-    if (testAttempt.riskScore !== null) {
+    if ((testAttempt as any).riskScore !== null) {
       // Calculate actual face detection rate from assets
       const totalFrames = proctorAssets.length;
       const sampleFrames = proctorAssets.filter((_, index) => index % 5 === 0);
@@ -205,8 +224,10 @@ export async function GET(
           totalDuration:
             testAttempt.proctoringStartedAt && testAttempt.proctoringEndedAt
               ? Math.floor(
-                  (new Date(testAttempt.proctoringEndedAt).getTime() -
-                    new Date(testAttempt.proctoringStartedAt).getTime()) /
+                  (new Date((testAttempt as any).proctoringEndedAt).getTime() -
+                    new Date(
+                      (testAttempt as any).proctoringStartedAt
+                    ).getTime()) /
                     1000
                 )
               : 300,
@@ -259,19 +280,19 @@ export async function GET(
             },
           ],
           recommendations:
-            testAttempt.riskScore >= 8
+            (testAttempt.riskScore ?? 0) >= 8
               ? [
                   'High risk detected - Manual review recommended',
                   'Multiple suspicious behaviors identified',
                   'Consider invalidating test results',
                 ]
-              : testAttempt.riskScore >= 5
+              : (testAttempt.riskScore ?? 0) >= 5
                 ? [
                     'Medium risk detected - Review flagged events',
                     'Monitor for patterns of suspicious behavior',
                     'Consider additional verification',
                   ]
-                : testAttempt.riskScore >= 2
+                : (testAttempt.riskScore ?? 0) >= 2
                   ? [
                       'Low risk detected - Minor irregularities noted',
                       'Standard monitoring protocols sufficient',

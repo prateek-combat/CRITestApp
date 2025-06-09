@@ -1,4 +1,5 @@
 -- Create view for candidate leaderboard scores (includes both regular and public attempts)
+-- Fixed version that properly handles PublicTestAttempt structure
 CREATE OR REPLACE VIEW vw_candidate_scores AS
 WITH combined_attempts AS (
   -- Regular test attempts
@@ -18,7 +19,7 @@ WITH combined_attempts AS (
 
   UNION ALL
 
-  -- Public test attempts
+  -- Public test attempts (fixed to handle the publicLinkId relationship)
   SELECT
     pta.id AS "attemptId",
     NULL AS "invitationId",
@@ -28,6 +29,7 @@ WITH combined_attempts AS (
     EXTRACT(EPOCH FROM (pta."completedAt" - pta."startedAt"))::int AS "durationSeconds",
     pta."categorySubScores"
   FROM "PublicTestAttempt" pta
+  INNER JOIN "PublicTestLink" ptl ON ptl.id = pta."publicLinkId"
   WHERE pta.status = 'COMPLETED'
     AND pta."completedAt" IS NOT NULL
     AND pta."categorySubScores" IS NOT NULL
@@ -60,6 +62,11 @@ SELECT
     THEN ((ca."categorySubScores"->'ATTENTION_TO_DETAIL'->>'correct')::float / (ca."categorySubScores"->'ATTENTION_TO_DETAIL'->>'total')::float * 100)
     ELSE 0 
   END AS "scoreAttention",
+  CASE 
+    WHEN (ca."categorySubScores"->'OTHER'->>'total')::float > 0 
+    THEN ((ca."categorySubScores"->'OTHER'->>'correct')::float / (ca."categorySubScores"->'OTHER'->>'total')::float * 100)
+    ELSE 0 
+  END AS "scoreOther",
   -- Composite score (simple average of percentages)
   ((
     CASE 
@@ -81,8 +88,13 @@ SELECT
       WHEN (ca."categorySubScores"->'ATTENTION_TO_DETAIL'->>'total')::float > 0 
       THEN ((ca."categorySubScores"->'ATTENTION_TO_DETAIL'->>'correct')::float / (ca."categorySubScores"->'ATTENTION_TO_DETAIL'->>'total')::float * 100)
       ELSE 0 
+    END +
+    CASE 
+      WHEN (ca."categorySubScores"->'OTHER'->>'total')::float > 0 
+      THEN ((ca."categorySubScores"->'OTHER'->>'correct')::float / (ca."categorySubScores"->'OTHER'->>'total')::float * 100)
+      ELSE 0 
     END
-  ) / 4.0) AS "composite",
+  ) / 5.0) AS "composite",
   -- Percentile ranking
   ((PERCENT_RANK() OVER (ORDER BY
     ((
@@ -105,8 +117,13 @@ SELECT
         WHEN (ca."categorySubScores"->'ATTENTION_TO_DETAIL'->>'total')::float > 0 
         THEN ((ca."categorySubScores"->'ATTENTION_TO_DETAIL'->>'correct')::float / (ca."categorySubScores"->'ATTENTION_TO_DETAIL'->>'total')::float * 100)
         ELSE 0 
+      END +
+      CASE 
+        WHEN (ca."categorySubScores"->'OTHER'->>'total')::float > 0 
+        THEN ((ca."categorySubScores"->'OTHER'->>'correct')::float / (ca."categorySubScores"->'OTHER'->>'total')::float * 100)
+        ELSE 0 
       END
-    ) / 4.0) DESC
+    ) / 5.0) DESC
   ) * 100)) AS "percentile",
   -- Dense rank for leaderboard
   DENSE_RANK() OVER (ORDER BY
@@ -130,8 +147,13 @@ SELECT
         WHEN (ca."categorySubScores"->'ATTENTION_TO_DETAIL'->>'total')::float > 0 
         THEN ((ca."categorySubScores"->'ATTENTION_TO_DETAIL'->>'correct')::float / (ca."categorySubScores"->'ATTENTION_TO_DETAIL'->>'total')::float * 100)
         ELSE 0 
+      END +
+      CASE 
+        WHEN (ca."categorySubScores"->'OTHER'->>'total')::float > 0 
+        THEN ((ca."categorySubScores"->'OTHER'->>'correct')::float / (ca."categorySubScores"->'OTHER'->>'total')::float * 100)
+        ELSE 0 
       END
-    ) / 4.0) DESC,
+    ) / 5.0) DESC,
     ca."durationSeconds" ASC
   ) AS "rank"
 FROM combined_attempts ca; 

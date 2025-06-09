@@ -189,7 +189,7 @@ export default function CreateTestPage() {
           <div>
             <p className="font-bold">Next Steps</p>
             <p className="text-sm">
-              After creating the test, you'll be able to add questions and
+              After creating the test, you&apos;ll be able to add questions and
               configure settings.
             </p>
           </div>
