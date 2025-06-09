@@ -27,10 +27,10 @@ model Test {
   description             String?
   lockOrder               Boolean          @default(false)
   overallTimeLimitSeconds Int
-  allowReview             Boolean          @default(true)
   createdAt               DateTime         @default(now())
   updatedAt               DateTime         @updatedAt
   createdById             String
+  allowReview             Boolean          @default(true)
   invitations             Invitation[]
   publicTestLinks         PublicTestLink[]
   questions               Question[]
@@ -55,11 +55,11 @@ model Question {
   timerSeconds           Int
   answerOptions          String[]
   correctAnswerIndex     Int?
+  sectionTag             String?
+  category               QuestionCategory
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
   testId                 String
-  category               QuestionCategory
-  sectionTag             String?
   answerWeights          Json?
   personalityDimensionId String?
   questionType           QuestionType            @default(OBJECTIVE)
@@ -96,20 +96,20 @@ model TestAttempt {
   percentile          Float?
   categorySubScores   Json?
   tabSwitches         Int               @default(0)
+  proctoringEnabled   Boolean           @default(true)
+  videoRecordingUrl   String?
+  audioRecordingUrl   String?
+  proctoringEvents    Json?
+  faceCapturesUrls    String[]          @default([])
+  screenRecordingUrl  String?
+  proctoringStartedAt DateTime?
+  proctoringEndedAt   DateTime?
+  permissionsGranted  Boolean           @default(false)
+  riskScore           Float?
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
   invitationId        String            @unique
   testId              String
-  audioRecordingUrl   String?
-  faceCapturesUrls    String[]          @default([])
-  permissionsGranted  Boolean           @default(false)
-  proctoringEnabled   Boolean           @default(true)
-  proctoringEndedAt   DateTime?
-  proctoringEvents    Json?
-  proctoringStartedAt DateTime?
-  riskScore           Float?
-  screenRecordingUrl  String?
-  videoRecordingUrl   String?
   personalityProfile  Json?
   personalityScores   Json?
   proctorAssets       ProctorAsset[]
@@ -247,10 +247,10 @@ enum UserRole {
 
 enum InvitationStatus {
   PENDING
+  SENT
   OPENED
   COMPLETED
   EXPIRED
-  SENT
   CANCELLED
 }
 
