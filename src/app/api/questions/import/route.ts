@@ -3,7 +3,29 @@ import { PrismaClient, QuestionCategory } from '@prisma/client';
 import * as XLSX from 'xlsx-js-style';
 import * as Papa from 'papaparse';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  log:
+    process.env.NODE_ENV === 'development'
+      ? ['query', 'info', 'warn', 'error']
+      : ['error'],
+});
+
+// Test database connection on module load
+if (process.env.NODE_ENV === 'production') {
+  prisma
+    .$connect()
+    .then(() => {
+      console.log(
+        '[QUESTION_IMPORT_DEBUG] Prisma client connected successfully in production'
+      );
+    })
+    .catch((error) => {
+      console.error(
+        '[QUESTION_IMPORT_DEBUG] Prisma client connection failed:',
+        error
+      );
+    });
+}
 
 interface QuestionRow {
   promptText: string;
@@ -467,16 +489,35 @@ function validateRow(row: any, rowNumber: number): ValidationError[] {
  *         description: Failed to import questions
  */
 export async function POST(request: NextRequest) {
+  const debugInfo = {
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    vercelRegion: process.env.VERCEL_REGION || 'unknown',
+    databaseUrl: process.env.DATABASE_URL ? 'SET' : 'NOT_SET',
+  };
+
+  console.log('[QUESTION_IMPORT_DEBUG] Starting import process:', debugInfo);
+
   try {
+    console.log('[QUESTION_IMPORT_DEBUG] Parsing form data...');
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const testId = formData.get('testId') as string;
 
+    console.log('[QUESTION_IMPORT_DEBUG] Form data parsed:', {
+      hasFile: !!file,
+      fileName: file?.name || 'N/A',
+      fileSize: file?.size || 0,
+      testId: testId || 'N/A',
+    });
+
     if (!file) {
+      console.log('[QUESTION_IMPORT_DEBUG] ERROR: No file uploaded');
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
     if (!testId) {
+      console.log('[QUESTION_IMPORT_DEBUG] ERROR: No test ID provided');
       return NextResponse.json(
         { error: 'Test ID is required' },
         { status: 400 }
@@ -510,19 +551,53 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify test exists
-    const test = await prisma.test.findUnique({
-      where: { id: testId },
-    });
+    console.log(
+      '[QUESTION_IMPORT_DEBUG] Checking if test exists for ID:',
+      testId
+    );
+    try {
+      const test = await prisma.test.findUnique({
+        where: { id: testId },
+      });
 
-    if (!test) {
-      return NextResponse.json({ error: 'Test not found' }, { status: 404 });
+      console.log('[QUESTION_IMPORT_DEBUG] Test lookup result:', {
+        testFound: !!test,
+        testTitle: test?.title || 'N/A',
+      });
+
+      if (!test) {
+        console.log(
+          '[QUESTION_IMPORT_DEBUG] ERROR: Test not found in database'
+        );
+        return NextResponse.json({ error: 'Test not found' }, { status: 404 });
+      }
+    } catch (dbError) {
+      console.error(
+        '[QUESTION_IMPORT_DEBUG] Database error during test lookup:',
+        {
+          error: dbError instanceof Error ? dbError.message : 'Unknown error',
+          stack: dbError instanceof Error ? dbError.stack : 'No stack',
+        }
+      );
+      throw dbError;
     }
 
     // Parse the file with enhanced error handling
+    console.log('[QUESTION_IMPORT_DEBUG] Starting file parsing...');
     let rawData: any[];
     try {
       rawData = await parseFile(file);
+      console.log('[QUESTION_IMPORT_DEBUG] File parsing successful:', {
+        rowCount: rawData.length,
+        firstRowKeys:
+          rawData.length > 0 ? Object.keys(rawData[0]).slice(0, 5) : [],
+      });
     } catch (parseError) {
+      console.error('[QUESTION_IMPORT_DEBUG] File parsing error:', {
+        error:
+          parseError instanceof Error ? parseError.message : 'Unknown error',
+        stack: parseError instanceof Error ? parseError.stack : 'No stack',
+      });
       return NextResponse.json(
         {
           error: 'Failed to parse file',
@@ -650,6 +725,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (validQuestions.length === 0) {
+      console.log(
+        '[QUESTION_IMPORT_DEBUG] ERROR: No valid questions found after validation'
+      );
       return NextResponse.json(
         {
           error: 'No valid questions found',
@@ -662,12 +740,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('[QUESTION_IMPORT_DEBUG] Starting database transaction:', {
+      validQuestionsCount: validQuestions.length,
+      validationErrors: validationErrors.length,
+      emptyRows,
+    });
+
     // Create questions in database with transaction for better reliability
     const createdQuestions: any[] = [];
 
     try {
       // Use a transaction to ensure all questions are created or none are
+      console.log('[QUESTION_IMPORT_DEBUG] Beginning Prisma transaction...');
       await prisma.$transaction(async (tx) => {
+        console.log(
+          '[QUESTION_IMPORT_DEBUG] Inside transaction, processing questions...'
+        );
         for (const questionData of validQuestions) {
           // Handle personality dimension lookup for personality questions
           let finalQuestionData = { ...questionData };
@@ -703,14 +791,45 @@ export async function POST(request: NextRequest) {
             delete finalQuestionData.personalityDimensionCode;
           }
 
+          console.log('[QUESTION_IMPORT_DEBUG] Creating question:', {
+            questionIndex: createdQuestions.length + 1,
+            promptText: finalQuestionData.promptText?.substring(0, 50) + '...',
+            category: finalQuestionData.category,
+            questionType: finalQuestionData.questionType,
+          });
+
           const question = await tx.question.create({
             data: finalQuestionData,
           });
           createdQuestions.push(question);
+
+          console.log(
+            '[QUESTION_IMPORT_DEBUG] Question created successfully:',
+            {
+              questionId: question.id,
+              createdCount: createdQuestions.length,
+            }
+          );
         }
       });
+      console.log(
+        '[QUESTION_IMPORT_DEBUG] Transaction completed successfully!'
+      );
     } catch (dbError) {
-      console.error('Database error during question creation:', dbError);
+      console.error(
+        '[QUESTION_IMPORT_DEBUG] Database error during question creation:',
+        {
+          error: dbError instanceof Error ? dbError.message : 'Unknown error',
+          stack: dbError instanceof Error ? dbError.stack : 'No stack',
+          errorCode: (dbError as any)?.code || 'No code',
+          errorName: (dbError as any)?.name || 'No name',
+          createdQuestionsCount: createdQuestions.length,
+          attemptedQuestionsCount: validQuestions.length,
+          environment: process.env.NODE_ENV,
+          databaseUrl: process.env.DATABASE_URL ? 'SET' : 'NOT_SET',
+        }
+      );
+
       return NextResponse.json(
         {
           error: 'Failed to save questions to database',
@@ -719,12 +838,28 @@ export async function POST(request: NextRequest) {
               ? dbError.message
               : 'Database transaction failed',
           validQuestions: validQuestions.length,
+          createdQuestions: createdQuestions.length,
+          debugInfo: {
+            environment: process.env.NODE_ENV,
+            vercelRegion: process.env.VERCEL_REGION,
+            errorCode: (dbError as any)?.code,
+            errorName: (dbError as any)?.name,
+          },
           suggestion:
             'Please try again. If the problem persists, contact support.',
         },
         { status: 500 }
       );
     }
+
+    console.log(
+      '[QUESTION_IMPORT_DEBUG] Import process completed successfully:',
+      {
+        importedCount: createdQuestions.length,
+        totalRows: rawData.length,
+        emptyRows,
+      }
+    );
 
     return NextResponse.json({
       success: true,
@@ -736,14 +871,25 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error(
-      '[API /api/questions/import POST] Failed to import questions:',
-      error
+      '[QUESTION_IMPORT_DEBUG] Top-level error in import process:',
+      {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack',
+        environment: process.env.NODE_ENV,
+        databaseUrl: process.env.DATABASE_URL ? 'SET' : 'NOT_SET',
+      }
     );
+
     return NextResponse.json(
       {
         error: 'Failed to process file upload',
         details:
           error instanceof Error ? error.message : 'Unknown server error',
+        debugInfo: {
+          environment: process.env.NODE_ENV,
+          vercelRegion: process.env.VERCEL_REGION,
+          timestamp: new Date().toISOString(),
+        },
         suggestion: 'Please try again with a valid Excel or CSV file',
       },
       { status: 500 }
