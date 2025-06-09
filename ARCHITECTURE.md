@@ -71,6 +71,7 @@ This document describes the complete architecture of the Test Platform with inte
 ## 📊 Data Flow
 
 ### 1. Test Taking Flow
+
 ```
 Candidate → Frontend → Live Monitoring → Real-time Events → Database
          ↓
@@ -82,6 +83,7 @@ Candidate → Frontend → Live Monitoring → Real-time Events → Database
 ```
 
 ### 2. Admin Review Flow
+
 ```
 Admin → Dashboard → Query Database → View Results
                  ↓
@@ -91,6 +93,7 @@ Admin → Dashboard → Query Database → View Results
 ## 🗄️ Database Schema
 
 ### Core Tables
+
 - **User**: Admin user accounts and authentication
 - **Test**: Test definitions and configuration
 - **Question**: Individual test questions with multiple choice answers
@@ -98,11 +101,13 @@ Admin → Dashboard → Query Database → View Results
 - **TestAttempt**: Completed test attempts with scores and metadata
 
 ### Proctoring Tables
+
 - **ProctorEvent**: Real-time and AI-detected events during tests
 - **ProctorAsset**: Binary video recordings stored in database
 - **TestAttempt.riskScore**: Calculated risk score (0-100)
 
 ### Job Queue Tables (pg-boss)
+
 - **pgboss.job**: Job queue for video analysis tasks
 - **pgboss.schedule**: Scheduled job definitions
 - **pgboss.subscription**: Worker subscriptions
@@ -110,7 +115,9 @@ Admin → Dashboard → Query Database → View Results
 ## 🔍 Proctoring System
 
 ### Real-Time Monitoring
+
 Frontend captures and reports:
+
 - Tab visibility changes
 - DevTools detection
 - Copy/paste operations
@@ -119,12 +126,14 @@ Frontend captures and reports:
 - Full-screen exits
 
 ### Video Recording
+
 - **Format**: WebM (H.264/VP8 + AAC/Opus)
 - **Storage**: PostgreSQL BYTEA field
 - **Size Limit**: 500MB per recording
 - **Serving**: Streamed from database via API route
 
 ### AI Analysis Pipeline
+
 1. **Job Creation**: Video upload triggers pg-boss job
 2. **Worker Processing**: Python worker polls for jobs
 3. **Video Download**: Worker fetches video from database
@@ -136,14 +145,16 @@ Frontend captures and reports:
 6. **Result Storage**: Events and scores saved to database
 
 ### Risk Categories
+
 - **0-10**: Low risk (normal behavior)
-- **10-25**: Medium risk (minor violations)  
+- **10-25**: Medium risk (minor violations)
 - **25-50**: High risk (significant violations)
 - **50+**: Critical risk (severe violations)
 
 ## 🔧 Technology Stack
 
 ### Frontend
+
 - **Next.js 15**: React framework with App Router
 - **React 19**: UI library with concurrent features
 - **TypeScript**: Type-safe development
@@ -152,6 +163,7 @@ Frontend captures and reports:
 - **devtools-detect**: Browser DevTools detection
 
 ### Backend
+
 - **Next.js API Routes**: Serverless API endpoints
 - **Prisma 5**: Type-safe database ORM
 - **NextAuth.js**: Authentication framework
@@ -159,10 +171,12 @@ Frontend captures and reports:
 - **bcryptjs**: Password hashing
 
 ### Database
+
 - **PostgreSQL**: Primary database (Neon cloud)
 - **Prisma Schema**: Database definition and migrations
 
 ### Analysis Worker
+
 - **Python 3.11**: Runtime environment
 - **MediaPipe**: Face detection and pose estimation
 - **YOLO (Ultralytics)**: Object detection
@@ -172,6 +186,7 @@ Frontend captures and reports:
 - **FFmpeg**: Audio/video manipulation
 
 ### Infrastructure
+
 - **Docker**: Worker containerization
 - **Vercel**: Frontend deployment (recommended)
 - **Neon**: PostgreSQL hosting
@@ -180,6 +195,7 @@ Frontend captures and reports:
 ## 🚀 Deployment Architecture
 
 ### Development
+
 ```
 Local Machine
 ├── Next.js (npm run dev)
@@ -188,6 +204,7 @@ Local Machine
 ```
 
 ### Production
+
 ```
 Vercel (Frontend + API)
 ├── Static Assets
@@ -207,18 +224,21 @@ Cloud Workers (Docker containers)
 ## 🔒 Security Considerations
 
 ### Authentication & Authorization
+
 - Google OAuth 2.0 integration
 - Role-based access control (ADMIN, SUPER_ADMIN)
 - Session-based authentication
 - Pre-registered admin emails only
 
 ### Data Protection
+
 - Video recordings accessible only to admins
 - Secure API endpoints with session validation
 - Input validation and sanitization
 - SQL injection prevention via Prisma
 
 ### Privacy Compliance
+
 - Candidate consent required for recording
 - Data retention policies configurable
 - GDPR/privacy law compliance considerations
@@ -227,16 +247,19 @@ Cloud Workers (Docker containers)
 ## 📈 Scaling Strategies
 
 ### Horizontal Scaling
+
 - **Multiple Workers**: Deploy multiple Docker containers
 - **Load Balancing**: Distribute analysis jobs across workers
 - **Regional Deployment**: Workers closer to data centers
 
 ### Vertical Scaling
+
 - **Database**: Neon auto-scaling capabilities
 - **Worker Resources**: Increase Docker memory/CPU limits
 - **Queue Throughput**: pg-boss handles high job volumes
 
 ### Performance Optimization
+
 - **Database Indexing**: Optimize query performance
 - **Connection Pooling**: Efficient database connections
 - **Caching**: Redis cache for frequently accessed data (optional)
@@ -245,18 +268,21 @@ Cloud Workers (Docker containers)
 ## 🔧 Monitoring & Observability
 
 ### Application Metrics
+
 - Test completion rates
 - Video upload success rates
 - Analysis job processing times
 - Risk score distributions
 
 ### System Metrics
+
 - Database connection counts
 - Job queue length and processing rates
 - Worker health and resource usage
 - API response times
 
 ### Error Tracking
+
 - Failed video uploads
 - Analysis processing errors
 - Authentication failures
@@ -265,18 +291,21 @@ Cloud Workers (Docker containers)
 ## 🎯 Future Enhancements
 
 ### Enhanced Analysis
+
 - **Emotion Detection**: Facial expression analysis
 - **Gaze Tracking**: Eye movement patterns
 - **Behavioral Biometrics**: Typing and mouse patterns
 - **Advanced Audio**: Stress detection in voice
 
 ### System Improvements
+
 - **Real-time Analysis**: Live violation detection
 - **Mobile Support**: Native mobile app for tests
 - **Advanced Reporting**: Detailed analytics dashboard
 - **API Integration**: Webhook notifications for violations
 
 ### Scalability
+
 - **Multi-tenant**: Support multiple organizations
 - **Global Deployment**: Multi-region architecture
 - **Advanced Caching**: Redis cluster for performance
@@ -284,4 +313,4 @@ Cloud Workers (Docker containers)
 
 ---
 
-This architecture provides a solid foundation for a production-ready proctoring system while maintaining simplicity and cost-effectiveness through the single-database approach. 
+This architecture provides a solid foundation for a production-ready proctoring system while maintaining simplicity and cost-effectiveness through the single-database approach.

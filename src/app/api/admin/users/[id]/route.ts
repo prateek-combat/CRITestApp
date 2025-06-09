@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
 // PATCH /api/admin/users/[id] - Update user role
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -20,7 +20,8 @@ export async function PATCH(
     }
 
     const { role } = await request.json();
-    const userId = params.id;
+    const resolvedParams = await params;
+    const userId = resolvedParams.id;
 
     if (!role) {
       return NextResponse.json(

@@ -785,7 +785,7 @@ user4@example.com"
                 onChange={(e) => setSelectedTestId(e.target.value)}
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 focus:ring-opacity-20"
               >
-                <option value="">Choose a test...</option>
+                <option value="">Choose a test&hellip;</option>
                 {tests.map((test) => (
                   <option key={test.id} value={test.id}>
                     {test.title}
@@ -819,7 +819,7 @@ user4@example.com"
                         d="M4 12a8 8 0 718-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       ></path>
                     </svg>
-                    Sending...
+                    Sending&hellip;
                   </span>
                 ) : (
                   '📧 Send Invitation Email'
@@ -833,8 +833,8 @@ user4@example.com"
           <div className="text-sm text-blue-800">
             <p>
               <strong>📧 Send Invitation Email:</strong> Sends the invitation
-              directly to the candidate's email address with a personalized test
-              link.
+              directly to the candidate&apos;s email address with a personalized
+              test link.
             </p>
           </div>
         </div>
@@ -846,12 +846,12 @@ user4@example.com"
           <h2 className="text-xl font-semibold text-gray-900">
             🌐 Generate Public Test Link
           </h2>
-          <a
+          <Link
             href="/admin/public-links"
             className="inline-flex items-center rounded-lg bg-purple-100 px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-200"
           >
             📋 Manage Public Links
-          </a>
+          </Link>
         </div>
 
         <div className="mb-4">
@@ -875,7 +875,7 @@ user4@example.com"
               onChange={(e) => setSelectedTestId(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-4 py-3 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 focus:ring-opacity-20"
             >
-              <option value="">Choose a test...</option>
+              <option value="">Choose a test&hellip;</option>
               {tests.map((test) => (
                 <option key={test.id} value={test.id}>
                   {test.title}
@@ -927,7 +927,7 @@ user4@example.com"
                       d="M4 12a8 8 0 718-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Creating...
+                  Creating&hellip;
                 </span>
               ) : (
                 '🌐 Generate Public Link'
@@ -939,8 +939,9 @@ user4@example.com"
         <div className="mt-4 text-sm text-gray-600">
           <p>
             This creates a public link that anyone can use to access the test
-            after entering their name and email. Use "Manage Public Links" to
-            view, activate/deactivate, or delete existing public links.
+            after entering their name and email. Use &quot;Manage Public
+            Links&quot; to view, activate/deactivate, or delete existing public
+            links.
           </p>
         </div>
       </div>
@@ -1098,7 +1099,7 @@ user4@example.com"
                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                       ></path>
                     </svg>
-                    Sending...
+                    Sending&hellip;
                   </span>
                 ) : (
                   '📧 Send Reminders'
