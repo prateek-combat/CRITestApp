@@ -51,6 +51,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         id: publicAttempt.publicLink.test.id,
         title: publicAttempt.publicLink.test.title,
         description: publicAttempt.publicLink.test.description,
+        allowReview: publicAttempt.publicLink.test.allowReview,
         questions: publicAttempt.publicLink.test.questions,
       },
     };
@@ -153,6 +154,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           VERBAL: { correct: 0, total: 0 },
           NUMERICAL: { correct: 0, total: 0 },
           ATTENTION_TO_DETAIL: { correct: 0, total: 0 },
+          OTHER: { correct: 0, total: 0 },
         };
 
         // First, populate total questions for each category
