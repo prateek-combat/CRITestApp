@@ -203,7 +203,7 @@ async function queueVideoAnalysisJob(attemptId: string, videoUrl: string) {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { attemptId: string } }
+  { params }: { params: Promise<{ attemptId: string }> }
 ) {
   try {
     // Check authentication and admin access

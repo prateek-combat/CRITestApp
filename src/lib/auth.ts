@@ -18,6 +18,20 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
+        // Special case for local development - admin login with no credentials
+        if (
+          process.env.NODE_ENV === 'development' &&
+          credentials?.email === 'local-admin' &&
+          credentials?.password === 'local-admin'
+        ) {
+          return {
+            id: 'local-admin-id',
+            email: 'admin@local.dev',
+            name: 'Local Admin',
+            role: 'SUPER_ADMIN',
+          };
+        }
+
         if (!credentials?.email || !credentials?.password) {
           return null;
         }

@@ -5,6 +5,7 @@ This guide explains how to set up the comprehensive proctoring system for the Te
 ## Overview
 
 The proctoring system provides:
+
 - **Real-time browser monitoring** (tab switches, DevTools, copy/paste)
 - **Video/audio recording** during tests
 - **Automated analysis** using AI models for suspicious behavior detection
@@ -63,6 +64,7 @@ All required packages (including pg-boss) are already in package.json.
 ### 2. Database Setup
 
 The Prisma schema includes all proctoring tables:
+
 - `ProctorEvent` - stores browser/behavior events
 - `ProctorAsset` - stores video recordings as binary data
 - `TestAttempt.riskScore` - final calculated risk score
@@ -88,6 +90,7 @@ docker-compose -f docker-compose.proctor.yml up -d
 ```
 
 The worker will:
+
 - Poll PostgreSQL job queue for new analysis jobs
 - Download videos from database
 - Run AI analysis (pose estimation, object detection, audio analysis)
@@ -137,8 +140,8 @@ SELECT COUNT(*) FROM pgboss.job WHERE name = 'proctor.analyse' AND state = 'crea
 SELECT COUNT(*) FROM pgboss.job WHERE name = 'proctor.analyse' AND state = 'active';
 
 -- Check recent jobs
-SELECT id, state, createdon, completedon FROM pgboss.job 
-WHERE name = 'proctor.analyse' 
+SELECT id, state, createdon, completedon FROM pgboss.job
+WHERE name = 'proctor.analyse'
 ORDER BY createdon DESC LIMIT 10;
 ```
 
@@ -155,20 +158,22 @@ docker logs -f proctor-worker
 SELECT * FROM "ProctorEvent" WHERE "attemptId" = 'attempt-id';
 
 -- Check risk scores
-SELECT id, "candidateName", "riskScore", "videoRecordingUrl" 
-FROM "TestAttempt" 
+SELECT id, "candidateName", "riskScore", "videoRecordingUrl"
+FROM "TestAttempt"
 WHERE "riskScore" IS NOT NULL;
 ```
 
 ## Architecture Benefits
 
 ### Single Database Approach
+
 - **Simplified Deployment**: Only PostgreSQL needed (no Redis setup)
 - **Easier Management**: Everything in one database
 - **Cost Effective**: Reduce infrastructure dependencies
 - **ACID Compliance**: Reliable job processing with PostgreSQL transactions
 
 ### pg-boss Features
+
 - **PostgreSQL-native**: Uses PostgreSQL for job queue
 - **Reliable**: ACID transactions, at-least-once delivery
 - **Monitoring**: Built-in job status tracking
@@ -183,15 +188,15 @@ WHERE "riskScore" IS NOT NULL;
 
 ### Risk Factors
 
-| Event Type | Base Weight | Description |
-|------------|-------------|-------------|
-| FACE_NOT_DETECTED | 15 | No face visible in frame |
-| HEAD_TURNED_AWAY | 10 | Head rotated significantly |
-| MULTIPLE_FACES | 25 | More than one person detected |
-| PHONE_DETECTED | 30 | Mobile device visible |
-| EXCESSIVE_MOVEMENT | 8 | Unusual movement patterns |
-| MULTIPLE_SPEAKERS | 20 | Different voices detected |
-| LONG_SILENCE | 5 | Extended periods without voice |
+| Event Type         | Base Weight | Description                    |
+| ------------------ | ----------- | ------------------------------ |
+| FACE_NOT_DETECTED  | 15          | No face visible in frame       |
+| HEAD_TURNED_AWAY   | 10          | Head rotated significantly     |
+| MULTIPLE_FACES     | 25          | More than one person detected  |
+| PHONE_DETECTED     | 30          | Mobile device visible          |
+| EXCESSIVE_MOVEMENT | 8           | Unusual movement patterns      |
+| MULTIPLE_SPEAKERS  | 20          | Different voices detected      |
+| LONG_SILENCE       | 5           | Extended periods without voice |
 
 ## Troubleshooting
 
@@ -211,6 +216,7 @@ WHERE "riskScore" IS NOT NULL;
 ## License Compliance
 
 All dependencies use OSS-compatible licenses:
+
 - **MediaPipe**: Apache 2.0
 - **YOLO (Ultralytics)**: AGPL-3.0 (consider commercial license)
 - **WebRTC VAD**: BSD-3-Clause
@@ -220,7 +226,8 @@ All dependencies use OSS-compatible licenses:
 ## Support
 
 For issues or questions:
+
 1. Check the troubleshooting section
 2. Review worker logs
 3. Test with minimal setup
-4. Contact the development team 
+4. Contact the development team

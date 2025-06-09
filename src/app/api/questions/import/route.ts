@@ -1,21 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient, QuestionCategory } from '@prisma/client';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 import * as Papa from 'papaparse';
 
 const prisma = new PrismaClient();
 
 interface QuestionRow {
   promptText: string;
+  questionType?: string;
   category: string;
   timerSeconds: number;
-  correctAnswerIndex: number;
+  correctAnswerIndex?: number;
   answerOption1: string;
   answerOption2: string;
   answerOption3?: string;
   answerOption4?: string;
   answerOption5?: string;
   answerOption6?: string;
+  answerWeights?: string;
+  personalityDimensionCode?: string;
   promptImageUrl?: string;
   sectionTag?: string;
 }
@@ -149,7 +152,7 @@ function convertAnswerIndexToNumber(answerIndex: string): number {
   return -1; // Invalid
 }
 
-// Enhanced validation with better error messages
+// Enhanced validation with support for both objective and personality questions
 function validateRow(row: any, rowNumber: number): ValidationError[] {
   const errors: ValidationError[] = [];
 
@@ -179,6 +182,20 @@ function validateRow(row: any, rowNumber: number): ValidationError[] {
       field: 'promptText',
       message: 'Question text is required and cannot be empty',
       value: row.promptText,
+    });
+  }
+
+  // Validate question type
+  const questionType =
+    row.questionType?.toString().toUpperCase() || 'OBJECTIVE';
+  const validQuestionTypes = ['OBJECTIVE', 'PERSONALITY'];
+
+  if (!validQuestionTypes.includes(questionType)) {
+    errors.push({
+      row: rowNumber,
+      field: 'questionType',
+      message: `Question type must be one of: ${validQuestionTypes.join(', ')} (case-insensitive). Defaults to OBJECTIVE if empty.`,
+      value: row.questionType,
     });
   }
 
@@ -238,20 +255,131 @@ function validateRow(row: any, rowNumber: number): ValidationError[] {
     });
   }
 
-  // Validate correct answer index with new A, B, C, D format
-  const correctAnswerIndexStr = row.correctAnswerIndex?.toString() || '';
-  const correctAnswerIndex = convertAnswerIndexToNumber(correctAnswerIndexStr);
+  // Question type specific validation
+  if (questionType === 'OBJECTIVE') {
+    // Validate correct answer index for objective questions
+    const correctAnswerIndexStr = row.correctAnswerIndex?.toString() || '';
 
-  if (correctAnswerIndex < 0 || correctAnswerIndex >= answerOptions.length) {
-    const letterFormat = ['A', 'B', 'C', 'D', 'E', 'F']
-      .slice(0, answerOptions.length)
-      .join(', ');
-    errors.push({
-      row: rowNumber,
-      field: 'correctAnswerIndex',
-      message: `Correct answer must be one of: ${letterFormat} (A=first option, B=second, etc.) for ${answerOptions.length} answer options`,
-      value: row.correctAnswerIndex,
-    });
+    if (!correctAnswerIndexStr.trim()) {
+      errors.push({
+        row: rowNumber,
+        field: 'correctAnswerIndex',
+        message: 'Correct answer index is required for OBJECTIVE questions',
+        value: row.correctAnswerIndex,
+      });
+    } else {
+      const correctAnswerIndex = convertAnswerIndexToNumber(
+        correctAnswerIndexStr
+      );
+
+      if (
+        correctAnswerIndex < 0 ||
+        correctAnswerIndex >= answerOptions.length
+      ) {
+        const letterFormat = ['A', 'B', 'C', 'D', 'E', 'F']
+          .slice(0, answerOptions.length)
+          .join(', ');
+        errors.push({
+          row: rowNumber,
+          field: 'correctAnswerIndex',
+          message: `Correct answer must be one of: ${letterFormat} (A=first option, B=second, etc.) for ${answerOptions.length} answer options`,
+          value: row.correctAnswerIndex,
+        });
+      }
+    }
+
+    // Objective questions should not have personality fields
+    if (row.answerWeights && row.answerWeights.toString().trim()) {
+      errors.push({
+        row: rowNumber,
+        field: 'answerWeights',
+        message: 'Answer weights should be empty for OBJECTIVE questions',
+        value: row.answerWeights,
+      });
+    }
+
+    if (
+      row.personalityDimensionCode &&
+      row.personalityDimensionCode.toString().trim()
+    ) {
+      errors.push({
+        row: rowNumber,
+        field: 'personalityDimensionCode',
+        message:
+          'Personality dimension should be empty for OBJECTIVE questions',
+        value: row.personalityDimensionCode,
+      });
+    }
+  } else if (questionType === 'PERSONALITY') {
+    // Validate answer weights for personality questions
+    if (!row.answerWeights || !row.answerWeights.toString().trim()) {
+      errors.push({
+        row: rowNumber,
+        field: 'answerWeights',
+        message:
+          'Answer weights are required for PERSONALITY questions (e.g., [1,2,3,4,5])',
+        value: row.answerWeights,
+      });
+    } else {
+      try {
+        const weights = JSON.parse(row.answerWeights.toString().trim());
+        if (!Array.isArray(weights)) {
+          errors.push({
+            row: rowNumber,
+            field: 'answerWeights',
+            message: 'Answer weights must be a JSON array (e.g., [1,2,3,4,5])',
+            value: row.answerWeights,
+          });
+        } else if (weights.length !== answerOptions.length) {
+          errors.push({
+            row: rowNumber,
+            field: 'answerWeights',
+            message: `Answer weights array length (${weights.length}) must match number of answer options (${answerOptions.length})`,
+            value: row.answerWeights,
+          });
+        } else if (!weights.every((w) => typeof w === 'number')) {
+          errors.push({
+            row: rowNumber,
+            field: 'answerWeights',
+            message: 'All answer weights must be numbers',
+            value: row.answerWeights,
+          });
+        }
+      } catch (e) {
+        errors.push({
+          row: rowNumber,
+          field: 'answerWeights',
+          message:
+            'Answer weights must be valid JSON array (e.g., [1,2,3,4,5])',
+          value: row.answerWeights,
+        });
+      }
+    }
+
+    // Validate personality dimension code
+    if (
+      !row.personalityDimensionCode ||
+      !row.personalityDimensionCode.toString().trim()
+    ) {
+      errors.push({
+        row: rowNumber,
+        field: 'personalityDimensionCode',
+        message:
+          'Personality dimension code is required for PERSONALITY questions (e.g., EXT, AGR, CON)',
+        value: row.personalityDimensionCode,
+      });
+    }
+
+    // Personality questions should not have correct answer index
+    if (row.correctAnswerIndex && row.correctAnswerIndex.toString().trim()) {
+      errors.push({
+        row: rowNumber,
+        field: 'correctAnswerIndex',
+        message:
+          'Correct answer index should be empty for PERSONALITY questions (no right/wrong answers)',
+        value: row.correctAnswerIndex,
+      });
+    }
   }
 
   // Validate image URL if provided
@@ -447,6 +575,9 @@ export async function POST(request: NextRequest) {
           (cat) => cat.toUpperCase() === row.category.toString().toUpperCase()
         ) as QuestionCategory;
 
+        const questionType =
+          row.questionType?.toString().toUpperCase() || 'OBJECTIVE';
+
         // Collect answer options (support both old and new column names)
         const answerOptions: string[] = [];
         const answerLetters = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -465,14 +596,13 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        validQuestions.push({
+        // Base question data
+        const questionData: any = {
           promptText: row.promptText.trim(),
           category: validCategory,
+          questionType: questionType as 'OBJECTIVE' | 'PERSONALITY',
           timerSeconds: parseInt(row.timerSeconds.toString(), 10),
           answerOptions,
-          correctAnswerIndex: convertAnswerIndexToNumber(
-            row.correctAnswerIndex.toString()
-          ),
           promptImageUrl:
             row.promptImageUrl && row.promptImageUrl.trim()
               ? row.promptImageUrl.trim()
@@ -482,7 +612,25 @@ export async function POST(request: NextRequest) {
               ? row.sectionTag.trim()
               : null,
           testId,
-        });
+        };
+
+        // Add type-specific fields
+        if (questionType === 'OBJECTIVE') {
+          questionData.correctAnswerIndex = convertAnswerIndexToNumber(
+            row.correctAnswerIndex.toString()
+          );
+        } else if (questionType === 'PERSONALITY') {
+          // Parse answer weights
+          questionData.answerWeights = JSON.parse(
+            row.answerWeights.toString().trim()
+          );
+          questionData.personalityDimensionCode = row.personalityDimensionCode
+            .toString()
+            .trim();
+          questionData.correctAnswerIndex = null; // No correct answer for personality questions
+        }
+
+        validQuestions.push(questionData);
       }
     }
 
@@ -521,8 +669,42 @@ export async function POST(request: NextRequest) {
       // Use a transaction to ensure all questions are created or none are
       await prisma.$transaction(async (tx) => {
         for (const questionData of validQuestions) {
+          // Handle personality dimension lookup for personality questions
+          let finalQuestionData = { ...questionData };
+
+          if (
+            questionData.questionType === 'PERSONALITY' &&
+            questionData.personalityDimensionCode
+          ) {
+            // Look up personality dimension by code
+            const personalityDimension =
+              await tx.personalityDimension.findFirst({
+                where: {
+                  code: questionData.personalityDimensionCode.toUpperCase(),
+                },
+              });
+
+            if (personalityDimension) {
+              finalQuestionData.personalityDimensionId =
+                personalityDimension.id;
+            } else {
+              // Create a new personality dimension if it doesn't exist
+              const newDimension = await tx.personalityDimension.create({
+                data: {
+                  code: questionData.personalityDimensionCode.toUpperCase(),
+                  name: questionData.personalityDimensionCode.toUpperCase(),
+                  description: `Auto-created dimension for ${questionData.personalityDimensionCode}`,
+                },
+              });
+              finalQuestionData.personalityDimensionId = newDimension.id;
+            }
+
+            // Remove the temporary field
+            delete finalQuestionData.personalityDimensionCode;
+          }
+
           const question = await tx.question.create({
-            data: questionData,
+            data: finalQuestionData,
           });
           createdQuestions.push(question);
         }

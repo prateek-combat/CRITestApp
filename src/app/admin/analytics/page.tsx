@@ -252,7 +252,9 @@ export default function AnalyticsPage() {
       .filter((a) => a.status === 'COMPLETED' && a.rawScore !== null)
       .forEach((attempt) => {
         const percentage = Math.round(
-          ((attempt.rawScore || 0) / attempt.totalQuestions) * 100
+          attempt.totalQuestions > 0
+            ? ((attempt.rawScore || 0) / attempt.totalQuestions) * 100
+            : 0
         );
         ranges.forEach((range) => {
           if (percentage >= range.min && percentage <= range.max) {
@@ -319,6 +321,12 @@ export default function AnalyticsPage() {
           </p>
         </div>
         <div className="flex items-center space-x-3">
+          <button
+            onClick={() => router.push('/admin/analytics/personality')}
+            className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition duration-150 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+          >
+            🧠 Personality Analytics
+          </button>
           <select
             value={selectedTimeFrame}
             onChange={(e) => setSelectedTimeFrame(e.target.value)}
@@ -407,8 +415,8 @@ export default function AnalyticsPage() {
                   <span className="font-medium text-primary-600">
                     {searchResults.length}
                   </span>{' '}
-                  result{searchResults.length !== 1 ? 's' : ''} for "
-                  {searchQuery}"
+                  result{searchResults.length !== 1 ? 's' : ''} for &quot;
+                  {searchQuery}&quot;
                 </span>
               )}
             </div>
@@ -733,7 +741,7 @@ export default function AnalyticsPage() {
                           return label;
                         }}
                       />
-                      <Scatter dataKey="avgScore" fill="#8884d8" />
+                      <Scatter data={testDifficultyData} fill="#8884d8" />
                     </ScatterChart>
                   </ResponsiveContainer>
                   <div className="mt-3 text-sm text-gray-600">
@@ -819,18 +827,30 @@ export default function AnalyticsPage() {
                                 </div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className="text-sm font-medium text-gray-900">
-                                {candidate.rawScore}/{candidate.totalQuestions}
+                            <div className="flex items-center space-x-3">
+                              <div className="text-right">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {candidate.rawScore}/
+                                  {candidate.totalQuestions}
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {Math.round(
+                                    ((candidate.rawScore || 0) /
+                                      candidate.totalQuestions) *
+                                      100
+                                  )}
+                                  %
+                                </div>
                               </div>
-                              <div className="text-xs text-gray-500">
-                                {Math.round(
-                                  ((candidate.rawScore || 0) /
-                                    candidate.totalQuestions) *
-                                    100
-                                )}
-                                %
-                              </div>
+                              {candidate.status === 'COMPLETED' && (
+                                <a
+                                  href={`/test/results/${candidate.id}`}
+                                  className="inline-flex items-center rounded-md bg-blue-500 px-2 py-1 text-xs font-medium text-white shadow-sm hover:bg-blue-600"
+                                  title="View detailed results"
+                                >
+                                  📊
+                                </a>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -954,12 +974,20 @@ export default function AnalyticsPage() {
                             </td>
                             <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
                               {candidate.status === 'COMPLETED' ? (
-                                <a
-                                  href={`/admin/proctor/${candidate.id}`}
-                                  className="inline-flex items-center rounded-md bg-primary-500 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                                >
-                                  View Details
-                                </a>
+                                <div className="flex space-x-2">
+                                  <a
+                                    href={`/test/results/${candidate.id}`}
+                                    className="inline-flex items-center rounded-md bg-blue-500 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                  >
+                                    📊 Results
+                                  </a>
+                                  <a
+                                    href={`/admin/proctor/${candidate.id}`}
+                                    className="inline-flex items-center rounded-md bg-primary-500 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                                  >
+                                    🎥 Proctor
+                                  </a>
+                                </div>
                               ) : (
                                 <span className="text-gray-400">-</span>
                               )}

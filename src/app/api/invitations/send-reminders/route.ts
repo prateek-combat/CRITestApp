@@ -106,16 +106,19 @@ export async function POST(request: NextRequest) {
     for (const invitation of invitations) {
       try {
         const testLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/test/${invitation.id}`;
+        const expiryDate =
+          invitation.expiresAt ||
+          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // Default to 7 days from now
         const daysUntilExpiry = Math.ceil(
-          (new Date(invitation.expiresAt).getTime() - new Date().getTime()) /
+          (new Date(expiryDate).getTime() - new Date().getTime()) /
             (1000 * 60 * 60 * 24)
         );
 
         const reminderData: ReminderEmailData = {
-          candidateEmail: invitation.candidateEmail,
+          candidateEmail: invitation.candidateEmail || '',
           testTitle: invitation.test.title,
           testLink,
-          expiresAt: new Date(invitation.expiresAt),
+          expiresAt: new Date(expiryDate),
           reminderType: reminderType as 'first' | 'second' | 'final',
           daysUntilExpiry: Math.max(0, daysUntilExpiry),
         };

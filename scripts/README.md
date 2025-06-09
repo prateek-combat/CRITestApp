@@ -17,9 +17,10 @@ node scripts/add-admin.js admin@test.com "" "" ADMIN
 ```
 
 **Parameters:**
+
 - `email` (required): The Google email address that will be used for authentication
 - `firstName` (optional): User's first name
-- `lastName` (optional): User's last name  
+- `lastName` (optional): User's last name
 - `role` (optional): Either `ADMIN` or `SUPER_ADMIN` (defaults to `ADMIN`)
 
 ### Method 2: Using the Web Interface
@@ -48,4 +49,4 @@ Super Admins can manage users through the web interface:
 - Only pre-registered admin emails can sign in via Google
 - Random Google users cannot become admins automatically
 - Super Admins cannot change their own role (prevents lockout)
-- All admin actions are logged in the application console 
+- All admin actions are logged in the application console

@@ -50,7 +50,7 @@ export default function BookmarkedQuestionsReview({
             No Bookmarked Questions
           </h3>
           <p className="mb-4 text-gray-500">
-            You haven't bookmarked any questions for review yet.
+            You haven&apos;t bookmarked any questions for review yet.
           </p>
           <button
             onClick={onClose}
