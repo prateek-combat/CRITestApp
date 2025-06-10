@@ -9,33 +9,7 @@ export default function TestCompletePage() {
   const [candidateName, setCandidateName] = useState<string>('');
   const [testTitle, setTestTitle] = useState<string>('Test');
   const [loading, setLoading] = useState(true);
-  const [countdown, setCountdown] = useState(10);
-  const [autoCloseEnabled, setAutoCloseEnabled] = useState(true);
   const invitationId = searchParams.get('invitationId');
-
-  // Auto-close countdown effect
-  useEffect(() => {
-    if (!autoCloseEnabled) return;
-
-    const interval = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          // Close the window/tab
-          if (window.opener) {
-            // If opened in popup/new window, close it
-            window.close();
-          } else {
-            // If main window, redirect to homepage
-            window.location.href = '/';
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [autoCloseEnabled]);
 
   useEffect(() => {
     const fetchBasicInfo = async () => {
@@ -85,35 +59,6 @@ export default function TestCompletePage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8">
       <div className="mx-auto max-w-2xl">
-        {/* Auto-close notification */}
-        {autoCloseEnabled && (
-          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="mr-3 h-5 w-5 text-amber-600">
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <span className="text-sm font-medium text-amber-800">
-                  This window will auto-close in {countdown} seconds
-                </span>
-              </div>
-              <button
-                onClick={() => setAutoCloseEnabled(false)}
-                className="text-sm text-amber-700 underline hover:text-amber-900"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Main Thank You Card */}
         <div className="overflow-hidden rounded-2xl bg-white shadow-lg">
           {/* Header with Success Icon */}

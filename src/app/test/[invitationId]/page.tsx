@@ -880,66 +880,33 @@ export default function TestPage() {
         status: 'COMPLETED',
       }));
 
-      // Stop recording and upload FIRST (while camera is still active)
-      setIsUploadingRecording(true);
-      if (
-        recordingSessionRef.current &&
-        (testAttempt?.id || responseData?.id)
-      ) {
-        try {
-          console.log('🎥 Uploading captured frames before stopping camera...');
-          await stopAndUpload(
-            recordingSessionRef.current,
-            testAttempt?.id || responseData.id
-          );
-        } catch (error) {
-          console.error('🎥 Error uploading frames:', error);
-        }
-      }
-      setIsUploadingRecording(false);
+      // Store test completion data in localStorage for the shutdown page
+      const completionData = {
+        testId: invitation.test.id,
+        testTitle: invitation.test.title,
+        candidateName,
+        candidateEmail,
+        testAttemptId: testAttempt?.id || responseData?.id,
+        invitationId,
+        isPublicAttempt,
+        hasRecording: !!recordingSessionRef.current,
+        timestamp: Date.now(),
+      };
 
-      // Clean up recording session completely (this will stop all tracks)
-      if (recordingSessionRef.current) {
-        console.log('🎥 Destroying recording session and stopping camera...');
-        destroyRecording(recordingSessionRef.current);
-        recordingSessionRef.current = null;
-      }
-
-      // Stop recording UI
-      setIsRecording(false);
-
-      // Stop timer
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-
-      // Wait a brief moment for camera tracks to fully stop
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Clear video element and set camera stopped flag
-      if (videoRef.current) {
-        console.log('🎥 Clearing video element...');
-        videoRef.current.srcObject = null;
-      }
-
-      // Clean up any remaining references
-      streamRef.current = null;
-      setCameraActuallyStopped(true);
-
-      // WAIT for a moment to ensure all backend processing is complete
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Instead of redirecting immediately, show completion state
-      setTestCompleted(true);
-      setIsSubmitting(false);
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'An error occurred during test submission.'
+      localStorage.setItem(
+        'testCompletionData',
+        JSON.stringify(completionData)
       );
+
+      // Instead of handling cleanup here, redirect to dedicated shutdown page
+      // The shutdown page will handle proper camera cleanup and then redirect to completion
+      window.location.href = `/test/${invitationId}/shutdown`;
+    } catch (error) {
       setIsSubmitting(false);
+      console.error('Submission error:', error);
+      setError(
+        error instanceof Error ? error.message : 'Failed to submit test.'
+      );
     }
   }, [
     isSubmitting,
@@ -949,6 +916,10 @@ export default function TestPage() {
     router,
     isPublicAttempt,
     invitationId,
+    candidateName,
+    candidateEmail,
+    testAttempt?.id,
+    recordingSessionRef.current,
   ]);
 
   // Handle time expiry
@@ -1406,65 +1377,9 @@ export default function TestPage() {
 
   // Test completed state
   if (testCompleted && invitation) {
-    const [countdown, setCountdown] = useState(10);
-    const [autoCloseEnabled, setAutoCloseEnabled] = useState(true);
-
-    // Auto-close countdown effect for test completion
-    useEffect(() => {
-      if (!autoCloseEnabled) return;
-
-      const interval = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            // Close the window/tab
-            if (window.opener) {
-              // If opened in popup/new window, close it
-              window.close();
-            } else {
-              // If main window, redirect to homepage
-              window.location.href = '/';
-            }
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(interval);
-    }, [autoCloseEnabled]);
-
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8">
         <div className="mx-auto max-w-2xl">
-          {/* Auto-close notification */}
-          {autoCloseEnabled && (
-            <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="mr-3 h-5 w-5 text-amber-600">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </div>
-                  <span className="text-sm font-medium text-amber-800">
-                    This window will auto-close in {countdown} seconds
-                  </span>
-                </div>
-                <button
-                  onClick={() => setAutoCloseEnabled(false)}
-                  className="text-sm text-amber-700 underline hover:text-amber-900"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Main Thank You Card */}
           <div className="overflow-hidden rounded-2xl bg-white shadow-lg">
             {/* Header with Success Icon */}
