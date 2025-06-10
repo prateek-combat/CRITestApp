@@ -56,7 +56,7 @@ const createTransporter = () => {
   });
 };
 
-export class EmailService {
+export class EnhancedEmailService {
   private transporter;
 
   constructor() {
@@ -222,13 +222,7 @@ export class EmailService {
           .guideline-item { display: flex; align-items: flex-start; margin: 10px 0; padding: 8px; background: rgba(245,130,31,0.1); border-radius: 6px; }
           .guideline-icon { margin-right: 10px; font-size: 18px; }
           .guideline-text { color: #c25b16; font-weight: 500; }
-          .score-badge { display: inline-block; background: ${
-            percentage >= 80
-              ? '#10B981'
-              : percentage >= 60
-                ? '#F59E0B'
-                : '#EF4444'
-          }; color: white; padding: 15px 25px; border-radius: 30px; font-size: 28px; font-weight: bold; margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+          .score-badge { display: inline-block; background: ${percentage >= 80 ? '#10B981' : percentage >= 60 ? '#F59E0B' : '#EF4444'}; color: white; padding: 15px 25px; border-radius: 30px; font-size: 28px; font-weight: bold; margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
           .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 25px 0; }
           .info-item { background: #f8f9fa; padding: 20px; border-radius: 10px; border-left: 4px solid #4A5D23; transition: transform 0.2s; }
           .info-item:hover { transform: translateY(-2px); }
@@ -515,4 +509,4 @@ export class EmailService {
   }
 }
 
-export const emailService = new EmailService();
+export const enhancedEmailService = new EnhancedEmailService();

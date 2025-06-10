@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { emailService } from '@/lib/emailService';
+import { enhancedEmailService as emailService } from '@/lib/enhancedEmailService';
 
 interface RouteParams {
   params: Promise<{ id: string }>;

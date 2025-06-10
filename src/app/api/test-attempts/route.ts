@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient, Prisma, QuestionCategory } from '@prisma/client';
-import { emailService } from '@/lib/emailService';
+import { enhancedEmailService as emailService } from '@/lib/enhancedEmailService';
 
 const prisma = new PrismaClient({
   log: ['query', 'info', 'warn', 'error'],
