@@ -237,3 +237,54 @@ export function destroyRecording(session: RecordingSession): void {
     console.error('❌ Failed to destroy recording session:', error);
   }
 }
+
+// Global cleanup function for forcing camera shutdown
+export async function forceStopAllCameraAccess(): Promise<void> {
+  try {
+    console.log('🎥 Forcing stop of all camera access...');
+
+    // Step 1: Try to get current stream and stop it
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+
+      if (stream) {
+        const tracks = stream.getTracks();
+        console.log(`🎥 Force stopping ${tracks.length} active tracks`);
+
+        tracks.forEach((track, index) => {
+          console.log(`🎥 Force stopping track ${index}: ${track.kind}`);
+          track.stop();
+        });
+      }
+    } catch (err) {
+      console.log('🎥 No active streams to force stop:', err);
+    }
+
+    // Step 2: Enumerate devices to force release
+    await navigator.mediaDevices.enumerateDevices();
+
+    // Step 3: Try one more minimal access and immediate release
+    try {
+      const testStream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 1, height: 1 },
+        audio: false,
+      });
+
+      if (testStream) {
+        testStream.getTracks().forEach((track) => {
+          console.log('🎥 Stopping final test track');
+          track.stop();
+        });
+      }
+    } catch (err) {
+      console.log('🎥 Final test access completed');
+    }
+
+    console.log('✅ Forced camera cleanup completed');
+  } catch (error) {
+    console.error('❌ Error in forced camera cleanup:', error);
+  }
+}
