@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { testEmailConfiguration } from '@/lib/email';
+import { NextRequest, NextResponse } from 'next/server';
+import { enhancedEmailService } from '@/lib/enhancedEmailService';
 
 /**
  * @swagger
@@ -15,21 +15,67 @@ import { testEmailConfiguration } from '@/lib/email';
  *       500:
  *         description: Email configuration test failed.
  */
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
-    const result = await testEmailConfiguration();
+    const body = await request.json().catch(() => ({}));
+    const { testId } = body;
 
-    if (result.success) {
+    // If no testId provided, we'll get the first available test
+    let targetTestId = testId;
+    if (!targetTestId) {
+      const { prisma } = await import('@/lib/prisma');
+      const firstTest = await prisma.test.findFirst({
+        select: { id: true, title: true },
+      });
+      if (!firstTest) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'No tests found in database to test with',
+          },
+          { status: 404 }
+        );
+      }
+      targetTestId = firstTest.id;
+    }
+
+    // Test email notification with real test ID
+    const result = await enhancedEmailService.sendTestCompletionNotification({
+      testId: targetTestId,
+      candidateId: 'test-candidate-id',
+      candidateEmail: 'test@example.com',
+      candidateName: 'Test Candidate',
+      score: 8,
+      maxScore: 10,
+      completedAt: new Date(),
+      timeTaken: 1200, // 20 minutes
+      answers: [],
+    });
+
+    if (result) {
       return NextResponse.json({
         success: true,
-        message: '✅ Email configuration test successful! Check your inbox.',
+        message: 'Test email sent successfully',
+        environment: process.env.NODE_ENV,
+        smtpConfig: {
+          host: process.env.SMTP_HOST,
+          port: process.env.SMTP_PORT,
+          user: process.env.SMTP_USER ? 'configured' : 'not configured',
+          from: process.env.SMTP_FROM || 'not configured',
+        },
       });
     } else {
       return NextResponse.json(
         {
           success: false,
-          error: result.error,
-          message: '❌ Email configuration test failed.',
+          message: 'Failed to send test email',
+          environment: process.env.NODE_ENV,
+          smtpConfig: {
+            host: process.env.SMTP_HOST,
+            port: process.env.SMTP_PORT,
+            user: process.env.SMTP_USER ? 'configured' : 'not configured',
+            from: process.env.SMTP_FROM || 'not configured',
+          },
         },
         { status: 500 }
       );
@@ -40,9 +86,29 @@ export async function POST() {
       {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
-        message: '❌ Email test failed with unexpected error.',
+        environment: process.env.NODE_ENV,
+        smtpConfig: {
+          host: process.env.SMTP_HOST,
+          port: process.env.SMTP_PORT,
+          user: process.env.SMTP_USER ? 'configured' : 'not configured',
+          from: process.env.SMTP_FROM || 'not configured',
+        },
       },
       { status: 500 }
     );
   }
+}
+
+export async function GET() {
+  return NextResponse.json({
+    message: 'Email test endpoint - use POST to send test email',
+    environment: process.env.NODE_ENV,
+    smtpConfig: {
+      host: process.env.SMTP_HOST || 'not configured',
+      port: process.env.SMTP_PORT || 'not configured',
+      secure: process.env.SMTP_SECURE || 'not configured',
+      user: process.env.SMTP_USER ? 'configured' : 'not configured',
+      from: process.env.SMTP_FROM || 'not configured',
+    },
+  });
 }
