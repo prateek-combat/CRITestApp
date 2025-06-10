@@ -890,32 +890,11 @@ export default function TestPage() {
       }
       setIsUploadingRecording(false);
 
-      // NOW stop camera and microphone tracks completely
-      if (streamRef.current) {
-        console.log('🎥 Stopping camera and microphone tracks after upload...');
-        streamRef.current.getTracks().forEach((track) => {
-          track.stop();
-          console.log(
-            '🎥 Stopped track:',
-            track.kind,
-            'readyState:',
-            track.readyState
-          );
-        });
-        setCameraActuallyStopped(true);
-      }
-
-      // Clean up recording session completely
+      // Clean up recording session completely (this will stop all tracks)
       if (recordingSessionRef.current) {
-        console.log('🎥 Destroying recording session after upload...');
+        console.log('🎥 Destroying recording session and stopping camera...');
         destroyRecording(recordingSessionRef.current);
         recordingSessionRef.current = null;
-      }
-
-      // Clear video element
-      if (videoRef.current) {
-        console.log('🎥 Clearing video element...');
-        videoRef.current.srcObject = null;
       }
 
       // Stop recording UI
@@ -927,11 +906,21 @@ export default function TestPage() {
         timerRef.current = null;
       }
 
+      // Wait a brief moment for camera tracks to fully stop
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Clear video element and set camera stopped flag
+      if (videoRef.current) {
+        console.log('🎥 Clearing video element...');
+        videoRef.current.srcObject = null;
+      }
+
       // Clean up any remaining references
       streamRef.current = null;
+      setCameraActuallyStopped(true);
 
       // WAIT for a moment to ensure all backend processing is complete
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Instead of redirecting immediately, show completion state
       setTestCompleted(true);

@@ -42,6 +42,7 @@ export async function POST(request: NextRequest) {
     // Test email notification with real test ID
     const result = await enhancedEmailService.sendTestCompletionNotification({
       testId: targetTestId,
+      testAttemptId: 'test-attempt-id',
       candidateId: 'test-candidate-id',
       candidateEmail: 'test@example.com',
       candidateName: 'Test Candidate',

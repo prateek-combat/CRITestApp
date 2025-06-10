@@ -197,6 +197,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           emailService
             .sendTestCompletionNotification({
               testId: publicLink.test.id,
+              testAttemptId: attemptId,
               candidateId: attemptId,
               candidateEmail:
                 existingAttempt.candidateEmail || 'unknown@example.com',
