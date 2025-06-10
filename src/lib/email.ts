@@ -38,7 +38,7 @@ function generateInvitationEmailHtml(data: InvitationEmailData): string {
     testTitle,
     testLink,
     expiresAt,
-    companyName = 'Test Platform',
+    companyName = 'Combat Robotics India',
     customMessage,
   } = data;
 
@@ -58,139 +58,248 @@ function generateInvitationEmailHtml(data: InvitationEmailData): string {
       <title>Test Invitation - ${testTitle}</title>
       <style>
         body {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
           line-height: 1.6;
-          color: #333;
-          max-width: 600px;
-          margin: 0 auto;
-          background-color: #f8fafc;
+          margin: 0;
           padding: 20px;
+          background: linear-gradient(135deg, #f8f9fa 0%, #e9f0e9 100%);
         }
         .container {
+          max-width: 700px;
+          margin: 0 auto;
           background: white;
           border-radius: 12px;
-          padding: 40px;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+          overflow: hidden;
         }
         .header {
+          background: linear-gradient(135deg, #4A5D23 0%, #3e4e1d 100%);
+          color: white;
+          padding: 30px 20px;
           text-align: center;
-          margin-bottom: 30px;
         }
-        .logo {
-          font-size: 24px;
-          font-weight: bold;
-          color: #1e40af;
-          margin-bottom: 10px;
-        }
-        .title {
+        .header h1 {
+          margin: 0;
           font-size: 28px;
-          font-weight: bold;
-          color: #1f2937;
-          margin: 20px 0;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
         }
-        .subtitle {
+        .header p {
+          margin: 10px 0 0 0;
           font-size: 18px;
-          color: #6b7280;
-          margin-bottom: 30px;
+          opacity: 0.9;
         }
         .content {
-          margin: 30px 0;
+          padding: 30px;
+        }
+        .greeting {
+          font-size: 18px;
+          color: #4A5D23;
+          margin-bottom: 20px;
+          font-weight: 500;
+        }
+        .intro-text {
+          font-size: 16px;
+          color: #323f17;
+          margin-bottom: 25px;
+          line-height: 1.7;
         }
         .test-info {
-          background: #f3f4f6;
-          border-radius: 8px;
-          padding: 20px;
-          margin: 20px 0;
+          background: linear-gradient(135deg, #f0f4e8 0%, #d9e4c4 100%);
+          border-left: 5px solid #4A5D23;
+          border-radius: 10px;
+          padding: 25px;
+          margin: 25px 0;
         }
         .test-name {
-          font-size: 18px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 20px;
+          font-weight: 700;
+          color: #4A5D23;
+          margin-bottom: 15px;
+        }
+        .candidate-info {
+          background: rgba(255,255,255,0.8);
+          padding: 15px;
+          border-radius: 8px;
+          margin-top: 15px;
+        }
+        .candidate-label {
           font-weight: 600;
-          color: #1f2937;
-          margin-bottom: 10px;
+          color: #4A5D23;
+          font-size: 14px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .candidate-value {
+          font-size: 16px;
+          color: #323f17;
+          margin-top: 5px;
         }
         .expiry-info {
-          background: #fef3c7;
-          border-left: 4px solid #f59e0b;
-          padding: 15px;
-          margin: 20px 0;
-          border-radius: 4px;
+          background: linear-gradient(135deg, #fef7ec 0%, #fed7aa 100%);
+          border-left: 5px solid #F5821F;
+          padding: 20px;
+          margin: 25px 0;
+          border-radius: 10px;
+        }
+        .expiry-info strong {
+          color: #c25b16;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 16px;
+          margin-bottom: 8px;
+        }
+        .expiry-date {
+          color: #c25b16;
+          font-weight: 700;
+          font-size: 18px;
+        }
+        .cta-section {
+          text-align: center;
+          margin: 35px 0;
+          padding: 25px;
+          background: linear-gradient(135deg, #4A5D23 0%, #3e4e1d 100%);
+          border-radius: 12px;
         }
         .cta-button {
           display: inline-block;
-          background: #1e40af;
+          background: linear-gradient(135deg, #F5821F 0%, #e4751c 100%);
           color: white;
-          padding: 16px 32px;
+          padding: 18px 35px;
           text-decoration: none;
-          border-radius: 8px;
-          font-weight: 600;
-          font-size: 16px;
-          margin: 20px 0;
-          text-align: center;
+          border-radius: 10px;
+          font-weight: 700;
+          font-size: 18px;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 15px rgba(245, 130, 31, 0.3);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
         }
         .cta-button:hover {
-          background: #1d4ed8;
-        }
-        .footer {
-          margin-top: 40px;
-          padding-top: 20px;
-          border-top: 1px solid #e5e7eb;
-          font-size: 14px;
-          color: #6b7280;
-          text-align: center;
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(245, 130, 31, 0.4);
         }
         .custom-message {
-          background: #eff6ff;
-          border-left: 4px solid #3b82f6;
-          padding: 15px;
-          margin: 20px 0;
-          border-radius: 4px;
+          background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+          border-left: 5px solid #3b82f6;
+          padding: 20px;
+          margin: 25px 0;
+          border-radius: 10px;
           font-style: italic;
         }
+        .custom-message-title {
+          font-weight: 700;
+          color: #1e40af;
+          margin-bottom: 10px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .custom-message-text {
+          color: #1e3a8a;
+          line-height: 1.6;
+        }
         .instructions {
-          background: #f0fdf4;
-          border-radius: 8px;
-          padding: 20px;
-          margin: 20px 0;
+          background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+          border-left: 5px solid #10B981;
+          border-radius: 12px;
+          padding: 25px;
+          margin: 25px 0;
         }
         .instruction-title {
-          font-weight: 600;
-          color: #166534;
-          margin-bottom: 10px;
+          font-weight: 700;
+          color: #047857;
+          margin-bottom: 15px;
+          font-size: 18px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
         }
         .instruction-list {
           margin: 0;
           padding-left: 20px;
         }
         .instruction-list li {
-          margin: 8px 0;
-          color: #166534;
+          margin: 12px 0;
+          color: #047857;
+          font-weight: 500;
+          line-height: 1.6;
         }
-        .powered-by {
-          margin-top: 20px;
-          font-size: 12px;
-          color: #9ca3af;
+        .footer {
+          margin-top: 40px;
+          padding: 25px;
+          background: #f8f9fa;
+          border-top: 3px solid #4A5D23;
           text-align: center;
+        }
+        .footer-text {
+          color: #6b7280;
+          font-size: 14px;
+          margin: 8px 0;
+        }
+        .footer-link {
+          color: #4A5D23;
+          text-decoration: none;
+          font-weight: 600;
+        }
+        .footer-link:hover {
+          color: #F5821F;
+        }
+        .company-branding {
+          margin-top: 20px;
+          padding: 20px;
+          background: linear-gradient(135deg, #4A5D23 0%, #3e4e1d 100%);
+          border-radius: 10px;
+          color: white;
+        }
+        .company-name {
+          font-size: 20px;
+          font-weight: 700;
+          color: #F5821F;
+          margin-bottom: 5px;
+        }
+        .company-tagline {
+          font-size: 14px;
+          opacity: 0.9;
+        }
+        .urgent-banner {
+          background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+          color: white;
+          padding: 15px;
+          text-align: center;
+          font-weight: 700;
+          font-size: 16px;
+          margin-bottom: 20px;
         }
       </style>
     </head>
     <body>
       <div class="container">
         <div class="header">
-          <div class="logo">🎯 ${companyName}</div>
-          <h1 class="title">You're Invited to Take a Test</h1>
-          <p class="subtitle">Complete your assessment to proceed with the application process</p>
+          <h1>🎯 You're Invited to Take a Test</h1>
+          <p>Complete your assessment to proceed with the application process</p>
         </div>
-
+        
         <div class="content">
-          <p>Hello,</p>
-          <p>You have been invited to take an online assessment. Please complete this test by the deadline to continue with your application.</p>
+          <div class="greeting">Hello,</div>
+          
+          <div class="intro-text">
+            You have been invited to take an online assessment. Please complete this test by the deadline to continue with your application process.
+          </div>
 
           ${
             customMessage
               ? `
             <div class="custom-message">
-              <strong>Personal Message:</strong><br>
-              ${customMessage}
+              <div class="custom-message-title">💬 Personal Message</div>
+              <div class="custom-message-text">${customMessage}</div>
             </div>
           `
               : ''
@@ -198,22 +307,28 @@ function generateInvitationEmailHtml(data: InvitationEmailData): string {
 
           <div class="test-info">
             <div class="test-name">📋 ${testTitle}</div>
-            <p><strong>Candidate:</strong> ${candidateEmail}</p>
+            <div class="candidate-info">
+              <div class="candidate-label">Candidate Email</div>
+              <div class="candidate-value">${candidateEmail}</div>
+            </div>
           </div>
 
           <div class="expiry-info">
-            <strong>⏰ Important:</strong> This invitation expires on <strong>${expiryDate}</strong>. 
-            Please complete the test before this date.
+            <strong>⏰ Important Deadline</strong>
+            <div style="margin-top: 10px;">
+              This invitation expires on <span class="expiry-date">${expiryDate}</span>. 
+              Please complete the test before this date to secure your opportunity.
+            </div>
           </div>
 
-          <div style="text-align: center; margin: 30px 0;">
+          <div class="cta-section">
             <a href="${testLink}" class="cta-button">
               🚀 Start Test Now
             </a>
           </div>
 
           <div class="instructions">
-            <div class="instruction-title">📝 Before you begin:</div>
+            <div class="instruction-title">📝 Before you begin</div>
             <ul class="instruction-list">
               <li>Ensure you have a stable internet connection</li>
               <li>Find a quiet environment with minimal distractions</li>
@@ -223,17 +338,29 @@ function generateInvitationEmailHtml(data: InvitationEmailData): string {
             </ul>
           </div>
 
-          <p>If you have any questions or technical issues, please contact our support team.</p>
+          <div class="intro-text">
+            If you have any questions or technical issues, please contact our support team immediately.
+          </div>
           
-          <p>Good luck!</p>
+          <div style="font-size: 18px; color: #4A5D23; font-weight: 600; text-align: center; margin: 20px 0;">
+            Good luck with your assessment! 🍀
+          </div>
         </div>
 
         <div class="footer">
-          <p>This is an automated message from ${companyName}.</p>
-          <p>If you believe you received this email in error, please contact our support team.</p>
-          <p><a href="${testLink}" style="color: #1e40af;">Test Link</a> • Valid until ${expiryDate}</p>
-          <div class="powered-by">
-            Powered by Google Workspace
+          <div class="footer-text">
+            This is an automated message from ${companyName}.
+          </div>
+          <div class="footer-text">
+            If you believe you received this email in error, please contact our support team.
+          </div>
+          <div class="footer-text" style="margin-top: 15px;">
+            <a href="${testLink}" class="footer-link">Access Test Link</a> • Valid until ${expiryDate}
+          </div>
+          
+          <div class="company-branding">
+            <div class="company-name">Combat Robotics India</div>
+            <div class="company-tagline">Innovation • Excellence • Technology</div>
           </div>
         </div>
       </div>
@@ -270,21 +397,30 @@ function generateReminderEmailHtml(data: ReminderEmailData): string {
 
   const baseHtml = generateInvitationEmailHtml(data);
 
-  // Customize for reminder
+  // Customize for reminder with enhanced styling
+  let urgentBanner = '';
+  if (reminderType === 'final') {
+    urgentBanner = `
+      <div class="urgent-banner">
+        🚨 FINAL NOTICE: Only ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''} remaining!
+      </div>
+    `;
+  }
+
   return baseHtml
+    .replace('<div class="content">', `<div class="content">${urgentBanner}`)
     .replace(
-      "You're Invited to Take a Test",
+      "🎯 You're Invited to Take a Test",
       `${reminderIcon} ${reminderTitle}: Test Pending`
     )
     .replace(
-      'Complete your assessment to proceed',
+      'Complete your assessment to proceed with the application process',
       `Only ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''} remaining to complete your test`
     )
     .replace(
-      'You have been invited to take an online assessment. Please complete this test by the deadline to continue with your application.',
-      `<strong>URGENT:</strong> Your test invitation expires in ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''}. Please complete it as soon as possible to avoid missing this opportunity.`
-    )
-    .replace('background: #fef3c7;', `background: #fef3c7; ${urgencyStyle}`);
+      'You have been invited to take an online assessment. Please complete this test by the deadline to continue with your application process.',
+      `<strong style="color: #dc2626;">URGENT:</strong> Your test invitation expires in ${daysUntilExpiry} day${daysUntilExpiry !== 1 ? 's' : ''}. Please complete it as soon as possible to avoid missing this opportunity.`
+    );
 }
 
 // Send invitation email
