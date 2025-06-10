@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { withCache, apiCache } from '@/lib/cache';
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,6 +29,25 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')?.trim();
     const sortBy = searchParams.get('sortBy') || 'rank';
     const sortOrder = searchParams.get('sortOrder') === 'desc' ? 'desc' : 'asc';
+
+    // Generate cache key based on all parameters
+    const cacheKey = apiCache.generateKey('leaderboard', {
+      page,
+      pageSize,
+      dateFrom: dateFrom || '',
+      dateTo: dateTo || '',
+      invitationId: invitationId || '',
+      testId: testId || '',
+      search: search || '',
+      sortBy,
+      sortOrder,
+    });
+
+    // Try to get cached result
+    const cachedResult = apiCache.get(cacheKey);
+    if (cachedResult) {
+      return NextResponse.json(cachedResult);
+    }
 
     // Build where conditions for filtering
     let whereConditions = ['1=1'];
@@ -145,7 +165,7 @@ export async function GET(request: NextRequest) {
       const hasNext = page < totalPages;
       const hasPrevious = page > 1;
 
-      return NextResponse.json({
+      const result = {
         rows: serializedRows,
         pagination: {
           total,
@@ -170,25 +190,23 @@ export async function GET(request: NextRequest) {
           topScore: Number(stats.topScore || 0),
           thisMonth: Number(stats.thisMonth || 0),
         },
-      });
-    } catch (viewError) {
+      };
+
+      // Cache the result for 2 minutes
+      apiCache.set(cacheKey, result, 120);
+
+      return NextResponse.json(result);
+    } catch (viewError: any) {
       console.warn(
         '[API /admin/leaderboard] View query failed, falling back to direct table query:',
         viewError
       );
 
-      // Log the specific error for debugging
-      console.warn('View error details:', {
-        message:
-          viewError instanceof Error ? viewError.message : 'Unknown error',
-        testId,
-        whereClause,
-      });
-
       // Fallback: Query both TestAttempt and PublicTestAttempt tables directly if view fails
       const whereCondition: any = {
         status: 'COMPLETED',
         completedAt: { not: null },
+        categorySubScores: { not: null },
       };
 
       // Add search filter for both regular and public attempts
@@ -232,412 +250,157 @@ export async function GET(request: NextRequest) {
         };
       }
 
-      // Query both regular and public test attempts
+      // Optimized queries with minimal data selection
       const [testAttempts, publicTestAttempts] = await Promise.all([
         prisma.testAttempt.findMany({
           where: regularWhereCondition,
-          include: {
-            invitation: true,
-            submittedAnswers: {
-              include: {
-                question: true,
-              },
-            },
-            test: {
-              include: {
-                questions: true,
-              },
-            },
+          select: {
+            id: true,
+            candidateName: true,
+            candidateEmail: true,
+            completedAt: true,
+            startedAt: true,
+            categorySubScores: true,
+            invitationId: true,
+            testId: true,
           },
-          orderBy:
-            sortBy === 'completedAt'
-              ? { completedAt: sortOrder }
-              : { createdAt: 'desc' },
+          orderBy: { completedAt: 'desc' },
         }),
         prisma.publicTestAttempt.findMany({
           where: publicWhereCondition,
-          include: {
+          select: {
+            id: true,
+            candidateName: true,
+            candidateEmail: true,
+            completedAt: true,
+            startedAt: true,
+            categorySubScores: true,
+            publicLinkId: true,
             publicLink: {
-              include: {
-                test: {
-                  include: {
-                    questions: true,
-                  },
-                },
-              },
-            },
-            submittedAnswers: {
-              include: {
-                question: true,
+              select: {
+                testId: true,
               },
             },
           },
-          orderBy:
-            sortBy === 'completedAt'
-              ? { completedAt: sortOrder }
-              : { createdAt: 'desc' },
+          orderBy: { completedAt: 'desc' },
         }),
       ]);
 
-      // Process regular test attempts
-      const processRegularAttempt = (attempt: any, index: number) => {
-        const scores = attempt.categorySubScores as any;
-
-        // Calculate percentage scores with fallback to rawScore/percentile if available
-        let scoreLogical = 0;
-        let scoreVerbal = 0;
-        let scoreNumerical = 0;
-        let scoreAttention = 0;
-        let scoreOther = 0;
-        let composite = 0;
-
-        if (scores && typeof scores === 'object') {
-          scoreLogical = scores?.LOGICAL
-            ? (scores.LOGICAL.correct / Math.max(scores.LOGICAL.total, 1)) * 100
-            : 0;
-          scoreVerbal = scores?.VERBAL
-            ? (scores.VERBAL.correct / Math.max(scores.VERBAL.total, 1)) * 100
-            : 0;
-          scoreNumerical = scores?.NUMERICAL
-            ? (scores.NUMERICAL.correct / Math.max(scores.NUMERICAL.total, 1)) *
-              100
-            : 0;
-          scoreAttention = scores?.ATTENTION_TO_DETAIL
-            ? (scores.ATTENTION_TO_DETAIL.correct /
-                Math.max(scores.ATTENTION_TO_DETAIL.total, 1)) *
-              100
-            : 0;
-          scoreOther = scores?.OTHER
-            ? (scores.OTHER.correct / Math.max(scores.OTHER.total, 1)) * 100
-            : 0;
-
-          // Only calculate composite if we have valid category scores
-          const validScores = [
-            scoreLogical,
-            scoreVerbal,
-            scoreNumerical,
-            scoreAttention,
-            scoreOther,
-          ].filter((s) => s > 0);
-          if (validScores.length > 0) {
-            composite =
-              validScores.reduce((sum, score) => sum + score, 0) /
-              validScores.length;
-          }
-        }
-
-        // Fallback: Use percentile or rawScore if category scores aren't available
-        if (composite === 0 && attempt.percentile != null) {
-          composite = Number(attempt.percentile);
-        } else if (composite === 0 && attempt.rawScore != null) {
-          // Calculate approximate percentage from raw score
-          // This is a fallback - ideally we'd know the total questions
-          composite = Math.min(Number(attempt.rawScore) * 10, 100); // Assume max 10 questions as fallback
-        }
-
-        // Enhanced fallback: Calculate scores from submitted answers if available
-        // Changed condition to run when category scores are missing (0 or NaN) OR when composite is 0
-        const hasValidCategoryScores = [
-          scoreLogical,
-          scoreVerbal,
-          scoreNumerical,
-          scoreAttention,
-          scoreOther,
-        ].some((score) => !isNaN(score) && score > 0);
-        if (
-          (composite === 0 || !hasValidCategoryScores) &&
-          attempt.submittedAnswers &&
-          attempt.submittedAnswers.length > 0
-        ) {
-          const submittedAnswers = attempt.submittedAnswers;
-          const correctAnswers = submittedAnswers.filter(
-            (answer: any) => answer.isCorrect
-          ).length;
-
-          // Only update composite if it's currently 0
-          if (composite === 0) {
-            composite = (correctAnswers / submittedAnswers.length) * 100;
-          }
-
-          // Calculate category scores from submitted answers
-          const categoryTotals: Record<string, number> = {};
-          const categoryCorrect: Record<string, number> = {};
-
-          submittedAnswers.forEach((submittedAnswer: any) => {
-            const category = submittedAnswer.question?.category;
-            if (category) {
-              categoryTotals[category] = (categoryTotals[category] || 0) + 1;
-              if (submittedAnswer.isCorrect) {
-                categoryCorrect[category] =
-                  (categoryCorrect[category] || 0) + 1;
-              }
-            }
-          });
-
-          // Update individual category scores
-          if (categoryTotals.LOGICAL) {
-            scoreLogical =
-              ((categoryCorrect.LOGICAL || 0) / categoryTotals.LOGICAL) * 100;
-          }
-          if (categoryTotals.VERBAL) {
-            scoreVerbal =
-              ((categoryCorrect.VERBAL || 0) / categoryTotals.VERBAL) * 100;
-          }
-          if (categoryTotals.NUMERICAL) {
-            scoreNumerical =
-              ((categoryCorrect.NUMERICAL || 0) / categoryTotals.NUMERICAL) *
-              100;
-          }
-          if (categoryTotals.ATTENTION_TO_DETAIL) {
-            scoreAttention =
-              ((categoryCorrect.ATTENTION_TO_DETAIL || 0) /
-                categoryTotals.ATTENTION_TO_DETAIL) *
-              100;
-          }
-          if (categoryTotals.OTHER) {
-            scoreOther =
-              ((categoryCorrect.OTHER || 0) / categoryTotals.OTHER) * 100;
-          }
-        }
-
-        const durationSeconds =
-          attempt.completedAt && attempt.startedAt
-            ? Math.floor(
-                (attempt.completedAt.getTime() - attempt.startedAt.getTime()) /
-                  1000
-              )
-            : 0;
-
-        return {
+      // Process and combine attempts data
+      const allAttempts = [
+        ...testAttempts.map((attempt) => ({
           attemptId: attempt.id,
           invitationId: attempt.invitationId,
-          candidateName:
-            attempt.candidateName ||
-            attempt.invitation?.candidateName ||
-            'Anonymous',
-          candidateEmail:
-            attempt.candidateEmail || attempt.invitation?.candidateEmail || '',
-          completedAt: attempt.completedAt,
-          durationSeconds,
-          scoreLogical,
-          scoreVerbal,
-          scoreNumerical,
-          scoreAttention,
-          scoreOther,
-          composite,
-          percentile: 50, // Default percentile for fallback
-          rank: 0, // Will be calculated after combining and sorting
-          isPublicAttempt: false,
-        };
-      };
-
-      // Process public test attempts
-      const processPublicAttempt = (attempt: any, index: number) => {
-        const scores = attempt.categorySubScores as any;
-
-        // Calculate percentage scores with fallback to rawScore/percentile if available
-        let scoreLogical = 0;
-        let scoreVerbal = 0;
-        let scoreNumerical = 0;
-        let scoreAttention = 0;
-        let scoreOther = 0;
-        let composite = 0;
-
-        if (scores && typeof scores === 'object') {
-          scoreLogical = scores?.LOGICAL
-            ? (scores.LOGICAL.correct / Math.max(scores.LOGICAL.total, 1)) * 100
-            : 0;
-          scoreVerbal = scores?.VERBAL
-            ? (scores.VERBAL.correct / Math.max(scores.VERBAL.total, 1)) * 100
-            : 0;
-          scoreNumerical = scores?.NUMERICAL
-            ? (scores.NUMERICAL.correct / Math.max(scores.NUMERICAL.total, 1)) *
-              100
-            : 0;
-          scoreAttention = scores?.ATTENTION_TO_DETAIL
-            ? (scores.ATTENTION_TO_DETAIL.correct /
-                Math.max(scores.ATTENTION_TO_DETAIL.total, 1)) *
-              100
-            : 0;
-          scoreOther = scores?.OTHER
-            ? (scores.OTHER.correct / Math.max(scores.OTHER.total, 1)) * 100
-            : 0;
-
-          // Only calculate composite if we have valid category scores
-          const validScores = [
-            scoreLogical,
-            scoreVerbal,
-            scoreNumerical,
-            scoreAttention,
-            scoreOther,
-          ].filter((s) => s > 0);
-          if (validScores.length > 0) {
-            composite =
-              validScores.reduce((sum, score) => sum + score, 0) /
-              validScores.length;
-          }
-        }
-
-        // Fallback: Use percentile or rawScore if category scores aren't available
-        if (composite === 0 && attempt.percentile != null) {
-          composite = Number(attempt.percentile);
-        } else if (composite === 0 && attempt.rawScore != null) {
-          // Calculate approximate percentage from raw score
-          // This is a fallback - ideally we'd know the total questions
-          composite = Math.min(Number(attempt.rawScore) * 10, 100); // Assume max 10 questions as fallback
-        }
-
-        // Enhanced fallback: Calculate scores from submitted answers if available
-        // Changed condition to run when category scores are missing (0 or NaN) OR when composite is 0
-        const hasValidCategoryScores = [
-          scoreLogical,
-          scoreVerbal,
-          scoreNumerical,
-          scoreAttention,
-          scoreOther,
-        ].some((score) => !isNaN(score) && score > 0);
-        if (
-          (composite === 0 || !hasValidCategoryScores) &&
-          attempt.submittedAnswers &&
-          attempt.submittedAnswers.length > 0
-        ) {
-          const submittedAnswers = attempt.submittedAnswers;
-          const correctAnswers = submittedAnswers.filter(
-            (answer: any) => answer.isCorrect
-          ).length;
-
-          // Only update composite if it's currently 0
-          if (composite === 0) {
-            composite = (correctAnswers / submittedAnswers.length) * 100;
-          }
-
-          // Calculate category scores from submitted answers
-          const categoryTotals: Record<string, number> = {};
-          const categoryCorrect: Record<string, number> = {};
-
-          submittedAnswers.forEach((submittedAnswer: any) => {
-            const category = submittedAnswer.question?.category;
-            if (category) {
-              categoryTotals[category] = (categoryTotals[category] || 0) + 1;
-              if (submittedAnswer.isCorrect) {
-                categoryCorrect[category] =
-                  (categoryCorrect[category] || 0) + 1;
-              }
-            }
-          });
-
-          // Update individual category scores
-          if (categoryTotals.LOGICAL) {
-            scoreLogical =
-              ((categoryCorrect.LOGICAL || 0) / categoryTotals.LOGICAL) * 100;
-          }
-          if (categoryTotals.VERBAL) {
-            scoreVerbal =
-              ((categoryCorrect.VERBAL || 0) / categoryTotals.VERBAL) * 100;
-          }
-          if (categoryTotals.NUMERICAL) {
-            scoreNumerical =
-              ((categoryCorrect.NUMERICAL || 0) / categoryTotals.NUMERICAL) *
-              100;
-          }
-          if (categoryTotals.ATTENTION_TO_DETAIL) {
-            scoreAttention =
-              ((categoryCorrect.ATTENTION_TO_DETAIL || 0) /
-                categoryTotals.ATTENTION_TO_DETAIL) *
-              100;
-          }
-          if (categoryTotals.OTHER) {
-            scoreOther =
-              ((categoryCorrect.OTHER || 0) / categoryTotals.OTHER) * 100;
-          }
-        }
-
-        const durationSeconds =
-          attempt.completedAt && attempt.startedAt
-            ? Math.floor(
-                (attempt.completedAt.getTime() - attempt.startedAt.getTime()) /
-                  1000
-              )
-            : 0;
-
-        return {
-          attemptId: attempt.id,
-          invitationId: null, // Public attempts don't have invitations
           candidateName: attempt.candidateName || 'Anonymous',
           candidateEmail: attempt.candidateEmail || '',
-          completedAt: attempt.completedAt,
-          durationSeconds,
-          scoreLogical,
-          scoreVerbal,
-          scoreNumerical,
-          scoreAttention,
-          scoreOther,
-          composite,
-          percentile: 50, // Default percentile for fallback
-          rank: 0, // Will be calculated after combining and sorting
-          isPublicAttempt: true,
+          completedAt: attempt.completedAt!.toISOString(),
+          durationSeconds: Math.floor(
+            (attempt.completedAt!.getTime() - attempt.startedAt.getTime()) /
+              1000
+          ),
+          categorySubScores: attempt.categorySubScores as any,
+          testId: attempt.testId,
+        })),
+        ...publicTestAttempts.map((attempt) => ({
+          attemptId: attempt.id,
+          invitationId: null,
+          candidateName: attempt.candidateName || 'Anonymous',
+          candidateEmail: attempt.candidateEmail || '',
+          completedAt: attempt.completedAt!.toISOString(),
+          durationSeconds: Math.floor(
+            (attempt.completedAt!.getTime() - attempt.startedAt.getTime()) /
+              1000
+          ),
+          categorySubScores: attempt.categorySubScores as any,
+          testId: attempt.publicLink?.testId || '',
+        })),
+      ];
+
+      // Calculate scores for all attempts
+      const processedRows = allAttempts.map((attempt) => {
+        const scores = attempt.categorySubScores as any;
+
+        const scoreLogical = scores?.LOGICAL
+          ? (scores.LOGICAL.correct / scores.LOGICAL.total) * 100
+          : 0;
+        const scoreVerbal = scores?.VERBAL
+          ? (scores.VERBAL.correct / scores.VERBAL.total) * 100
+          : 0;
+        const scoreNumerical = scores?.NUMERICAL
+          ? (scores.NUMERICAL.correct / scores.NUMERICAL.total) * 100
+          : 0;
+        const scoreAttention = scores?.ATTENTION_TO_DETAIL
+          ? (scores.ATTENTION_TO_DETAIL.correct /
+              scores.ATTENTION_TO_DETAIL.total) *
+            100
+          : 0;
+        const scoreOther = scores?.OTHER
+          ? (scores.OTHER.correct / scores.OTHER.total) * 100
+          : 0;
+
+        const composite =
+          (scoreLogical +
+            scoreVerbal +
+            scoreNumerical +
+            scoreAttention +
+            scoreOther) /
+          5;
+
+        return {
+          ...attempt,
+          scoreLogical: Math.round(scoreLogical * 10) / 10,
+          scoreVerbal: Math.round(scoreVerbal * 10) / 10,
+          scoreNumerical: Math.round(scoreNumerical * 10) / 10,
+          scoreAttention: Math.round(scoreAttention * 10) / 10,
+          scoreOther: Math.round(scoreOther * 10) / 10,
+          composite: Math.round(composite * 10) / 10,
         };
-      };
+      });
 
-      // Process both types of attempts
-      const regularRows = testAttempts.map(processRegularAttempt);
-      const publicRows = publicTestAttempts.map(processPublicAttempt);
+      // Sort by composite score to calculate ranks
+      processedRows.sort((a, b) => b.composite - a.composite);
 
-      // Combine and sort all attempts by composite score
-      const allAttempts = [...regularRows, ...publicRows];
-      allAttempts.sort((a, b) => b.composite - a.composite);
-
-      // Assign ranks after sorting
-      const processedRows = allAttempts.map((attempt, index) => ({
-        ...attempt,
+      // Assign ranks and percentiles
+      const rankedRows = processedRows.map((row, index) => ({
+        ...row,
         rank: index + 1,
+        percentile: Math.round(
+          ((processedRows.length - index) / processedRows.length) * 100
+        ),
       }));
 
-      // Apply additional sorting if needed (already sorted by composite)
+      // Apply sorting
       if (sortBy === 'completedAt') {
-        processedRows.sort((a, b) => {
+        rankedRows.sort((a, b) => {
           const aTime = new Date(a.completedAt).getTime();
           const bTime = new Date(b.completedAt).getTime();
           return sortOrder === 'desc' ? bTime - aTime : aTime - bTime;
         });
       } else if (sortBy === 'candidateName') {
-        processedRows.sort((a, b) => {
+        rankedRows.sort((a, b) => {
           const comparison = a.candidateName.localeCompare(b.candidateName);
           return sortOrder === 'desc' ? -comparison : comparison;
         });
       } else if (sortBy === 'durationSeconds') {
-        processedRows.sort((a, b) => {
+        rankedRows.sort((a, b) => {
           return sortOrder === 'desc'
             ? b.durationSeconds - a.durationSeconds
             : a.durationSeconds - b.durationSeconds;
         });
       }
 
-      // Get total count for both tables with the same filters
-      const [regularTotal, publicTotal] = await Promise.all([
-        prisma.testAttempt.count({
-          where: regularWhereCondition,
-        }),
-        prisma.publicTestAttempt.count({
-          where: publicWhereCondition,
-        }),
-      ]);
-
-      const total = regularTotal + publicTotal;
+      const total = rankedRows.length;
 
       // Calculate stats
-      const allStats = {
+      const stats = {
         totalCandidates: total,
         avgScore:
-          allAttempts.length > 0
-            ? allAttempts.reduce((sum, a) => sum + a.composite, 0) /
-              allAttempts.length
+          total > 0
+            ? rankedRows.reduce((sum, a) => sum + a.composite, 0) / total
             : 0,
         topScore:
-          allAttempts.length > 0
-            ? Math.max(...allAttempts.map((a) => a.composite))
-            : 0,
-        thisMonth: allAttempts.filter((a) => {
+          total > 0 ? Math.max(...rankedRows.map((a) => a.composite)) : 0,
+        thisMonth: rankedRows.filter((a) => {
           const completedAt = new Date(a.completedAt);
           const startOfMonth = new Date();
           startOfMonth.setDate(1);
@@ -646,13 +409,13 @@ export async function GET(request: NextRequest) {
         }).length,
       };
 
-      // Apply pagination after sorting
-      const paginatedRows = processedRows.slice(
+      // Apply pagination
+      const paginatedRows = rankedRows.slice(
         (page - 1) * pageSize,
         page * pageSize
       );
 
-      return NextResponse.json({
+      const result = {
         rows: paginatedRows,
         pagination: {
           total,
@@ -672,12 +435,17 @@ export async function GET(request: NextRequest) {
           sortOrder,
         },
         stats: {
-          totalCandidates: Math.round(allStats.totalCandidates),
-          avgScore: Math.round(allStats.avgScore * 10) / 10,
-          topScore: Math.round(allStats.topScore * 10) / 10,
-          thisMonth: allStats.thisMonth,
+          totalCandidates: Math.round(stats.totalCandidates),
+          avgScore: Math.round(stats.avgScore * 10) / 10,
+          topScore: Math.round(stats.topScore * 10) / 10,
+          thisMonth: stats.thisMonth,
         },
-      });
+      };
+
+      // Cache the fallback result for 1 minute
+      apiCache.set(cacheKey, result, 60);
+
+      return NextResponse.json(result);
     }
   } catch (error) {
     console.error('[API /admin/leaderboard] Error:', error);

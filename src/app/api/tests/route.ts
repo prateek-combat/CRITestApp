@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { withCache, apiCache } from '@/lib/cache';
 
 const prisma = new PrismaClient();
 
@@ -25,22 +26,34 @@ const prisma = new PrismaClient();
  */
 export async function GET() {
   try {
-    const tests = await prisma.test.findMany({
-      where: {
-        isArchived: false, // Only show active (non-archived) tests
-      },
-      include: {
-        _count: {
-          select: {
-            questions: true,
-            invitations: true,
+    const cacheKey = 'tests:all';
+
+    const tests = await withCache(
+      cacheKey,
+      async () => {
+        return await prisma.test.findMany({
+          where: {
+            isArchived: false, // Only show active (non-archived) tests
           },
-        },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            createdAt: true,
+            _count: {
+              select: {
+                questions: true,
+                invitations: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        });
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+      300 // Cache for 5 minutes
+    );
 
     const formattedTests = tests.map((test: any) => ({
       id: test.id,
@@ -125,6 +138,9 @@ export async function POST(request: NextRequest) {
         createdById: adminUser.id,
       },
     });
+
+    // Clear tests cache since we created a new test
+    apiCache.delete('tests:all');
 
     return NextResponse.json({
       id: test.id,

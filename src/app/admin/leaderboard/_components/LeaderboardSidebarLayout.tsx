@@ -12,6 +12,7 @@ import {
   Search,
   Filter,
 } from 'lucide-react';
+import { TableSkeleton } from '@/components/LoadingSkeleton';
 
 interface Test {
   id: string;
@@ -35,6 +36,7 @@ interface CandidateScore {
   scoreVerbal: number;
   scoreNumerical: number;
   scoreAttention: number;
+  scoreOther: number;
   composite: number;
   percentile: number;
   rank: number;
@@ -430,9 +432,8 @@ export default function LeaderboardSidebarLayout({
 
         {/* Leaderboard Table */}
         {isLoading ? (
-          <div className="flex items-center justify-center rounded-lg bg-white py-12 shadow">
-            <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-brand-500"></div>
-            <p className="ml-3 text-gray-600">Loading leaderboard...</p>
+          <div className="rounded-lg bg-white p-6 shadow">
+            <TableSkeleton rows={10} columns={8} />
           </div>
         ) : error ? (
           <div className="rounded-md border-l-4 border-red-500 bg-red-100 p-4 text-red-700">

@@ -1,61 +1,86 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  PrismaClient,
-  QuestionCategory,
-  TestAttemptStatus,
-  Prisma,
-} from '@prisma/client';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { Prisma, TestAttemptStatus } from '@prisma/client';
+import { withCache, apiCache } from '@/lib/cache';
 
-const prisma = new PrismaClient({
-  log:
-    process.env.NODE_ENV === 'development'
-      ? ['query', 'info', 'warn', 'error']
-      : ['error'],
-});
-
-// Placeholder for admin role check - replace with actual auth logic
-async function isAdminUser(request: Request): Promise<boolean> {
-  // In a real app, you'd validate a JWT, session, or other auth mechanism
-  // For now, let's assume a header `x-user-role: ADMIN` for simplicity
-  // return request.headers.get('x-user-role') === 'ADMIN';
-  return true; // TEMPORARILY ALLOW ALL FOR DEVELOPMENT
+interface TestAttemptAnalytics {
+  id: string;
+  candidateName: string | null;
+  candidateEmail: string | null;
+  status: TestAttemptStatus;
+  completedAt: Date | null;
+  startedAt: Date;
+  durationSeconds: number | null;
+  rawScore: number | null;
+  totalQuestions: number;
+  categoryScores: Record<string, { correct: number; total: number }>;
+  testId: string;
+  testTitle: string;
+  isPublicAttempt: boolean;
+  invitation?: {
+    id: string;
+    candidateEmail: string | null;
+    candidateName: string | null;
+    status: string;
+    expiresAt: Date;
+    createdBy: {
+      id: string;
+      email: string;
+      firstName: string | null;
+      lastName: string | null;
+    };
+  };
 }
 
 /**
  * @swagger
  * /api/admin/analytics/test-attempts:
  *   get:
- *     summary: Retrieve aggregated test attempt analytics for admins
- *     description: Fetches all completed test attempts with detailed analytics, including category-wise scores.
+ *     summary: Get analytics data for test attempts
+ *     description: Retrieve comprehensive analytics data for both regular and public test attempts.
  *     tags:
- *       - Admin Analytics
- *     security:
- *       - bearerAuth: [] # Assuming you'll add JWT auth later
+ *       - Analytics
+ *     parameters:
+ *       - in: query
+ *         name: invitationId
+ *         schema:
+ *           type: string
+ *         description: Filter by specific invitation ID
  *     responses:
  *       200:
- *         description: A list of test attempts with analytics.
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/TestAttemptAnalytics'
+ *         description: Analytics data retrieved successfully.
  *       401:
- *         description: Unauthorized (user is not an admin).
+ *         description: Unauthorized - Admin access required.
  *       500:
- *         description: Failed to fetch test attempt analytics.
+ *         description: Failed to fetch analytics data.
  */
 export async function GET(request: NextRequest) {
-  // TODO: Implement proper admin authentication/authorization check
-  // const authorized = await isAdminUser(request);
-  // if (!authorized) {
-  //   return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  // }
-
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (
+      !session?.user ||
+      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
+    ) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
     const url = new URL(request.url, 'http://localhost');
     const searchParams = url.searchParams;
     const invitationId = searchParams.get('invitationId');
+
+    // Generate cache key
+    const cacheKey = apiCache.generateKey('analytics:test-attempts', {
+      invitationId: invitationId || '',
+    });
+
+    // Try to get cached result
+    const cachedResult = apiCache.get<TestAttemptAnalytics[]>(cacheKey);
+    if (cachedResult) {
+      return NextResponse.json(cachedResult);
+    }
 
     const whereClause: Prisma.TestAttemptWhereInput = {
       status: TestAttemptStatus.COMPLETED,
@@ -65,20 +90,29 @@ export async function GET(request: NextRequest) {
       whereClause.invitationId = invitationId;
     }
 
-    // Query both regular and public test attempts
+    // Query both regular and public test attempts with optimized selects
     const [completedAttempts, completedPublicAttempts] = await Promise.all([
       // Regular test attempts
       prisma.testAttempt.findMany({
         where: whereClause,
-        include: {
+        select: {
+          id: true,
+          candidateName: true,
+          candidateEmail: true,
+          status: true,
+          completedAt: true,
+          startedAt: true,
+          rawScore: true,
+          categorySubScores: true,
+          testId: true,
+          invitationId: true,
           test: {
             select: {
               id: true,
               title: true,
-              questions: {
+              _count: {
                 select: {
-                  id: true,
-                  category: true,
+                  questions: true,
                 },
               },
             },
@@ -100,19 +134,6 @@ export async function GET(request: NextRequest) {
               },
             },
           },
-          submittedAnswers: {
-            select: {
-              id: true,
-              questionId: true,
-              isCorrect: true,
-              timeTakenSeconds: true,
-              question: {
-                select: {
-                  category: true,
-                },
-              },
-            },
-          },
         },
         orderBy: {
           completedAt: 'desc',
@@ -123,32 +144,26 @@ export async function GET(request: NextRequest) {
         where: {
           status: TestAttemptStatus.COMPLETED,
         },
-        include: {
+        select: {
+          id: true,
+          candidateName: true,
+          candidateEmail: true,
+          status: true,
+          completedAt: true,
+          startedAt: true,
+          rawScore: true,
+          categorySubScores: true,
           publicLink: {
-            include: {
+            select: {
               test: {
                 select: {
                   id: true,
                   title: true,
-                  questions: {
+                  _count: {
                     select: {
-                      id: true,
-                      category: true,
+                      questions: true,
                     },
                   },
-                },
-              },
-            },
-          },
-          submittedAnswers: {
-            select: {
-              id: true,
-              questionId: true,
-              isCorrect: true,
-              timeTakenSeconds: true,
-              question: {
-                select: {
-                  category: true,
                 },
               },
             },
@@ -160,183 +175,117 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    // Process regular test attempts
-    const processRegularAttempt = (attempt: any) => {
-      const testQuestions = attempt.test?.questions || [];
-      const submittedAns = attempt.submittedAnswers || [];
+    // Process and combine attempts data efficiently
+    const analyticsData: TestAttemptAnalytics[] = [
+      // Process regular attempts
+      ...completedAttempts.map((attempt) => {
+        const durationSeconds = attempt.completedAt
+          ? Math.floor(
+              (attempt.completedAt.getTime() - attempt.startedAt.getTime()) /
+                1000
+            )
+          : null;
 
-      const totalQuestions = testQuestions.length;
-      const correctAnswers = submittedAns.filter(
-        (sa: any) => sa.isCorrect
-      ).length;
-
-      const categoryScores: Record<
-        QuestionCategory,
-        { correct: number; total: number; score: number }
-      > = {
-        LOGICAL: { correct: 0, total: 0, score: 0 },
-        VERBAL: { correct: 0, total: 0, score: 0 },
-        NUMERICAL: { correct: 0, total: 0, score: 0 },
-        ATTENTION_TO_DETAIL: { correct: 0, total: 0, score: 0 },
-        OTHER: { correct: 0, total: 0, score: 0 },
-      };
-
-      testQuestions.forEach((q: any) => {
-        if (q.category && categoryScores[q.category as QuestionCategory]) {
-          categoryScores[q.category as QuestionCategory].total++;
-        }
-      });
-
-      submittedAns.forEach((sa: any) => {
+        // Process category scores
+        const categoryScores: Record<
+          string,
+          { correct: number; total: number }
+        > = {};
         if (
-          sa.isCorrect &&
-          sa.question?.category &&
-          categoryScores[sa.question.category as QuestionCategory]
+          attempt.categorySubScores &&
+          typeof attempt.categorySubScores === 'object'
         ) {
-          categoryScores[sa.question.category as QuestionCategory].correct++;
+          const scores = attempt.categorySubScores as any;
+          Object.keys(scores).forEach((category) => {
+            if (scores[category] && typeof scores[category] === 'object') {
+              categoryScores[category] = {
+                correct: scores[category].correct || 0,
+                total: scores[category].total || 0,
+              };
+            }
+          });
         }
-      });
 
-      (Object.keys(categoryScores) as QuestionCategory[]).forEach((cat) => {
-        if (categoryScores[cat].total > 0) {
-          categoryScores[cat].score = parseFloat(
-            (
-              (categoryScores[cat].correct / categoryScores[cat].total) *
-              100
-            ).toFixed(2)
-          );
-        }
-      });
+        return {
+          id: attempt.id,
+          candidateName: attempt.candidateName,
+          candidateEmail: attempt.candidateEmail,
+          status: attempt.status,
+          completedAt: attempt.completedAt,
+          startedAt: attempt.startedAt,
+          durationSeconds,
+          rawScore: attempt.rawScore,
+          totalQuestions: attempt.test._count.questions,
+          categoryScores,
+          testId: attempt.test.id,
+          testTitle: attempt.test.title,
+          isPublicAttempt: false,
+          invitation: attempt.invitation,
+        } as TestAttemptAnalytics;
+      }),
+      // Process public attempts
+      ...completedPublicAttempts.map((attempt) => {
+        const durationSeconds = attempt.completedAt
+          ? Math.floor(
+              (attempt.completedAt.getTime() - attempt.startedAt.getTime()) /
+                1000
+            )
+          : null;
 
-      return {
-        id: attempt.id,
-        testId: attempt.testId,
-        testTitle: attempt.test?.title,
-        invitationId: attempt.invitationId,
-        candidateName:
-          attempt.candidateName || attempt.invitation?.candidateName,
-        candidateEmail:
-          attempt.candidateEmail || attempt.invitation?.candidateEmail,
-        completedAt: attempt.completedAt,
-        status: attempt.status,
-        rawScore: attempt.rawScore,
-        percentile: attempt.percentile,
-        durationSeconds:
-          attempt.completedAt && attempt.startedAt
-            ? Math.floor(
-                (new Date(attempt.completedAt).getTime() -
-                  new Date(attempt.startedAt).getTime()) /
-                  1000
-              )
-            : null,
-        categoryScores,
-        ipAddress: attempt.ipAddress,
-        tabSwitches: attempt.tabSwitches,
-        totalQuestions,
-        correctAnswers,
-        creatorEmail: attempt.invitation?.createdBy?.email,
-      };
-    };
-
-    // Process public test attempts
-    const processPublicAttempt = (attempt: any) => {
-      const testQuestions = attempt.publicLink?.test?.questions || [];
-      const submittedAns = attempt.submittedAnswers || [];
-
-      const totalQuestions = testQuestions.length;
-      const correctAnswers = submittedAns.filter(
-        (sa: any) => sa.isCorrect
-      ).length;
-
-      const categoryScores: Record<
-        QuestionCategory,
-        { correct: number; total: number; score: number }
-      > = {
-        LOGICAL: { correct: 0, total: 0, score: 0 },
-        VERBAL: { correct: 0, total: 0, score: 0 },
-        NUMERICAL: { correct: 0, total: 0, score: 0 },
-        ATTENTION_TO_DETAIL: { correct: 0, total: 0, score: 0 },
-        OTHER: { correct: 0, total: 0, score: 0 },
-      };
-
-      testQuestions.forEach((q: any) => {
-        if (q.category && categoryScores[q.category as QuestionCategory]) {
-          categoryScores[q.category as QuestionCategory].total++;
-        }
-      });
-
-      submittedAns.forEach((sa: any) => {
+        // Process category scores
+        const categoryScores: Record<
+          string,
+          { correct: number; total: number }
+        > = {};
         if (
-          sa.isCorrect &&
-          sa.question?.category &&
-          categoryScores[sa.question.category as QuestionCategory]
+          attempt.categorySubScores &&
+          typeof attempt.categorySubScores === 'object'
         ) {
-          categoryScores[sa.question.category as QuestionCategory].correct++;
+          const scores = attempt.categorySubScores as any;
+          Object.keys(scores).forEach((category) => {
+            if (scores[category] && typeof scores[category] === 'object') {
+              categoryScores[category] = {
+                correct: scores[category].correct || 0,
+                total: scores[category].total || 0,
+              };
+            }
+          });
         }
-      });
 
-      (Object.keys(categoryScores) as QuestionCategory[]).forEach((cat) => {
-        if (categoryScores[cat].total > 0) {
-          categoryScores[cat].score = parseFloat(
-            (
-              (categoryScores[cat].correct / categoryScores[cat].total) *
-              100
-            ).toFixed(2)
-          );
-        }
-      });
+        return {
+          id: attempt.id,
+          candidateName: attempt.candidateName,
+          candidateEmail: attempt.candidateEmail,
+          status: attempt.status,
+          completedAt: attempt.completedAt,
+          startedAt: attempt.startedAt,
+          durationSeconds,
+          rawScore: attempt.rawScore,
+          totalQuestions: attempt.publicLink?.test._count.questions || 0,
+          categoryScores,
+          testId: attempt.publicLink?.test.id || '',
+          testTitle: attempt.publicLink?.test.title || 'Unknown Test',
+          isPublicAttempt: true,
+        } as TestAttemptAnalytics;
+      }),
+    ];
 
-      return {
-        id: attempt.id,
-        testId: attempt.publicLink?.testId,
-        testTitle: attempt.publicLink?.test?.title,
-        invitationId: null, // Public attempts don't have invitations
-        candidateName: attempt.candidateName,
-        candidateEmail: attempt.candidateEmail,
-        completedAt: attempt.completedAt,
-        status: attempt.status,
-        rawScore: attempt.rawScore,
-        percentile: attempt.percentile,
-        durationSeconds:
-          attempt.completedAt && attempt.startedAt
-            ? Math.floor(
-                (new Date(attempt.completedAt).getTime() -
-                  new Date(attempt.startedAt).getTime()) /
-                  1000
-              )
-            : null,
-        categoryScores,
-        ipAddress: attempt.ipAddress,
-        tabSwitches: attempt.tabSwitches,
-        totalQuestions,
-        correctAnswers,
-        creatorEmail: null, // Public attempts don't have creators
-      };
-    };
+    // Sort by completion date (most recent first)
+    analyticsData.sort((a, b) => {
+      if (!a.completedAt || !b.completedAt) return 0;
+      return b.completedAt.getTime() - a.completedAt.getTime();
+    });
 
-    // Process both types of attempts and combine
-    const regularAnalytics = completedAttempts.map(processRegularAttempt);
-    const publicAnalytics = completedPublicAttempts.map(processPublicAttempt);
-
-    // Combine and sort by completion date
-    const analyticsData = [...regularAnalytics, ...publicAnalytics].sort(
-      (a, b) =>
-        new Date(b.completedAt || 0).getTime() -
-        new Date(a.completedAt || 0).getTime()
-    );
+    // Cache the result for 3 minutes
+    apiCache.set(cacheKey, analyticsData, 180);
 
     return NextResponse.json(analyticsData);
   } catch (error) {
-    console.error(
-      '[API /admin/analytics/test-attempts GET] Error fetching analytics:',
-      error
-    );
-    const errorMessage =
-      error instanceof Error ? error.message : 'Unknown error';
+    console.error('[API /admin/analytics/test-attempts] Error:', error);
     return NextResponse.json(
       {
-        message: 'Failed to fetch test attempt analytics',
-        error: errorMessage,
+        message: 'Failed to fetch analytics data',
+        error: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
