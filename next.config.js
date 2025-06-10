@@ -9,6 +9,10 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Handle file uploads
+  experimental: {
+    serverComponentsExternalPackages: ['@prisma/client'],
+  },
   // Ensure proper API route handling
   async rewrites() {
     return [
