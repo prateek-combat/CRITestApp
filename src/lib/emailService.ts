@@ -34,7 +34,7 @@ interface NotificationSettings {
 const createTransporter = () => {
   if (process.env.NODE_ENV === 'development') {
     // For development, use Ethereal Email (fake SMTP)
-    return nodemailer.createTransporter({
+    return nodemailer.createTransport({
       host: 'smtp.ethereal.email',
       port: 587,
       auth: {
@@ -45,7 +45,7 @@ const createTransporter = () => {
   }
 
   // For production, use configured SMTP
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '587'),
     secure: process.env.SMTP_SECURE === 'true',
@@ -95,16 +95,16 @@ export class EmailService {
           status: 'COMPLETED',
         },
         select: {
-          score: true,
+          rawScore: true,
           completedAt: true,
         },
         orderBy: {
-          score: 'desc',
+          rawScore: 'desc',
         },
       });
 
       const totalAttempts = allAttempts.length;
-      const scores = allAttempts.map((attempt) => attempt.score || 0);
+      const scores = allAttempts.map((attempt) => attempt.rawScore || 0);
       const averageScore =
         scores.length > 0
           ? scores.reduce((a, b) => a + b, 0) / scores.length
@@ -136,8 +136,8 @@ export class EmailService {
           questions: {
             select: {
               id: true,
-              type: true,
-              topic: true,
+              questionType: true,
+              category: true,
             },
           },
         },
@@ -448,6 +448,25 @@ export class EmailService {
     data: TestCompletionData
   ): Promise<boolean> {
     try {
+      // Send notification to admins (existing functionality)
+      const adminNotificationSent =
+        await this.sendAdminTestCompletionNotification(data);
+
+      // Send confirmation email to test taker
+      const candidateNotificationSent =
+        await this.sendCandidateConfirmationEmail(data);
+
+      return adminNotificationSent || candidateNotificationSent; // Return true if at least one email was sent
+    } catch (error) {
+      console.error('Error sending test completion notifications:', error);
+      return false;
+    }
+  }
+
+  private async sendAdminTestCompletionNotification(
+    data: TestCompletionData
+  ): Promise<boolean> {
+    try {
       // Get notification settings for this test
       const settings = await this.getTestNotificationSettings(data.testId);
 
@@ -509,9 +528,280 @@ export class EmailService {
       );
       return true;
     } catch (error) {
-      console.error('Error sending test completion notification:', error);
+      console.error('Error sending admin test completion notification:', error);
       return false;
     }
+  }
+
+  async sendCandidateConfirmationEmail(
+    data: TestCompletionData
+  ): Promise<boolean> {
+    try {
+      // Get test details
+      const test = await prisma.test.findUnique({
+        where: { id: data.testId },
+        select: { title: true, description: true },
+      });
+
+      if (!test) {
+        console.error('Test not found:', data.testId);
+        return false;
+      }
+
+      // Generate candidate confirmation email content
+      const emailHTML = this.generateCandidateConfirmationHTML(
+        test.title,
+        data.candidateName,
+        data.candidateEmail,
+        data.completedAt
+      );
+
+      const subject = `Test Submission Confirmed - ${test.title}`;
+
+      // Send confirmation email to candidate
+      await this.transporter.sendMail({
+        from: `Combat Robotics India <${process.env.SMTP_FROM || 'noreply@combatrobotics.in'}>`,
+        to: data.candidateEmail,
+        subject,
+        html: emailHTML,
+        text: `Dear ${data.candidateName},
+
+Thank you for completing the ${test.title} assessment. Your test responses have been successfully recorded and submitted.
+
+What happens next?
+Our team will review your submission and may contact you regarding the next steps in the evaluation process.
+
+If you have any questions or concerns about your test submission, please don't hesitate to contact us.
+
+Best regards,
+Combat Robotics India Team
+
+This is an automated confirmation email. Please do not reply to this message.`,
+      });
+
+      console.log(
+        `Candidate confirmation email sent to ${data.candidateEmail} for test ${data.testId}`
+      );
+      return true;
+    } catch (error) {
+      console.error('Error sending candidate confirmation email:', error);
+      return false;
+    }
+  }
+
+  generateCandidateConfirmationHTML(
+    testTitle: string,
+    candidateName: string,
+    candidateEmail: string,
+    completedAt: Date
+  ): string {
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Test Submission Confirmed</title>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            line-height: 1.6; 
+            color: #333; 
+            background-color: #f8fafc;
+          }
+          .email-container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background-color: #ffffff; 
+            border-radius: 12px; 
+            overflow: hidden; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            margin-bottom: 20px;
+          }
+          .header { 
+            background: linear-gradient(135deg, #059669 0%, #047857 100%); 
+            color: white; 
+            padding: 30px 20px; 
+            text-align: center; 
+          }
+          .header h1 { 
+            font-size: 28px; 
+            margin-bottom: 8px; 
+            font-weight: 700; 
+          }
+          .header p { 
+            font-size: 16px; 
+            opacity: 0.9; 
+          }
+          .content { 
+            padding: 30px 20px; 
+          }
+          .greeting { 
+            font-size: 18px; 
+            margin-bottom: 20px; 
+            color: #1f2937; 
+            font-weight: 600; 
+          }
+          .message { 
+            font-size: 16px; 
+            margin-bottom: 25px; 
+            color: #4b5563; 
+            line-height: 1.7; 
+          }
+          .test-info { 
+            background-color: #f0fdf4; 
+            border-left: 4px solid #22c55e; 
+            padding: 20px; 
+            margin: 25px 0; 
+            border-radius: 0 8px 8px 0; 
+          }
+          .test-info h3 { 
+            color: #15803d; 
+            margin-bottom: 10px; 
+            font-size: 18px; 
+            font-weight: 600; 
+          }
+          .test-info p { 
+            color: #166534; 
+            margin-bottom: 8px; 
+            font-size: 14px; 
+          }
+          .next-steps { 
+            background-color: #eff6ff; 
+            border-left: 4px solid #3b82f6; 
+            padding: 20px; 
+            margin: 25px 0; 
+            border-radius: 0 8px 8px 0; 
+          }
+          .next-steps h3 { 
+            color: #1d4ed8; 
+            margin-bottom: 10px; 
+            font-size: 18px; 
+            font-weight: 600; 
+          }
+          .next-steps p { 
+            color: #1e40af; 
+            font-size: 14px; 
+            line-height: 1.6; 
+          }
+          .contact-info { 
+            background-color: #fef3c7; 
+            border-left: 4px solid #f59e0b; 
+            padding: 20px; 
+            margin: 25px 0; 
+            border-radius: 0 8px 8px 0; 
+          }
+          .contact-info h3 { 
+            color: #d97706; 
+            margin-bottom: 10px; 
+            font-size: 18px; 
+            font-weight: 600; 
+          }
+          .contact-info p { 
+            color: #92400e; 
+            font-size: 14px; 
+            line-height: 1.6; 
+          }
+          .footer { 
+            background-color: #f9fafb; 
+            padding: 20px; 
+            text-align: center; 
+            border-top: 1px solid #e5e7eb; 
+          }
+          .footer p { 
+            color: #6b7280; 
+            font-size: 12px; 
+            margin-bottom: 5px; 
+          }
+          .company-branding { 
+            text-align: center; 
+            margin: 20px 0; 
+          }
+          .company-branding h4 { 
+            color: #1f2937; 
+            font-size: 18px; 
+            font-weight: 700; 
+            margin-bottom: 5px; 
+          }
+          .company-branding p { 
+            color: #6b7280; 
+            font-size: 14px; 
+          }
+          .success-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 15px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="email-container">
+          <div class="header">
+            <div class="success-icon">✅</div>
+            <h1>Test Submission Confirmed</h1>
+            <p>Your assessment has been successfully recorded</p>
+          </div>
+
+          <div class="content">
+            <div class="greeting">
+              Dear ${candidateName},
+            </div>
+
+            <div class="message">
+              Thank you for completing your assessment with Combat Robotics India. 
+              This email confirms that your test responses have been successfully recorded and submitted.
+            </div>
+
+            <div class="test-info">
+              <h3>Submission Details</h3>
+              <p><strong>Test:</strong> ${testTitle}</p>
+              <p><strong>Candidate:</strong> ${candidateName}</p>
+              <p><strong>Email:</strong> ${candidateEmail}</p>
+              <p><strong>Submitted on:</strong> ${completedAt.toLocaleString()}</p>
+              <p><strong>Status:</strong> Successfully Recorded</p>
+            </div>
+
+            <div class="next-steps">
+              <h3>What Happens Next?</h3>
+              <p>
+                Our team will carefully review your submission and evaluate your responses. 
+                We may contact you regarding the next steps in the evaluation process. 
+                Please keep an eye on your email for any further communication from our team.
+              </p>
+            </div>
+
+            <div class="contact-info">
+              <h3>Questions or Concerns?</h3>
+              <p>
+                If you have any questions about your test submission or the evaluation process, 
+                please don't hesitate to contact our team. We're here to help and ensure 
+                you have the best possible experience with our assessment platform.
+              </p>
+            </div>
+
+            <div class="company-branding">
+              <h4>Combat Robotics India</h4>
+              <p>Excellence in Technical Assessment</p>
+            </div>
+          </div>
+
+          <div class="footer">
+            <p><strong>Combat Robotics India</strong> - Technical Assessment Platform</p>
+            <p>This is an automated confirmation email. Please do not reply to this message.</p>
+            <p>Generated on ${new Date().toLocaleString()}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
   }
 }
 

@@ -44,6 +44,9 @@ model Test {
   createdBy               User             @relation(fields: [createdById], references: [id])
   archivedBy              User?            @relation("ArchivedTests", fields: [archivedById], references: [id])
   testAttempts            TestAttempt[]
+
+  @@index([isArchived, createdAt])
+  @@index([createdById])
 }
 
 model PersonalityDimension {
@@ -75,6 +78,9 @@ model Question {
   personalityDimension   PersonalityDimension?   @relation(fields: [personalityDimensionId], references: [id])
   test                   Test                    @relation(fields: [testId], references: [id], onDelete: Cascade)
   submittedAnswers       SubmittedAnswer[]
+
+  @@index([testId, category])
+  @@index([questionType])
 }
 
 model Invitation {
@@ -126,6 +132,11 @@ model TestAttempt {
   submittedAnswers    SubmittedAnswer[]
   invitation          Invitation        @relation(fields: [invitationId], references: [id], onDelete: Cascade)
   test                Test              @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@index([status, completedAt])
+  @@index([testId, status])
+  @@index([invitationId])
+  @@index([candidateEmail])
 }
 
 model SubmittedAnswer {
@@ -209,10 +220,14 @@ model PublicTestAttempt {
   updatedAt           DateTime                @updatedAt
   personalityProfile  Json?
   personalityScores   Json?
-  proctorAssets       PublicProctorAsset[]
-  proctorEvents       PublicProctorEvent[]
+  publicProctorAssets PublicProctorAsset[]
+  publicProctorEvents PublicProctorEvent[]
   submittedAnswers    PublicSubmittedAnswer[]
   publicLink          PublicTestLink          @relation(fields: [publicLinkId], references: [id], onDelete: Cascade)
+
+  @@index([status, completedAt])
+  @@index([publicLinkId, status])
+  @@index([candidateEmail])
 }
 
 model PublicSubmittedAnswer {

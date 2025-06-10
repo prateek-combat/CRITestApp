@@ -9,7 +9,15 @@ import TestProgressBar from '@/components/TestProgressBar';
 
 import BookmarkedQuestionsReview from '@/components/BookmarkedQuestionsReview';
 import Link from 'next/link';
-import { Eye, BarChart3 } from 'lucide-react';
+import {
+  Eye,
+  BarChart3,
+  Bookmark,
+  Flag,
+  ChevronLeft,
+  ChevronRight,
+  Send,
+} from 'lucide-react';
 import {
   startRecording,
   stopAndUpload,
@@ -1398,9 +1406,65 @@ export default function TestPage() {
 
   // Test completed state
   if (testCompleted && invitation) {
+    const [countdown, setCountdown] = useState(10);
+    const [autoCloseEnabled, setAutoCloseEnabled] = useState(true);
+
+    // Auto-close countdown effect for test completion
+    useEffect(() => {
+      if (!autoCloseEnabled) return;
+
+      const interval = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            // Close the window/tab
+            if (window.opener) {
+              // If opened in popup/new window, close it
+              window.close();
+            } else {
+              // If main window, redirect to homepage
+              window.location.href = '/';
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }, [autoCloseEnabled]);
+
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8">
         <div className="mx-auto max-w-2xl">
+          {/* Auto-close notification */}
+          {autoCloseEnabled && (
+            <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="mr-3 h-5 w-5 text-amber-600">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+                  <span className="text-sm font-medium text-amber-800">
+                    This window will auto-close in {countdown} seconds
+                  </span>
+                </div>
+                <button
+                  onClick={() => setAutoCloseEnabled(false)}
+                  className="text-sm text-amber-700 underline hover:text-amber-900"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Main Thank You Card */}
           <div className="overflow-hidden rounded-2xl bg-white shadow-lg">
             {/* Header with Success Icon */}
@@ -1444,6 +1508,36 @@ export default function TestPage() {
                   . Your responses and proctoring data have been securely
                   recorded.
                 </p>
+
+                <div className="mb-8 rounded-lg border border-green-200 bg-green-50 p-6">
+                  <div className="flex items-start">
+                    <div className="mr-3 mt-0.5 h-6 w-6 text-green-600">
+                      <svg
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <h3 className="mb-1 font-medium text-green-800">
+                        Email Confirmation Sent
+                      </h3>
+                      <p className="text-sm text-green-700">
+                        A confirmation email has been sent to your registered
+                        email address confirming your test submission. We will
+                        reach out with further communication regarding next
+                        steps.
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
                 <div className="mb-8 rounded-lg border border-green-200 bg-green-50 p-6">
                   <div className="flex items-start">
