@@ -507,11 +507,76 @@ export default function TestPage() {
     [invitationId, candidateName, candidateEmail]
   );
 
-  // Start test
+  // Check for existing test attempt and resume if possible
+  const checkForResume = useCallback(async () => {
+    if (!invitation || isPublicAttempt) return false;
+
+    try {
+      const response = await fetch(`/api/invitations/${invitationId}/attempt`);
+      if (response.ok) {
+        const existingAttempt = await response.json();
+        if (existingAttempt && existingAttempt.status === 'IN_PROGRESS') {
+          // Get progress details
+          const progressResponse = await fetch(
+            `/api/test-attempts/${existingAttempt.id}/progress`
+          );
+          if (progressResponse.ok) {
+            const progressData = await progressResponse.json();
+
+            // Restore state
+            setTestAttempt(existingAttempt);
+            setTestStarted(true);
+            setCurrentQuestionIndex(progressData.currentQuestionIndex || 0);
+
+            // Restore submitted answers
+            const restoredAnswers: Record<
+              string,
+              { answerIndex: number; timeTaken?: number }
+            > = {};
+            progressData.submittedAnswers.forEach((answer: any) => {
+              restoredAnswers[answer.questionId] = {
+                answerIndex: answer.selectedAnswerIndex,
+                timeTaken: answer.timeTakenSeconds,
+              };
+            });
+            setAnswers(restoredAnswers);
+
+            // Set question start time for current question
+            const currentQuestion =
+              invitation.test.questions[progressData.currentQuestionIndex];
+            if (currentQuestion) {
+              setQuestionStartTime({
+                [currentQuestion.id]: {
+                  epoch: Date.now(),
+                  key: currentQuestion.id,
+                },
+              });
+            }
+
+            return true;
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error checking for resume:', err);
+    }
+    return false;
+  }, [invitation, isPublicAttempt, invitationId]);
+
+  // Start test (new or resume)
   const startTest = useCallback(async () => {
     if (!invitation || error || !hasPermissions) return;
 
     try {
+      // Check for existing attempt first (for invitations only)
+      const canResume = await checkForResume();
+
+      if (canResume) {
+        // Resume existing test - start recording
+        await startRecordingSession();
+        return;
+      }
+
       // Start recording first
       await startRecordingSession();
 
@@ -572,7 +637,32 @@ export default function TestPage() {
     startRecordingSession,
     isPublicAttempt,
     invitationId,
+    checkForResume,
   ]);
+
+  // Auto-save progress
+  const saveProgress = useCallback(
+    async (questionIndex: number) => {
+      if (!testAttempt?.id) return;
+
+      try {
+        const endpoint = isPublicAttempt
+          ? `/api/public-test-attempts/${testAttempt.id}/progress`
+          : `/api/test-attempts/${testAttempt.id}/progress`;
+
+        await fetch(endpoint, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            currentQuestionIndex: questionIndex,
+          }),
+        });
+      } catch (error) {
+        console.error('Error saving progress:', error);
+      }
+    },
+    [testAttempt?.id, isPublicAttempt]
+  );
 
   // Handle answer selection
   const handleAnswer = useCallback(
@@ -587,8 +677,13 @@ export default function TestPage() {
         ...prev,
         [questionId]: { answerIndex, timeTaken },
       }));
+
+      // Auto-save progress after answering a question
+      if (testAttempt?.id) {
+        saveProgress(currentQuestionIndex);
+      }
     },
-    [questionStartTime]
+    [questionStartTime, testAttempt?.id, currentQuestionIndex, saveProgress]
   );
 
   // Navigate between questions
@@ -620,6 +715,11 @@ export default function TestPage() {
 
       setCurrentQuestionIndex(newIndex);
 
+      // Auto-save progress when navigating
+      if (testAttempt?.id) {
+        saveProgress(newIndex);
+      }
+
       // Set start time for the new question if not already set
       const newQuestion = invitation.test.questions[newIndex];
       if (newQuestion && !questionStartTime[newQuestion.id]) {
@@ -634,6 +734,8 @@ export default function TestPage() {
       currentQuestionIndex,
       questionStartTime,
       hasSeenPersonalityIntro,
+      testAttempt?.id,
+      saveProgress,
     ]
   );
 
@@ -1104,10 +1206,28 @@ export default function TestPage() {
                       Progress Tracking
                     </p>
                     <p className="text-blue-700">
-                      View your test progress and navigate between questions
+                      {invitation.test.allowReview
+                        ? 'View your test progress and navigate between questions'
+                        : 'View your test progress (forward navigation only)'}
                     </p>
                   </div>
                 </div>
+                {!invitation.test.allowReview && (
+                  <div className="flex items-start space-x-3">
+                    <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-orange-500">
+                      <span className="text-xs text-white">🚫</span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-orange-800">
+                        Linear Navigation
+                      </p>
+                      <p className="text-orange-700">
+                        You can only move forward through questions. Review and
+                        back navigation are disabled.
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <div className="flex items-start space-x-3">
                   <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-500">
                     <span className="text-xs text-white">🔒</span>
@@ -1565,430 +1685,135 @@ export default function TestPage() {
               answeredQuestions={getAnsweredQuestions()}
               bookmarkedQuestions={bookmarkedQuestions}
               questionIds={invitation.test.questions.map((q) => q.id)}
-              onQuestionSelect={navigateToQuestion}
+              onQuestionSelect={
+                invitation.test.allowReview ? navigateToQuestion : undefined
+              }
             />
           </div>
         )}
 
-        {/* Main content area - Fitted to screen */}
-        <main className="flex-grow overflow-y-auto bg-gray-50">
-          <div className="mx-auto max-w-4xl px-4 py-6">
-            {/* Question Card */}
+        {/* Main content area - Single column layout */}
+        <main className="h-full min-h-0 flex-grow bg-gray-50 px-4 py-6">
+          {/* Question Card */}
+          <div
+            className={`flex h-full flex-col overflow-hidden rounded-lg border shadow-sm ${
+              isPersonalityQuestion(currentQuestion)
+                ? 'border-blue-200 bg-gradient-to-br from-blue-50 to-white'
+                : 'border-gray-200 bg-white'
+            }`}
+          >
+            {/* Question Header */}
             <div
-              className={`flex flex-col overflow-hidden rounded-lg border shadow-sm ${
+              className={`flex-shrink-0 border-b px-6 py-4 ${
                 isPersonalityQuestion(currentQuestion)
-                  ? 'border-blue-200 bg-gradient-to-br from-blue-50 to-white'
-                  : 'border-gray-200 bg-white'
+                  ? 'border-blue-200 bg-gradient-to-r from-blue-100 to-blue-50'
+                  : 'border-gray-200 bg-gray-50'
               }`}
             >
-              {/* Question Header */}
-              <div
-                className={`border-b px-6 py-3 ${
+              <div className="mb-2 flex items-center space-x-3">
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium text-white ${
+                    isPersonalityQuestion(currentQuestion)
+                      ? 'bg-blue-600'
+                      : 'bg-military-green'
+                  }`}
+                >
+                  {isPersonalityQuestion(currentQuestion) ? '🧠' : '📝'}{' '}
+                  Question {currentQuestionIndex + 1}
+                </span>
+                <span className="text-sm text-gray-500">
+                  {currentQuestion.category}
+                </span>
+                {isPersonalityQuestion(currentQuestion) &&
+                  currentQuestion.personalityDimension && (
+                    <span className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-700">
+                      {currentQuestion.personalityDimension.name}
+                    </span>
+                  )}
+              </div>
+              <h2 className="text-xl font-bold leading-tight text-gray-900">
+                {currentQuestion.promptText}
+              </h2>
+              {/* Different instruction text for personality questions */}
+              <p
+                className={`mt-2 text-sm ${
                   isPersonalityQuestion(currentQuestion)
-                    ? 'border-blue-200 bg-gradient-to-r from-blue-100 to-blue-50'
-                    : 'border-gray-200 bg-gray-50'
+                    ? 'font-medium text-blue-600'
+                    : 'text-gray-500'
                 }`}
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="mb-2 flex items-center space-x-3">
-                      <span
-                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium text-white ${
-                          isPersonalityQuestion(currentQuestion)
-                            ? 'bg-blue-600'
-                            : 'bg-military-green'
-                        }`}
-                      >
-                        {isPersonalityQuestion(currentQuestion) ? '🧠' : '📝'}{' '}
-                        Question {currentQuestionIndex + 1}
-                      </span>
-                      <span className="text-sm text-gray-500">
-                        {currentQuestion.category}
-                      </span>
-                      {isPersonalityQuestion(currentQuestion) &&
-                        currentQuestion.personalityDimension && (
-                          <span className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-700">
-                            {currentQuestion.personalityDimension.name}
-                          </span>
-                        )}
-                    </div>
-                    <h2 className="text-xl font-bold leading-tight text-gray-900">
-                      {currentQuestion.promptText}
-                    </h2>
-                    {/* Different instruction text for personality questions */}
-                    <p
-                      className={`mt-2 text-sm ${
-                        isPersonalityQuestion(currentQuestion)
-                          ? 'font-medium text-blue-600'
-                          : 'text-gray-500'
-                      }`}
-                    >
-                      {isPersonalityQuestion(currentQuestion)
-                        ? 'Select the option that best describes your approach'
-                        : 'Select the correct answer'}
-                    </p>
-                  </div>
-                </div>
+                {isPersonalityQuestion(currentQuestion)
+                  ? 'Select the option that best describes your approach'
+                  : 'Select the correct answer'}
+              </p>
+            </div>
 
-                {/* Timer */}
-                <div className="mt-4">
-                  <QuestionTimer
-                    key={currentQuestion.id}
-                    questionKey={currentQuestion.id}
-                    durationSeconds={currentQuestion.timerSeconds}
-                    onTimeExpired={handleTimeExpired}
-                    startTimeEpoch={
-                      questionStartTime[currentQuestion.id]?.epoch || 0
-                    }
+            {/* Question Image */}
+            {currentQuestion.promptImageUrl && (
+              <div className="flex-shrink-0 bg-gray-50 px-6 py-4">
+                <div className="max-h-48 overflow-hidden rounded-xl shadow-md">
+                  <img
+                    src={currentQuestion.promptImageUrl}
+                    alt="Question prompt"
+                    className="h-auto w-full object-contain"
                   />
                 </div>
               </div>
+            )}
 
-              {/* Question Image */}
-              {currentQuestion.promptImageUrl && (
-                <div className="bg-gray-50 px-8 py-6">
-                  <div className="overflow-hidden rounded-xl shadow-md">
-                    <img
-                      src={currentQuestion.promptImageUrl}
-                      alt="Question prompt"
-                      className="h-auto w-full"
-                    />
-                  </div>
-                </div>
-              )}
+            {/* Answer Options - Scrollable area */}
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+              <div className="space-y-3">
+                {currentQuestion.answerOptions.map((option, index) => {
+                  const isSelected =
+                    answers[currentQuestion.id]?.answerIndex === index;
+                  const optionLetter = String.fromCharCode(65 + index); // A, B, C, D...
+                  const isPersonality = isPersonalityQuestion(currentQuestion);
 
-              {/* Answer Options */}
-              <div className="flex-1 overflow-y-auto px-6 py-4">
-                <div className="grid grid-cols-1 gap-3">
-                  {currentQuestion.answerOptions.map((option, index) => {
-                    const isSelected =
-                      answers[currentQuestion.id]?.answerIndex === index;
-                    const optionLetter = String.fromCharCode(65 + index); // A, B, C, D...
-                    const isPersonality =
-                      isPersonalityQuestion(currentQuestion);
-
-                    return (
-                      <button
-                        key={index}
-                        onClick={() => handleAnswer(currentQuestion.id, index)}
-                        className={`group relative flex items-start space-x-3 rounded-lg border-2 p-4 text-left transition-all duration-200 ${
-                          isSelected
-                            ? isPersonality
-                              ? 'border-blue-500 bg-blue-50 shadow-md ring-2 ring-blue-500/20'
-                              : 'border-military-green bg-green-50 shadow-md ring-2 ring-military-green/20'
-                            : isPersonality
-                              ? 'hover:bg-blue-25 border-blue-200 bg-white hover:border-blue-300 hover:shadow-sm'
-                              : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
-                        } `}
-                      >
-                        {/* Option Letter */}
-                        <div
-                          className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all duration-200 ${
-                            isSelected
-                              ? isPersonality
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-military-green text-white'
-                              : isPersonality
-                                ? 'bg-blue-100 text-blue-600 group-hover:bg-blue-200'
-                                : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
-                          } `}
-                        >
-                          {optionLetter}
-                        </div>
-
-                        {/* Option Text */}
-                        <div className="flex-1">
-                          <p
-                            className={`text-base leading-relaxed transition-colors duration-200 ${isSelected ? 'font-medium text-gray-900' : 'text-gray-700'} `}
-                          >
-                            {option}
-                          </p>
-                        </div>
-
-                        {/* Selection Indicator - Different for personality questions */}
-                        {isSelected && (
-                          <div className="flex-shrink-0">
-                            {isPersonality ? (
-                              <svg
-                                className="h-6 w-6 text-blue-500"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M5 13l4 4L19 7"
-                                />
-                              </svg>
-                            ) : (
-                              <svg
-                                className="h-6 w-6 text-military-green"
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                              >
-                                <path
-                                  fillRule="evenodd"
-                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                  clipRule="evenodd"
-                                />
-                              </svg>
-                            )}
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Confidence Slider for Personality Questions */}
-                {isPersonalityQuestion(currentQuestion) &&
-                  answers[currentQuestion.id] && (
-                    <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50/50 p-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <label className="text-sm font-medium text-blue-800">
-                          How confident are you in this choice?
-                        </label>
-                        <span className="text-sm text-blue-600">
-                          {confidenceScores[currentQuestion.id] || 3}/5
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <span className="text-xs text-blue-600">Not sure</span>
-                        <input
-                          type="range"
-                          min="1"
-                          max="5"
-                          value={confidenceScores[currentQuestion.id] || 3}
-                          onChange={(e) =>
-                            handleConfidenceChange(
-                              currentQuestion.id,
-                              parseInt(e.target.value)
-                            )
-                          }
-                          className="slider h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-blue-200"
-                          style={{
-                            background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((confidenceScores[currentQuestion.id] || 3) - 1) * 25}%, #cbd5e1 ${((confidenceScores[currentQuestion.id] || 3) - 1) * 25}%, #cbd5e1 100%)`,
-                          }}
-                        />
-                        <span className="text-xs text-blue-600">Very sure</span>
-                      </div>
-                    </div>
-                  )}
-
-                {/* Answer Status */}
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    {answers[currentQuestion.id] ? (
-                      <div
-                        className={`flex items-center space-x-2 ${
-                          isPersonalityQuestion(currentQuestion)
-                            ? 'text-blue-600'
-                            : 'text-green-600'
-                        }`}
-                      >
-                        <svg
-                          className="h-4 w-4"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        <span className="text-sm font-medium">
-                          {isPersonalityQuestion(currentQuestion)
-                            ? 'Response recorded'
-                            : 'Answer selected'}
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center space-x-2 text-gray-400">
-                        <svg
-                          className="h-4 w-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        <span className="text-sm">
-                          {isPersonalityQuestion(currentQuestion)
-                            ? 'Select your response'
-                            : 'Select an answer'}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {invitation.test.allowReview &&
-                    bookmarkedQuestions.has(currentQuestion.id) && (
-                      <div className="flex items-center space-x-2 text-amber-600">
-                        <svg
-                          className="h-4 w-4"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
-                        </svg>
-                        <span className="text-sm font-medium">
-                          Bookmarked for review
-                        </span>
-                      </div>
-                    )}
-                </div>
-
-                {/* Navigation Controls - Moved from footer */}
-                <div className="mt-6 border-t border-gray-200 pt-6">
-                  <div className="flex items-center justify-between">
-                    {/* Left: Previous Button */}
+                  return (
                     <button
-                      onClick={() => navigateQuestion('prev')}
-                      disabled={currentQuestionIndex === 0}
-                      className={`flex items-center space-x-1 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
-                        currentQuestionIndex === 0
-                          ? 'cursor-not-allowed bg-gray-100 text-gray-400'
-                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                      key={index}
+                      onClick={() => handleAnswer(currentQuestion.id, index)}
+                      className={`group relative flex w-full items-start space-x-3 rounded-lg border-2 p-3 text-left transition-all duration-200 ${
+                        isSelected
+                          ? isPersonality
+                            ? 'border-blue-500 bg-blue-50 shadow-md ring-2 ring-blue-500/20'
+                            : 'border-military-green bg-green-50 shadow-md ring-2 ring-military-green/20'
+                          : isPersonality
+                            ? 'hover:bg-blue-25 border-blue-200 bg-white hover:border-blue-300 hover:shadow-sm'
+                            : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
                       } `}
                     >
-                      <svg
-                        className="h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                      {/* Option Letter */}
+                      <div
+                        className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all duration-200 ${
+                          isSelected
+                            ? isPersonality
+                              ? 'bg-blue-500 text-white'
+                              : 'bg-military-green text-white'
+                            : isPersonality
+                              ? 'bg-blue-100 text-blue-600 group-hover:bg-blue-200'
+                              : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
+                        } `}
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 19l-7-7 7-7"
-                        />
-                      </svg>
-                      <span>Previous</span>
-                    </button>
-
-                    {/* Center: Progress and Review Later */}
-                    <div className="flex items-center space-x-3">
-                      <div className="text-center">
-                        <div className="text-sm font-medium text-gray-900">
-                          {Object.keys(answers).length} of{' '}
-                          {invitation.test.questions.length} answered
-                        </div>
-                        {invitation.test.allowReview &&
-                          bookmarkedQuestions.size > 0 && (
-                            <div className="text-xs font-medium text-military-green">
-                              {bookmarkedQuestions.size} bookmarked for review
-                            </div>
-                          )}
+                        {optionLetter}
                       </div>
 
-                      {/* Review Later Button */}
-                      {invitation.test.allowReview && (
-                        <button
-                          onClick={() => {
-                            // Add to bookmarks if not already bookmarked
-                            if (!bookmarkedQuestions.has(currentQuestion.id)) {
-                              handleBookmarkToggle(currentQuestion.id);
-                            }
-                            // Navigate to next question or show review if last question
-                            if (
-                              currentQuestionIndex <
-                              invitation.test.questions.length - 1
-                            ) {
-                              navigateQuestion('next');
-                            } else {
-                              setShowBookmarkedReview(true);
-                            }
-                          }}
-                          className="flex items-center space-x-1 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700 transition-all duration-200 hover:bg-amber-100"
+                      {/* Option Text */}
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={`text-sm leading-relaxed transition-colors duration-200 ${isSelected ? 'font-medium text-gray-900' : 'text-gray-700'} `}
                         >
-                          <svg
-                            className="h-4 w-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                            />
-                          </svg>
-                          <span>Review Later</span>
-                        </button>
-                      )}
+                          {option}
+                        </p>
+                      </div>
 
-                      {/* Review Bookmarked Button */}
-                      {invitation.test.allowReview &&
-                        bookmarkedQuestions.size > 0 && (
-                          <button
-                            onClick={() => setShowBookmarkedReview(true)}
-                            className="flex items-center space-x-1 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-military-green transition-all duration-200 hover:bg-green-100"
-                          >
+                      {/* Selection Indicator - Different for personality questions */}
+                      {isSelected && (
+                        <div className="flex-shrink-0">
+                          {isPersonality ? (
                             <svg
-                              className="h-4 w-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                              />
-                            </svg>
-                            <span>Review ({bookmarkedQuestions.size})</span>
-                          </button>
-                        )}
-                    </div>
-
-                    {/* Right: Next/Submit Button */}
-                    {currentQuestionIndex <
-                    invitation.test.questions.length - 1 ? (
-                      <button
-                        onClick={() => navigateQuestion('next')}
-                        className="flex items-center space-x-1 rounded-md bg-military-green px-3 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-opacity-90"
-                      >
-                        <span>Next</span>
-                        <svg
-                          className="h-4 w-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={submitTest}
-                        disabled={isSubmitting}
-                        className="flex items-center space-x-1 rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                            <span>Submitting...</span>
-                          </>
-                        ) : (
-                          <>
-                            <svg
-                              className="h-4 w-4"
+                              className="h-5 w-5 text-blue-500"
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -2000,12 +1825,313 @@ export default function TestPage() {
                                 d="M5 13l4 4L19 7"
                               />
                             </svg>
-                            <span>Submit Test</span>
-                          </>
-                        )}
+                          ) : (
+                            <svg
+                              className="h-5 w-5 text-military-green"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Confidence Slider for Personality Questions */}
+              {isPersonalityQuestion(currentQuestion) &&
+                answers[currentQuestion.id] && (
+                  <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50/50 p-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <label className="text-xs font-medium text-blue-800">
+                        How confident are you in this choice?
+                      </label>
+                      <span className="text-xs text-blue-600">
+                        {confidenceScores[currentQuestion.id] || 3}/5
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs text-blue-600">Not sure</span>
+                      <input
+                        type="range"
+                        min="1"
+                        max="5"
+                        value={confidenceScores[currentQuestion.id] || 3}
+                        onChange={(e) =>
+                          handleConfidenceChange(
+                            currentQuestion.id,
+                            parseInt(e.target.value)
+                          )
+                        }
+                        className="slider h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-blue-200"
+                        style={{
+                          background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((confidenceScores[currentQuestion.id] || 3) - 1) * 25}%, #cbd5e1 ${((confidenceScores[currentQuestion.id] || 3) - 1) * 25}%, #cbd5e1 100%)`,
+                        }}
+                      />
+                      <span className="text-xs text-blue-600">Very sure</span>
+                    </div>
+                  </div>
+                )}
+            </div>
+
+            {/* Footer - Timer and Navigation */}
+            <div className="flex-shrink-0 space-y-4 border-t border-gray-200 bg-white px-6 py-4">
+              {/* Timer Section */}
+              <div className="flex justify-center">
+                <QuestionTimer
+                  key={currentQuestion.id}
+                  questionKey={currentQuestion.id}
+                  durationSeconds={currentQuestion.timerSeconds}
+                  onTimeExpired={handleTimeExpired}
+                  startTimeEpoch={
+                    questionStartTime[currentQuestion.id]?.epoch || 0
+                  }
+                />
+              </div>
+
+              {/* Answer Status */}
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  {answers[currentQuestion.id] ? (
+                    <div
+                      className={`flex items-center space-x-2 ${
+                        isPersonalityQuestion(currentQuestion)
+                          ? 'text-blue-600'
+                          : 'text-green-600'
+                      }`}
+                    >
+                      <svg
+                        className="h-4 w-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="text-sm font-medium">
+                        {isPersonalityQuestion(currentQuestion)
+                          ? 'Response recorded'
+                          : 'Answer selected'}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2 text-gray-400">
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      <span className="text-sm">
+                        {isPersonalityQuestion(currentQuestion)
+                          ? 'Select your response'
+                          : 'Select an answer'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {invitation.test.allowReview &&
+                  bookmarkedQuestions.has(currentQuestion.id) && (
+                    <div className="flex items-center space-x-2 text-amber-600">
+                      <svg
+                        className="h-4 w-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+                      </svg>
+                      <span className="text-sm font-medium">
+                        Bookmarked for review
+                      </span>
+                    </div>
+                  )}
+              </div>
+
+              {/* Navigation Controls */}
+              <div className="flex flex-col items-center space-y-4">
+                {/* Progress and Review Controls */}
+                <div className="flex items-center space-x-3">
+                  <div className="text-center">
+                    <div className="text-sm font-medium text-gray-900">
+                      {Object.keys(answers).length} of{' '}
+                      {invitation.test.questions.length} answered
+                    </div>
+                    {invitation.test.allowReview &&
+                      bookmarkedQuestions.size > 0 && (
+                        <div className="text-xs font-medium text-military-green">
+                          {bookmarkedQuestions.size} bookmarked for review
+                        </div>
+                      )}
+                  </div>
+
+                  {/* Review Later Button */}
+                  {invitation.test.allowReview && (
+                    <button
+                      onClick={() => {
+                        // Add to bookmarks if not already bookmarked
+                        if (!bookmarkedQuestions.has(currentQuestion.id)) {
+                          handleBookmarkToggle(currentQuestion.id);
+                        }
+                        // Navigate to next question or show review if last question
+                        if (
+                          currentQuestionIndex <
+                          invitation.test.questions.length - 1
+                        ) {
+                          navigateQuestion('next');
+                        } else {
+                          setShowBookmarkedReview(true);
+                        }
+                      }}
+                      className="flex items-center space-x-1 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700 transition-all duration-200 hover:bg-amber-100"
+                    >
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                        />
+                      </svg>
+                      <span>Review Later</span>
+                    </button>
+                  )}
+
+                  {/* Review Bookmarked Button */}
+                  {invitation.test.allowReview &&
+                    bookmarkedQuestions.size > 0 && (
+                      <button
+                        onClick={() => setShowBookmarkedReview(true)}
+                        className="flex items-center space-x-1 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-military-green transition-all duration-200 hover:bg-green-100"
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                          />
+                        </svg>
+                        <span>Review ({bookmarkedQuestions.size})</span>
                       </button>
                     )}
-                  </div>
+                </div>
+
+                {/* Centered Navigation Buttons */}
+                <div className="flex items-center space-x-4">
+                  {/* Previous Button */}
+                  <button
+                    onClick={() => navigateQuestion('prev')}
+                    disabled={
+                      currentQuestionIndex === 0 || !invitation.test.allowReview
+                    }
+                    className={`flex items-center space-x-2 rounded-md px-6 py-3 text-base font-medium transition-all duration-200 ${
+                      currentQuestionIndex === 0 || !invitation.test.allowReview
+                        ? 'cursor-not-allowed bg-gray-100 text-gray-400'
+                        : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                    } `}
+                    title={
+                      !invitation.test.allowReview
+                        ? 'Navigation back to previous questions is disabled for this test'
+                        : ''
+                    }
+                  >
+                    <svg
+                      className="h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
+                    <span>Previous</span>
+                  </button>
+
+                  {/* Next/Submit Button */}
+                  {currentQuestionIndex <
+                  invitation.test.questions.length - 1 ? (
+                    <button
+                      onClick={() => navigateQuestion('next')}
+                      className="flex items-center space-x-2 rounded-md bg-military-green px-6 py-3 text-base font-medium text-white transition-all duration-200 hover:bg-opacity-90"
+                    >
+                      <span>Next</span>
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={submitTest}
+                      disabled={isSubmitting}
+                      className="flex items-center space-x-2 rounded-md bg-green-600 px-6 py-3 text-base font-medium text-white transition-all duration-200 hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                          <span>Submitting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            className="h-5 w-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                          <span>Submit Test</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

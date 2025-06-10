@@ -9,6 +9,7 @@ export default function CreateTestPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
+    allowReview: true,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,7 +25,11 @@ export default function CreateTestPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          title: formData.title,
+          description: formData.description,
+          allowReview: formData.allowReview,
+        }),
       });
 
       if (response.ok) {
@@ -44,9 +49,11 @@ export default function CreateTestPage() {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
+    const { name, value, type } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]:
+        type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
     });
   };
 
@@ -145,6 +152,30 @@ export default function CreateTestPage() {
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500"
                 placeholder="Enter test description (optional)"
               />
+            </div>
+
+            <div className="flex items-start space-x-3">
+              <input
+                type="checkbox"
+                id="allowReview"
+                name="allowReview"
+                checked={formData.allowReview}
+                onChange={handleChange}
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+              />
+              <div className="flex-1">
+                <label
+                  htmlFor="allowReview"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Allow Review & Navigation
+                </label>
+                <p className="text-sm text-gray-500">
+                  When enabled, candidates can bookmark questions, review their
+                  answers, and navigate back to previous questions. When
+                  disabled, candidates can only move forward through the test.
+                </p>
+              </div>
             </div>
           </div>
 

@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 interface RouteParams {
-  params: Promise<{ attemptId: string }>;
+  params: Promise<{ id: string }>;
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const { attemptId } = await params;
+    const { id: attemptId } = await params;
 
     const publicAttempt = await prisma.publicTestAttempt.findUnique({
       where: { id: attemptId },
@@ -18,14 +18,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
               include: {
                 questions: {
                   orderBy: { createdAt: 'asc' },
-                  select: {
-                    id: true,
-                    promptText: true,
-                    promptImageUrl: true,
-                    timerSeconds: true,
-                    answerOptions: true,
-                    category: true,
-                  },
                 },
               },
             },
@@ -51,7 +43,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         id: publicAttempt.publicLink.test.id,
         title: publicAttempt.publicLink.test.title,
         description: publicAttempt.publicLink.test.description,
-        allowReview: publicAttempt.publicLink.test.allowReview,
         questions: publicAttempt.publicLink.test.questions,
       },
     };
@@ -68,7 +59,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const { attemptId } = await params;
+    const { id: attemptId } = await params;
     const body = await request.json();
     const { status, answers, questionStartTime, proctoringEnabled } = body;
 

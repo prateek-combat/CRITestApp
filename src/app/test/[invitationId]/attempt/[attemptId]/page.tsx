@@ -18,6 +18,7 @@ interface Test {
   title: string;
   description: string;
   questions: Question[];
+  allowReview?: boolean;
 }
 
 interface TestAttempt {
@@ -169,8 +170,13 @@ export default function TestAttemptPage() {
             onClick={() =>
               setCurrentQuestionIndex((prev) => Math.max(0, prev - 1))
             }
-            disabled={currentQuestionIndex === 0}
+            disabled={currentQuestionIndex === 0 || !attempt.test.allowReview}
             className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 disabled:opacity-50"
+            title={
+              !attempt.test.allowReview
+                ? 'Navigation back to previous questions is disabled for this test'
+                : ''
+            }
           >
             Previous
           </button>

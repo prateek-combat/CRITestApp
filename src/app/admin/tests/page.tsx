@@ -15,6 +15,7 @@ interface Test {
 export default function TestsPage() {
   const [tests, setTests] = useState<Test[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingTestId, setDeletingTestId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTests();
@@ -31,6 +32,37 @@ export default function TestsPage() {
       console.error('Error fetching tests:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteTest = async (testId: string) => {
+    if (
+      !window.confirm(
+        'Are you sure you want to delete this test? This will permanently delete all questions, invitations, and test attempts associated with this test. This action cannot be undone.'
+      )
+    ) {
+      return;
+    }
+
+    setDeletingTestId(testId);
+    try {
+      const response = await fetch(`/api/tests/${testId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Remove the deleted test from the local state
+        setTests((prevTests) => prevTests.filter((test) => test.id !== testId));
+        alert('✅ Test deleted successfully!');
+      } else {
+        const error = await response.json();
+        alert(`❌ Error: ${error.message || 'Failed to delete test'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting test:', error);
+      alert('❌ Network error occurred while deleting test');
+    } finally {
+      setDeletingTestId(null);
     }
   };
 
@@ -135,18 +167,33 @@ export default function TestsPage() {
                       {new Date(test.createdAt).toLocaleDateString()}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                      <Link
-                        href={`/admin/tests/${test.id}`}
-                        className="mr-4 text-brand-600 hover:text-brand-700"
-                      >
-                        Edit
-                      </Link>
-                      <Link
-                        href={`/admin/tests/${test.id}/analytics`}
-                        className="text-orange-600 hover:text-orange-700"
-                      >
-                        Analytics
-                      </Link>
+                      <div className="flex items-center justify-end space-x-3">
+                        <Link
+                          href={`/admin/tests/${test.id}`}
+                          className="text-brand-600 hover:text-brand-700"
+                        >
+                          Edit
+                        </Link>
+                        <Link
+                          href={`/admin/tests/${test.id}/analytics`}
+                          className="text-orange-600 hover:text-orange-700"
+                        >
+                          Analytics
+                        </Link>
+                        <button
+                          onClick={() => handleDeleteTest(test.id)}
+                          disabled={deletingTestId === test.id}
+                          className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
+                            deletingTestId === test.id
+                              ? 'cursor-not-allowed bg-gray-200 text-gray-500'
+                              : 'bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-800'
+                          }`}
+                        >
+                          {deletingTestId === test.id
+                            ? 'Deleting...'
+                            : 'Delete'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
