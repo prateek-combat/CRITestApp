@@ -3,11 +3,11 @@ name: publish-worker-image
 on:
   push:
     tags:
-      - 'v*.*.*'      # semantic version tags trigger a publish
+      - 'v*.*.*' # semantic version tags trigger a publish
 
 permissions:
   contents: read
-  packages: write      # needed for GHCR
+  packages: write # needed for GHCR
 
 jobs:
   build-and-push:
@@ -36,4 +36,4 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/worker:${{ github.ref_name }}
-            ghcr.io/${{ github.repository_owner }}/worker:latest 
+            ghcr.io/${{ github.repository_owner }}/worker:latest
