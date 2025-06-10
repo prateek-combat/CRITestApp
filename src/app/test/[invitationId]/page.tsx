@@ -857,9 +857,42 @@ export default function TestPage() {
       // Stop proctoring immediately using global function
       stopProctoringGlobally();
 
-      // IMMEDIATELY stop camera and microphone tracks
+      // Get response data before stopping recording to ensure we have the test attempt ID
+      const responseData = await response.json();
+      if (responseData && responseData.id) {
+        setTestAttempt((prev: any) => ({
+          ...prev,
+          ...responseData,
+        }));
+      }
+
+      // Update the test attempt status immediately to stop proctoring events
+      setTestAttempt((prev: any) => ({
+        ...prev,
+        status: 'COMPLETED',
+      }));
+
+      // Stop recording and upload FIRST (while camera is still active)
+      setIsUploadingRecording(true);
+      if (
+        recordingSessionRef.current &&
+        (testAttempt?.id || responseData?.id)
+      ) {
+        try {
+          console.log('🎥 Uploading captured frames before stopping camera...');
+          await stopAndUpload(
+            recordingSessionRef.current,
+            testAttempt?.id || responseData.id
+          );
+        } catch (error) {
+          console.error('🎥 Error uploading frames:', error);
+        }
+      }
+      setIsUploadingRecording(false);
+
+      // NOW stop camera and microphone tracks completely
       if (streamRef.current) {
-        console.log('🎥 Immediately stopping camera and microphone tracks...');
+        console.log('🎥 Stopping camera and microphone tracks after upload...');
         streamRef.current.getTracks().forEach((track) => {
           track.stop();
           console.log(
@@ -872,39 +905,27 @@ export default function TestPage() {
         setCameraActuallyStopped(true);
       }
 
-      // IMMEDIATELY clear video element to stop showing camera feed
+      // Clean up recording session completely
+      if (recordingSessionRef.current) {
+        console.log('🎥 Destroying recording session after upload...');
+        destroyRecording(recordingSessionRef.current);
+        recordingSessionRef.current = null;
+      }
+
+      // Clear video element
       if (videoRef.current) {
         console.log('🎥 Clearing video element...');
         videoRef.current.srcObject = null;
       }
 
-      // Stop recording UI immediately to show user recording has stopped
+      // Stop recording UI
       setIsRecording(false);
 
-      // Stop timer immediately
+      // Stop timer
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
-
-      // Update the test attempt status immediately to stop proctoring events
-      setTestAttempt((prev: any) => ({
-        ...prev,
-        status: 'COMPLETED',
-      }));
-
-      const responseData = await response.json();
-      if (responseData && responseData.id) {
-        setTestAttempt((prev: any) => ({
-          ...prev,
-          ...responseData,
-        }));
-      }
-
-      // Stop recording and upload - wait for completion
-      setIsUploadingRecording(true);
-      await stopRecordingSession(true);
-      setIsUploadingRecording(false);
 
       // Clean up any remaining references
       streamRef.current = null;
@@ -929,7 +950,6 @@ export default function TestPage() {
     answers,
     questionStartTime,
     router,
-    stopRecordingSession,
     isPublicAttempt,
     invitationId,
   ]);
