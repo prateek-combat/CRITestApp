@@ -3,21 +3,25 @@
 This API provides endpoints for managing personality dimensions in the testing platform.
 
 ## Base URL
+
 ```
 /api/personality-dimensions
 ```
 
 ## Authentication
+
 All endpoints require admin authentication (ADMIN or SUPER_ADMIN role).
 
 ## Endpoints
 
 ### 1. List All Personality Dimensions
+
 ```http
 GET /api/personality-dimensions
 ```
 
 **Response Example:**
+
 ```json
 [
   {
@@ -33,6 +37,7 @@ GET /api/personality-dimensions
 ```
 
 ### 2. Create New Personality Dimension
+
 ```http
 POST /api/personality-dimensions
 Content-Type: application/json
@@ -45,11 +50,13 @@ Content-Type: application/json
 ```
 
 **Validation Rules:**
+
 - `name`: Required, 1-200 characters
 - `description`: Optional string
 - `code`: Required, 1-50 characters, uppercase letters and underscores only
 
 **Response (201):**
+
 ```json
 {
   "id": "new-dimension-uuid",
@@ -63,11 +70,13 @@ Content-Type: application/json
 ```
 
 ### 3. Get Specific Personality Dimension
+
 ```http
 GET /api/personality-dimensions/{id}
 ```
 
 **Response Example:**
+
 ```json
 {
   "id": "dimension-uuid",
@@ -92,6 +101,7 @@ GET /api/personality-dimensions/{id}
 ```
 
 ### 4. Update Personality Dimension
+
 ```http
 PUT /api/personality-dimensions/{id}
 Content-Type: application/json
@@ -104,11 +114,12 @@ Content-Type: application/json
 ```
 
 **Response (200):**
+
 ```json
 {
   "id": "dimension-uuid",
   "name": "Updated Safety Management",
-  "description": "Updated description of safety approach", 
+  "description": "Updated description of safety approach",
   "code": "UPDATED_SAFETY_MGMT",
   "questionsCount": 5,
   "createdAt": "2024-01-01T00:00:00.000Z",
@@ -117,11 +128,13 @@ Content-Type: application/json
 ```
 
 ### 5. Delete Personality Dimension
+
 ```http
 DELETE /api/personality-dimensions/{id}
 ```
 
 **Response (200):**
+
 ```json
 {
   "message": "Personality dimension deleted successfully",
@@ -136,6 +149,7 @@ DELETE /api/personality-dimensions/{id}
 ## Error Responses
 
 ### 400 - Validation Error
+
 ```json
 {
   "message": "Validation error",
@@ -149,6 +163,7 @@ DELETE /api/personality-dimensions/{id}
 ```
 
 ### 401 - Unauthorized
+
 ```json
 {
   "message": "Unauthorized"
@@ -156,6 +171,7 @@ DELETE /api/personality-dimensions/{id}
 ```
 
 ### 404 - Not Found
+
 ```json
 {
   "message": "Personality dimension not found"
@@ -163,6 +179,7 @@ DELETE /api/personality-dimensions/{id}
 ```
 
 ### 409 - Conflict
+
 ```json
 {
   "message": "Personality dimension with this name already exists",
@@ -178,6 +195,7 @@ DELETE /api/personality-dimensions/{id}
 ```
 
 ### 500 - Internal Server Error
+
 ```json
 {
   "message": "Internal server error"
@@ -187,11 +205,13 @@ DELETE /api/personality-dimensions/{id}
 ## Test Personality Analysis
 
 ### Get Test Personality Analysis
+
 ```http
 GET /api/tests/{testId}/personality-analysis
 ```
 
 **Response Example:**
+
 ```json
 {
   "testInfo": {
@@ -214,8 +234,14 @@ GET /api/tests/{testId}/personality-analysis
         {
           "id": "question-uuid",
           "promptText": "How do you approach workplace safety?",
-          "answerOptions": ["Very carefully", "Carefully", "Normally", "Quickly", "Very quickly"],
-          "answerWeights": {"A": 5, "B": 4, "C": 3, "D": 2, "E": 1},
+          "answerOptions": [
+            "Very carefully",
+            "Carefully",
+            "Normally",
+            "Quickly",
+            "Very quickly"
+          ],
+          "answerWeights": { "A": 5, "B": 4, "C": 3, "D": 2, "E": 1 },
           "category": "LOGICAL",
           "createdAt": "2024-01-01T00:00:00.000Z"
         }
@@ -271,26 +297,31 @@ const response = await fetch('/api/personality-dimensions', {
   body: JSON.stringify({
     name: 'Problem Solving',
     description: 'Evaluates analytical and creative problem-solving abilities',
-    code: 'PROBLEM_SOLVING'
-  })
+    code: 'PROBLEM_SOLVING',
+  }),
 });
 
 const newDimension = await response.json();
 
 // Get test personality analysis
-const analysisResponse = await fetch(`/api/tests/${testId}/personality-analysis`);
+const analysisResponse = await fetch(
+  `/api/tests/${testId}/personality-analysis`
+);
 const analysis = await analysisResponse.json();
 
 // Update dimension
-const updateResponse = await fetch(`/api/personality-dimensions/${dimensionId}`, {
-  method: 'PUT',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    description: 'Updated description for problem solving assessment'
-  })
-});
+const updateResponse = await fetch(
+  `/api/personality-dimensions/${dimensionId}`,
+  {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      description: 'Updated description for problem solving assessment',
+    }),
+  }
+);
 ```
 
 ### cURL Examples
@@ -323,4 +354,4 @@ curl -X DELETE /api/personality-dimensions/dimension-uuid
 
 # Get test analysis
 curl -X GET /api/tests/test-uuid/personality-analysis
-``` 
+```

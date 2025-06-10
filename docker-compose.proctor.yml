@@ -22,4 +22,4 @@ services:
 
 networks:
   proctor-network:
-    driver: bridge 
+    driver: bridge

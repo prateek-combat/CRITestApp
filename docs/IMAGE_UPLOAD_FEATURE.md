@@ -3,21 +3,25 @@
 ## Overview
 
 The application now supports adding images to test questions through two methods:
+
 1. **File Upload**: Upload image files directly from your computer
 2. **URL Input**: Provide a URL to an existing image
 
 ## Features
 
 ### Supported Image Formats
+
 - JPEG (.jpg, .jpeg)
 - PNG (.png)
 - GIF (.gif)
 - WebP (.webp)
 
 ### File Size Limit
+
 - Maximum file size: 5MB per image
 
 ### Storage
+
 - Images are stored in the `public/uploads/question-images/` directory
 - Files are automatically renamed with timestamps to prevent conflicts
 - Images are accessible via public URLs like `/uploads/question-images/filename.jpg`
@@ -27,6 +31,7 @@ The application now supports adding images to test questions through two methods
 ### Adding Images to New Questions
 
 1. **Via Question Creation Form**:
+
    - Navigate to Admin → Manage Tests → Select a test
    - In the "Add New Question" form, find the "Question Image (Optional)" section
    - Choose either:
@@ -67,6 +72,7 @@ The application now supports adding images to test questions through two methods
 ### Database Schema
 
 The `Question` model includes:
+
 ```prisma
 model Question {
   // ... other fields
@@ -97,6 +103,7 @@ public/
 ## Error Handling
 
 The system handles various error scenarios:
+
 - Invalid file types
 - Files too large
 - Network upload failures
@@ -108,9 +115,10 @@ Error messages are displayed to users with specific guidance on how to resolve i
 ## Future Enhancements
 
 Potential improvements for the future:
+
 - Cloud storage integration (AWS S3, Cloudinary)
 - Image compression and optimization
 - Bulk image upload
 - Image editing capabilities
 - Alternative text for accessibility
-- Image galleries for reuse across questions 
+- Image galleries for reuse across questions

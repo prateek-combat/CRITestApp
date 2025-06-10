@@ -49,4 +49,4 @@ jobs:
         with:
           project_id: ${{ secrets.NEON_PROJECT_DEV_ID }}
           branch_id: ${{ steps.create_db.outputs.branch_id }}
-          api_key: ${{ secrets.NEON_API_KEY }} 
+          api_key: ${{ secrets.NEON_API_KEY }}

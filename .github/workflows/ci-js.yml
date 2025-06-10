@@ -2,7 +2,7 @@ name: js-static-checks
 
 on:
   push:
-    branches: ["**"]
+    branches: ['**']
   pull_request:
 
 jobs:
@@ -19,4 +19,4 @@ jobs:
       - name: ESLint
         run: npm run lint
       - name: TypeScript build
-        run: npm run build 
+        run: npm run build
