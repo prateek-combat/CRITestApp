@@ -30,28 +30,30 @@ interface NotificationSettings {
   includeAnalytics: boolean;
 }
 
-// Create transporter based on environment
+// Create Gmail transporter (matching invitation email system)
 const createTransporter = () => {
-  if (process.env.NODE_ENV === 'development') {
-    // For development, use Ethereal Email (fake SMTP)
+  // Use Gmail configuration for all environments
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.warn(
+      'Gmail credentials not configured for enhanced email service. Please set GMAIL_USER and GMAIL_APP_PASSWORD environment variables.'
+    );
+    // Fallback to generic SMTP if Gmail not configured
     return nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: process.env.SMTP_SECURE === 'true',
       auth: {
-        user: 'ethereal.user@ethereal.email',
-        pass: 'ethereal.pass',
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       },
     });
   }
 
-  // For production, use configured SMTP
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true',
+    service: 'gmail',
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
     },
   });
 };
@@ -488,9 +490,13 @@ export class EnhancedEmailService {
       const subject = `Test Completion: ${test.title} - ${data.candidateName} (${Math.round((data.score / data.maxScore) * 100)}%)`;
 
       // Send email to all configured recipients
+      const fromEmail =
+        process.env.GMAIL_USER ||
+        process.env.SMTP_FROM ||
+        'noreply@combatrobotics.in';
       const emailPromises = settings.notificationEmails.map((email) =>
         this.transporter.sendMail({
-          from: process.env.SMTP_FROM || 'noreply@combatrobotics.in',
+          from: `Combat Robotics India <${fromEmail}>`,
           to: email,
           subject,
           html: emailHTML,

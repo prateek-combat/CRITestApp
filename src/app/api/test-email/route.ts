@@ -57,11 +57,14 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Test email sent successfully',
         environment: process.env.NODE_ENV,
-        smtpConfig: {
-          host: process.env.SMTP_HOST,
-          port: process.env.SMTP_PORT,
-          user: process.env.SMTP_USER ? 'configured' : 'not configured',
-          from: process.env.SMTP_FROM || 'not configured',
+        emailConfig: {
+          gmailUser: process.env.GMAIL_USER || 'not configured',
+          gmailPassword: process.env.GMAIL_APP_PASSWORD
+            ? 'configured'
+            : 'not configured',
+          smtpHost: process.env.SMTP_HOST,
+          smtpUser: process.env.SMTP_USER ? 'configured' : 'not configured',
+          smtpFrom: process.env.SMTP_FROM || 'not configured',
         },
       });
     } else {
@@ -70,11 +73,14 @@ export async function POST(request: NextRequest) {
           success: false,
           message: 'Failed to send test email',
           environment: process.env.NODE_ENV,
-          smtpConfig: {
-            host: process.env.SMTP_HOST,
-            port: process.env.SMTP_PORT,
-            user: process.env.SMTP_USER ? 'configured' : 'not configured',
-            from: process.env.SMTP_FROM || 'not configured',
+          emailConfig: {
+            gmailUser: process.env.GMAIL_USER || 'not configured',
+            gmailPassword: process.env.GMAIL_APP_PASSWORD
+              ? 'configured'
+              : 'not configured',
+            smtpHost: process.env.SMTP_HOST,
+            smtpUser: process.env.SMTP_USER ? 'configured' : 'not configured',
+            smtpFrom: process.env.SMTP_FROM || 'not configured',
           },
         },
         { status: 500 }
@@ -87,11 +93,14 @@ export async function POST(request: NextRequest) {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
         environment: process.env.NODE_ENV,
-        smtpConfig: {
-          host: process.env.SMTP_HOST,
-          port: process.env.SMTP_PORT,
-          user: process.env.SMTP_USER ? 'configured' : 'not configured',
-          from: process.env.SMTP_FROM || 'not configured',
+        emailConfig: {
+          gmailUser: process.env.GMAIL_USER || 'not configured',
+          gmailPassword: process.env.GMAIL_APP_PASSWORD
+            ? 'configured'
+            : 'not configured',
+          smtpHost: process.env.SMTP_HOST,
+          smtpUser: process.env.SMTP_USER ? 'configured' : 'not configured',
+          smtpFrom: process.env.SMTP_FROM || 'not configured',
         },
       },
       { status: 500 }
@@ -103,12 +112,16 @@ export async function GET() {
   return NextResponse.json({
     message: 'Email test endpoint - use POST to send test email',
     environment: process.env.NODE_ENV,
-    smtpConfig: {
-      host: process.env.SMTP_HOST || 'not configured',
-      port: process.env.SMTP_PORT || 'not configured',
-      secure: process.env.SMTP_SECURE || 'not configured',
-      user: process.env.SMTP_USER ? 'configured' : 'not configured',
-      from: process.env.SMTP_FROM || 'not configured',
+    emailConfig: {
+      gmailUser: process.env.GMAIL_USER || 'not configured',
+      gmailPassword: process.env.GMAIL_APP_PASSWORD
+        ? 'configured'
+        : 'not configured',
+      smtpHost: process.env.SMTP_HOST || 'not configured',
+      smtpPort: process.env.SMTP_PORT || 'not configured',
+      smtpSecure: process.env.SMTP_SECURE || 'not configured',
+      smtpUser: process.env.SMTP_USER ? 'configured' : 'not configured',
+      smtpFrom: process.env.SMTP_FROM || 'not configured',
     },
   });
 }
