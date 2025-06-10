@@ -89,17 +89,28 @@ export default function TestProgressBar({
             return (
               <button
                 key={index}
-                onClick={() => onQuestionSelect?.(index)}
+                onClick={
+                  onQuestionSelect ? () => onQuestionSelect(index) : undefined
+                }
+                disabled={!onQuestionSelect}
                 className={`relative h-6 w-6 rounded border-2 text-xs font-medium transition-all duration-200 ${
                   isCurrent
                     ? 'border-primary-500 bg-primary-100 ring-2 ring-primary-300 ring-offset-1'
-                    : 'border-gray-200 hover:border-gray-300'
+                    : onQuestionSelect
+                      ? 'border-gray-200 hover:border-gray-300'
+                      : 'border-gray-200'
                 } ${
                   isAnswered
                     ? 'bg-green-100 text-green-700'
-                    : 'bg-white text-gray-500 hover:bg-gray-50'
-                } `}
-                title={`Question ${index + 1}${isAnswered ? ' (Answered)' : ''}${isBookmarked ? ' (Bookmarked)' : ''}`}
+                    : onQuestionSelect
+                      ? 'bg-white text-gray-500 hover:bg-gray-50'
+                      : 'bg-gray-100 text-gray-400'
+                } ${!onQuestionSelect ? 'cursor-not-allowed' : ''}`}
+                title={
+                  !onQuestionSelect
+                    ? 'Question navigation is disabled for this test'
+                    : `Question ${index + 1}${isAnswered ? ' (Answered)' : ''}${isBookmarked ? ' (Bookmarked)' : ''}`
+                }
               >
                 {isAnswered ? (
                   <CheckCircle className="mx-auto h-3 w-3" />

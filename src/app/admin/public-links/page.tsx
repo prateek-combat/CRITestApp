@@ -48,7 +48,7 @@ export default function PublicLinksPage() {
   const toggleLinkStatus = async (linkId: string, currentStatus: boolean) => {
     setUpdating(linkId);
     try {
-      const response = await fetch(`/api/public-test-links/${linkId}`, {
+      const response = await fetch(`/api/public-test-links/admin/${linkId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -86,7 +86,7 @@ export default function PublicLinksPage() {
 
     setDeleting(linkId);
     try {
-      const response = await fetch(`/api/public-test-links/${linkId}`, {
+      const response = await fetch(`/api/public-test-links/admin/${linkId}`, {
         method: 'DELETE',
       });
 

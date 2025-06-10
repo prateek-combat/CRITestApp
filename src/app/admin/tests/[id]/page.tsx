@@ -58,6 +58,7 @@ export default function TestEditPage({
   const [importErrors, setImportErrors] = useState<any[]>([]);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [isDeletingTest, setIsDeletingTest] = useState(false);
   const [personalityDimensions, setPersonalityDimensions] = useState<
     PersonalityDimension[]
   >([]);
@@ -478,6 +479,36 @@ export default function TestEditPage({
     }
   };
 
+  const handleDeleteTest = async () => {
+    if (
+      !window.confirm(
+        'Are you sure you want to delete this entire test? This will permanently delete all questions, invitations, and test attempts associated with this test. This action cannot be undone.'
+      )
+    ) {
+      return;
+    }
+
+    setIsDeletingTest(true);
+    try {
+      const response = await fetch(`/api/tests/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        alert('✅ Test deleted successfully!');
+        router.push('/admin/tests'); // Redirect to tests list
+      } else {
+        const error = await response.json();
+        alert(`❌ Error: ${error.message || 'Failed to delete test'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting test:', error);
+      alert('❌ Network error occurred while deleting test');
+    } finally {
+      setIsDeletingTest(false);
+    }
+  };
+
   const getFieldHelp = (field: string, message: string): string => {
     switch (field) {
       case 'promptText':
@@ -590,6 +621,17 @@ export default function TestEditPage({
             }`}
           >
             {showQuestionForm ? 'Cancel' : 'Add Question'}
+          </button>
+          <button
+            onClick={handleDeleteTest}
+            disabled={isDeletingTest}
+            className={`rounded-lg px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              isDeletingTest
+                ? 'cursor-not-allowed bg-gray-400'
+                : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+            }`}
+          >
+            {isDeletingTest ? 'Deleting Test...' : 'Delete Test'}
           </button>
         </div>
       </div>
