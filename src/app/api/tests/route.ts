@@ -26,6 +26,9 @@ const prisma = new PrismaClient();
 export async function GET() {
   try {
     const tests = await prisma.test.findMany({
+      where: {
+        isArchived: false, // Only show active (non-archived) tests
+      },
       include: {
         _count: {
           select: {

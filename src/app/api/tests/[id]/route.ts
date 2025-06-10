@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
@@ -126,8 +128,8 @@ export async function PATCH(request: Request, { params }: RouteParams) {
  * @swagger
  * /api/tests/{id}:
  *   delete:
- *     summary: Delete a test
- *     description: Deletes a test and all its questions.
+ *     summary: Permanently delete a test (SUPER_ADMIN only)
+ *     description: Permanently deletes a test and all its questions. Only SUPER_ADMIN can permanently delete tests. Consider using archive instead.
  *     tags:
  *       - Tests
  *     parameters:
@@ -139,7 +141,9 @@ export async function PATCH(request: Request, { params }: RouteParams) {
  *         description: Test ID
  *     responses:
  *       200:
- *         description: Test deleted successfully.
+ *         description: Test permanently deleted successfully.
+ *       403:
+ *         description: Insufficient permissions - SUPER_ADMIN required.
  *       404:
  *         description: Test not found.
  *       500:
@@ -148,11 +152,62 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 export async function DELETE(request: Request, { params }: RouteParams) {
   const { id } = await params;
   try {
+    // Check authentication and SUPER_ADMIN access
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    // Only SUPER_ADMIN can permanently delete tests
+    if (!user || user.role !== 'SUPER_ADMIN') {
+      return NextResponse.json(
+        {
+          error:
+            'Insufficient permissions - SUPER_ADMIN required for permanent deletion',
+        },
+        { status: 403 }
+      );
+    }
+
+    // Check if test exists
+    const existingTest = await prisma.test.findUnique({
+      where: { id },
+      select: {
+        title: true,
+        isArchived: true,
+        archivedAt: true,
+        _count: {
+          select: {
+            questions: true,
+            invitations: true,
+            testAttempts: true,
+          },
+        },
+      },
+    });
+
+    if (!existingTest) {
+      return NextResponse.json({ error: 'Test not found' }, { status: 404 });
+    }
+
     await prisma.test.delete({
       where: { id },
     });
 
-    return NextResponse.json({ message: 'Test deleted successfully' });
+    return NextResponse.json({
+      message: 'Test permanently deleted successfully',
+      deletedTest: {
+        title: existingTest.title,
+        wasArchived: existingTest.isArchived,
+        questionsDeleted: existingTest._count.questions,
+        invitationsDeleted: existingTest._count.invitations,
+        attemptsDeleted: existingTest._count.testAttempts,
+      },
+    });
   } catch (error) {
     console.error(
       `[API /api/tests/${id} DELETE] Failed to delete test:`,

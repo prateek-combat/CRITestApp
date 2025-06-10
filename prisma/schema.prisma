@@ -19,6 +19,7 @@ model User {
   invitations     Invitation[]
   publicTestLinks PublicTestLink[]
   tests           Test[]
+  archivedTests   Test[]           @relation("ArchivedTests")
 }
 
 model Test {
@@ -31,10 +32,14 @@ model Test {
   updatedAt               DateTime         @updatedAt
   createdById             String
   allowReview             Boolean          @default(true)
+  isArchived              Boolean          @default(false)
+  archivedAt              DateTime?
+  archivedById            String?
   invitations             Invitation[]
   publicTestLinks         PublicTestLink[]
   questions               Question[]
   createdBy               User             @relation(fields: [createdById], references: [id])
+  archivedBy              User?            @relation("ArchivedTests", fields: [archivedById], references: [id])
   testAttempts            TestAttempt[]
 }
 

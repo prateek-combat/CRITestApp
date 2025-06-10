@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 
 interface Test {
@@ -13,9 +14,11 @@ interface Test {
 }
 
 export default function TestsPage() {
+  const { data: session } = useSession();
   const [tests, setTests] = useState<Test[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingTestId, setDeletingTestId] = useState<string | null>(null);
+  const [archivingTestId, setArchivingTestId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTests();
@@ -35,10 +38,53 @@ export default function TestsPage() {
     }
   };
 
+  const handleArchiveTest = async (testId: string) => {
+    if (
+      !window.confirm(
+        'Are you sure you want to archive this test? This will hide it from the main list but it can be restored later.'
+      )
+    ) {
+      return;
+    }
+
+    setArchivingTestId(testId);
+    try {
+      const response = await fetch(`/api/tests/${testId}/archive`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        // Remove the archived test from the local state
+        setTests((prevTests) => prevTests.filter((test) => test.id !== testId));
+        alert(
+          `✅ ${result.message} - Test "${result.testInfo?.title}" has been archived and can be restored if needed.`
+        );
+      } else {
+        const error = await response.json();
+        alert(`❌ Error: ${error.error || 'Failed to archive test'}`);
+      }
+    } catch (error) {
+      console.error('Error archiving test:', error);
+      alert('❌ Network error occurred while archiving test');
+    } finally {
+      setArchivingTestId(null);
+    }
+  };
+
   const handleDeleteTest = async (testId: string) => {
     if (
       !window.confirm(
-        'Are you sure you want to delete this test? This will permanently delete all questions, invitations, and test attempts associated with this test. This action cannot be undone.'
+        '⚠️ PERMANENT DELETION WARNING ⚠️\n\nThis will PERMANENTLY delete this test and ALL associated data including:\n- All questions\n- All invitations\n- All test attempts and results\n\nThis action CANNOT be undone!\n\nAre you absolutely sure you want to permanently delete this test?\n\n(Consider using "Archive" instead to safely hide the test while keeping data recoverable)'
+      )
+    ) {
+      return;
+    }
+
+    // Double confirmation for permanent deletion
+    if (
+      !window.confirm(
+        'FINAL CONFIRMATION:\n\nYou are about to PERMANENTLY DELETE this test.\nThis action is IRREVERSIBLE.\n\nClick OK only if you are absolutely certain.'
       )
     ) {
       return;
@@ -51,12 +97,15 @@ export default function TestsPage() {
       });
 
       if (response.ok) {
+        const result = await response.json();
         // Remove the deleted test from the local state
         setTests((prevTests) => prevTests.filter((test) => test.id !== testId));
-        alert('✅ Test deleted successfully!');
+        alert(
+          `✅ ${result.message}\nDeleted: ${result.deletedTest?.questionsDeleted || 0} questions, ${result.deletedTest?.invitationsDeleted || 0} invitations, ${result.deletedTest?.attemptsDeleted || 0} attempts`
+        );
       } else {
         const error = await response.json();
-        alert(`❌ Error: ${error.message || 'Failed to delete test'}`);
+        alert(`❌ Error: ${error.error || 'Failed to delete test'}`);
       }
     } catch (error) {
       console.error('Error deleting test:', error);
@@ -74,6 +123,8 @@ export default function TestsPage() {
     );
   }
 
+  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
+
   return (
     <div className="min-h-screen space-y-6 bg-gray-100 p-4 md:p-6 lg:p-8">
       <div className="flex items-center justify-between">
@@ -82,13 +133,29 @@ export default function TestsPage() {
           <p className="text-gray-600">
             Create and manage your assessment tests
           </p>
+          {isSuperAdmin && (
+            <p className="mt-1 text-sm text-blue-600">
+              🛡️ Super Admin: You can archive tests (recoverable) or permanently
+              delete them
+            </p>
+          )}
         </div>
-        <Link
-          href="/admin/tests/new"
-          className="rounded-lg bg-brand-500 px-4 py-2 text-white transition-colors hover:bg-brand-600"
-        >
-          Create New Test
-        </Link>
+        <div className="flex gap-3">
+          {isSuperAdmin && (
+            <Link
+              href="/admin/tests/archived"
+              className="rounded-lg bg-gray-500 px-4 py-2 text-white transition-colors hover:bg-gray-600"
+            >
+              View Archived Tests
+            </Link>
+          )}
+          <Link
+            href="/admin/tests/new"
+            className="rounded-lg bg-brand-500 px-4 py-2 text-white transition-colors hover:bg-brand-600"
+          >
+            Create New Test
+          </Link>
+        </div>
       </div>
 
       {tests.length === 0 ? (
@@ -180,19 +247,43 @@ export default function TestsPage() {
                         >
                           Analytics
                         </Link>
-                        <button
-                          onClick={() => handleDeleteTest(test.id)}
-                          disabled={deletingTestId === test.id}
-                          className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
-                            deletingTestId === test.id
-                              ? 'cursor-not-allowed bg-gray-200 text-gray-500'
-                              : 'bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-800'
-                          }`}
-                        >
-                          {deletingTestId === test.id
-                            ? 'Deleting...'
-                            : 'Delete'}
-                        </button>
+                        {isSuperAdmin && (
+                          <>
+                            <button
+                              onClick={() => handleArchiveTest(test.id)}
+                              disabled={archivingTestId === test.id}
+                              className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
+                                archivingTestId === test.id
+                                  ? 'cursor-not-allowed bg-gray-200 text-gray-500'
+                                  : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 hover:text-yellow-800'
+                              }`}
+                              title="Archive test (can be restored later)"
+                            >
+                              {archivingTestId === test.id
+                                ? 'Archiving...'
+                                : 'Archive'}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTest(test.id)}
+                              disabled={deletingTestId === test.id}
+                              className={`rounded px-3 py-1 text-sm font-medium transition-colors ${
+                                deletingTestId === test.id
+                                  ? 'cursor-not-allowed bg-gray-200 text-gray-500'
+                                  : 'bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-800'
+                              }`}
+                              title="⚠️ PERMANENTLY delete test (cannot be undone!)"
+                            >
+                              {deletingTestId === test.id
+                                ? 'Deleting...'
+                                : 'Delete Forever'}
+                            </button>
+                          </>
+                        )}
+                        {!isSuperAdmin && (
+                          <span className="text-xs italic text-gray-400">
+                            Super Admin only
+                          </span>
+                        )}
                       </div>
                     </td>
                   </tr>

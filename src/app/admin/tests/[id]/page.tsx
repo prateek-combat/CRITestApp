@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 // Define question categories locally to avoid Prisma client issues
 const QUESTION_CATEGORIES = [
@@ -46,6 +47,7 @@ export default function TestEditPage({
   params: Promise<{ id: string }>;
 }) {
   const router = useRouter();
+  const { data: session } = useSession();
   const { id } = use(params);
   const [test, setTest] = useState<Test | null>(null);
   const [loading, setLoading] = useState(true);
@@ -479,10 +481,52 @@ export default function TestEditPage({
     }
   };
 
+  const handleArchiveTest = async () => {
+    if (
+      !window.confirm(
+        'Are you sure you want to archive this test? This will hide it from the main list but it can be restored later.'
+      )
+    ) {
+      return;
+    }
+
+    setIsDeletingTest(true);
+    try {
+      const response = await fetch(`/api/tests/${id}/archive`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(
+          `✅ ${result.message} - Test has been archived and can be restored if needed.`
+        );
+        router.push('/admin/tests'); // Redirect to tests list
+      } else {
+        const error = await response.json();
+        alert(`❌ Error: ${error.error || 'Failed to archive test'}`);
+      }
+    } catch (error) {
+      console.error('Error archiving test:', error);
+      alert('❌ Network error occurred while archiving test');
+    } finally {
+      setIsDeletingTest(false);
+    }
+  };
+
   const handleDeleteTest = async () => {
     if (
       !window.confirm(
-        'Are you sure you want to delete this entire test? This will permanently delete all questions, invitations, and test attempts associated with this test. This action cannot be undone.'
+        '⚠️ PERMANENT DELETION WARNING ⚠️\n\nThis will PERMANENTLY delete this entire test and ALL associated data including:\n- All questions\n- All invitations\n- All test attempts and results\n\nThis action CANNOT be undone!\n\nAre you absolutely sure you want to permanently delete this test?\n\n(Consider using "Archive" instead to safely hide the test while keeping data recoverable)'
+      )
+    ) {
+      return;
+    }
+
+    // Double confirmation for permanent deletion
+    if (
+      !window.confirm(
+        'FINAL CONFIRMATION:\n\nYou are about to PERMANENTLY DELETE this test.\nThis action is IRREVERSIBLE.\n\nClick OK only if you are absolutely certain.'
       )
     ) {
       return;
@@ -495,11 +539,14 @@ export default function TestEditPage({
       });
 
       if (response.ok) {
-        alert('✅ Test deleted successfully!');
+        const result = await response.json();
+        alert(
+          `✅ ${result.message}\nDeleted: ${result.deletedTest?.questionsDeleted || 0} questions, ${result.deletedTest?.invitationsDeleted || 0} invitations, ${result.deletedTest?.attemptsDeleted || 0} attempts`
+        );
         router.push('/admin/tests'); // Redirect to tests list
       } else {
         const error = await response.json();
-        alert(`❌ Error: ${error.message || 'Failed to delete test'}`);
+        alert(`❌ Error: ${error.error || 'Failed to delete test'}`);
       }
     } catch (error) {
       console.error('Error deleting test:', error);
@@ -622,17 +669,39 @@ export default function TestEditPage({
           >
             {showQuestionForm ? 'Cancel' : 'Add Question'}
           </button>
-          <button
-            onClick={handleDeleteTest}
-            disabled={isDeletingTest}
-            className={`rounded-lg px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-              isDeletingTest
-                ? 'cursor-not-allowed bg-gray-400'
-                : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
-            }`}
-          >
-            {isDeletingTest ? 'Deleting Test...' : 'Delete Test'}
-          </button>
+          {session?.user?.role === 'SUPER_ADMIN' && (
+            <>
+              <button
+                onClick={handleArchiveTest}
+                disabled={isDeletingTest}
+                className={`rounded-lg px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  isDeletingTest
+                    ? 'cursor-not-allowed bg-gray-400'
+                    : 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500'
+                }`}
+                title="Archive test (can be restored later)"
+              >
+                {isDeletingTest ? 'Processing...' : 'Archive Test'}
+              </button>
+              <button
+                onClick={handleDeleteTest}
+                disabled={isDeletingTest}
+                className={`rounded-lg px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  isDeletingTest
+                    ? 'cursor-not-allowed bg-gray-400'
+                    : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+                }`}
+                title="⚠️ PERMANENTLY delete test (cannot be undone!)"
+              >
+                {isDeletingTest ? 'Processing...' : 'Delete Forever'}
+              </button>
+            </>
+          )}
+          {session?.user?.role !== 'SUPER_ADMIN' && (
+            <div className="flex items-center text-xs italic text-gray-500">
+              Archive/Delete: Super Admin only
+            </div>
+          )}
         </div>
       </div>
 
