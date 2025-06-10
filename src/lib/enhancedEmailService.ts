@@ -34,7 +34,7 @@ interface NotificationSettings {
 const createTransporter = () => {
   if (process.env.NODE_ENV === 'development') {
     // For development, use Ethereal Email (fake SMTP)
-    return nodemailer.createTransporter({
+    return nodemailer.createTransport({
       host: 'smtp.ethereal.email',
       port: 587,
       auth: {
@@ -45,7 +45,7 @@ const createTransporter = () => {
   }
 
   // For production, use configured SMTP
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || '587'),
     secure: process.env.SMTP_SECURE === 'true',
@@ -95,16 +95,16 @@ export class EnhancedEmailService {
           status: 'COMPLETED',
         },
         select: {
-          score: true,
+          rawScore: true,
           completedAt: true,
         },
         orderBy: {
-          score: 'desc',
+          rawScore: 'desc',
         },
       });
 
       const totalAttempts = allAttempts.length;
-      const scores = allAttempts.map((attempt) => attempt.score || 0);
+      const scores = allAttempts.map((attempt) => attempt.rawScore || 0);
       const averageScore =
         scores.length > 0
           ? scores.reduce((a, b) => a + b, 0) / scores.length
@@ -136,8 +136,8 @@ export class EnhancedEmailService {
           questions: {
             select: {
               id: true,
-              type: true,
-              topic: true,
+              category: true,
+              sectionTag: true,
             },
           },
         },
