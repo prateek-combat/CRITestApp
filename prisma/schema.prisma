@@ -239,15 +239,26 @@ model PublicProctorEvent {
 }
 
 model PublicProctorAsset {
-  id        String            @id @default(cuid())
-  attemptId String
-  kind      String
+  id          String            @id @default(cuid())
+  attemptId   String
+  kind        String
+  fileName    String
+  mimeType    String
+  fileSize    Int
+  data        Bytes
+  ts          DateTime          @default(now())
+  attempt     PublicTestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+}
+
+model UploadedFile {
+  id        String   @id @default(cuid())
   fileName  String
   mimeType  String
   fileSize  Int
   data      Bytes
-  ts        DateTime          @default(now())
-  attempt   PublicTestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  fileType  String   // 'QUESTION_IMAGE', 'RECORDING', etc.
+  uploadedAt DateTime @default(now())
+  uploadedBy String?  // User ID who uploaded (optional for anonymous)
 }
 
 enum UserRole {

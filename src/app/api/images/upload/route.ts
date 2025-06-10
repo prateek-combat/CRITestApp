@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,32 +45,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(
-      process.cwd(),
-      'public',
-      'uploads',
-      'question-images'
-    );
-    try {
-      await mkdir(uploadsDir, { recursive: true });
-    } catch (error) {
-      // Directory might already exist, ignore
-    }
-
     // Generate unique filename
     const timestamp = Date.now();
     const fileExtension = file.name.split('.').pop() || 'jpg';
     const filename = `question-image-${timestamp}.${fileExtension}`;
-    const filepath = join(uploadsDir, filename);
 
-    // Convert file to buffer and save
+    // Convert file to buffer and save to database
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    await writeFile(filepath, buffer);
 
-    // Return the public URL
-    const publicUrl = `/uploads/question-images/${filename}`;
+    // Get user ID for tracking
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    // Store file in database
+    const uploadedFile = await prisma.uploadedFile.create({
+      data: {
+        fileName: filename,
+        mimeType: file.type,
+        fileSize: buffer.length,
+        data: buffer,
+        fileType: 'QUESTION_IMAGE',
+        uploadedBy: user?.id,
+      },
+    });
+
+    // Return the database URL
+    const publicUrl = `/api/files/${uploadedFile.id}`;
 
     return NextResponse.json({
       success: true,

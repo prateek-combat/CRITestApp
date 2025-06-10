@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
@@ -35,26 +33,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'uploads', 'recordings');
-    try {
-      await mkdir(uploadsDir, { recursive: true });
-    } catch (error) {
-      // Directory might already exist, ignore
-    }
-
     // Generate unique filename
     const timestamp = Date.now();
     const filename = `proctoring-${testAttemptId}-${timestamp}.webm`;
-    const filepath = join(uploadsDir, filename);
 
-    // Convert file to buffer and save
+    // Convert file to buffer and save to database
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    await writeFile(filepath, buffer);
+
+    // Store file in database
+    const uploadedFile = await prisma.uploadedFile.create({
+      data: {
+        fileName: filename,
+        mimeType: file.type,
+        fileSize: buffer.length,
+        data: buffer,
+        fileType: 'RECORDING',
+      },
+    });
 
     // Update test attempt with video recording URL
-    const relativePath = `/api/recordings/${filename}`;
+    const relativePath = `/api/files/${uploadedFile.id}`;
     await prisma.testAttempt.update({
       where: { id: testAttempt.id },
       data: {

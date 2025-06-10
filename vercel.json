@@ -2,5 +2,22 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "installCommand": "npm install",
-  "regions": ["iad1"]
+  "regions": ["iad1"],
+  "functions": {
+    "src/app/api/images/upload/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/upload-recording/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/proctor/upload/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/proctor/upload-frames/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/questions/import/route.ts": {
+      "maxDuration": 60
+    }
+  }
 }
