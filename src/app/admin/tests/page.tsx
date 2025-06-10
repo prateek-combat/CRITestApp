@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import EmailNotificationSettings from '@/components/EmailNotificationSettings';
+import { Mail } from 'lucide-react';
 
 interface Test {
   id: string;
@@ -19,6 +21,11 @@ export default function TestsPage() {
   const [loading, setLoading] = useState(true);
   const [deletingTestId, setDeletingTestId] = useState<string | null>(null);
   const [archivingTestId, setArchivingTestId] = useState<string | null>(null);
+  const [emailSettingsOpen, setEmailSettingsOpen] = useState(false);
+  const [selectedTestForEmail, setSelectedTestForEmail] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
 
   useEffect(() => {
     fetchTests();
@@ -113,6 +120,16 @@ export default function TestsPage() {
     } finally {
       setDeletingTestId(null);
     }
+  };
+
+  const handleEmailSettings = (test: { id: string; title: string }) => {
+    setSelectedTestForEmail(test);
+    setEmailSettingsOpen(true);
+  };
+
+  const handleEmailSettingsClose = () => {
+    setEmailSettingsOpen(false);
+    setSelectedTestForEmail(null);
   };
 
   if (loading) {
@@ -247,6 +264,19 @@ export default function TestsPage() {
                         >
                           Analytics
                         </Link>
+                        <button
+                          onClick={() =>
+                            handleEmailSettings({
+                              id: test.id,
+                              title: test.title,
+                            })
+                          }
+                          className="flex items-center text-purple-600 hover:text-purple-700"
+                          title="Configure email notifications"
+                        >
+                          <Mail className="mr-1 h-4 w-4" />
+                          Emails
+                        </button>
                         {isSuperAdmin && (
                           <>
                             <button
@@ -292,6 +322,20 @@ export default function TestsPage() {
             </table>
           </div>
         </div>
+      )}
+
+      {/* Email Notification Settings Modal */}
+      {selectedTestForEmail && (
+        <EmailNotificationSettings
+          testId={selectedTestForEmail.id}
+          testTitle={selectedTestForEmail.title}
+          isOpen={emailSettingsOpen}
+          onClose={handleEmailSettingsClose}
+          onSave={() => {
+            // Optionally refresh tests or show success message
+            console.log('Email settings saved successfully');
+          }}
+        />
       )}
     </div>
   );
