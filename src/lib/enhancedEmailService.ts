@@ -3,6 +3,7 @@ import { prisma } from './prisma';
 
 interface TestCompletionData {
   testId: string;
+  testAttemptId: string;
   candidateId: string;
   candidateEmail: string;
   candidateName: string;
@@ -188,6 +189,7 @@ export class EnhancedEmailService {
 
   generateEmailHTML(
     testTitle: string,
+    testAttemptId: string,
     candidateName: string,
     candidateEmail: string,
     score: number,
@@ -253,58 +255,7 @@ export class EnhancedEmailService {
           </div>
           
           <div class="content">
-            <div class="test-overview">
-              <h2>Test Overview</h2>
-              <div class="overview-grid">
-                <div class="overview-item">
-                  <div class="overview-label">Test Name</div>
-                  <div class="overview-value">${testTitle}</div>
-                </div>
-                <div class="overview-item">
-                  <div class="overview-label">Total Questions</div>
-                  <div class="overview-value">${maxScore} questions</div>
-                </div>
-                <div class="overview-item">
-                  <div class="overview-label">Time Allocation</div>
-                  <div class="overview-value">~${Math.round((timeTaken / maxScore / 60) * 100) / 100} min per question</div>
-                </div>
-                <div class="overview-item">
-                  <div class="overview-label">Total Duration</div>
-                  <div class="overview-value">${timeFormatted}</div>
-                </div>
-              </div>
-              <div style="margin-top: 15px;">
-                <div class="overview-label">Topics Covered</div>
-                <div class="overview-value">Core electronics concepts, circuit analysis, embedded systems basics, and logical reasoning</div>
-              </div>
-            </div>
-
-            <div class="guidelines">
-              <h3>Important Test Guidelines</h3>
-              <p style="color: #c25b16; margin-bottom: 15px; font-style: italic;">This assessment was monitored for fairness and integrity:</p>
-              
-              <div class="guideline-item">
-                <span class="guideline-icon">🎥</span>
-                <div class="guideline-text">Video Recording: Session was recorded via webcam</div>
-              </div>
-              
-              <div class="guideline-item">
-                <span class="guideline-icon">🎙️</span>
-                <div class="guideline-text">Audio Recording: Audio was captured throughout the test</div>
-              </div>
-              
-              <div class="guideline-item">
-                <span class="guideline-icon">🔄</span>
-                <div class="guideline-text">Tab Switch Monitoring: Browser activity was monitored</div>
-              </div>
-              
-              <div class="guideline-item">
-                <span class="guideline-icon">⏱️</span>
-                <div class="guideline-text">Single Attempt: Test completed in one session</div>
-              </div>
-            </div>
-
-            <h2 style="color: #4A5D23; margin: 30px 0 20px 0;">Candidate Information</h2>
+            <h2 style="color: #4A5D23; margin: 0 0 20px 0;">Candidate Information</h2>
             <div class="info-grid">
               <div class="info-item">
                 <div class="info-label">Candidate Name</div>
@@ -404,7 +355,7 @@ export class EnhancedEmailService {
               <p style="color: rgba(255,255,255,0.9); margin: 0 0 20px 0; font-size: 16px;">
                 This assessment has been completed successfully and results have been recorded.
               </p>
-              <a href="#" class="cta-button">View Full Analytics Dashboard</a>
+              <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/admin/analytics/${testAttemptId}" class="cta-button">View Full Analytics Dashboard</a>
             </div>
 
             <div class="company-branding">
@@ -479,6 +430,7 @@ export class EnhancedEmailService {
       // Generate email content
       const emailHTML = this.generateEmailHTML(
         test.title,
+        data.testAttemptId,
         data.candidateName,
         data.candidateEmail,
         data.score,

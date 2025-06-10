@@ -193,27 +193,44 @@ export function destroyRecording(session: RecordingSession): void {
     session.isRecording = false;
     if (session.intervalId) {
       clearInterval(session.intervalId);
+      console.log('🎥 Cleared frame capture interval');
     }
 
     // Stop all media tracks immediately
     if (session.stream) {
-      session.stream.getTracks().forEach((track) => {
+      const tracks = session.stream.getTracks();
+      console.log(`🎥 Found ${tracks.length} tracks to stop`);
+
+      tracks.forEach((track, index) => {
+        console.log(
+          `🎥 Track ${index}: ${track.kind}, state: ${track.readyState}, enabled: ${track.enabled}`
+        );
+
         if (track.readyState !== 'ended') {
           track.stop();
           console.log(
-            '🎥 Stopped track:',
-            track.kind,
-            'state:',
-            track.readyState
+            `🎥 Stopped track ${index} (${track.kind}), new state: ${track.readyState}`
           );
         } else {
-          console.log('🎥 Track already ended:', track.kind);
+          console.log(`🎥 Track ${index} (${track.kind}) already ended`);
         }
       });
+
+      // Wait a moment and verify tracks are stopped
+      setTimeout(() => {
+        tracks.forEach((track, index) => {
+          console.log(
+            `🎥 Verification - Track ${index} (${track.kind}): ${track.readyState}`
+          );
+        });
+      }, 100);
+    } else {
+      console.log('🎥 No stream found to destroy');
     }
 
     // Clear captured frames from memory
     session.capturedFrames.length = 0;
+    console.log('🎥 Cleared captured frames from memory');
 
     console.log('✅ Recording session destroyed completely');
   } catch (error) {

@@ -342,6 +342,7 @@ export async function POST(request: Request) {
       emailService
         .sendTestCompletionNotification({
           testId: invitation.test.id,
+          testAttemptId: existingAttempt.id,
           candidateId: existingAttempt.id,
           candidateEmail: invitation.candidateEmail || 'unknown@example.com',
           candidateName: invitation.candidateName || 'Unknown Candidate',
@@ -353,7 +354,7 @@ export async function POST(request: Request) {
           ),
           answers: submittedAnswersData,
         })
-        .catch((error) => {
+        .catch((error: any) => {
           console.error(
             'Failed to send test completion email notification:',
             error
