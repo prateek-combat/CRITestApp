@@ -35,6 +35,9 @@ model Test {
   isArchived              Boolean          @default(false)
   archivedAt              DateTime?
   archivedById            String?
+  emailNotificationsEnabled Boolean        @default(true)
+  notificationEmails      String[]         @default(["prateek@combatrobotics.in", "gaurav@combatrobotics.in"])
+  includeAnalytics        Boolean          @default(true)
   invitations             Invitation[]
   publicTestLinks         PublicTestLink[]
   questions               Question[]

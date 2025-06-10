@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { emailService } from '@/lib/emailService';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -190,6 +191,42 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             categorySubScores: finalCategorySubScores,
           },
         });
+
+        // Send email notification for public test completion (async, don't wait for completion)
+        if (status === 'COMPLETED') {
+          emailService
+            .sendTestCompletionNotification({
+              testId: publicLink.test.id,
+              candidateId: attemptId,
+              candidateEmail:
+                existingAttempt.candidateEmail || 'unknown@example.com',
+              candidateName:
+                existingAttempt.candidateName || 'Unknown Candidate',
+              score: correctAnswers,
+              maxScore: totalQuestions,
+              completedAt: new Date(submissionTimeEpoch),
+              timeTaken: Math.floor(
+                (submissionTimeEpoch - existingAttempt.startedAt.getTime()) /
+                  1000
+              ),
+              answers: answerRecords.map((record) => ({
+                questionId: record.questionId,
+                selectedAnswerIndex: record.selectedAnswerIndex,
+                isCorrect:
+                  publicLink.test.questions.find(
+                    (q) => q.id === record.questionId
+                  )?.correctAnswerIndex === record.selectedAnswerIndex,
+                timeTakenSeconds: record.timeTakenSeconds,
+              })),
+            })
+            .catch((error) => {
+              console.error(
+                'Failed to send public test completion email notification:',
+                error
+              );
+              // Don't fail the test submission if email fails
+            });
+        }
       }
     }
 

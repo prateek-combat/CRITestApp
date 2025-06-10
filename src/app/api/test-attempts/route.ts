@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient, Prisma, QuestionCategory } from '@prisma/client';
+import { emailService } from '@/lib/emailService';
 
 const prisma = new PrismaClient({
   log: ['query', 'info', 'warn', 'error'],
@@ -336,6 +337,29 @@ export async function POST(request: Request) {
         where: { id: invitationId },
         data: { status: 'COMPLETED' },
       });
+
+      // Send email notification (async, don't wait for completion)
+      emailService
+        .sendTestCompletionNotification({
+          testId: invitation.test.id,
+          candidateId: existingAttempt.id,
+          candidateEmail: invitation.candidateEmail || 'unknown@example.com',
+          candidateName: invitation.candidateName || 'Unknown Candidate',
+          score: correctAnswers,
+          maxScore: totalQuestions,
+          completedAt: new Date(submissionTimeEpoch),
+          timeTaken: Math.floor(
+            (submissionTimeEpoch - existingAttempt.startedAt.getTime()) / 1000
+          ),
+          answers: submittedAnswersData,
+        })
+        .catch((error) => {
+          console.error(
+            'Failed to send test completion email notification:',
+            error
+          );
+          // Don't fail the test submission if email fails
+        });
 
       return NextResponse.json(updatedAttempt);
     }
