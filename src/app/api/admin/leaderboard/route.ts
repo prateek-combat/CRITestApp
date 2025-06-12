@@ -65,13 +65,15 @@ export async function GET(request: NextRequest) {
       // Validate UUID format to prevent SQL injection
       const uuidRegex =
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(testId)) {
-        return NextResponse.json(
-          { message: 'Invalid testId format' },
-          { status: 400 }
+      if (uuidRegex.test(testId)) {
+        whereConditions.push(`"testId" = '${testId}'`);
+      } else {
+        // If not a UUID, treat it as a test title and look up the actual testId
+        const escapedTestId = testId.replace(/'/g, "''");
+        whereConditions.push(
+          `"testId" IN (SELECT id FROM "Test" WHERE title ILIKE '%${escapedTestId}%')`
         );
       }
-      whereConditions.push(`"testId" = '${testId}'`);
     }
     if (search) {
       // Escape special characters to prevent SQL injection
@@ -239,15 +241,43 @@ export async function GET(request: NextRequest) {
 
       // Add testId filter for regular attempts
       if (testId) {
-        regularWhereCondition.testId = testId;
+        const uuidRegex =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(testId)) {
+          regularWhereCondition.testId = testId;
+        } else {
+          // If not a UUID, look up by test title
+          const test = await prisma.test.findFirst({
+            where: { title: { contains: testId, mode: 'insensitive' } },
+            select: { id: true },
+          });
+          if (test) {
+            regularWhereCondition.testId = test.id;
+          }
+        }
       }
 
       // For public attempts, we need to filter by testId through the publicLink
       const publicWhereCondition = { ...whereCondition };
       if (testId) {
-        publicWhereCondition.publicLink = {
-          testId: testId,
-        };
+        const uuidRegex =
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(testId)) {
+          publicWhereCondition.publicLink = {
+            testId: testId,
+          };
+        } else {
+          // If not a UUID, look up by test title
+          const test = await prisma.test.findFirst({
+            where: { title: { contains: testId, mode: 'insensitive' } },
+            select: { id: true },
+          });
+          if (test) {
+            publicWhereCondition.publicLink = {
+              testId: test.id,
+            };
+          }
+        }
       }
 
       // Optimized queries with minimal data selection

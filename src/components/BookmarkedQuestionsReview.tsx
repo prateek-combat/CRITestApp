@@ -189,7 +189,7 @@ export default function BookmarkedQuestionsReview({
                 <div
                   className={`rounded-lg border p-4 ${getStatusColor(getQuestionStatus(selectedQuestion.id))}`}
                 >
-                  <p className="leading-relaxed text-gray-800">
+                  <p className="whitespace-pre-wrap leading-relaxed text-gray-800">
                     {selectedQuestion.promptText}
                   </p>
                   {selectedQuestion.promptImageUrl && (
