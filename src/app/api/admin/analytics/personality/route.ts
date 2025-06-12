@@ -10,7 +10,11 @@ async function isAdminUser(request: Request): Promise<boolean> {
 
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Implement proper admin authentication/authorization check
+    // Check admin authentication
+    if (!(await isAdminUser(request))) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
 
     // Parse filters from query parameters

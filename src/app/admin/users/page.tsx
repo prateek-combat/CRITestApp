@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/lib/logger';
 
 interface User {
   id: string;
@@ -47,7 +48,15 @@ export default function AdminUsersPage() {
         setUsers(data);
       }
     } catch (error) {
-      console.error('Error fetching users:', error);
+      logger.error(
+        'Error fetching users',
+        {
+          component: 'AdminUsersPage',
+          operation: 'fetch_users',
+          userRole: session?.user?.role,
+        },
+        error as Error
+      );
     } finally {
       setLoading(false);
     }

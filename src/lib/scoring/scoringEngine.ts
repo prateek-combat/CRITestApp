@@ -6,6 +6,7 @@ import {
   PersonalityQuestion,
   preparePersonalityScoresForStorage,
 } from './personalityScoring';
+import { logger } from '../logger';
 
 // Extended to support both objective and personality tests
 export type TestType = 'OBJECTIVE' | 'PERSONALITY' | 'MIXED';
@@ -95,7 +96,16 @@ export async function calculateTestScore(
         personalityDimensions
       );
     } catch (error) {
-      console.warn('Error calculating personality scores:', error);
+      logger.warn(
+        'Error calculating personality scores',
+        {
+          operation: 'calculate_personality_scores',
+          personalityQuestionsCount: personalityQuestions.length,
+          personalityDimensionsCount: personalityDimensions?.length || 0,
+          testType: actualTestType,
+        },
+        error as Error
+      );
       // Continue with objective scoring only
     }
   }

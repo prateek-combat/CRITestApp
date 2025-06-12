@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { emailLogger } from './logger';
 
 export interface InvitationEmailData {
   candidateEmail: string;
@@ -455,7 +456,15 @@ If you have any questions, please contact our support team.
       messageId: result.messageId,
     };
   } catch (error) {
-    console.error('Failed to send invitation email:', error);
+    emailLogger.error(
+      'Failed to send invitation email',
+      {
+        candidateEmail: data.candidateEmail,
+        testTitle: data.testTitle,
+        operation: 'send_invitation',
+      },
+      error as Error
+    );
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -510,7 +519,16 @@ Please complete this test as soon as possible.
       messageId: result.messageId,
     };
   } catch (error) {
-    console.error('Failed to send reminder email:', error);
+    emailLogger.error(
+      'Failed to send reminder email',
+      {
+        candidateEmail: data.candidateEmail,
+        testTitle: data.testTitle,
+        reminderType: data.reminderType,
+        operation: 'send_reminder',
+      },
+      error as Error
+    );
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
