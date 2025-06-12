@@ -6,6 +6,7 @@ WITH combined_attempts AS (
   SELECT
     ta.id AS "attemptId",
     ta."invitationId",
+    ta."testId",
     COALESCE(ta."candidateName", inv."candidateName", 'Anonymous') AS "candidateName",
     COALESCE(ta."candidateEmail", inv."candidateEmail", '') AS "candidateEmail",
     ta."completedAt",
@@ -23,6 +24,7 @@ WITH combined_attempts AS (
   SELECT
     pta.id AS "attemptId",
     NULL AS "invitationId",
+    ptl."testId",
     COALESCE(pta."candidateName", 'Anonymous') AS "candidateName",
     COALESCE(pta."candidateEmail", '') AS "candidateEmail",
     pta."completedAt",
@@ -37,6 +39,7 @@ WITH combined_attempts AS (
 SELECT
   ca."attemptId",
   ca."invitationId",
+  ca."testId",
   ca."candidateName",
   ca."candidateEmail",
   ca."completedAt",
