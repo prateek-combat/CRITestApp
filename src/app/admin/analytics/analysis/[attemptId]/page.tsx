@@ -425,7 +425,7 @@ export default function ProctorAnalysisPage() {
                           </div>
                         </div>
 
-                        <p className="mb-4 text-gray-700">
+                        <p className="mb-4 whitespace-pre-wrap text-gray-700">
                           {question.promptText}
                         </p>
 

@@ -8,8 +8,10 @@ interface RecordingSession {
 }
 
 export async function startRecording(): Promise<RecordingSession> {
+  console.log('🎥 Starting recording session...');
   try {
     // Request camera and microphone permissions with lower requirements for efficiency
+    console.log('🎥 Requesting getUserMedia...');
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
         width: { ideal: 640 }, // Reduced resolution
@@ -22,6 +24,11 @@ export async function startRecording(): Promise<RecordingSession> {
         sampleRate: 22050, // Reduced sample rate
       },
     });
+    console.log(
+      '✅ getUserMedia successful, got stream with',
+      stream.getTracks().length,
+      'tracks'
+    );
 
     // Create canvas for frame capture
     const canvas = document.createElement('canvas');
@@ -40,7 +47,7 @@ export async function startRecording(): Promise<RecordingSession> {
     video.playsInline = true;
 
     // Wait for video to be ready before starting capture
-    await new Promise<void>((resolve) => {
+    await new Promise<void>((resolve, reject) => {
       video.onloadedmetadata = () => {
         console.log(
           '🎥 Video metadata loaded, dimensions:',
@@ -50,15 +57,32 @@ export async function startRecording(): Promise<RecordingSession> {
         );
         resolve();
       };
+      video.onerror = (error) => {
+        console.error('❌ Video error during metadata load:', error);
+        reject(new Error('Video failed to load metadata'));
+      };
+      // Add timeout to prevent hanging
+      setTimeout(() => {
+        reject(new Error('Video metadata load timeout'));
+      }, 10000);
     });
 
-    video.play();
+    console.log('🎥 Starting video playback...');
+    await video.play();
+    console.log('✅ Video playback started successfully');
 
     const capturedFrames: Blob[] = [];
     let isRecording = true;
+    let frameCount = 0;
+
+    // Add debugging for interval creation
+    console.log('🎥 Setting up frame capture interval...');
 
     // Capture frames at 2 FPS (every 500ms) for analysis
     const intervalId = window.setInterval(() => {
+      frameCount++;
+      console.log(`🎥 Frame capture interval tick #${frameCount}`);
+
       if (!isRecording) {
         console.log('🎥 Skipping frame capture - not recording');
         return;
@@ -74,6 +98,12 @@ export async function startRecording(): Promise<RecordingSession> {
       try {
         // Draw current video frame to canvas
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        console.log(
+          '🎬 Drew frame to canvas, video dimensions:',
+          video.videoWidth,
+          'x',
+          video.videoHeight
+        );
 
         // Convert canvas to blob (JPEG for smaller file size)
         canvas.toBlob(
@@ -85,7 +115,9 @@ export async function startRecording(): Promise<RecordingSession> {
                 `📸 Captured frame ${capturedFrames.length}, size: ${blob.size} bytes`
               );
             } else if (!blob) {
-              console.warn('⚠️ Failed to create blob from canvas');
+              console.error(
+                '❌ Failed to create blob from canvas - this is a critical error!'
+              );
             } else if (capturedFrames.length >= 600) {
               console.warn('⚠️ Frame limit reached (600 frames)');
             }
@@ -94,11 +126,29 @@ export async function startRecording(): Promise<RecordingSession> {
           0.8
         ); // 80% quality for balance between size and quality
       } catch (error) {
-        console.error('Error capturing frame:', error);
+        console.error('❌ Critical error capturing frame:', error);
       }
     }, 500); // Capture every 500ms (2 FPS)
 
-    console.log('✅ Frame-based recording started successfully (2 FPS)');
+    console.log(
+      '✅ Frame-based recording started successfully (2 FPS), intervalId:',
+      intervalId
+    );
+
+    // Add a test frame capture after 2 seconds to verify it's working
+    setTimeout(() => {
+      console.log('🧪 Testing frame capture after 2 seconds...');
+      console.log('🧪 Video ready state:', video.readyState);
+      console.log(
+        '🧪 Video dimensions:',
+        video.videoWidth,
+        'x',
+        video.videoHeight
+      );
+      console.log('🧪 Captured frames so far:', capturedFrames.length);
+      console.log('🧪 Is recording:', isRecording);
+      console.log('🧪 Interval ID:', intervalId);
+    }, 2000);
 
     return {
       stream,

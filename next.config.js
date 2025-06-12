@@ -11,7 +11,7 @@ const nextConfig = {
   },
   // Handle file uploads and performance
   experimental: {
-    serverComponentsExternalPackages: ['@prisma/client'],
+    // serverComponentsExternalPackages has been moved to serverExternalPackages (already set above)
   },
   // Enable compression
   compress: true,

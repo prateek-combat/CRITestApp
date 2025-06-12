@@ -321,12 +321,6 @@ export default function AnalyticsPage() {
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          <button
-            onClick={() => router.push('/admin/analytics/personality')}
-            className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition duration-150 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-          >
-            🧠 Personality Analytics
-          </button>
           <select
             value={selectedTimeFrame}
             onChange={(e) => setSelectedTimeFrame(e.target.value)}
@@ -844,11 +838,11 @@ export default function AnalyticsPage() {
                               </div>
                               {candidate.status === 'COMPLETED' && (
                                 <a
-                                  href={`/test/results/${candidate.id}`}
-                                  className="inline-flex items-center rounded-md bg-blue-500 px-2 py-1 text-xs font-medium text-white shadow-sm hover:bg-blue-600"
-                                  title="View detailed results"
+                                  href={`/admin/analytics/analysis/${candidate.id}`}
+                                  className="inline-flex items-center rounded-md bg-primary-500 px-2 py-1 text-xs font-medium text-white shadow-sm hover:bg-primary-600"
+                                  title="View analysis"
                                 >
-                                  📊
+                                  🔍
                                 </a>
                               )}
                             </div>
@@ -974,20 +968,12 @@ export default function AnalyticsPage() {
                             </td>
                             <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
                               {candidate.status === 'COMPLETED' ? (
-                                <div className="flex space-x-2">
-                                  <a
-                                    href={`/test/results/${candidate.id}`}
-                                    className="inline-flex items-center rounded-md bg-blue-500 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                                  >
-                                    📊 Results
-                                  </a>
-                                  <a
-                                    href={`/admin/proctor/${candidate.id}`}
-                                    className="inline-flex items-center rounded-md bg-primary-500 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                                  >
-                                    🎥 Proctor
-                                  </a>
-                                </div>
+                                <a
+                                  href={`/admin/analytics/analysis/${candidate.id}`}
+                                  className="inline-flex items-center rounded-md bg-primary-500 px-2.5 py-1.5 text-xs font-medium text-white shadow-sm hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                                >
+                                  🔍 Analysis
+                                </a>
                               ) : (
                                 <span className="text-gray-400">-</span>
                               )}
