@@ -17,9 +17,11 @@ interface CandidateScore {
   scoreVerbal: number;
   scoreNumerical: number;
   scoreAttention: number;
+  scoreOther: number;
   composite: number;
   percentile: number;
   rank: number;
+  isPublicAttempt?: boolean;
 }
 
 interface LeaderboardData {
