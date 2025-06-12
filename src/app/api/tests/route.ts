@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { withCache, apiCache } from '@/lib/cache';
+import { apiLogger } from '@/lib/logger';
 
 const prisma = new PrismaClient();
 
@@ -32,9 +33,6 @@ export async function GET() {
       cacheKey,
       async () => {
         return await prisma.test.findMany({
-          where: {
-            isArchived: false, // Only show active (non-archived) tests
-          },
           select: {
             id: true,
             title: true,
@@ -66,7 +64,14 @@ export async function GET() {
 
     return NextResponse.json(formattedTests);
   } catch (error) {
-    console.error('Error fetching tests:', error);
+    apiLogger.error(
+      'Failed to fetch tests',
+      {
+        endpoint: 'GET /api/tests',
+        operation: 'fetch_tests',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to fetch tests' },
       { status: 500 }
@@ -103,8 +108,11 @@ export async function GET() {
  *         description: Failed to create test.
  */
 export async function POST(request: NextRequest) {
+  let title = '';
   try {
-    const { title, description, allowReview } = await request.json();
+    const requestData = await request.json();
+    title = requestData.title;
+    const { description, allowReview } = requestData;
 
     if (!title?.trim()) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
@@ -134,7 +142,6 @@ export async function POST(request: NextRequest) {
         title: title.trim(),
         description: description?.trim() || null,
         overallTimeLimitSeconds: 3600, // Default 1 hour
-        allowReview: allowReview !== undefined ? allowReview : true, // Default to true
         createdById: adminUser.id,
       },
     });
@@ -146,11 +153,18 @@ export async function POST(request: NextRequest) {
       id: test.id,
       title: test.title,
       description: test.description,
-      allowReview: test.allowReview,
       createdAt: test.createdAt.toISOString(),
     });
   } catch (error) {
-    console.error('Error creating test:', error);
+    apiLogger.error(
+      'Failed to create test',
+      {
+        endpoint: 'POST /api/tests',
+        operation: 'create_test',
+        title: title?.substring(0, 50) || 'unknown',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to create test' },
       { status: 500 }

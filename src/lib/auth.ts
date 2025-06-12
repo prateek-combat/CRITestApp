@@ -4,12 +4,20 @@ import GoogleProvider from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
 import { UserRole } from '@prisma/client';
+import { authLogger } from './logger';
 
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: 'consent',
+          access_type: 'offline',
+          response_type: 'code',
+        },
+      },
     }),
     CredentialsProvider({
       name: 'credentials',
@@ -63,7 +71,14 @@ export const authOptions: NextAuthOptions = {
             role: user.role,
           };
         } catch (error) {
-          console.error('Auth error:', error);
+          authLogger.error(
+            'Credentials authentication failed',
+            {
+              email: credentials.email,
+              provider: 'credentials',
+            },
+            error as Error
+          );
           return null;
         }
       },
@@ -76,47 +91,62 @@ export const authOptions: NextAuthOptions = {
     signIn: '/login',
     signOut: '/login',
   },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+    callbackUrl: {
+      name: `next-auth.callback-url`,
+      options: {
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+    csrfToken: {
+      name: `next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+  },
   callbacks: {
     async signIn({ user, account, profile }) {
+      authLogger.info('Sign-in attempt', {
+        provider: account?.provider,
+        email: user.email,
+        name: user.name,
+      });
+
       if (account?.provider === 'google') {
-        // Check if user exists in database
-        try {
-          let dbUser = await prisma.user.findUnique({
-            where: { email: user.email! },
+        // Only allow prateek@combatrobotics.in for Google OAuth
+        if (user.email === 'prateek@combatrobotics.in') {
+          authLogger.info('Authorized Google sign-in for Prateek', {
+            email: user.email,
+            provider: 'google',
+            authorized: true,
           });
-
-          if (!dbUser) {
-            // Only allow Google sign-in for pre-registered admins
-            return false; // Reject sign-in for unregistered users
-          }
-
-          // Check if user has admin privileges
-          if (!['ADMIN', 'SUPER_ADMIN'].includes(dbUser.role)) {
-            return false;
-          }
-
-          // Update user info from Google profile if needed
-          if (user.name && (!dbUser.firstName || !dbUser.lastName)) {
-            await prisma.user.update({
-              where: { email: user.email! },
-              data: {
-                firstName: dbUser.firstName || user.name?.split(' ')[0] || '',
-                lastName:
-                  dbUser.lastName ||
-                  user.name?.split(' ').slice(1).join(' ') ||
-                  '',
-              },
-            });
-          }
-
-          // Set the role and database ID on the user object
-          (user as any).role = dbUser.role;
-          (user as any).dbId = dbUser.id; // Store the database ID
+          (user as any).role = 'SUPER_ADMIN';
+          (user as any).dbId = 'prateek-admin-id';
           return true;
-        } catch (error) {
-          console.error('Google sign-in error:', error);
-          return false;
         }
+
+        // Reject all other Google accounts
+        authLogger.warn('Google sign-in rejected - unauthorized email', {
+          email: user.email,
+          provider: 'google',
+          authorized: false,
+        });
+        return false;
       }
       return true;
     },

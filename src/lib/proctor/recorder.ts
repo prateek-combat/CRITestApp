@@ -1,3 +1,5 @@
+import { proctorLogger } from '../logger';
+
 interface RecordingSession {
   stream: MediaStream;
   canvas: HTMLCanvasElement;
@@ -8,10 +10,8 @@ interface RecordingSession {
 }
 
 export async function startRecording(): Promise<RecordingSession> {
-  console.log('🎥 Starting recording session...');
   try {
     // Request camera and microphone permissions with lower requirements for efficiency
-    console.log('🎥 Requesting getUserMedia...');
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
         width: { ideal: 640 }, // Reduced resolution
@@ -24,11 +24,6 @@ export async function startRecording(): Promise<RecordingSession> {
         sampleRate: 22050, // Reduced sample rate
       },
     });
-    console.log(
-      '✅ getUserMedia successful, got stream with',
-      stream.getTracks().length,
-      'tracks'
-    );
 
     // Create canvas for frame capture
     const canvas = document.createElement('canvas');
@@ -48,17 +43,19 @@ export async function startRecording(): Promise<RecordingSession> {
 
     // Wait for video to be ready before starting capture
     await new Promise<void>((resolve, reject) => {
-      video.onloadedmetadata = () => {
-        console.log(
-          '🎥 Video metadata loaded, dimensions:',
-          video.videoWidth,
-          'x',
-          video.videoHeight
-        );
-        resolve();
-      };
+      video.onloadedmetadata = () => resolve();
       video.onerror = (error) => {
-        console.error('❌ Video error during metadata load:', error);
+        proctorLogger.error(
+          'Video error during metadata load',
+          {
+            operation: 'video_metadata_load',
+            videoWidth: video.videoWidth,
+            videoHeight: video.videoHeight,
+          },
+          error instanceof Error
+            ? error
+            : new Error('Video metadata load failed')
+        );
         reject(new Error('Video failed to load metadata'));
       };
       // Add timeout to prevent hanging
@@ -67,43 +64,23 @@ export async function startRecording(): Promise<RecordingSession> {
       }, 10000);
     });
 
-    console.log('🎥 Starting video playback...');
     await video.play();
-    console.log('✅ Video playback started successfully');
 
     const capturedFrames: Blob[] = [];
     let isRecording = true;
     let frameCount = 0;
 
-    // Add debugging for interval creation
-    console.log('🎥 Setting up frame capture interval...');
-
     // Capture frames at 2 FPS (every 500ms) for analysis
     const intervalId = window.setInterval(() => {
       frameCount++;
-      console.log(`🎥 Frame capture interval tick #${frameCount}`);
 
-      if (!isRecording) {
-        console.log('🎥 Skipping frame capture - not recording');
-        return;
-      }
-      if (video.videoWidth === 0) {
-        console.log(
-          '🎥 Skipping frame capture - video not ready, width:',
-          video.videoWidth
-        );
+      if (!isRecording || video.videoWidth === 0) {
         return;
       }
 
       try {
         // Draw current video frame to canvas
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        console.log(
-          '🎬 Drew frame to canvas, video dimensions:',
-          video.videoWidth,
-          'x',
-          video.videoHeight
-        );
 
         // Convert canvas to blob (JPEG for smaller file size)
         canvas.toBlob(
@@ -111,44 +88,30 @@ export async function startRecording(): Promise<RecordingSession> {
             if (blob && capturedFrames.length < 600) {
               // Limit to ~5 minutes at 2 FPS
               capturedFrames.push(blob);
-              console.log(
-                `📸 Captured frame ${capturedFrames.length}, size: ${blob.size} bytes`
-              );
             } else if (!blob) {
-              console.error(
-                '❌ Failed to create blob from canvas - this is a critical error!'
-              );
-            } else if (capturedFrames.length >= 600) {
-              console.warn('⚠️ Frame limit reached (600 frames)');
+              proctorLogger.error('Failed to create blob from canvas', {
+                operation: 'canvas_to_blob',
+                frameCount,
+                capturedFramesCount: capturedFrames.length,
+              });
             }
           },
           'image/jpeg',
           0.8
         ); // 80% quality for balance between size and quality
       } catch (error) {
-        console.error('❌ Critical error capturing frame:', error);
+        proctorLogger.error(
+          'Error capturing frame',
+          {
+            operation: 'frame_capture',
+            frameCount,
+            videoWidth: video.videoWidth,
+            videoHeight: video.videoHeight,
+          },
+          error as Error
+        );
       }
     }, 500); // Capture every 500ms (2 FPS)
-
-    console.log(
-      '✅ Frame-based recording started successfully (2 FPS), intervalId:',
-      intervalId
-    );
-
-    // Add a test frame capture after 2 seconds to verify it's working
-    setTimeout(() => {
-      console.log('🧪 Testing frame capture after 2 seconds...');
-      console.log('🧪 Video ready state:', video.readyState);
-      console.log(
-        '🧪 Video dimensions:',
-        video.videoWidth,
-        'x',
-        video.videoHeight
-      );
-      console.log('🧪 Captured frames so far:', capturedFrames.length);
-      console.log('🧪 Is recording:', isRecording);
-      console.log('🧪 Interval ID:', intervalId);
-    }, 2000);
 
     return {
       stream,
@@ -159,7 +122,14 @@ export async function startRecording(): Promise<RecordingSession> {
       isRecording: true,
     };
   } catch (error) {
-    console.error('❌ Failed to start recording:', error);
+    proctorLogger.error(
+      'Failed to start recording',
+      {
+        operation: 'start_recording',
+        userAgent: navigator.userAgent,
+      },
+      error as Error
+    );
     throw new Error(
       `Failed to start recording: ${
         error instanceof Error ? error.message : 'Unknown error'
@@ -177,18 +147,14 @@ export async function stopAndUpload(
     session.isRecording = false;
     clearInterval(session.intervalId);
 
-    console.log(
-      `🎥 stopAndUpload called - captured frames: ${session.capturedFrames.length}`
-    );
-
     if (session.capturedFrames.length === 0) {
-      console.warn('⚠️ No frames captured to upload');
+      proctorLogger.warn('No frames captured to upload', {
+        operation: 'upload_frames',
+        attemptId,
+        sessionStatus: session.isRecording ? 'recording' : 'stopped',
+      });
       return;
     }
-
-    console.log(
-      `🎥 Uploading ${session.capturedFrames.length} captured frames...`
-    );
 
     // Create a zip-like structure by uploading frames in batches
     const batchSize = 10;
@@ -206,135 +172,119 @@ export async function stopAndUpload(
       formData.append('totalBatches', totalBatches.toString());
 
       batchFrames.forEach((frame, index) => {
-        const frameIndex = i * batchSize + index;
+        const globalFrameIndex = i * batchSize + index;
         formData.append(
-          `frame_${frameIndex}`,
+          `frame_${globalFrameIndex}`,
           frame,
-          `frame_${frameIndex}.jpg`
+          `frame_${globalFrameIndex}.jpg`
         );
       });
 
-      // Upload batch to server
       const response = await fetch('/api/proctor/upload-frames', {
         method: 'POST',
         body: formData,
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Frame upload failed for batch ${i}: ${errorText}`);
+        throw new Error(
+          `Failed to upload batch ${i + 1}: ${response.statusText}`
+        );
       }
-
-      console.log(`✅ Uploaded batch ${i + 1}/${totalBatches}`);
     }
-
-    console.log('✅ All frames uploaded successfully');
   } catch (error) {
-    console.error('❌ Frame upload failed:', error);
+    proctorLogger.error(
+      'Frame upload failed',
+      {
+        operation: 'upload_frames',
+        attemptId,
+        totalFrames: session.capturedFrames.length,
+      },
+      error as Error
+    );
     throw error;
   }
 }
 
 export function destroyRecording(session: RecordingSession): void {
   try {
-    console.log('🎥 Destroying recording session...');
-
-    // Stop frame capture immediately
+    // Stop recording flag
     session.isRecording = false;
+
+    // Clear the frame capture interval
     if (session.intervalId) {
       clearInterval(session.intervalId);
-      console.log('🎥 Cleared frame capture interval');
     }
 
-    // Stop all media tracks immediately
+    // Stop all tracks in the media stream
     if (session.stream) {
       const tracks = session.stream.getTracks();
-      console.log(`🎥 Found ${tracks.length} tracks to stop`);
 
       tracks.forEach((track, index) => {
-        console.log(
-          `🎥 Track ${index}: ${track.kind}, state: ${track.readyState}, enabled: ${track.enabled}`
-        );
-
-        if (track.readyState !== 'ended') {
+        if (track.readyState === 'live') {
           track.stop();
-          console.log(
-            `🎥 Stopped track ${index} (${track.kind}), new state: ${track.readyState}`
-          );
-        } else {
-          console.log(`🎥 Track ${index} (${track.kind}) already ended`);
         }
       });
-
-      // Wait a moment and verify tracks are stopped
-      setTimeout(() => {
-        tracks.forEach((track, index) => {
-          console.log(
-            `🎥 Verification - Track ${index} (${track.kind}): ${track.readyState}`
-          );
-        });
-      }, 100);
-    } else {
-      console.log('🎥 No stream found to destroy');
     }
 
     // Clear captured frames from memory
     session.capturedFrames.length = 0;
-    console.log('🎥 Cleared captured frames from memory');
-
-    console.log('✅ Recording session destroyed completely');
   } catch (error) {
-    console.error('❌ Failed to destroy recording session:', error);
+    proctorLogger.error(
+      'Failed to destroy recording session',
+      {
+        operation: 'destroy_recording',
+        streamActive: session.stream?.active || false,
+        capturedFramesCount: session.capturedFrames.length,
+      },
+      error as Error
+    );
+    throw error;
   }
 }
 
-// Global cleanup function for forcing camera shutdown
 export async function forceStopAllCameraAccess(): Promise<void> {
   try {
-    console.log('🎥 Forcing stop of all camera access...');
+    // Get all media devices and stop any active streams
+    const devices = await navigator.mediaDevices.enumerateDevices();
 
-    // Step 1: Try to get current stream and stop it
+    // Try to stop any active media streams by requesting and immediately stopping
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
       });
 
-      if (stream) {
-        const tracks = stream.getTracks();
-        console.log(`🎥 Force stopping ${tracks.length} active tracks`);
+      const tracks = stream.getTracks();
 
-        tracks.forEach((track, index) => {
-          console.log(`🎥 Force stopping track ${index}: ${track.kind}`);
-          track.stop();
-        });
-      }
+      tracks.forEach((track, index) => {
+        track.stop();
+      });
     } catch (err) {
-      console.log('🎥 No active streams to force stop:', err);
+      // This is expected if no camera access is currently active
     }
 
-    // Step 2: Enumerate devices to force release
-    await navigator.mediaDevices.enumerateDevices();
-
-    // Step 3: Try one more minimal access and immediate release
+    // Final cleanup attempt - create a temporary stream just to immediately stop it
     try {
       const testStream = await navigator.mediaDevices.getUserMedia({
         video: { width: 1, height: 1 },
         audio: false,
       });
 
-      if (testStream) {
-        testStream.getTracks().forEach((track) => {
-          console.log('🎥 Stopping final test track');
-          track.stop();
-        });
-      }
-    } catch (err) {
-      console.log('🎥 Final test access completed');
+      testStream.getTracks().forEach((track) => {
+        track.stop();
+      });
+    } catch (finalErr) {
+      // Expected if camera is not available
     }
-
-    console.log('✅ Forced camera cleanup completed');
   } catch (error) {
-    console.error('❌ Error in forced camera cleanup:', error);
+    proctorLogger.error(
+      'Error in forced camera cleanup',
+      {
+        operation: 'force_stop_camera',
+        cleanup: true,
+      },
+      error as Error
+    );
+    throw error;
   }
 }
