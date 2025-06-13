@@ -178,32 +178,52 @@ export default function AnalyticsPage() {
     return Object.entries(testGroups)
       .map(([testId, attempts]) => {
         const completed = attempts.filter((a) => a.status === 'COMPLETED');
+
+        // Filter out invalid scores and durations
+        const validScores = completed.filter(
+          (a) =>
+            a.rawScore !== null &&
+            a.rawScore !== undefined &&
+            !isNaN(a.rawScore)
+        );
+        const validDurations = completed.filter(
+          (a) =>
+            a.durationSeconds !== null &&
+            a.durationSeconds !== undefined &&
+            !isNaN(a.durationSeconds)
+        );
+
         const avgScore =
-          completed.length > 0
-            ? completed.reduce((sum, a) => sum + (a.rawScore || 0), 0) /
-              completed.length
+          validScores.length > 0
+            ? validScores.reduce((sum, a) => sum + a.rawScore!, 0) /
+              validScores.length
             : 0;
+
         const avgDuration =
-          completed.length > 0
-            ? completed.reduce((sum, a) => sum + (a.durationSeconds || 0), 0) /
-              completed.length
+          validDurations.length > 0
+            ? validDurations.reduce((sum, a) => sum + a.durationSeconds!, 0) /
+              validDurations.length
             : 0;
+
         const topScore =
-          completed.length > 0
-            ? Math.max(...completed.map((a) => a.rawScore || 0))
+          validScores.length > 0
+            ? Math.max(...validScores.map((a) => a.rawScore!))
             : 0;
+
+        const completionRate =
+          attempts.length > 0 ? (completed.length / attempts.length) * 100 : 0;
 
         return {
           testId,
           testTitle: attempts[0]?.testTitle || 'Unknown Test',
-          totalAttempts: attempts.length,
-          completedAttempts: completed.length,
-          avgScore: Math.round(avgScore * 100) / 100,
-          avgDuration: Math.round(avgDuration / 60), // Convert to minutes
-          topScore,
-          completionRate: Math.round(
-            (completed.length / attempts.length) * 100
-          ),
+          totalAttempts: attempts.length || 0,
+          completedAttempts: completed.length || 0,
+          avgScore: isNaN(avgScore) ? 0 : Number(avgScore.toFixed(2)),
+          avgDuration: isNaN(avgDuration) ? 0 : Math.round(avgDuration / 60), // Convert to minutes
+          topScore: isNaN(topScore) ? 0 : topScore,
+          completionRate: isNaN(completionRate)
+            ? 0
+            : Math.round(completionRate),
           candidates: attempts.sort(
             (a, b) => (b.rawScore || 0) - (a.rawScore || 0)
           ),
@@ -216,25 +236,41 @@ export default function AnalyticsPage() {
   const overallStats = useMemo(() => {
     const completed = filteredAnalytics.filter((a) => a.status === 'COMPLETED');
     const totalCandidates = new Set(
-      filteredAnalytics.map((a) => a.candidateEmail)
+      filteredAnalytics.map((a) => a.candidateEmail).filter(Boolean)
     ).size;
 
+    const validScores = completed.filter(
+      (a) =>
+        a.rawScore !== null && a.rawScore !== undefined && !isNaN(a.rawScore)
+    );
+
+    const validDurations = completed.filter(
+      (a) =>
+        a.durationSeconds !== null &&
+        a.durationSeconds !== undefined &&
+        !isNaN(a.durationSeconds)
+    );
+
+    const avgScore =
+      validScores.length > 0
+        ? validScores.reduce((sum, a) => sum + a.rawScore!, 0) /
+          validScores.length
+        : 0;
+
+    const avgDuration =
+      validDurations.length > 0
+        ? validDurations.reduce((sum, a) => sum + a.durationSeconds!, 0) /
+          validDurations.length /
+          60
+        : 0;
+
     return {
-      totalTests: testSummaries.length,
-      totalCandidates,
-      totalAttempts: filteredAnalytics.length,
-      completedAttempts: completed.length,
-      avgScore:
-        completed.length > 0
-          ? completed.reduce((sum, a) => sum + (a.rawScore || 0), 0) /
-            completed.length
-          : 0,
-      avgDuration:
-        completed.length > 0
-          ? completed.reduce((sum, a) => sum + (a.durationSeconds || 0), 0) /
-            completed.length /
-            60
-          : 0,
+      totalTests: testSummaries.length || 0,
+      totalCandidates: totalCandidates || 0,
+      totalAttempts: filteredAnalytics.length || 0,
+      completedAttempts: completed.length || 0,
+      avgScore: isNaN(avgScore) ? 0 : Number(avgScore.toFixed(1)),
+      avgDuration: isNaN(avgDuration) ? 0 : Number(avgDuration.toFixed(1)),
     };
   }, [filteredAnalytics, testSummaries]);
 
@@ -249,18 +285,28 @@ export default function AnalyticsPage() {
     ];
 
     filteredAnalytics
-      .filter((a) => a.status === 'COMPLETED' && a.rawScore !== null)
+      .filter(
+        (a) =>
+          a.status === 'COMPLETED' &&
+          a.rawScore !== null &&
+          a.rawScore !== undefined &&
+          !isNaN(a.rawScore) &&
+          a.totalQuestions > 0 &&
+          !isNaN(a.totalQuestions)
+      )
       .forEach((attempt) => {
-        const percentage = Math.round(
-          attempt.totalQuestions > 0
-            ? ((attempt.rawScore || 0) / attempt.totalQuestions) * 100
-            : 0
-        );
-        ranges.forEach((range) => {
-          if (percentage >= range.min && percentage <= range.max) {
-            range.count++;
-          }
-        });
+        const percentage = (attempt.rawScore! / attempt.totalQuestions) * 100;
+        if (!isNaN(percentage)) {
+          const roundedPercentage = Math.round(percentage);
+          ranges.forEach((range) => {
+            if (
+              roundedPercentage >= range.min &&
+              roundedPercentage <= range.max
+            ) {
+              range.count++;
+            }
+          });
+        }
       });
 
     return ranges;
@@ -268,15 +314,24 @@ export default function AnalyticsPage() {
 
   // Test difficulty analysis
   const testDifficultyData = useMemo(() => {
-    return testSummaries.map((test) => ({
-      testTitle:
-        test.testTitle.length > 20
-          ? test.testTitle.substring(0, 20) + '...'
-          : test.testTitle,
-      avgScore: test.avgScore,
-      completionRate: test.completionRate,
-      attempts: test.totalAttempts,
-    }));
+    return testSummaries
+      .filter(
+        (test) =>
+          !isNaN(test.avgScore) &&
+          !isNaN(test.completionRate) &&
+          test.totalAttempts > 0
+      )
+      .map((test) => ({
+        testTitle:
+          test.testTitle.length > 20
+            ? test.testTitle.substring(0, 20) + '...'
+            : test.testTitle,
+        avgScore: isNaN(test.avgScore) ? 0 : Number(test.avgScore.toFixed(1)),
+        completionRate: isNaN(test.completionRate)
+          ? 0
+          : Number(test.completionRate.toFixed(1)),
+        attempts: test.totalAttempts || 0,
+      }));
   }, [testSummaries]);
 
   // Category performance across all tests
@@ -284,21 +339,39 @@ export default function AnalyticsPage() {
     const categories: Record<string, { total: number; correct: number }> = {};
 
     filteredAnalytics.forEach((attempt) => {
-      Object.entries(attempt.categoryScores).forEach(([category, score]) => {
-        if (!categories[category]) {
-          categories[category] = { total: 0, correct: 0 };
-        }
-        categories[category].total += score.total;
-        categories[category].correct += score.correct;
-      });
+      if (
+        attempt.categoryScores &&
+        typeof attempt.categoryScores === 'object'
+      ) {
+        Object.entries(attempt.categoryScores).forEach(([category, score]) => {
+          if (
+            score &&
+            typeof score === 'object' &&
+            typeof score.total === 'number' &&
+            typeof score.correct === 'number' &&
+            !isNaN(score.total) &&
+            !isNaN(score.correct)
+          ) {
+            if (!categories[category]) {
+              categories[category] = { total: 0, correct: 0 };
+            }
+            categories[category].total += score.total;
+            categories[category].correct += score.correct;
+          }
+        });
+      }
     });
 
-    return Object.entries(categories).map(([category, data]) => ({
-      category: category.replace(/_/g, ' '),
-      accuracy:
-        data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0,
-      totalQuestions: data.total,
-    }));
+    return Object.entries(categories)
+      .filter(([_, data]) => data.total > 0) // Only include categories with valid data
+      .map(([category, data]) => {
+        const accuracy = data.total > 0 ? (data.correct / data.total) * 100 : 0;
+        return {
+          category: category.replace(/_/g, ' '),
+          accuracy: isNaN(accuracy) ? 0 : Math.round(accuracy),
+          totalQuestions: data.total,
+        };
+      });
   }, [filteredAnalytics]);
 
   if (status === 'loading') {
@@ -609,38 +682,59 @@ export default function AnalyticsPage() {
                     Skill Performance
                   </h3>
                   <div style={{ width: '100%', height: 200 }}>
-                    <ResponsiveContainer>
-                      <BarChart data={categoryPerformance} layout="horizontal">
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                        <XAxis
-                          type="number"
-                          domain={[0, 100]}
-                          tick={{ fontSize: 11 }}
-                          stroke="#64748b"
-                        />
-                        <YAxis
-                          dataKey="category"
-                          type="category"
-                          width={100}
-                          tick={{ fontSize: 11 }}
-                          stroke="#64748b"
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: 'white',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '8px',
-                            fontSize: '12px',
-                          }}
-                          formatter={(value) => [`${value}%`, 'Accuracy']}
-                        />
-                        <Bar
-                          dataKey="accuracy"
-                          fill="#4A5D23"
-                          radius={[0, 2, 2, 0]}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {categoryPerformance.length > 0 ? (
+                      <ResponsiveContainer>
+                        <BarChart
+                          data={categoryPerformance}
+                          layout="horizontal"
+                        >
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="#f1f5f9"
+                          />
+                          <XAxis
+                            type="number"
+                            domain={[0, 100]}
+                            tick={{ fontSize: 11 }}
+                            stroke="#64748b"
+                            allowDataOverflow={false}
+                          />
+                          <YAxis
+                            dataKey="category"
+                            type="category"
+                            width={100}
+                            tick={{ fontSize: 11 }}
+                            stroke="#64748b"
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: 'white',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '8px',
+                              fontSize: '12px',
+                            }}
+                            formatter={(value: any) => [
+                              `${isNaN(Number(value)) ? 0 : Number(value).toFixed(1)}%`,
+                              'Accuracy',
+                            ]}
+                          />
+                          <Bar
+                            dataKey="accuracy"
+                            fill="#4A5D23"
+                            radius={[0, 2, 2, 0]}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex h-[200px] items-center justify-center text-gray-500">
+                        <div className="text-center">
+                          <div className="mb-2 text-4xl">📊</div>
+                          <div className="text-sm">
+                            No category data available
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -650,30 +744,51 @@ export default function AnalyticsPage() {
                     Test Performance
                   </h3>
                   <div style={{ width: '100%', height: 200 }}>
-                    <ResponsiveContainer>
-                      <BarChart data={testSummaries.slice(0, 5)}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                        <XAxis
-                          dataKey="testTitle"
-                          tick={{ fontSize: 10 }}
-                          stroke="#64748b"
-                        />
-                        <YAxis tick={{ fontSize: 11 }} stroke="#64748b" />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: 'white',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '8px',
-                            fontSize: '12px',
-                          }}
-                        />
-                        <Bar
-                          dataKey="avgScore"
-                          fill="#4A5D23"
-                          radius={[2, 2, 0, 0]}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {testSummaries.length > 0 ? (
+                      <ResponsiveContainer>
+                        <BarChart data={testSummaries.slice(0, 5)}>
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="#f1f5f9"
+                          />
+                          <XAxis
+                            dataKey="testTitle"
+                            tick={{ fontSize: 10 }}
+                            stroke="#64748b"
+                          />
+                          <YAxis
+                            tick={{ fontSize: 11 }}
+                            stroke="#64748b"
+                            domain={[0, 'dataMax']}
+                            allowDataOverflow={false}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: 'white',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '8px',
+                              fontSize: '12px',
+                            }}
+                            formatter={(value: any) => [
+                              `${isNaN(Number(value)) ? 0 : Number(value).toFixed(1)}`,
+                              'Avg Score',
+                            ]}
+                          />
+                          <Bar
+                            dataKey="avgScore"
+                            fill="#4A5D23"
+                            radius={[2, 2, 0, 0]}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="flex h-[200px] items-center justify-center text-gray-500">
+                        <div className="text-center">
+                          <div className="mb-2 text-4xl">📊</div>
+                          <div className="text-sm">No test data available</div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -690,9 +805,15 @@ export default function AnalyticsPage() {
                     <BarChart data={performanceDistribution}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="range" />
-                      <YAxis />
+                      <YAxis
+                        domain={[0, 'dataMax']}
+                        allowDataOverflow={false}
+                      />
                       <Tooltip
-                        formatter={(value) => [`${value} candidates`, 'Count']}
+                        formatter={(value: any) => [
+                          `${isNaN(Number(value)) ? 0 : Number(value)} candidates`,
+                          'Count',
+                        ]}
                       />
                       <Bar dataKey="count" fill="#3B82F6" />
                     </BarChart>
@@ -708,36 +829,51 @@ export default function AnalyticsPage() {
                   </h3>
                 </div>
                 <div className="p-5">
-                  <ResponsiveContainer width="100%" height={300}>
-                    <ScatterChart data={testDifficultyData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        dataKey="avgScore"
-                        type="number"
-                        domain={[0, 100]}
-                        name="Average Score (%)"
-                      />
-                      <YAxis
-                        dataKey="completionRate"
-                        type="number"
-                        domain={[0, 100]}
-                        name="Completion Rate (%)"
-                      />
-                      <Tooltip
-                        formatter={(value, name) => [
-                          `${value}${name === 'avgScore' ? '%' : '%'}`,
-                          name === 'avgScore' ? 'Avg Score' : 'Completion Rate',
-                        ]}
-                        labelFormatter={(label, payload) => {
-                          if (payload && payload[0]) {
-                            return `${payload[0].payload.testTitle} (${payload[0].payload.attempts} attempts)`;
-                          }
-                          return label;
-                        }}
-                      />
-                      <Scatter data={testDifficultyData} fill="#8884d8" />
-                    </ScatterChart>
-                  </ResponsiveContainer>
+                  {testDifficultyData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <ScatterChart data={testDifficultyData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                          dataKey="avgScore"
+                          type="number"
+                          domain={[0, 100]}
+                          name="Average Score (%)"
+                          allowDataOverflow={false}
+                        />
+                        <YAxis
+                          dataKey="completionRate"
+                          type="number"
+                          domain={[0, 100]}
+                          name="Completion Rate (%)"
+                          allowDataOverflow={false}
+                        />
+                        <Tooltip
+                          formatter={(value: any, name: any) => [
+                            `${isNaN(Number(value)) ? 0 : Number(value).toFixed(1)}%`,
+                            name === 'avgScore'
+                              ? 'Avg Score'
+                              : 'Completion Rate',
+                          ]}
+                          labelFormatter={(label: any, payload: any) => {
+                            if (payload && payload[0] && payload[0].payload) {
+                              return `${payload[0].payload.testTitle} (${payload[0].payload.attempts} attempts)`;
+                            }
+                            return label;
+                          }}
+                        />
+                        <Scatter data={testDifficultyData} fill="#8884d8" />
+                      </ScatterChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex h-[300px] items-center justify-center text-gray-500">
+                      <div className="text-center">
+                        <div className="mb-2 text-4xl">📊</div>
+                        <div className="text-sm">
+                          No valid test data available for chart
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <div className="mt-3 text-sm text-gray-600">
                     Each point represents a test. X-axis: Average Score, Y-axis:
                     Completion Rate
