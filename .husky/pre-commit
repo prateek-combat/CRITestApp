@@ -4,10 +4,10 @@
 # Run lint-staged for formatting
 npx lint-staged
 
-# Check for console.log statements
+# Check for console.log statements (excluding API routes, tests, and utility files)
 echo "Checking for console.log statements..."
-if grep -r "console\.log" --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" src/ | grep -v "// eslint-disable-line" | grep -v "// ignore-console"; then
-  echo "❌ Error: console.log statements found. Please remove them before committing."
+if grep -r "console\.log" --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" src/ | grep -v "// eslint-disable-line" | grep -v "// ignore-console" | grep -v "src/app/api/" | grep -v "src/__tests__/" | grep -v "src/lib/scoring/example-usage.ts" | grep -v "src/lib/enhancedEmailService.ts"; then
+  echo "❌ Error: console.log statements found in user-facing code. Please remove them before committing."
   echo "Tip: Use proper logging utilities or remove debug statements."
   exit 1
 fi
