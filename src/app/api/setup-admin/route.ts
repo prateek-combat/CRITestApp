@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { APP_URL } from '@/lib/constants';
 
 const prisma = new PrismaClient();
 
@@ -21,7 +22,7 @@ export async function POST() {
         message: 'Test admin user already exists',
         email: testAdminEmail,
         password: 'admin123',
-        loginUrl: 'http://localhost:3000/admin/login',
+        loginUrl: `${APP_URL}/admin/login`,
       });
     }
 
@@ -42,7 +43,7 @@ export async function POST() {
       message: 'Test admin user created successfully!',
       email: testAdminEmail,
       password: 'admin123',
-      loginUrl: 'http://localhost:3000/admin/login',
+      loginUrl: `${APP_URL}/admin/login`,
     });
   } catch (error) {
     console.error('❌ Error setting up admin:', error);

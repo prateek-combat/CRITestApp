@@ -7,6 +7,7 @@ import {
   validateEmail,
   type InvitationEmailData,
 } from '@/lib/email';
+import { APP_URL } from '@/lib/constants';
 
 const prisma = new PrismaClient();
 
@@ -196,7 +197,7 @@ async function handleSingleInvitation(body: any) {
 
   // Send email if requested
   if (sendEmail) {
-    const testLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/test/${invitation.id}`;
+    const testLink = `${APP_URL}/test/${invitation.id}`;
 
     const emailData: InvitationEmailData = {
       candidateEmail: email.trim(),
@@ -340,7 +341,7 @@ async function handleBulkInvitations(body: any) {
 
       // Prepare for bulk email sending
       if (sendEmail) {
-        const testLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/test/${invitation.id}`;
+        const testLink = `${APP_URL}/test/${invitation.id}`;
 
         emailInvitations.push({
           candidateEmail: email.trim(),

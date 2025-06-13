@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { requireAdmin } from '@/lib/auth-middleware';
 
 const prisma = new PrismaClient();
 
-// Placeholder for admin role check - replace with actual auth logic
-async function isAdminUser(request: Request): Promise<boolean> {
-  return true; // TEMPORARILY ALLOW ALL FOR DEVELOPMENT
-}
-
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Implement proper admin authentication/authorization check
+    // Check admin authentication
+    const { user, error } = await requireAdmin(request);
+    if (error) return error;
     const { searchParams } = new URL(request.url);
 
     // Parse filters from query parameters

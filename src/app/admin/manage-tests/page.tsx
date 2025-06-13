@@ -592,7 +592,47 @@ export default function ManageTestsPage() {
                             </span>{' '}
                             | Timer: {q.timerSeconds}s
                           </p>
-                          {/* TODO: Edit/Delete buttons */}
+                          <div className="mt-2 flex gap-2">
+                            <button
+                              onClick={() => {
+                                // For now, show alert. Full edit functionality can be implemented later
+                                alert('Edit functionality coming soon!');
+                              }}
+                              className="rounded px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (
+                                  window.confirm(
+                                    'Are you sure you want to delete this question?'
+                                  )
+                                ) {
+                                  try {
+                                    const response = await fetch(
+                                      `/api/questions/${q.id}`,
+                                      {
+                                        method: 'DELETE',
+                                      }
+                                    );
+                                    if (!response.ok) {
+                                      throw new Error(
+                                        'Failed to delete question'
+                                      );
+                                    }
+                                    // Refresh test details to show updated questions
+                                    fetchTestDetails(selectedTest.id);
+                                  } catch (error) {
+                                    alert('Error deleting question: ' + error);
+                                  }
+                                }
+                              }}
+                              className="rounded px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </li>
                       ))}
                     </ul>

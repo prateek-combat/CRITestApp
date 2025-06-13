@@ -1,3 +1,29 @@
-# Run lint-staged from the current directory
-echo "Current directory: $(pwd)"
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run lint-staged for formatting
 npx lint-staged
+
+# Check for console.log statements
+echo "Checking for console.log statements..."
+if grep -r "console\.log" --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" src/ | grep -v "// eslint-disable-line" | grep -v "// ignore-console"; then
+  echo "❌ Error: console.log statements found. Please remove them before committing."
+  echo "Tip: Use proper logging utilities or remove debug statements."
+  exit 1
+fi
+
+# Check for debugger statements
+echo "Checking for debugger statements..."
+if grep -r "debugger" --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" src/; then
+  echo "❌ Error: debugger statements found. Please remove them before committing."
+  exit 1
+fi
+
+# Check for TODO comments (warning only)
+echo "Checking for TODO comments..."
+TODO_COUNT=$(grep -r "TODO\|FIXME\|HACK\|XXX" --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" src/ | wc -l)
+if [ "$TODO_COUNT" -gt 0 ]; then
+  echo "⚠️  Warning: Found $TODO_COUNT TODO/FIXME/HACK comments. Consider addressing them or tracking in TECHNICAL_DEBT.md"
+fi
+
+echo "✅ Pre-commit checks passed!"

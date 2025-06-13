@@ -304,7 +304,19 @@ export default function TestTakingPage({
           <p className="whitespace-pre-wrap text-lg text-gray-700 sm:text-xl">
             {currentQuestion.promptText}
           </p>
-          {/* TODO: Display image if promptImageUrl exists */}
+          {currentQuestion.promptImageUrl && (
+            <div className="mt-4">
+              <img
+                src={currentQuestion.promptImageUrl}
+                alt="Question visual"
+                className="max-h-96 w-full rounded-lg object-contain"
+                onError={(e) => {
+                  // Hide image if it fails to load
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            </div>
+          )}
         </div>
 
         <div className="mb-6 text-center text-2xl font-bold text-indigo-600 sm:text-3xl">

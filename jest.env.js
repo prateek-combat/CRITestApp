@@ -1,8 +1,8 @@
 // Setup environment variables for testing
 process.env.NODE_ENV = 'test';
-process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/testdb';
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/testdb'; // Keep hardcoded for test isolation
 process.env.NEXTAUTH_SECRET = 'test-secret-key';
-process.env.NEXTAUTH_URL = 'http://localhost:3000';
+process.env.NEXTAUTH_URL = 'http://localhost:3000'; // Keep hardcoded for test isolation
 
 // Mock window.matchMedia for components that use it
 Object.defineProperty(window, 'matchMedia', {
@@ -11,8 +11,6 @@ Object.defineProperty(window, 'matchMedia', {
     matches: false,
     media: query,
     onchange: null,
-    addListener: jest.fn(), // deprecated
-    removeListener: jest.fn(), // deprecated
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
