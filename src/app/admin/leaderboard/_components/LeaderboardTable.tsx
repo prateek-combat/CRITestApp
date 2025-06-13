@@ -56,7 +56,7 @@ const InlineBar = ({ value, max = 100 }: { value: number; max?: number }) => {
         />
       </div>
       <span className="w-8 text-right text-xs text-gray-600">
-        {value ? value.toFixed(0) : '0'}
+        {value !== null && value !== undefined ? value.toFixed(0) : '0'}
       </span>
     </div>
   );
@@ -235,7 +235,8 @@ export default function LeaderboardTable({
                       {candidate.candidateEmail}
                     </div>
                     <div className="text-xs text-gray-400">
-                      {candidate.percentile
+                      {candidate.percentile !== null &&
+                      candidate.percentile !== undefined
                         ? `${candidate.percentile.toFixed(1)}th percentile`
                         : 'N/A'}
                     </div>
@@ -244,7 +245,8 @@ export default function LeaderboardTable({
 
                 <td className="whitespace-nowrap px-3 py-2 text-center">
                   <div className="text-lg font-bold text-gray-900">
-                    {candidate.composite
+                    {candidate.composite !== null &&
+                    candidate.composite !== undefined
                       ? candidate.composite.toFixed(1)
                       : 'N/A'}
                   </div>

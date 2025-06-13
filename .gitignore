@@ -62,6 +62,8 @@ dist/
 # Logs
 logs
 *.log
+test.log
+build.log
 
 # Runtime data
 pids

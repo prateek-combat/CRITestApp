@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     // Check admin authentication
     const { user, error } = await requireAdmin(request);
     if (error) return error;
+
     const { searchParams } = new URL(request.url);
 
     // Parse filters from query parameters

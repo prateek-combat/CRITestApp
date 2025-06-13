@@ -1,4 +1,5 @@
 import PgBoss from 'pg-boss';
+import { dbLogger, logger } from './logger';
 
 // PostgreSQL connection for job queue
 let boss: PgBoss | null = null;
@@ -17,9 +18,6 @@ async function getBoss(): Promise<PgBoss> {
     await boss.start();
 
     // Ensure tables are created (pg-boss handles this automatically)
-    console.log(
-      '✅ pg-boss started successfully with schema auto-installation'
-    );
   }
   return boss;
 }
@@ -43,12 +41,18 @@ export async function enqueueProctorAnalysis(data: ProctorAnalysisJobData) {
       startAfter: new Date(Date.now() + 2000), // Small delay to ensure upload is complete
     });
 
-    console.log(
-      `✅ Proctor analysis job enqueued: ${jobId} for attempt ${data.attemptId}`
-    );
+    // Job enqueued successfully
     return { id: jobId };
   } catch (error) {
-    console.error('❌ Failed to enqueue proctor analysis job:', error);
+    dbLogger.error(
+      'Failed to enqueue proctor analysis job',
+      {
+        attemptId: data.attemptId,
+        assetId: data.assetId,
+        queue: 'proctor.analyse',
+      },
+      error as Error
+    );
     throw error;
   }
 }
@@ -73,7 +77,14 @@ export async function getQueueStatus() {
       failed: failed,
     };
   } catch (error) {
-    console.error('❌ Failed to get queue status:', error);
+    dbLogger.error(
+      'Failed to get queue status',
+      {
+        queue: 'proctor.analyse',
+        operation: 'queue_status',
+      },
+      error as Error
+    );
     return {
       waiting: 0,
       active: 0,
@@ -88,6 +99,5 @@ export async function closeQueue() {
   if (boss) {
     await boss.stop();
     boss = null;
-    console.log('✅ pg-boss stopped gracefully');
   }
 }
