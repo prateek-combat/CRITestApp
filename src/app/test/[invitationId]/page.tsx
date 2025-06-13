@@ -266,8 +266,6 @@ export default function TestPage() {
     setError(null);
 
     try {
-      console.log('🔐 Requesting camera and microphone permissions...');
-
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           width: { ideal: 1280 },
@@ -282,68 +280,26 @@ export default function TestPage() {
       });
 
       streamRef.current = stream;
-      console.log(
-        '📹 Stream obtained:',
-        stream.getVideoTracks().length,
-        'video tracks,',
-        stream.getAudioTracks().length,
-        'audio tracks'
-      );
-
-      // Log video track details
-      stream.getVideoTracks().forEach((track, index) => {
-        console.log(
-          `📹 Video track ${index}:`,
-          track.label,
-          'enabled:',
-          track.enabled,
-          'readyState:',
-          track.readyState
-        );
-      });
 
       // Set up video preview (but don't fail if video element isn't ready yet)
       const setupVideoPreview = () => {
         if (videoRef.current) {
-          console.log('📹 Setting video srcObject');
           videoRef.current.srcObject = stream;
           videoRef.current.muted = true;
           videoRef.current.playsInline = true;
           videoRef.current.autoplay = true;
 
-          // Add event listeners for debugging
-          videoRef.current.onloadstart = () =>
-            console.log('📹 Video loadstart');
-          videoRef.current.onloadedmetadata = () =>
-            console.log('📹 Video metadata loaded');
-          videoRef.current.oncanplay = () => console.log('📹 Video can play');
-          videoRef.current.onplay = () =>
-            console.log('📹 Video started playing');
-          videoRef.current.onerror = (e) => console.error('📹 Video error:', e);
-
           // Force play and handle any issues
-          videoRef.current
-            .play()
-            .then(() => {
-              console.log('✅ Video play() called successfully');
-            })
-            .catch((playError) => {
-              console.warn('Video play failed, trying again:', playError);
-              setTimeout(() => {
-                if (videoRef.current) {
-                  videoRef.current
-                    .play()
-                    .then(() => {
-                      console.log('✅ Video play retry successful');
-                    })
-                    .catch((retryError) => {
-                      console.error('❌ Video play retry failed:', retryError);
-                    });
-                }
-              }, 500);
-            });
+          videoRef.current.play().catch((playError) => {
+            setTimeout(() => {
+              if (videoRef.current) {
+                videoRef.current.play().catch(() => {
+                  // Silent fail on retry
+                });
+              }
+            }, 500);
+          });
         } else {
-          console.warn('📹 Video element not ready yet, will retry...');
           // Retry after a short delay
           setTimeout(setupVideoPreview, 100);
         }
@@ -352,14 +308,12 @@ export default function TestPage() {
       setupVideoPreview();
 
       setHasPermissions(true);
-      console.log('✅ Camera and microphone permissions granted!');
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Permission denied';
       setError(
         `Camera and microphone access is required for this proctored test: ${errorMessage}`
       );
-      console.error('❌ Permission denied:', errorMessage);
       setHasPermissions(false);
     }
   }, []);
@@ -390,15 +344,9 @@ export default function TestPage() {
 
       // Start timer
       timerRef.current = setInterval(() => {
-        setRecordingDuration((prev) => {
-          console.log('🕐 Recording duration:', prev + 1);
-          return prev + 1;
-        });
+        setRecordingDuration((prev) => prev + 1);
       }, 1000);
-
-      console.log('✅ Proctoring session started successfully, timer started');
     } catch (err) {
-      console.error('🎥 Failed to start recording:', err);
       setError('Failed to start recording. Please try again.');
     }
   }, []);
@@ -406,8 +354,6 @@ export default function TestPage() {
   // Stop recording using new frame-based system
   const stopRecordingSession = useCallback(
     async (shouldUpload = false) => {
-      console.log('🎥 stopRecording called with shouldUpload:', shouldUpload);
-
       if (recordingSessionRef.current && testAttempt?.id) {
         try {
           // Stop timer immediately
@@ -417,32 +363,24 @@ export default function TestPage() {
           }
 
           if (shouldUpload) {
-            console.log('🎥 Uploading captured frames...');
             await stopAndUpload(recordingSessionRef.current, testAttempt.id);
           }
 
           // Clean up resources - destroy session immediately
-          console.log('🎥 Cleaning up recording resources...');
           destroyRecording(recordingSessionRef.current);
           streamRef.current = null;
 
           // Clear video element
           if (videoRef.current) {
-            console.log('🎥 Clearing video element in stopRecordingSession...');
             videoRef.current.srcObject = null;
           }
 
           recordingSessionRef.current = null;
           setIsRecording(false);
-
-          console.log('🎥 Recording stopped successfully');
         } catch (error) {
-          console.error('🎥 Error stopping recording:', error);
+          // Silent error handling
         }
       } else {
-        console.warn(
-          '🎥 Cannot stop recording - recording session or testAttempt missing'
-        );
         // Still clean up timer if it exists
         if (timerRef.current) {
           clearInterval(timerRef.current);
@@ -820,7 +758,6 @@ export default function TestPage() {
   const submitTest = useCallback(async () => {
     if (isSubmitting || !invitation) return;
 
-    console.log('🚀 Starting test submission...');
     setIsSubmitting(true);
     setError(null);
     try {
@@ -880,15 +817,12 @@ export default function TestPage() {
       // Upload frames BEFORE stopping proctoring and redirecting
       if (recordingSessionRef.current) {
         try {
-          console.log('🎥 Uploading captured frames before shutdown...');
           setIsUploadingRecording(true);
           await stopAndUpload(
             recordingSessionRef.current,
             testAttempt?.id || responseData?.id
           );
-          console.log('✅ Frame upload completed successfully');
         } catch (uploadError) {
-          console.error('❌ Frame upload failed:', uploadError);
           // Continue with shutdown even if upload fails
         } finally {
           setIsUploadingRecording(false);
@@ -920,7 +854,6 @@ export default function TestPage() {
       window.location.href = `/test/${invitationId}/shutdown`;
     } catch (error) {
       setIsSubmitting(false);
-      console.error('Submission error:', error);
       setError(
         error instanceof Error ? error.message : 'Failed to submit test.'
       );
@@ -948,6 +881,49 @@ export default function TestPage() {
       submitTest();
     }
   }, [invitation, currentQuestionIndex, navigateQuestion, submitTest]);
+
+  // Timer countdown effect - automatically advance when time expires
+  useEffect(() => {
+    if (!testStarted || !invitation?.test?.questions?.[currentQuestionIndex]) {
+      return;
+    }
+
+    const currentQuestion = invitation.test.questions[currentQuestionIndex];
+    const startTimeData = questionStartTime[currentQuestion.id];
+
+    if (!startTimeData?.epoch) {
+      return;
+    }
+
+    const calculateRemainingTime = () => {
+      const elapsed = Math.floor((Date.now() - startTimeData.epoch) / 1000);
+      return Math.max(0, currentQuestion.timerSeconds - elapsed);
+    };
+
+    // Check if time has already expired
+    const initialRemaining = calculateRemainingTime();
+    if (initialRemaining === 0) {
+      handleTimeExpired();
+      return;
+    }
+
+    // Set up interval to check time every second
+    const timerId = setInterval(() => {
+      const remaining = calculateRemainingTime();
+      if (remaining === 0) {
+        clearInterval(timerId);
+        handleTimeExpired();
+      }
+    }, 1000);
+
+    return () => clearInterval(timerId);
+  }, [
+    testStarted,
+    invitation,
+    currentQuestionIndex,
+    questionStartTime,
+    handleTimeExpired,
+  ]);
 
   if (isLoading) {
     return (

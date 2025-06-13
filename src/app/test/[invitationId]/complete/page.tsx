@@ -29,7 +29,7 @@ export default function TestCompletePage() {
         }
       } catch (err) {
         // Silently handle errors - we'll just show generic thank you
-        console.log('Could not fetch test info for personalization');
+        // Could not fetch test info for personalization
       } finally {
         setLoading(false);
       }

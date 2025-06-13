@@ -46,8 +46,6 @@ export default function ShutdownPage() {
           );
           await forceStopAllCameraAccess();
         } catch (err) {
-          console.log('🎥 Error in force cleanup, trying manual cleanup:', err);
-
           // Fallback manual cleanup
           try {
             const stream = await navigator.mediaDevices
@@ -59,19 +57,12 @@ export default function ShutdownPage() {
 
             if (stream) {
               const tracks = stream.getTracks();
-              console.log(
-                `🎥 Fallback: Found ${tracks.length} active tracks to stop`
-              );
-
-              tracks.forEach((track, index) => {
-                console.log(
-                  `🎥 Fallback stopping track ${index}: ${track.kind}`
-                );
+              tracks.forEach((track) => {
                 track.stop();
               });
             }
           } catch (fallbackErr) {
-            console.log('🎥 Fallback cleanup completed');
+            // Fallback cleanup completed
           }
         }
 
@@ -97,7 +88,7 @@ export default function ShutdownPage() {
             testStream.getTracks().forEach((track) => track.stop());
           }
         } catch (err) {
-          console.log('🎥 Final camera cleanup completed');
+          // Final camera cleanup completed
         }
 
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -111,24 +102,16 @@ export default function ShutdownPage() {
           try {
             // Try to access the parent window's recording session if available
             if (window.opener && window.opener.recordingSessionRef) {
-              console.log(
-                '🎥 Found recording session in parent window, uploading...'
-              );
               const { stopAndUpload } = await import('@/lib/proctor/recorder');
               await stopAndUpload(
                 window.opener.recordingSessionRef.current,
                 completionData.testAttemptId
               );
-              console.log('🎥 Recording upload completed from shutdown page');
             } else {
               // Give server time to process any pending uploads from the main page
-              console.log(
-                '🎥 No direct recording session access, waiting for server processing...'
-              );
               await new Promise((resolve) => setTimeout(resolve, 3000));
             }
           } catch (error) {
-            console.error('🎥 Error during recording upload:', error);
             // Continue with cleanup even if upload fails
             await new Promise((resolve) => setTimeout(resolve, 1000));
           }
@@ -164,7 +147,6 @@ export default function ShutdownPage() {
           `/test/${params.invitationId}/complete?invitationId=${completionData.invitationId}`
         );
       } catch (error) {
-        console.error('Shutdown error:', error);
         setError('An error occurred during cleanup. Redirecting anyway...');
 
         setTimeout(() => {
