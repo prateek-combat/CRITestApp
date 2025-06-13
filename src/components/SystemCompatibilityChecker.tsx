@@ -12,6 +12,7 @@ import {
   Play,
   Shield,
 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 interface CompatibilityResult {
   camera: {
@@ -424,7 +425,15 @@ export default function SystemCompatibilityChecker({
         );
       }
     } catch (error) {
-      console.warn('Network speed check failed:', error);
+      logger.warn(
+        'Network speed check failed',
+        {
+          component: 'SystemCompatibilityChecker',
+          operation: 'bandwidth_check',
+          userAgent: navigator.userAgent,
+        },
+        error as Error
+      );
       // Don't fail the entire compatibility check for network issues
       updateResult(
         'bandwidth',
@@ -459,7 +468,15 @@ export default function SystemCompatibilityChecker({
       await checkMicrophoneAccess();
       await checkBandwidth();
     } catch (error) {
-      console.error('Error during compatibility checks:', error);
+      logger.error(
+        'Error during compatibility checks',
+        {
+          component: 'SystemCompatibilityChecker',
+          operation: 'compatibility_checks',
+          userAgent: navigator.userAgent,
+        },
+        error as Error
+      );
     }
   };
 

@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { prisma } from './prisma';
+import { emailLogger } from './logger';
 
 interface TestCompletionData {
   testId: string;
@@ -35,9 +36,11 @@ interface NotificationSettings {
 const createTransporter = () => {
   // Use Gmail configuration for all environments
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-    console.warn(
-      'Gmail credentials not configured for enhanced email service. Please set GMAIL_USER and GMAIL_APP_PASSWORD environment variables.'
-    );
+    emailLogger.warn('Gmail credentials not configured', {
+      message:
+        'Please set GMAIL_USER and GMAIL_APP_PASSWORD environment variables',
+      service: 'enhanced_email_service',
+    });
     // Fallback to generic SMTP if Gmail not configured
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -81,7 +84,14 @@ export class EnhancedEmailService {
 
       return test;
     } catch (error) {
-      console.error('Error fetching notification settings:', error);
+      emailLogger.error(
+        'Failed to fetch notification settings',
+        {
+          testId,
+          operation: 'get_notification_settings',
+        },
+        error as Error
+      );
       return null;
     }
   }
@@ -172,7 +182,15 @@ export class EnhancedEmailService {
         improvementAreas,
       };
     } catch (error) {
-      console.error('Error calculating analytics:', error);
+      emailLogger.error(
+        'Failed to calculate analytics',
+        {
+          testId,
+          currentScore,
+          operation: 'calculate_analytics',
+        },
+        error as Error
+      );
       // Return default analytics in case of error
       return {
         totalAttempts: 1,
