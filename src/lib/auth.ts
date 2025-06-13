@@ -136,7 +136,7 @@ export const authOptions: NextAuthOptions = {
             authorized: true,
           });
           (user as any).role = 'SUPER_ADMIN';
-          (user as any).dbId = 'prateek-admin-id';
+          (user as any).dbId = 'b2585d8d-02e4-4355-95a4-9d28cc92b81e';
           return true;
         }
 

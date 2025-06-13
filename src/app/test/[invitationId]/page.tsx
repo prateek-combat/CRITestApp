@@ -6,6 +6,8 @@ import QuestionTimer from '@/components/QuestionTimer';
 import SystemCompatibilityChecker from '@/components/SystemCompatibilityChecker';
 import QuestionBookmark from '@/components/QuestionBookmark';
 import TestProgressBar from '@/components/TestProgressBar';
+import QuestionCard from '@/components/QuestionCard';
+import AnswerColumn from '@/components/AnswerColumn';
 
 import BookmarkedQuestionsReview from '@/components/BookmarkedQuestionsReview';
 import Link from 'next/link';
@@ -1583,6 +1585,17 @@ export default function TestPage() {
           </div>
         )}
 
+        {/* Slim progress bar */}
+        <progress
+          max={invitation.test.questions.length}
+          value={Object.keys(answers).length}
+          className={`h-1 w-full appearance-none [&::-webkit-progress-bar]:bg-gray-200 ${
+            isPersonalityQuestion(currentQuestion)
+              ? '[&::-webkit-progress-value]:bg-blue-600'
+              : '[&::-webkit-progress-value]:bg-green-600'
+          }`}
+        />
+
         {/* Compact header matching website theme */}
         <header className="sticky top-0 z-40 bg-military-green text-white shadow-sm">
           <div className="px-4 py-3">
@@ -1703,216 +1716,88 @@ export default function TestPage() {
           </div>
         )}
 
-        {/* Main Content Area - Split Layout */}
-        <main className="flex min-h-0 flex-1 bg-gray-50">
-          {/* Left Half - Question Content */}
-          <div className="flex min-h-0 w-1/2 flex-col border-r border-gray-200 bg-white p-4">
-            <div className="flex-1 overflow-y-auto">
-              <div className="space-y-4">
-                {/* Question Header */}
-                <div className="mb-4">
-                  <div className="mb-2 flex items-center space-x-2">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium text-white ${
-                        isPersonalityQuestion(currentQuestion)
-                          ? 'bg-blue-600'
-                          : 'bg-military-green'
-                      }`}
-                    >
-                      {isPersonalityQuestion(currentQuestion) ? '🧠' : '📝'}{' '}
-                      Question {currentQuestionIndex + 1}
-                    </span>
-                    <span className="text-xs text-gray-500">
-                      {currentQuestion.category}
-                    </span>
-                    {isPersonalityQuestion(currentQuestion) &&
-                      currentQuestion.personalityDimension && (
-                        <span className="inline-flex items-center rounded-full bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-700">
-                          {currentQuestion.personalityDimension.name}
-                        </span>
-                      )}
-                  </div>
-                  <h2 className="whitespace-pre-wrap text-lg font-bold leading-tight text-gray-900">
-                    {currentQuestion.promptText}
-                  </h2>
+        {/* Main Content Area - Desktop Grid Layout */}
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto bg-gray-50 py-6">
+            <div className="mx-auto grid min-h-full max-w-screen-lg grid-cols-2 gap-8 px-4">
+              {/* Question Card */}
+              <div className="flex max-h-full flex-col">
+                <div className="flex-1 overflow-y-auto">
+                  <QuestionCard
+                    question={currentQuestion}
+                    index={currentQuestionIndex}
+                    className="h-full"
+                  />
                 </div>
+              </div>
 
-                {/* Question Image */}
-                {currentQuestion.promptImageUrl && (
-                  <div className="flex justify-center">
-                    <img
-                      src={currentQuestion.promptImageUrl}
-                      alt="Question prompt"
-                      className="max-h-64 max-w-full rounded-lg object-contain shadow-sm"
+              {/* Answer Column */}
+              <div className="flex max-h-full flex-col">
+                <div className="flex-1 overflow-y-auto">
+                  <div className="h-full rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <AnswerColumn
+                      question={currentQuestion}
+                      selectedAnswerIndex={
+                        answers[currentQuestion.id]?.answerIndex
+                      }
+                      confidenceScore={confidenceScores[currentQuestion.id]}
+                      onAnswerSelect={(index) =>
+                        handleAnswer(currentQuestion.id, index)
+                      }
+                      onConfidenceChange={(score) =>
+                        handleConfidenceChange(currentQuestion.id, score)
+                      }
                     />
                   </div>
-                )}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Right Half - Answer Options */}
-          <div className="flex min-h-0 w-1/2 flex-col bg-gray-50 p-4">
-            <div className="flex-1 overflow-y-auto">
-              <div className="space-y-2">
-                <h3 className="mb-3 text-base font-medium text-gray-900">
-                  {isPersonalityQuestion(currentQuestion)
-                    ? 'Select the option that best describes your approach:'
-                    : 'Choose your answer:'}
-                </h3>
-
-                {currentQuestion.answerOptions.map((option, index) => {
-                  const isSelected =
-                    answers[currentQuestion.id]?.answerIndex === index;
-                  const optionLetter = String.fromCharCode(65 + index); // A, B, C, D...
-                  const isPersonality = isPersonalityQuestion(currentQuestion);
-
-                  return (
-                    <button
-                      key={index}
-                      onClick={() => handleAnswer(currentQuestion.id, index)}
-                      className={`w-full rounded-lg border-2 p-3 text-left transition-all duration-200 ${
-                        isSelected
-                          ? isPersonality
-                            ? 'border-blue-500 bg-blue-50 text-blue-900 shadow-md'
-                            : 'border-military-green bg-green-50 text-green-900 shadow-md'
-                          : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+          {/* Compact Footer with Navigation and Timer */}
+          <div className="flex-shrink-0 border-t border-gray-200 bg-white px-6 py-4">
+            <div className="flex flex-col items-center space-y-3">
+              {/* Top Row - Timer and Status */}
+              <div className="flex items-center space-x-6">
+                {/* Answer Status */}
+                <div className="flex items-center space-x-2">
+                  {answers[currentQuestion.id] ? (
+                    <div
+                      className={`flex items-center space-x-1 ${
+                        isPersonalityQuestion(currentQuestion)
+                          ? 'text-blue-600'
+                          : 'text-green-600'
                       }`}
                     >
-                      <div className="flex items-start space-x-3">
-                        <div
-                          className={`mt-0.5 h-4 w-4 flex-shrink-0 rounded-full border-2 ${
-                            isSelected
-                              ? isPersonality
-                                ? 'border-blue-500 bg-blue-500'
-                                : 'border-military-green bg-military-green'
-                              : 'border-gray-300'
-                          }`}
-                        >
-                          {isSelected && (
-                            <div className="m-0.5 h-2 w-2 rounded-full bg-white"></div>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <div className="mb-1 flex items-center space-x-2">
-                            <span
-                              className={`rounded px-1.5 py-0.5 text-xs font-bold ${
-                                isSelected
-                                  ? isPersonality
-                                    ? 'bg-blue-200 text-blue-800'
-                                    : 'bg-green-200 text-green-800'
-                                  : 'bg-gray-200 text-gray-600'
-                              }`}
-                            >
-                              {optionLetter}
-                            </span>
-                          </div>
-                          <span className="text-sm leading-relaxed">
-                            {option}
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-
-                {/* Confidence Slider for Personality Questions */}
-                {isPersonalityQuestion(currentQuestion) &&
-                  answers[currentQuestion.id] && (
-                    <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50/50 p-3">
-                      <div className="mb-2 flex items-center justify-between">
-                        <label className="text-xs font-medium text-blue-800">
-                          How confident are you in this choice?
-                        </label>
-                        <span className="text-xs text-blue-600">
-                          {confidenceScores[currentQuestion.id] || 3}/5
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs text-blue-600">Not sure</span>
-                        <input
-                          type="range"
-                          min="1"
-                          max="5"
-                          value={confidenceScores[currentQuestion.id] || 3}
-                          onChange={(e) =>
-                            handleConfidenceChange(
-                              currentQuestion.id,
-                              parseInt(e.target.value)
-                            )
-                          }
-                          className="slider h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-blue-200"
-                          style={{
-                            background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((confidenceScores[currentQuestion.id] || 3) - 1) * 25}%, #cbd5e1 ${((confidenceScores[currentQuestion.id] || 3) - 1) * 25}%, #cbd5e1 100%)`,
-                          }}
+                      <svg
+                        className="h-3 w-3"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
                         />
-                        <span className="text-xs text-blue-600">Very sure</span>
-                      </div>
+                      </svg>
+                      <span className="text-xs font-medium">
+                        {isPersonalityQuestion(currentQuestion)
+                          ? 'Recorded'
+                          : 'Selected'}
+                      </span>
                     </div>
-                  )}
-              </div>
-            </div>
-          </div>
-        </main>
-
-        {/* Compact Footer with Navigation and Timer */}
-        <div className="flex-shrink-0 border-t border-gray-200 bg-white px-6 py-4">
-          <div className="flex flex-col items-center space-y-3">
-            {/* Top Row - Timer and Status */}
-            <div className="flex items-center space-x-6">
-              {/* Answer Status */}
-              <div className="flex items-center space-x-2">
-                {answers[currentQuestion.id] ? (
-                  <div
-                    className={`flex items-center space-x-1 ${
-                      isPersonalityQuestion(currentQuestion)
-                        ? 'text-blue-600'
-                        : 'text-green-600'
-                    }`}
-                  >
-                    <svg
-                      className="h-3 w-3"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span className="text-xs font-medium">
+                  ) : (
+                    <span className="text-xs text-gray-400">
                       {isPersonalityQuestion(currentQuestion)
-                        ? 'Recorded'
-                        : 'Selected'}
+                        ? 'Select response'
+                        : 'Select answer'}
                     </span>
-                  </div>
-                ) : (
-                  <span className="text-xs text-gray-400">
-                    {isPersonalityQuestion(currentQuestion)
-                      ? 'Select response'
-                      : 'Select answer'}
-                  </span>
-                )}
-              </div>
+                  )}
+                </div>
 
-              {/* Compact Timer */}
-              <div className="flex items-center space-x-2 rounded-full bg-gray-100 px-3 py-1">
-                <svg
-                  className="h-4 w-4 text-gray-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span className="text-sm font-medium text-gray-900">
-                  {(() => {
+                {/* Compact Timer */}
+                <div
+                  className={`flex items-center space-x-2 rounded-full px-3 py-1 ${(() => {
                     const timeEpoch =
                       questionStartTime[currentQuestion.id]?.epoch || 0;
                     const elapsed = timeEpoch
@@ -1922,19 +1807,17 @@ export default function TestPage() {
                       0,
                       currentQuestion.timerSeconds - elapsed
                     );
-                    const minutes = Math.floor(remaining / 60);
-                    const seconds = remaining % 60;
-                    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                  })()}
-                </span>
-              </div>
+                    const remainingPercent =
+                      (remaining / currentQuestion.timerSeconds) * 100;
 
-              {/* Progress indicator */}
-              <div className="h-2 w-32 rounded-full bg-gray-200">
-                <div
-                  className="h-2 rounded-full bg-indigo-600 transition-all duration-1000"
-                  style={{
-                    width: `${(() => {
+                    if (remainingPercent <= 20) {
+                      return 'animate-pulse border border-red-200 bg-red-100';
+                    }
+                    return 'bg-gray-100';
+                  })()}`}
+                >
+                  <svg
+                    className={`h-4 w-4 ${(() => {
                       const timeEpoch =
                         questionStartTime[currentQuestion.id]?.epoch || 0;
                       const elapsed = timeEpoch
@@ -1944,22 +1827,155 @@ export default function TestPage() {
                         0,
                         currentQuestion.timerSeconds - elapsed
                       );
-                      return (remaining / currentQuestion.timerSeconds) * 100;
-                    })()}%`,
-                  }}
-                ></div>
+                      const remainingPercent =
+                        (remaining / currentQuestion.timerSeconds) * 100;
+
+                      if (remainingPercent <= 20) {
+                        return 'text-red-600';
+                      }
+                      return 'text-gray-600';
+                    })()}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span
+                    className={`text-sm font-medium ${(() => {
+                      const timeEpoch =
+                        questionStartTime[currentQuestion.id]?.epoch || 0;
+                      const elapsed = timeEpoch
+                        ? Math.floor((Date.now() - timeEpoch) / 1000)
+                        : 0;
+                      const remaining = Math.max(
+                        0,
+                        currentQuestion.timerSeconds - elapsed
+                      );
+                      const remainingPercent =
+                        (remaining / currentQuestion.timerSeconds) * 100;
+
+                      if (remainingPercent <= 20) {
+                        return 'text-red-800';
+                      }
+                      return 'text-gray-900';
+                    })()}`}
+                  >
+                    {(() => {
+                      const timeEpoch =
+                        questionStartTime[currentQuestion.id]?.epoch || 0;
+                      const elapsed = timeEpoch
+                        ? Math.floor((Date.now() - timeEpoch) / 1000)
+                        : 0;
+                      const remaining = Math.max(
+                        0,
+                        currentQuestion.timerSeconds - elapsed
+                      );
+                      const minutes = Math.floor(remaining / 60);
+                      const seconds = remaining % 60;
+                      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    })()}
+                  </span>
+                </div>
+
+                {/* Progress indicator */}
+                <div className="h-2 w-32 rounded-full bg-gray-200">
+                  <div
+                    className={`h-2 rounded-full transition-all duration-1000 ${(() => {
+                      const timeEpoch =
+                        questionStartTime[currentQuestion.id]?.epoch || 0;
+                      const elapsed = timeEpoch
+                        ? Math.floor((Date.now() - timeEpoch) / 1000)
+                        : 0;
+                      const remaining = Math.max(
+                        0,
+                        currentQuestion.timerSeconds - elapsed
+                      );
+                      const remainingPercent =
+                        (remaining / currentQuestion.timerSeconds) * 100;
+
+                      if (remainingPercent <= 20) {
+                        return 'bg-red-500';
+                      }
+                      return 'bg-indigo-600';
+                    })()}`}
+                    style={{
+                      width: `${(() => {
+                        const timeEpoch =
+                          questionStartTime[currentQuestion.id]?.epoch || 0;
+                        const elapsed = timeEpoch
+                          ? Math.floor((Date.now() - timeEpoch) / 1000)
+                          : 0;
+                        const remaining = Math.max(
+                          0,
+                          currentQuestion.timerSeconds - elapsed
+                        );
+                        return (remaining / currentQuestion.timerSeconds) * 100;
+                      })()}%`,
+                    }}
+                  ></div>
+                </div>
+
+                {/* Progress Text */}
+                <span className="text-sm text-gray-500">
+                  {Object.keys(answers).length} of{' '}
+                  {invitation.test.questions.length} answered
+                </span>
+
+                {/* Bookmark indicator */}
+                {invitation.test.allowReview &&
+                  bookmarkedQuestions.has(currentQuestion.id) && (
+                    <div className="flex items-center space-x-1 text-amber-600">
+                      <svg
+                        className="h-4 w-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+                      </svg>
+                      <span className="text-xs font-medium">Bookmarked</span>
+                    </div>
+                  )}
               </div>
 
-              {/* Progress Text */}
-              <span className="text-sm text-gray-500">
-                {Object.keys(answers).length} of{' '}
-                {invitation.test.questions.length} answered
-              </span>
+              {/* Bottom Row - Navigation and Action Buttons */}
+              <div className="flex items-center justify-center space-x-4">
+                {/* Previous Button */}
+                <button
+                  onClick={() => navigateQuestion('prev')}
+                  disabled={
+                    currentQuestionIndex === 0 || !invitation.test.allowReview
+                  }
+                  className={`rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                    currentQuestionIndex === 0 || !invitation.test.allowReview
+                      ? 'cursor-not-allowed bg-gray-100 text-gray-400'
+                      : 'border border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100'
+                  }`}
+                  title={
+                    !invitation.test.allowReview
+                      ? 'Navigation back to previous questions is disabled for this test'
+                      : ''
+                  }
+                >
+                  Previous
+                </button>
 
-              {/* Bookmark indicator */}
-              {invitation.test.allowReview &&
-                bookmarkedQuestions.has(currentQuestion.id) && (
-                  <div className="flex items-center space-x-1 text-amber-600">
+                {/* Bookmark Button */}
+                {invitation.test.allowReview && (
+                  <button
+                    onClick={() => handleBookmarkToggle(currentQuestion.id)}
+                    className={`rounded-md px-3 py-2 text-sm transition-all duration-200 ${
+                      bookmarkedQuestions.has(currentQuestion.id)
+                        ? 'border border-amber-300 bg-amber-100 text-amber-700 hover:bg-amber-200'
+                        : 'border border-gray-300 bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                    title="Bookmark for review"
+                  >
                     <svg
                       className="h-4 w-4"
                       fill="currentColor"
@@ -1967,84 +1983,41 @@ export default function TestPage() {
                     >
                       <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
                     </svg>
-                    <span className="text-xs font-medium">Bookmarked</span>
-                  </div>
+                  </button>
                 )}
-            </div>
 
-            {/* Bottom Row - Navigation and Action Buttons */}
-            <div className="flex items-center justify-center space-x-4">
-              {/* Previous Button */}
-              <button
-                onClick={() => navigateQuestion('prev')}
-                disabled={
-                  currentQuestionIndex === 0 || !invitation.test.allowReview
-                }
-                className={`rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 ${
-                  currentQuestionIndex === 0 || !invitation.test.allowReview
-                    ? 'cursor-not-allowed bg-gray-100 text-gray-400'
-                    : 'border border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100'
-                }`}
-                title={
-                  !invitation.test.allowReview
-                    ? 'Navigation back to previous questions is disabled for this test'
-                    : ''
-                }
-              >
-                Previous
-              </button>
+                {/* Review Button */}
+                {invitation.test.allowReview &&
+                  bookmarkedQuestions.size > 0 && (
+                    <button
+                      onClick={() => setShowBookmarkedReview(true)}
+                      className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-military-green transition-all duration-200 hover:bg-green-100"
+                    >
+                      Review ({bookmarkedQuestions.size})
+                    </button>
+                  )}
 
-              {/* Bookmark Button */}
-              {invitation.test.allowReview && (
-                <button
-                  onClick={() => handleBookmarkToggle(currentQuestion.id)}
-                  className={`rounded-md px-3 py-2 text-sm transition-all duration-200 ${
-                    bookmarkedQuestions.has(currentQuestion.id)
-                      ? 'border border-amber-300 bg-amber-100 text-amber-700 hover:bg-amber-200'
-                      : 'border border-gray-300 bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                  title="Bookmark for review"
-                >
-                  <svg
-                    className="h-4 w-4"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
+                {/* Next/Submit Button */}
+                {currentQuestionIndex < invitation.test.questions.length - 1 ? (
+                  <button
+                    onClick={() => navigateQuestion('next')}
+                    className="rounded-md bg-military-green px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-opacity-90"
                   >
-                    <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
-                  </svg>
-                </button>
-              )}
-
-              {/* Review Button */}
-              {invitation.test.allowReview && bookmarkedQuestions.size > 0 && (
-                <button
-                  onClick={() => setShowBookmarkedReview(true)}
-                  className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-military-green transition-all duration-200 hover:bg-green-100"
-                >
-                  Review ({bookmarkedQuestions.size})
-                </button>
-              )}
-
-              {/* Next/Submit Button */}
-              {currentQuestionIndex < invitation.test.questions.length - 1 ? (
-                <button
-                  onClick={() => navigateQuestion('next')}
-                  className="rounded-md bg-military-green px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-opacity-90"
-                >
-                  Next
-                </button>
-              ) : (
-                <button
-                  onClick={submitTest}
-                  disabled={isSubmitting}
-                  className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isSubmitting ? 'Submitting...' : 'Submit'}
-                </button>
-              )}
+                    Next
+                  </button>
+                ) : (
+                  <button
+                    onClick={submitTest}
+                    disabled={isSubmitting}
+                    className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Submit'}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        </main>
 
         {/* Hidden video element for recording */}
         <video
