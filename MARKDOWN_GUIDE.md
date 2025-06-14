@@ -1,6 +1,10 @@
-# Markdown Support in Test Questions
+# HTML & Markdown Support in Test Questions
 
-The test platform now supports **Markdown formatting** in question text (`promptText`), allowing you to create rich, well-formatted questions with code syntax highlighting, tables, lists, and more.
+The test platform now supports both **HTML and Markdown formatting** in question text (`promptText`), allowing you to create rich, well-formatted questions with code syntax highlighting, tables, lists, and more.
+
+## 🚀 **NEW: HTML Support**
+
+For maximum control and compatibility, you can now use **HTML directly** in your questions! The system automatically detects HTML content and renders it securely with DOMPurify sanitization.
 
 ## 🎯 Features Supported
 
@@ -16,10 +20,48 @@ The test platform now supports **Markdown formatting** in question text (`prompt
 
 ## 📝 How to Use
 
-Simply write your question text using standard Markdown syntax in the `promptText` field when creating questions.
+You have two options for formatting questions:
+
+### Option 1: HTML (Recommended)
+Write your question text using HTML tags in the `promptText` field. The system automatically detects HTML and renders it securely.
+
+### Option 2: Markdown (Fallback)
+Write your question text using standard Markdown syntax in the `promptText` field when creating questions.
 
 ### Example Question Creation
 
+#### HTML Format (Recommended):
+```javascript
+const question = await prisma.question.create({
+  data: {
+    promptText: `<h1>JavaScript Array Methods</h1>
+
+<p>Which method correctly filters an array?</p>
+
+<pre><code class="language-javascript">const numbers = [1, 2, 3, 4, 5];
+// Your code here
+</code></pre>
+
+<p><strong>Requirements:</strong></p>
+<ul>
+  <li>Use modern ES6+ syntax</li>
+  <li>Return only even numbers</li>
+</ul>`,
+    category: 'LOGICAL',
+    timerSeconds: 60,
+    answerOptions: [
+      'numbers.filter(n => n % 2 === 0)',
+      'numbers.map(n => n % 2 === 0)',
+      'numbers.find(n => n % 2 === 0)',
+      'numbers.reduce((acc, n) => n % 2 === 0)'
+    ],
+    correctAnswerIndex: 0,
+    testId: 'your-test-id'
+  }
+});
+```
+
+#### Markdown Format (Fallback):
 ```javascript
 const question = await prisma.question.create({
   data: {
@@ -49,7 +91,127 @@ const numbers = [1, 2, 3, 4, 5];
 });
 ```
 
-## 🎨 Formatting Examples
+## 🎨 HTML Formatting Examples (Recommended)
+
+### 1. Headers and Structure
+
+```html
+<h1>Main Topic</h1>
+<h2>Subtopic</h2>
+<h3>Specific Question</h3>
+
+<p>This creates a clear hierarchy in your questions.</p>
+```
+
+### 2. Code Blocks with Syntax Highlighting
+
+```html
+<pre><code class="language-javascript">
+function fibonacci(n) {
+  if (n <= 1) return n;
+  return fibonacci(n - 1) + fibonacci(n - 2);
+}
+</code></pre>
+
+<pre><code class="language-python">
+def quicksort(arr):
+    if len(arr) <= 1:
+        return arr
+    pivot = arr[len(arr) // 2]
+    return quicksort([x for x in arr if x < pivot]) + \
+           [x for x in arr if x == pivot] + \
+           quicksort([x for x in arr if x > pivot])
+</code></pre>
+
+<pre><code class="language-sql">
+SELECT department, AVG(salary) as avg_salary
+FROM employees 
+WHERE hire_date > '2020-01-01'
+GROUP BY department
+ORDER BY avg_salary DESC;
+</code></pre>
+```
+
+### 3. Inline Code
+
+```html
+<p>Use the <code>Array.prototype.filter()</code> method to solve this problem.</p>
+<p>The variable <code>userName</code> should be validated before processing.</p>
+```
+
+### 4. Tables for Data
+
+```html
+<table>
+  <thead>
+    <tr>
+      <th>Function</th>
+      <th>Time Complexity</th>
+      <th>Space Complexity</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Binary Search</td>
+      <td>O(log n)</td>
+      <td>O(1)</td>
+    </tr>
+    <tr>
+      <td>Quick Sort</td>
+      <td>O(n log n)</td>
+      <td>O(log n)</td>
+    </tr>
+    <tr>
+      <td>Hash Table Lookup</td>
+      <td>O(1)</td>
+      <td>O(n)</td>
+    </tr>
+  </tbody>
+</table>
+```
+
+### 5. Lists for Requirements
+
+```html
+<p><strong>Requirements:</strong></p>
+<ul>
+  <li>Function must be pure (no side effects)</li>
+  <li>Handle edge cases (empty arrays, null values)</li>
+  <li>Use ES6+ arrow functions</li>
+  <li>Return type should be consistent</li>
+</ul>
+
+<p><strong>Given constraints:</strong></p>
+<ol>
+  <li>Array length: 1 ≤ n ≤ 10^5</li>
+  <li>Element values: -10^9 ≤ arr[i] ≤ 10^9</li>
+  <li>Time limit: 2 seconds</li>
+  <li>Memory limit: 256 MB</li>
+</ol>
+```
+
+### 6. Emphasis and Formatting
+
+```html
+<p>This is <strong>very important</strong> information.</p>
+<p>This is <em>emphasized</em> text.</p>
+<p>This is <strong><em>both bold and italic</em></strong>.</p>
+
+<blockquote>
+  <p><strong>Hint:</strong> Consider using a hash map for O(1) lookups.</p>
+  <p><strong>Note:</strong> The algorithm should handle duplicate values correctly.</p>
+</blockquote>
+```
+
+### 7. Links and References
+
+```html
+<p>Refer to the <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter" target="_blank">MDN Documentation</a> for more details.</p>
+
+<p>See the <a href="https://pep8.org/" target="_blank">Python PEP 8 Style Guide</a> for coding standards.</p>
+```
+
+## 🎨 Markdown Formatting Examples (Fallback)
 
 ### 1. Headers and Structure
 
@@ -279,9 +441,21 @@ Brief context or setup
 - Keep tables readable and not too wide
 - Include headers for clarity
 
-## 🎯 Demo Test
+## 🎯 Demo Tests
 
-A demo test has been created with ID: `65270b1a-8ec9-4de0-8898-7e005019065c`
+### HTML Demo Test
+A comprehensive HTML demo test has been created with ID: `01607f7d-e268-45e4-b28a-0890157ab0c8`
+
+This test includes examples of:
+- ✅ **HTML headers and structure**
+- ✅ **Code blocks with syntax highlighting**
+- ✅ **Tables for structured data**
+- ✅ **Lists and bullet points**
+- ✅ **Bold, italic, and inline code**
+- ✅ **Blockquotes for hints**
+
+### Markdown Demo Test (Fallback)
+A markdown demo test has been created with ID: `65270b1a-8ec9-4de0-8898-7e005019065c`
 
 This test includes examples of:
 - Code syntax highlighting
