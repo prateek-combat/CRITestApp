@@ -645,17 +645,40 @@ export default function SystemCompatibilityChecker({
           <p className="mb-4 text-sm text-primary-600">
             {overallStatus === 'pass'
               ? 'All systems are working correctly. Camera and microphone permissions have been granted.'
-              : 'Please resolve the issues above before starting the test.'}
+              : 'Some hardware issues were detected. You can still continue with the test, but proctoring features may be limited.'}
           </p>
 
-          {overallStatus === 'pass' && onStartTest && (
-            <button
-              onClick={onStartTest}
-              className="mx-auto flex items-center space-x-2 rounded-lg bg-primary-600 px-6 py-3 font-medium text-white transition-colors hover:bg-primary-700"
-            >
-              <Play className="h-5 w-5" />
-              <span>Continue to Test</span>
-            </button>
+          {/* Show Continue button for both pass and fail states */}
+          {onStartTest && (
+            <div className="space-y-3">
+              <button
+                onClick={onStartTest}
+                className="mx-auto flex items-center space-x-2 rounded-lg bg-primary-600 px-6 py-3 font-medium text-white transition-colors hover:bg-primary-700"
+              >
+                <Play className="h-5 w-5" />
+                <span>
+                  {overallStatus === 'pass'
+                    ? 'Continue to Test'
+                    : 'Continue Anyway'}
+                </span>
+              </button>
+
+              {overallStatus === 'fail' && (
+                <div className="mx-auto max-w-md rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <div className="flex items-start space-x-2">
+                    <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+                    <div className="text-left">
+                      <p className="text-xs text-amber-700">
+                        <strong>Note:</strong> Continuing without
+                        camera/microphone may limit proctoring capabilities. The
+                        test will still function normally, but some monitoring
+                        features may not be available.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
