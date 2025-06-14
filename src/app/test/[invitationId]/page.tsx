@@ -111,6 +111,7 @@ export default function TestPage() {
   );
   const [showBookmarkedReview, setShowBookmarkedReview] = useState(false);
   const [showProgressBar, setShowProgressBar] = useState(false);
+  const [currentTime, setCurrentTime] = useState(Date.now());
 
   // Personality question states
   const [confidenceScores, setConfidenceScores] = useState<
@@ -898,6 +899,19 @@ export default function TestPage() {
     }
   }, [invitation, currentQuestionIndex, navigateQuestion, submitTest]);
 
+  // Timer display update effect - updates currentTime every second to trigger re-renders
+  useEffect(() => {
+    if (!testStarted) {
+      return;
+    }
+
+    const timerId = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+
+    return () => clearInterval(timerId);
+  }, [testStarted]);
+
   // Timer countdown effect - automatically advance when time expires
   useEffect(() => {
     if (!testStarted || !invitation?.test?.questions?.[currentQuestionIndex]) {
@@ -912,7 +926,7 @@ export default function TestPage() {
     }
 
     const calculateRemainingTime = () => {
-      const elapsed = Math.floor((Date.now() - startTimeData.epoch) / 1000);
+      const elapsed = Math.floor((currentTime - startTimeData.epoch) / 1000);
       return Math.max(0, currentQuestion.timerSeconds - elapsed);
     };
 
@@ -923,22 +937,18 @@ export default function TestPage() {
       return;
     }
 
-    // Set up interval to check time every second
-    const timerId = setInterval(() => {
-      const remaining = calculateRemainingTime();
-      if (remaining === 0) {
-        clearInterval(timerId);
-        handleTimeExpired();
-      }
-    }, 1000);
-
-    return () => clearInterval(timerId);
+    // Check time every time currentTime updates
+    const remaining = calculateRemainingTime();
+    if (remaining === 0) {
+      handleTimeExpired();
+    }
   }, [
     testStarted,
     invitation,
     currentQuestionIndex,
     questionStartTime,
     handleTimeExpired,
+    currentTime,
   ]);
 
   if (isLoading) {
@@ -1815,7 +1825,7 @@ export default function TestPage() {
                     const timeEpoch =
                       questionStartTime[currentQuestion.id]?.epoch || 0;
                     const elapsed = timeEpoch
-                      ? Math.floor((Date.now() - timeEpoch) / 1000)
+                      ? Math.floor((currentTime - timeEpoch) / 1000)
                       : 0;
                     const remaining = Math.max(
                       0,
@@ -1835,7 +1845,7 @@ export default function TestPage() {
                       const timeEpoch =
                         questionStartTime[currentQuestion.id]?.epoch || 0;
                       const elapsed = timeEpoch
-                        ? Math.floor((Date.now() - timeEpoch) / 1000)
+                        ? Math.floor((currentTime - timeEpoch) / 1000)
                         : 0;
                       const remaining = Math.max(
                         0,
@@ -1865,7 +1875,7 @@ export default function TestPage() {
                       const timeEpoch =
                         questionStartTime[currentQuestion.id]?.epoch || 0;
                       const elapsed = timeEpoch
-                        ? Math.floor((Date.now() - timeEpoch) / 1000)
+                        ? Math.floor((currentTime - timeEpoch) / 1000)
                         : 0;
                       const remaining = Math.max(
                         0,
@@ -1884,7 +1894,7 @@ export default function TestPage() {
                       const timeEpoch =
                         questionStartTime[currentQuestion.id]?.epoch || 0;
                       const elapsed = timeEpoch
-                        ? Math.floor((Date.now() - timeEpoch) / 1000)
+                        ? Math.floor((currentTime - timeEpoch) / 1000)
                         : 0;
                       const remaining = Math.max(
                         0,
@@ -1904,7 +1914,7 @@ export default function TestPage() {
                       const timeEpoch =
                         questionStartTime[currentQuestion.id]?.epoch || 0;
                       const elapsed = timeEpoch
-                        ? Math.floor((Date.now() - timeEpoch) / 1000)
+                        ? Math.floor((currentTime - timeEpoch) / 1000)
                         : 0;
                       const remaining = Math.max(
                         0,
@@ -1923,7 +1933,7 @@ export default function TestPage() {
                         const timeEpoch =
                           questionStartTime[currentQuestion.id]?.epoch || 0;
                         const elapsed = timeEpoch
-                          ? Math.floor((Date.now() - timeEpoch) / 1000)
+                          ? Math.floor((currentTime - timeEpoch) / 1000)
                           : 0;
                         const remaining = Math.max(
                           0,
