@@ -582,9 +582,12 @@ export default function ManageTestsPage() {
                           key={q.id}
                           className="rounded-md border bg-off-white p-4 shadow-sm"
                         >
-                          <p className="font-medium text-text-dark">
-                            {index + 1}. {q.promptText}
-                          </p>
+                          <div className="font-medium text-text-dark">
+                            {index + 1}.{' '}
+                            {q.promptText.length > 100
+                              ? q.promptText.substring(0, 100) + '...'
+                              : q.promptText}
+                          </div>
                           <p className="mt-1 text-xs text-text-light">
                             Type:{' '}
                             <span className="font-semibold text-accent-orange">

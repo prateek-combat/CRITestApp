@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 // Define question categories locally to avoid Prisma client issues
 const QUESTION_CATEGORIES = [
   'LOGICAL',
@@ -1839,9 +1840,12 @@ export default function TestEditPage({
                       </button>
                     </div>
                   </div>
-                  <p className="mt-2 whitespace-pre-wrap text-sm text-gray-600">
-                    {question.promptText}
-                  </p>
+                  <div className="mt-2">
+                    <MarkdownRenderer
+                      content={question.promptText}
+                      className="text-sm text-gray-600"
+                    />
+                  </div>
                   {question.promptImageUrl && (
                     <div className="mt-2">
                       <img

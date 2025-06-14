@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 
 interface Question {
   id: string;
@@ -196,9 +197,10 @@ export default function TestAttemptPage() {
             {currentQuestion && (
               <div className="space-y-4">
                 <div>
-                  <p className="whitespace-pre-wrap text-base leading-relaxed text-gray-800">
-                    {currentQuestion.promptText}
-                  </p>
+                  <MarkdownRenderer
+                    content={currentQuestion.promptText}
+                    className="text-base leading-relaxed"
+                  />
                 </div>
                 {currentQuestion.promptImageUrl && (
                   <div className="flex justify-center">

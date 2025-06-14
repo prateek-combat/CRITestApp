@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 
 interface AnswerOption {
   text: string;
@@ -301,9 +302,10 @@ export default function TestTakingPage({
         </div>
 
         <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
-          <p className="whitespace-pre-wrap text-lg text-gray-700 sm:text-xl">
-            {currentQuestion.promptText}
-          </p>
+          <MarkdownRenderer
+            content={currentQuestion.promptText}
+            className="text-lg text-gray-700 sm:text-xl"
+          />
           {currentQuestion.promptImageUrl && (
             <div className="mt-4">
               <img

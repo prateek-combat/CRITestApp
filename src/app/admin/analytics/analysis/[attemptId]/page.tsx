@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 
 interface ProctorEvent {
   id: string;
@@ -425,9 +426,12 @@ export default function ProctorAnalysisPage() {
                           </div>
                         </div>
 
-                        <p className="mb-4 whitespace-pre-wrap text-gray-700">
-                          {question.promptText}
-                        </p>
+                        <div className="mb-4">
+                          <MarkdownRenderer
+                            content={question.promptText}
+                            className="text-gray-700"
+                          />
+                        </div>
 
                         {question.promptImageUrl && (
                           <div className="mb-4">
