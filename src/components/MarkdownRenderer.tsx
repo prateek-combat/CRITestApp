@@ -1,8 +1,5 @@
 import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeHighlight from 'rehype-highlight';
-import 'highlight.js/styles/github.css'; // You can change this to other themes
+import DOMPurify from 'isomorphic-dompurify';
 
 interface MarkdownRendererProps {
   content: string;
@@ -13,100 +10,153 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   content,
   className = '',
 }) => {
-  return (
-    <div className={`markdown-content ${className}`}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeHighlight]}
-        components={{
-          // Custom styling for different markdown elements
-          h1: ({ children }) => (
-            <h1 className="mb-4 text-2xl font-bold text-gray-900">
-              {children}
-            </h1>
-          ),
-          h2: ({ children }) => (
-            <h2 className="mb-3 text-xl font-semibold text-gray-900">
-              {children}
-            </h2>
-          ),
-          h3: ({ children }) => (
-            <h3 className="mb-2 text-lg font-medium text-gray-900">
-              {children}
-            </h3>
-          ),
-          p: ({ children }) => (
-            <p className="mb-3 leading-relaxed text-gray-800">{children}</p>
-          ),
-          code: ({ inline, className, children, ...props }: any) => {
-            const match = /language-(\w+)/.exec(className || '');
-            return !inline && match ? (
-              <pre className="mb-4 overflow-x-auto rounded-lg bg-gray-100 p-4">
-                <code className={className} {...props}>
-                  {children}
-                </code>
-              </pre>
-            ) : (
-              <code
-                className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-sm text-gray-800"
-                {...props}
-              >
-                {children}
-              </code>
-            );
-          },
-          pre: ({ children }) => (
-            <pre className="mb-4 overflow-x-auto rounded-lg bg-gray-100 p-4">
-              {children}
-            </pre>
-          ),
-          ul: ({ children }) => (
-            <ul className="mb-3 list-disc space-y-1 pl-6">{children}</ul>
-          ),
-          ol: ({ children }) => (
-            <ol className="mb-3 list-decimal space-y-1 pl-6">{children}</ol>
-          ),
-          li: ({ children }) => <li className="text-gray-800">{children}</li>,
-          blockquote: ({ children }) => (
-            <blockquote className="mb-4 border-l-4 border-gray-300 pl-4 italic text-gray-700">
-              {children}
-            </blockquote>
-          ),
-          table: ({ children }) => (
-            <div className="mb-4 overflow-x-auto">
-              <table className="min-w-full border-collapse border border-gray-300">
-                {children}
-              </table>
-            </div>
-          ),
-          th: ({ children }) => (
-            <th className="border border-gray-300 bg-gray-100 px-3 py-2 text-left font-semibold">
-              {children}
-            </th>
-          ),
-          td: ({ children }) => (
-            <td className="border border-gray-300 px-3 py-2">{children}</td>
-          ),
-          strong: ({ children }) => (
-            <strong className="font-semibold text-gray-900">{children}</strong>
-          ),
-          em: ({ children }) => (
-            <em className="italic text-gray-800">{children}</em>
-          ),
-          a: ({ href, children }) => (
-            <a
-              href={href}
-              className="text-blue-600 underline hover:text-blue-800"
-              target="_blank"
-              rel="noopener noreferrer"
+  // Check if content looks like HTML (contains HTML tags)
+  const isHTML = /<[^>]*>/g.test(content);
+
+  if (isHTML) {
+    // Sanitize HTML content for security
+    const sanitizedHTML = DOMPurify.sanitize(content, {
+      ALLOWED_TAGS: [
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'p',
+        'br',
+        'div',
+        'span',
+        'strong',
+        'b',
+        'em',
+        'i',
+        'u',
+        'ul',
+        'ol',
+        'li',
+        'table',
+        'thead',
+        'tbody',
+        'tr',
+        'th',
+        'td',
+        'pre',
+        'code',
+        'blockquote',
+        'a',
+      ],
+      ALLOWED_ATTR: ['class', 'href', 'target', 'rel'],
+      ALLOW_DATA_ATTR: false,
+    });
+
+    return (
+      <div
+        className={`html-content ${className}`}
+        dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
+      />
+    );
+  }
+
+  // Fallback: Simple markdown-like rendering for plain text
+  const renderMarkdown = (text: string) => {
+    const lines = text.split('\n');
+    const elements: React.ReactNode[] = [];
+    let currentCodeBlock = '';
+    let inCodeBlock = false;
+    let codeLanguage = '';
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      // Handle code blocks
+      if (line.startsWith('```')) {
+        if (inCodeBlock) {
+          elements.push(
+            <pre
+              key={i}
+              className="mb-4 overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 p-4"
             >
-              {children}
-            </a>
-          ),
-        }}
-      >
-        {content}
-      </ReactMarkdown>
+              <code className={`language-${codeLanguage}`}>
+                {currentCodeBlock}
+              </code>
+            </pre>
+          );
+          currentCodeBlock = '';
+          inCodeBlock = false;
+          codeLanguage = '';
+        } else {
+          codeLanguage = line.substring(3).trim();
+          inCodeBlock = true;
+        }
+        continue;
+      }
+
+      if (inCodeBlock) {
+        currentCodeBlock += line + '\n';
+        continue;
+      }
+
+      // Handle headers
+      if (line.startsWith('# ')) {
+        elements.push(
+          <h1
+            key={i}
+            className="mb-4 border-b border-gray-200 pb-2 text-2xl font-bold text-gray-900"
+          >
+            {line.substring(2)}
+          </h1>
+        );
+      } else if (line.startsWith('## ')) {
+        elements.push(
+          <h2
+            key={i}
+            className="mb-3 border-b border-gray-200 pb-1 text-xl font-semibold text-gray-900"
+          >
+            {line.substring(3)}
+          </h2>
+        );
+      } else if (line.startsWith('### ')) {
+        elements.push(
+          <h3 key={i} className="mb-2 text-lg font-medium text-gray-900">
+            {line.substring(4)}
+          </h3>
+        );
+      } else if (line.startsWith('- ')) {
+        elements.push(
+          <div key={i} className="mb-1 pl-4">
+            <span className="text-gray-600">•</span> {line.substring(2)}
+          </div>
+        );
+      } else if (line.trim() === '') {
+        elements.push(<br key={i} />);
+      } else {
+        let processedLine = line;
+        processedLine = processedLine.replace(
+          /\*\*(.*?)\*\*/g,
+          '<strong>$1</strong>'
+        );
+        processedLine = processedLine.replace(
+          /`([^`]+)`/g,
+          '<code class="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-sm text-gray-800">$1</code>'
+        );
+
+        elements.push(
+          <p
+            key={i}
+            className="mb-3 leading-relaxed text-gray-800"
+            dangerouslySetInnerHTML={{ __html: processedLine }}
+          />
+        );
+      }
+    }
+
+    return elements;
+  };
+
+  return (
+    <div className={`content-renderer ${className}`}>
+      {renderMarkdown(content)}
     </div>
   );
 };

@@ -50,6 +50,7 @@
     "eslint-config-next": "^15.3.3",
     "highlight.js": "^11.11.1",
     "html2canvas": "^1.4.1",
+    "isomorphic-dompurify": "^2.25.0",
     "jspdf": "^3.0.1",
     "lucide-react": "^0.512.0",
     "mic-check": "^1.1.0",
