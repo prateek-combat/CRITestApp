@@ -1,4 +1,5 @@
 import React from 'react';
+import MarkdownRenderer from './MarkdownRenderer';
 
 interface QuestionCardProps {
   question: {
@@ -54,9 +55,12 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
       </header>
 
       <div className="flex-1 overflow-y-auto px-6 pb-6">
-        <h2 className="mb-4 whitespace-pre-wrap text-lg font-semibold leading-snug text-gray-900">
-          {question.promptText}
-        </h2>
+        <div className="mb-4">
+          <MarkdownRenderer
+            content={question.promptText}
+            className="text-lg font-semibold leading-snug"
+          />
+        </div>
 
         {question.promptImageUrl && (
           <div className="flex justify-center">

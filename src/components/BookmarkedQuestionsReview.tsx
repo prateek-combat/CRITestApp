@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Bookmark, Clock, CheckCircle, AlertCircle, X } from 'lucide-react';
+import MarkdownRenderer from './MarkdownRenderer';
 
 interface Question {
   id: string;
@@ -189,9 +190,10 @@ export default function BookmarkedQuestionsReview({
                 <div
                   className={`rounded-lg border p-4 ${getStatusColor(getQuestionStatus(selectedQuestion.id))}`}
                 >
-                  <p className="whitespace-pre-wrap leading-relaxed text-gray-800">
-                    {selectedQuestion.promptText}
-                  </p>
+                  <MarkdownRenderer
+                    content={selectedQuestion.promptText}
+                    className="leading-relaxed"
+                  />
                   {selectedQuestion.promptImageUrl && (
                     <div className="mt-4">
                       <img
