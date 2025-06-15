@@ -138,9 +138,6 @@ export default function BookmarkedQuestionsReview({
                         {question.promptText.substring(0, 60)}...
                       </p>
                       <div className="mt-1 flex items-center space-x-2">
-                        <span className="rounded bg-gray-100 px-1 text-xs text-gray-500">
-                          {question.category}
-                        </span>
                         <div className="flex items-center space-x-1 text-xs text-gray-500">
                           <Clock className="h-3 w-3" />
                           <span>{question.timerSeconds}s</span>
@@ -177,9 +174,6 @@ export default function BookmarkedQuestionsReview({
                       1}
                   </h3>
                   <div className="flex items-center space-x-3">
-                    <span className="rounded bg-gray-100 px-2 py-1 text-sm text-gray-500">
-                      {selectedQuestion.category}
-                    </span>
                     <div className="flex items-center space-x-1 text-sm text-gray-500">
                       <Clock className="h-4 w-4" />
                       <span>{selectedQuestion.timerSeconds}s</span>
@@ -243,9 +237,8 @@ export default function BookmarkedQuestionsReview({
                           </span>
                           <p
                             className={`mt-1 ${isSelected ? 'text-primary-800' : 'text-gray-600'}`}
-                          >
-                            {option}
-                          </p>
+                            dangerouslySetInnerHTML={{ __html: option }}
+                          />
                         </div>
                       </div>
                     </button>

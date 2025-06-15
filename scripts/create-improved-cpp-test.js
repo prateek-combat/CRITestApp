@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * Script to create an improved C++ Programming Test with HTML formatting
- * This script creates comprehensive C++ questions with proper HTML formatting for better readability
+ * Script to create the C++ Robotics Programming Test
+ * This script populates the database with 30 robotics-focused C++ questions.
  */
 
 const { PrismaClient } = require('@prisma/client');
@@ -11,627 +11,481 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log(
-    '🚀 Creating Improved C++ Programming Test with HTML formatting...\n'
+    '🚀 Creating C++ Robotics Programming Test with 30 questions...\n'
   );
 
   try {
-    // Connect to database
     await prisma.$connect();
-    console.log('✅ Database connected successfully\n');
+    console.log('✅ Database connected successfully');
 
-    // Get or create admin user
-    let adminUser = await prisma.user.findFirst({
+    const adminUser = await prisma.user.findFirst({
       where: { role: 'ADMIN' },
     });
-
     if (!adminUser) {
-      adminUser = await prisma.user.create({
-        data: {
-          email: 'admin@testplatform.com',
-          passwordHash: 'admin',
-          firstName: 'Admin',
-          lastName: 'User',
-          role: 'ADMIN',
-        },
-      });
-      console.log('✅ Admin user created');
-    } else {
-      console.log('✅ Admin user found');
+      console.error(
+        '❌ Admin user not found. Please create an admin user first.'
+      );
+      return;
     }
+    console.log('✅ Admin user found');
 
-    // Delete existing C++ test if it exists
-    const existingTest = await prisma.test.findFirst({
-      where: { title: 'C++ Programming Test' },
-    });
+    const testTitle = 'C++ Programming Test';
 
-    if (existingTest) {
-      console.log('🗑️ Deleting existing C++ Programming Test...');
-      await prisma.test.delete({
-        where: { id: existingTest.id },
-      });
-      console.log('✅ Existing test deleted');
-    }
+    console.log(`🗑️ Deleting existing '${testTitle}'...`);
+    await prisma.test.deleteMany({ where: { title: testTitle } });
+    console.log('✅ Existing test deleted');
 
-    // Create the improved test
     const test = await prisma.test.create({
       data: {
-        title: 'C++ Programming Test',
+        title: testTitle,
         description:
-          'A comprehensive C++ programming assessment covering modern C++ features, STL, memory management, threading, and best practices.',
-        overallTimeLimitSeconds: 3600, // 60 minutes total
-        lockOrder: false,
-        allowReview: true,
+          'A comprehensive test of C++ knowledge for robotics applications, covering modern C++, performance, memory management, and robotics-specific scenarios.',
         createdById: adminUser.id,
-        includeAnalytics: true,
-        emailNotificationsEnabled: true,
       },
     });
+    console.log(`✅ Test created: ${test.title} (ID: ${test.id})\n`);
 
-    console.log(`✅ Test created: ${test.title}`);
-    console.log(`   Test ID: ${test.id}\n`);
-
-    // Define comprehensive C++ questions with HTML formatting
     const questions = [
-      // STL Containers (5 questions)
       {
-        promptText: `<h3>STL Vector vs Array</h3>
-<p>Consider the following code snippet:</p>
-<pre><code>std::vector&lt;int&gt; vec = {1, 2, 3, 4, 5};
-int arr[] = {1, 2, 3, 4, 5};
-
-// Adding a new element
-vec.push_back(6);
-// arr[5] = 6; // This would be unsafe</code></pre>
-<p><strong>What is the primary advantage of using <code>std::vector</code> over a raw array?</strong></p>`,
+        promptText:
+          "**Your robot's camera driver creates a large image buffer each frame. Which C++ feature helps you move this buffer to a processing thread without copying the underlying data?**",
         category: 'OTHER',
-        timerSeconds: 90,
+        timerSeconds: 30,
         answerOptions: [
-          '<strong>Dynamic resizing and automatic memory management</strong>',
-          'Faster access to elements',
-          'Less memory usage',
-          'Better cache performance',
+          '`std::move` on a `std::vector<uint8_t>`',
+          'Passing by `const` reference',
+          '`std::copy` with `std::back_inserter`',
+          '`std::memcpy` into a new array',
         ],
         correctAnswerIndex: 0,
-        sectionTag: 'STL Containers',
+        sectionTag: 'Robotics C++',
       },
       {
-        promptText: `<h3>Container Selection</h3>
-<p>You need to store 64 floating-point values that represent sensor readings. The size is fixed and known at compile time.</p>
-<p><strong>Which container is most appropriate for this use case?</strong></p>`,
+        promptText:
+          '**Why is RAII useful when you open a serial port to a motor controller?**',
         category: 'OTHER',
-        timerSeconds: 90,
+        timerSeconds: 30,
         answerOptions: [
-          '<code>std::array&lt;float, 64&gt;</code>',
-          '<code>std::vector&lt;float&gt;</code>',
-          '<code>std::deque&lt;float&gt;</code>',
-          '<code>std::list&lt;float&gt;</code>',
-        ],
-        correctAnswerIndex: 0,
-        sectionTag: 'STL Containers',
-      },
-      {
-        promptText: `<h3>Vector Operations</h3>
-<p>Consider this code:</p>
-<pre><code>std::vector&lt;Pose&gt; poses;
-poses.reserve(1000);
-
-// Option A
-poses.push_back(Pose(x, y, z));
-
-// Option B  
-poses.emplace_back(x, y, z);</code></pre>
-<p><strong>What is the advantage of using <code>emplace_back</code> over <code>push_back</code>?</strong></p>`,
-        category: 'OTHER',
-        timerSeconds: 90,
-        answerOptions: [
-          '<strong>It avoids constructing a temporary Pose object</strong>',
-          'It provides thread safety',
-          'It automatically sorts the vector',
-          'It uses less memory',
-        ],
-        correctAnswerIndex: 0,
-        sectionTag: 'STL Containers',
-      },
-      {
-        promptText: `<h3>Deque vs Vector</h3>
-<p>You're implementing a packet buffer where you frequently add packets to the back and remove them from the front.</p>
-<p><strong>Why would <code>std::deque</code> be better than <code>std::vector</code> for this use case?</strong></p>`,
-        category: 'OTHER',
-        timerSeconds: 90,
-        answerOptions: [
-          'Vectors are always faster',
-          '<strong><code>std::deque</code> provides efficient insertion/deletion at both ends</strong>',
-          'Deque uses less memory',
-          'Vectors cannot store packets',
+          'It makes the code compile faster',
+          'It guarantees the port closes even if an exception is thrown',
+          'It avoids dynamic memory',
+          'It speeds up I/O operations',
         ],
         correctAnswerIndex: 1,
-        sectionTag: 'STL Containers',
+        sectionTag: 'Robotics C++',
       },
       {
-        promptText: `<h3>Vector Memory Management</h3>
-<p>Consider this scenario:</p>
-<pre><code>std::vector&lt;int&gt; vec;
-vec.reserve(1000);
-for(int i = 0; i &lt; 500; ++i) {
-    vec.push_back(i);
-}
-// vec now has 500 elements but capacity of 1000</code></pre>
-<p><strong>What happens when you call <code>vec.shrink_to_fit()</code>?</strong></p>`,
+        promptText:
+          '**In your lidar node you share point-cloud data with multiple modules. Which smart pointer fits a read-only, many-readers pattern?**',
         category: 'OTHER',
-        timerSeconds: 90,
+        timerSeconds: 30,
         answerOptions: [
-          "Nothing, it's not a valid operation",
-          '<strong>It reduces capacity to match the current size</strong>',
-          'It clears all elements',
-          'It doubles the capacity',
-        ],
-        correctAnswerIndex: 1,
-        sectionTag: 'STL Containers',
-      },
-
-      // Smart Pointers (5 questions)
-      {
-        promptText: `<h3>Smart Pointer Selection</h3>
-<p>You're designing a scene graph where nodes can have multiple parent nodes pointing to them.</p>
-<p><strong>Which smart pointer is most appropriate for managing the shared ownership?</strong></p>`,
-        category: 'OTHER',
-        timerSeconds: 90,
-        answerOptions: [
-          '<code>std::unique_ptr</code>',
-          '<strong><code>std::shared_ptr</code></strong>',
-          '<code>std::weak_ptr</code>',
+          '`std::shared_ptr<const PointCloud>`',
+          '`std::unique_ptr<PointCloud>`',
           'Raw pointer',
+          '`std::weak_ptr<PointCloud>` directly',
         ],
-        correctAnswerIndex: 1,
-        sectionTag: 'Smart Pointers',
+        correctAnswerIndex: 0,
+        sectionTag: 'Robotics C++',
       },
       {
-        promptText: `<h3>Unique Pointer</h3>
-<p>Consider this code:</p>
-<pre><code>std::unique_ptr&lt;Device&gt; createDevice() {
-    return std::make_unique&lt;Device&gt;("sensor");
-}
-
-auto device = createDevice();
-// auto device2 = device; // This won't compile</code></pre>
-<p><strong>How do you transfer ownership of the device to another unique_ptr?</strong></p>`,
+        promptText:
+          '**A 1 kHz control loop must lock and unlock a mutex on every cycle. Which lock type adds the least overhead?**',
         category: 'OTHER',
-        timerSeconds: 90,
+        timerSeconds: 30,
         answerOptions: [
-          '<code>auto device2 = device.copy();</code>',
-          '<strong><code>auto device2 = std::move(device);</code></strong>',
-          '<code>auto device2 = device.get();</code>',
-          '<code>auto device2 = &device;</code>',
-        ],
-        correctAnswerIndex: 1,
-        sectionTag: 'Smart Pointers',
-      },
-      {
-        promptText: `<h3>Weak Pointer Usage</h3>
-<p>You have a parent-child relationship where children need to reference their parent, but you want to avoid circular references.</p>
-<p><strong>What's the best approach?</strong></p>`,
-        category: 'OTHER',
-        timerSeconds: 90,
-        answerOptions: [
-          'Parent holds <code>shared_ptr</code> to children, children hold <code>shared_ptr</code> to parent',
-          '<strong>Parent holds <code>shared_ptr</code> to children, children hold <code>weak_ptr</code> to parent</strong>',
-          'Use raw pointers for everything',
-          'Parent holds <code>weak_ptr</code> to children, children hold <code>shared_ptr</code> to parent',
-        ],
-        correctAnswerIndex: 1,
-        sectionTag: 'Smart Pointers',
-      },
-      {
-        promptText: `<h3>CUDA Memory Management</h3>
-<p>You're working with CUDA and need to manage device memory to avoid accidental host access.</p>
-<p><strong>What's the best choice for type-safe device memory management?</strong></p>`,
-        category: 'OTHER',
-        timerSeconds: 90,
-        answerOptions: [
-          '<code>void*</code> with manual casting',
-          '<code>std::unique_ptr&lt;float&gt;</code>',
-          'Raw <code>float*</code> pointer',
-          '<strong><code>thrust::device_vector&lt;float&gt;</code></strong>',
-        ],
-        correctAnswerIndex: 3,
-        sectionTag: 'Smart Pointers',
-      },
-      {
-        promptText: `<h3>Optional Values</h3>
-<p>You have a function that may or may not return a valid result:</p>
-<pre><code>??? findDevice(const std::string& name) {
-    // May not find the device
-    if (device_found) {
-        return std::make_unique&lt;Device&gt;(name);
-    }
-    return ???; // What to return when not found?
-}</code></pre>
-<p><strong>What's the best modern C++ approach for representing optional values?</strong></p>`,
-        category: 'OTHER',
-        timerSeconds: 90,
-        answerOptions: [
-          'Return <code>nullptr</code>',
-          'Throw an exception',
-          '<strong><code>std::optional&lt;std::unique_ptr&lt;Device&gt;&gt;</code></strong>',
-          'Return a boolean flag separately',
+          '`std::recursive_mutex`',
+          '`std::timed_mutex`',
+          '`std::mutex` with `std::lock_guard`',
+          '`std::shared_mutex`',
         ],
         correctAnswerIndex: 2,
-        sectionTag: 'Smart Pointers',
+        sectionTag: 'Robotics C++',
       },
-
-      // Threading and Synchronization (5 questions)
       {
-        promptText: `<h3>Mutex Selection</h3>
-<p>You have a data structure that needs to support multiple concurrent readers but exclusive writers.</p>
-<p><strong>Which synchronization primitive is most appropriate?</strong></p>`,
+        promptText:
+          '**You need to wake a logger thread only when new IMU data arrives. Which waiting mechanism is most appropriate?**',
         category: 'OTHER',
-        timerSeconds: 90,
+        timerSeconds: 30,
         answerOptions: [
-          '<code>std::mutex</code>',
-          '<strong><code>std::shared_mutex</code></strong>',
-          '<code>std::recursive_mutex</code>',
-          '<code>std::atomic&lt;bool&gt;</code>',
+          'Busy-wait loop with `sleep_for(1 ms)`',
+          '`std::condition_variable::wait`',
+          '`std::this_thread::yield()`',
+          '`std::atomic` spin loop',
         ],
         correctAnswerIndex: 1,
-        sectionTag: 'Threading',
+        sectionTag: 'Robotics C++',
       },
       {
-        promptText: `<h3>Thread Synchronization</h3>
-<p>A worker thread needs to wait for data to become available before processing it.</p>
-<p><strong>Which synchronization mechanism is most appropriate?</strong></p>`,
+        promptText:
+          '**A ring buffer for wheel speeds stores exactly 64 samples and never grows. The simplest modern C++ container is…**',
         category: 'OTHER',
-        timerSeconds: 90,
+        timerSeconds: 30,
         answerOptions: [
-          'Busy-wait loop with <code>std::this_thread::sleep_for(1ms)</code>',
-          '<strong><code>std::condition_variable</code> with <code>std::unique_lock</code></strong>',
-          '<code>std::this_thread::yield()</code> in a loop',
-          '<code>std::atomic</code> spin lock',
-        ],
-        correctAnswerIndex: 1,
-        sectionTag: 'Threading',
-      },
-      {
-        promptText: `<h3>Thread-Safe String Access</h3>
-<p>Multiple threads are accessing a shared std::string for reading and writing.</p>
-<p><strong>What's the quickest safe fix for thread safety?</strong></p>`,
-        category: 'OTHER',
-        timerSeconds: 90,
-        answerOptions: [
-          'Make the string <code>std::atomic&lt;std::string&gt;</code>',
-          '<strong>Protect access with a <code>std::mutex</code></strong>',
-          'Switch to <code>char[]</code> array',
-          "It's already thread-safe",
-        ],
-        correctAnswerIndex: 1,
-        sectionTag: 'Threading',
-      },
-      {
-        promptText: `<h3>Atomic Operations</h3>
-<p>You need to implement a shutdown flag that can be safely accessed by multiple threads.</p>
-<p><strong>Which memory ordering provides the strongest guarantees for a shutdown flag?</strong></p>`,
-        category: 'OTHER',
-        timerSeconds: 90,
-        answerOptions: [
-          'std::memory_order_relaxed',
-          'std::memory_order_acquire',
-          'std::memory_order_release',
-          'std::memory_order_seq_cst',
-        ],
-        correctAnswerIndex: 3,
-        sectionTag: 'Threading',
-      },
-      {
-        promptText: `<h3>Async Task Execution</h3>
-<p>You want to execute a function asynchronously and get the result later.</p>
-<p><strong>What's the standard C++ approach for this?</strong></p>`,
-        category: 'OTHER',
-        timerSeconds: 90,
-        answerOptions: [
-          'std::thread with global variables',
-          'std::async with std::future',
-          'Manual thread creation',
-          'std::packaged_task only',
-        ],
-        correctAnswerIndex: 1,
-        sectionTag: 'Threading',
-      },
-
-      // Modern C++ Features (5 questions)
-      {
-        promptText: `<h3>Compile-Time Constants</h3>
-<p>You need to define a wheel diameter constant that can be used in template parameters and compile-time calculations.</p>
-<p><strong>How should this be expressed in modern C++?</strong></p>`,
-        category: 'OTHER',
-        timerSeconds: 90,
-        answerOptions: [
-          'const double WHEEL_DIAM = 0.32;',
-          'constexpr double WHEEL_DIAM = 0.32;',
-          '#define WHEEL_DIAM 0.32',
-          'static const double WHEEL_DIAM = 0.32;',
-        ],
-        correctAnswerIndex: 1,
-        sectionTag: 'Modern C++',
-      },
-      {
-        promptText: `<h3>Conditional Compilation</h3>
-<p>You want to conditionally compile different code paths based on template parameters without affecting the ABI.</p>
-<p><strong>Which C++17 feature is best for this?</strong></p>`,
-        category: 'OTHER',
-        timerSeconds: 90,
-        answerOptions: [
-          'std::variant',
-          'constexpr if',
-          'dynamic_cast',
-          'virtual functions',
-        ],
-        correctAnswerIndex: 1,
-        sectionTag: 'Modern C++',
-      },
-      {
-        promptText: `<h3>Move Semantics</h3>
-<p>You want to make a class non-copyable but movable with minimal code.</p>
-<pre><code>class Sensor {
-public:
-    // What should go here?
-};</code></pre>
-<p><strong>What's the minimal approach?</strong></p>`,
-        category: 'OTHER',
-        timerSeconds: 90,
-        answerOptions: [
-          'Sensor(const Sensor&) = delete; Sensor& operator=(const Sensor&) = delete;',
-          'Sensor(Sensor&&) = default; Sensor& operator=(Sensor&&) = default;',
-          'Only declare move constructor and assignment',
-          'Rely on compiler defaults',
+          '`std::array<float,64>`',
+          '`std::vector<float>`',
+          '`std::deque<float>`',
+          '`std::list<float>`',
         ],
         correctAnswerIndex: 0,
-        sectionTag: 'Modern C++',
+        sectionTag: 'Robotics C++',
       },
       {
-        promptText: `<h3>Enum Classes</h3>
-<p>Compare traditional enums vs scoped enums:</p>
-<pre><code>enum Color { RED, GREEN, BLUE };           // Traditional
-enum class State { IDLE, RUNNING, ERROR }; // Scoped</code></pre>
-<p><strong>What's a key advantage of scoped enums (enum class)?</strong></p>`,
+        promptText:
+          '**While debugging, you see occasional data races on a shared `std::string` status message. Quickest safe fix?**',
         category: 'OTHER',
-        timerSeconds: 90,
+        timerSeconds: 30,
         answerOptions: [
-          'Better type safety and no implicit conversions',
-          'Faster switch-case performance',
-          'Uses less memory',
+          'Make the string atomic',
+          'Protect access with a `std::mutex`',
+          'Switch to `char[]`',
+          'Ignore; data races on strings are harmless',
+        ],
+        correctAnswerIndex: 1,
+        sectionTag: 'Robotics C++',
+      },
+      {
+        promptText:
+          '**Jetson heavy CPU usage comes from copying images between `std::vector`s. Which C++17 feature can avoid the copy in a resize operation?**',
+        category: 'OTHER',
+        timerSeconds: 30,
+        answerOptions: [
+          '`std::optional`',
+          '`std::vector::emplace_back`',
+          '`std::vector::shrink_to_fit`',
+          'Move constructors',
+        ],
+        correctAnswerIndex: 3,
+        sectionTag: 'Robotics C++',
+      },
+      {
+        promptText:
+          '**Why might `std::vector` be preferred over a raw array for variable-length sensor packets?**',
+        category: 'OTHER',
+        timerSeconds: 30,
+        answerOptions: [
+          'Vectors are always faster',
+          'Vectors handle dynamic resizing and manage memory safely',
+          'Vectors prevent segmentation faults automatically',
+          'Vectors cannot fragment memory',
+        ],
+        correctAnswerIndex: 1,
+        sectionTag: 'Robotics C++',
+      },
+      {
+        promptText:
+          '**A real-time task reads encoder counts. Which clock should you use to time-stamp readings?**',
+        category: 'OTHER',
+        timerSeconds: 30,
+        answerOptions: [
+          '`std::chrono::system_clock`',
+          '`std::chrono::steady_clock`',
+          '`std::chrono::high_resolution_clock` if defined as system',
+          '`time_t` from `<ctime>`',
+        ],
+        correctAnswerIndex: 1,
+        sectionTag: 'Robotics C++',
+      },
+      {
+        promptText:
+          '**You have a compute-intensive loop that can run on another core while the main thread handles ROS callbacks. Easiest standard tool?**',
+        category: 'OTHER',
+        timerSeconds: 30,
+        answerOptions: [
+          '`std::thread`',
+          '`std::async` with `std::launch::async`',
+          '`std::packaged_task`',
+          'OpenMP pragma',
+        ],
+        correctAnswerIndex: 0,
+        sectionTag: 'Robotics C++',
+      },
+      {
+        promptText:
+          '**What does `emplace_back` provide over `push_back` when adding a Pose struct into a vector?**',
+        category: 'OTHER',
+        timerSeconds: 30,
+        answerOptions: [
+          'It avoids constructing a temporary Pose object',
+          'It locks the vector',
+          'It sorts elements',
+          'Nothing; they are identical',
+        ],
+        correctAnswerIndex: 0,
+        sectionTag: 'Robotics C++',
+      },
+      {
+        promptText:
+          '**In a shared library used by multiple robot nodes, why is a header-only template interpolation function attractive?**',
+        category: 'OTHER',
+        timerSeconds: 30,
+        answerOptions: [
+          'Faster runtime',
+          'Avoids linking errors and enables inlining',
+          'Uses less RAM',
+          'Improves thread safety automatically',
+        ],
+        correctAnswerIndex: 1,
+        sectionTag: 'Robotics C++',
+      },
+      {
+        promptText:
+          '**Which C++11 keyword prevents unintentional copying of a LaserScanner class?**',
+        category: 'OTHER',
+        timerSeconds: 30,
+        answerOptions: ['`mutable`', '`override`', '`delete`', '`constexpr`'],
+        correctAnswerIndex: 2,
+        sectionTag: 'Robotics C++',
+      },
+      {
+        promptText:
+          '**When interfacing CUDA kernels from C++, which pointer type best represents device memory to avoid accidental host access?**',
+        category: 'OTHER',
+        timerSeconds: 30,
+        answerOptions: [
+          '`void*`',
+          '`std::unique_ptr<float>`',
+          '`float*`',
+          'Using `thrust::device_vector<float>`',
+        ],
+        correctAnswerIndex: 3,
+        sectionTag: 'Robotics C++',
+      },
+      {
+        promptText:
+          '**A timer callback modifies a global parameter while another thread reads it. Best synchronization primitive to allow concurrent reads but exclusive writes?**',
+        category: 'OTHER',
+        timerSeconds: 30,
+        answerOptions: [
+          '`std::mutex`',
+          '`std::shared_mutex`',
+          '`std::recursive_mutex`',
+          '`std::atomic<bool>`',
+        ],
+        correctAnswerIndex: 1,
+        sectionTag: 'Robotics C++',
+      },
+      {
+        promptText:
+          '**Why is `std::swap` specialised for `std::vector` efficient?**',
+        category: 'OTHER',
+        timerSeconds: 30,
+        answerOptions: [
+          'It copies all elements',
+          'It exchanges internal pointers in constant time',
+          'It reallocates memory',
+          'It sorts the vector',
+        ],
+        correctAnswerIndex: 1,
+        sectionTag: 'Robotics C++',
+      },
+      {
+        promptText:
+          '**In embedded builds without exceptions, what compile flag disables them for GCC/Clang?**',
+        category: 'OTHER',
+        timerSeconds: 30,
+        answerOptions: [
+          '`-fno-exceptions`',
+          '`-fno-rtti`',
+          '`-ffunction-sections`',
+          '`-nostdlib`',
+        ],
+        correctAnswerIndex: 0,
+        sectionTag: 'Robotics C++',
+      },
+      {
+        promptText:
+          '**The robot arm firmware uses `enum class` for state. Biggest advantage over traditional enums?**',
+        category: 'OTHER',
+        timerSeconds: 30,
+        answerOptions: [
+          'Scoped to avoid name collisions and strict underlying type',
+          'Faster switch-case',
+          'Uses less program memory',
           'Allows arithmetic operators by default',
         ],
         correctAnswerIndex: 0,
-        sectionTag: 'Modern C++',
+        sectionTag: 'Robotics C++',
       },
       {
-        promptText: `<h3>String Formatting</h3>
-<p>You need to format output strings efficiently in modern C++.</p>
-<p><strong>Which approach is recommended for C++20 and later?</strong></p>`,
+        promptText:
+          '**Which memory order is safest default for atomic flag used to stop all threads before shutdown?**',
         category: 'OTHER',
-        timerSeconds: 90,
+        timerSeconds: 30,
         answerOptions: [
-          '<code>std::stringstream</code> with <code>&lt;&lt;</code> operator',
-          '<strong><code>std::format</code> (C++20)</strong>',
-          '<code>sprintf</code> with char arrays',
-          'String concatenation with <code>+</code>',
+          '`std::memory_order_relaxed`',
+          '`std::memory_order_acquire`',
+          '`std::memory_order_release`',
+          '`std::memory_order_seq_cst`',
         ],
-        correctAnswerIndex: 1,
-        sectionTag: 'Modern C++',
-      },
-
-      // Performance and Optimization (5 questions)
-      {
-        promptText: `<h3>Function Inlining</h3>
-<p>You have a small interpolation function called frequently in a tight loop.</p>
-<p><strong>What makes this function attractive for compiler optimization?</strong></p>`,
-        category: 'OTHER',
-        timerSeconds: 90,
-        answerOptions: [
-          'Using virtual functions',
-          '<strong>Marking it <code>inline</code> or <code>constexpr</code> for inlining</strong>',
-          'Making it a template',
-          'Using function pointers',
-        ],
-        correctAnswerIndex: 1,
-        sectionTag: 'Performance',
+        correctAnswerIndex: 3,
+        sectionTag: 'Robotics C++',
       },
       {
-        promptText: `<h3>Cache Performance</h3>
-<p>You have multiple float variables accessed by different threads, causing false sharing.</p>
-<p><strong>What's a simple mitigation strategy?</strong></p>`,
+        promptText:
+          '**A compile-time constant for wheel diameter should be expressed how in modern C++?**',
         category: 'OTHER',
-        timerSeconds: 90,
+        timerSeconds: 30,
         answerOptions: [
-          '<strong>Pack them into a struct and use <code>alignas(64)</code></strong>',
-          'Use <code>volatile</code> keyword',
-          'Convert floats to integers',
-          'Use a bigger cache',
-        ],
-        correctAnswerIndex: 0,
-        sectionTag: 'Performance',
-      },
-      {
-        promptText: `<h3>Compiler Optimization</h3>
-<p>You're debugging a release build and finding it difficult to step through code.</p>
-<p><strong>Which optimization level may hinder debugging the most?</strong></p>`,
-        category: 'OTHER',
-        timerSeconds: 90,
-        answerOptions: [
-          '<code>-O2</code> (standard optimization)',
-          '<code>-Og</code> (optimize for debugging)',
-          '<strong><code>-O3</code> (aggressive optimization)</strong>',
-          '<code>-Os</code> (optimize for size)',
+          '`const double WHEEL_DIAM = 0.32;`',
+          '`static double const WHEEL_DIAM = 0.32;`',
+          '`constexpr double WHEEL_DIAM = 0.32;`',
+          '`#define WHEEL_DIAM 0.32`',
         ],
         correctAnswerIndex: 2,
-        sectionTag: 'Performance',
+        sectionTag: 'Robotics C++',
       },
       {
-        promptText: `<h3>Exception Handling</h3>
-<p>You're working on an embedded system where exceptions are disabled for performance.</p>
-<p><strong>Which GCC/Clang flag disables exception handling?</strong></p>`,
+        promptText:
+          '**Why choose `std::array` over `std::vector` for fixed-size 3-D position?**',
         category: 'OTHER',
-        timerSeconds: 90,
+        timerSeconds: 30,
         answerOptions: [
-          '<strong><code>-fno-exceptions</code></strong>',
-          '<code>-fno-rtti</code>',
-          '<code>-ffunction-sections</code>',
-          '<code>-nostdlib</code>',
+          '`array` uses heap memory',
+          '`array` size known at compile time enabling optimisation',
+          '`array` allows `push_back`',
+          '`vector` cannot store floats',
+        ],
+        correctAnswerIndex: 1,
+        sectionTag: 'Robotics C++',
+      },
+      {
+        promptText:
+          '**Your CAN bus handler pushes frames into a queue used by both CPU cores. Which STL container is inherently thread-safe?**',
+        category: 'OTHER',
+        timerSeconds: 30,
+        answerOptions: [
+          '`std::queue`',
+          '`std::deque`',
+          'None; wrapping with locks is required',
+          '`std::priority_queue`',
+        ],
+        correctAnswerIndex: 2,
+        sectionTag: 'Robotics C++',
+      },
+      {
+        promptText:
+          '**Template metaprogramming can remove branches in control code at compile time via?**',
+        category: 'OTHER',
+        timerSeconds: 30,
+        answerOptions: [
+          '`std::variant`',
+          '`constexpr if`',
+          '`dynamic_cast`',
+          'Virtual functions',
+        ],
+        correctAnswerIndex: 1,
+        sectionTag: 'Robotics C++',
+      },
+      {
+        promptText:
+          '**Which pointer type expresses nullable ownership of a dynamically allocated object like a planner that may or may not be present?**',
+        category: 'OTHER',
+        timerSeconds: 30,
+        answerOptions: [
+          '`std::shared_ptr`',
+          '`std::unique_ptr`',
+          '`std::weak_ptr`',
+          '`std::optional<std::unique_ptr<>>`',
+        ],
+        correctAnswerIndex: 3,
+        sectionTag: 'Robotics C++',
+      },
+      {
+        promptText:
+          '**You observe false sharing on two adjacent float variables updated by different threads. Simple mitigation?**',
+        category: 'OTHER',
+        timerSeconds: 30,
+        answerOptions: [
+          'Pack them into a struct and `alignas(64)`',
+          'Use `volatile`',
+          'Convert floats to ints',
+          'Use bigger cache',
         ],
         correctAnswerIndex: 0,
-        sectionTag: 'Performance',
+        sectionTag: 'Robotics C++',
       },
       {
-        promptText: `<h3>Time Measurement</h3>
-<p>You need to measure elapsed time for performance profiling in a way that's not affected by system clock changes.</p>
-<p><strong>Which clock type should you use?</strong></p>`,
+        promptText:
+          '**A high-frequency logger writes CSV lines to SD card. Which standard facility can format lines without creating temporary `std::string` objects?**',
         category: 'OTHER',
-        timerSeconds: 90,
+        timerSeconds: 30,
         answerOptions: [
-          '<code>std::chrono::system_clock</code>',
-          '<strong><code>std::chrono::steady_clock</code></strong>',
-          '<code>std::chrono::high_resolution_clock</code>',
-          '<code>time_t</code> from <code>&lt;ctime&gt;</code>',
+          '`std::ofstream << operator`',
+          '`std::format` (C++20)',
+          '`printf`',
+          '`ostringstream`',
         ],
         correctAnswerIndex: 1,
-        sectionTag: 'Performance',
-      },
-
-      // Memory Management (5 questions)
-      {
-        promptText: `<h3>Memory Allocation</h3>
-<p>Consider this code with a potential memory leak:</p>
-<pre><code>void processData() {
-    int* data = new int[1000];
-    // ... processing ...
-    if (error_condition) {
-        return; // Oops! Memory leak
-    }
-    delete[] data;
-}</code></pre>
-<p><strong>What's the best C++ fix?</strong></p>`,
-        category: 'OTHER',
-        timerSeconds: 90,
-        answerOptions: [
-          'Add try-catch blocks',
-          '<strong>Use <code>std::unique_ptr&lt;int[]&gt;</code> or <code>std::vector&lt;int&gt;</code></strong>',
-          'Use <code>malloc</code>/<code>free</code> instead',
-          'Add more <code>delete[]</code> statements',
-        ],
-        correctAnswerIndex: 1,
-        sectionTag: 'Memory Management',
+        sectionTag: 'Robotics C++',
       },
       {
-        promptText: `<h3>RAII Principle</h3>
-<p>You're managing a file handle that must be closed when done.</p>
-<p><strong>Which approach best follows RAII (Resource Acquisition Is Initialization)?</strong></p>`,
+        promptText:
+          '**When building ROS 2 Foxy with GCC 9 in Release, which flag maximises speed but may hinder debugging?**',
         category: 'OTHER',
-        timerSeconds: 90,
-        answerOptions: [
-          'Manual <code>fopen()</code> and <code>fclose()</code> calls',
-          '<strong><code>std::ifstream</code>/<code>std::ofstream</code> objects</strong>',
-          'Global file handles',
-          'Static file pointers',
-        ],
-        correctAnswerIndex: 1,
-        sectionTag: 'Memory Management',
+        timerSeconds: 30,
+        answerOptions: ['`-O2`', '`-Og`', '`-O3`', '`-Os`'],
+        correctAnswerIndex: 2,
+        sectionTag: 'Robotics C++',
       },
       {
-        promptText: `<h3>Stack vs Heap</h3>
-<p>You need to store a 3D position (x, y, z) with a fixed size known at compile time.</p>
-<p><strong>What's the advantage of std::array&lt;float, 3&gt; over std::vector&lt;float&gt;?</strong></p>`,
+        promptText:
+          '**A sensor interface class needs to be non-copyable but movable. Minimal code?**',
         category: 'OTHER',
-        timerSeconds: 90,
+        timerSeconds: 30,
         answerOptions: [
-          'Vector uses heap memory, array uses stack',
-          '<strong>Array enables better compiler optimizations</strong>',
-          'Vector cannot store exactly 3 floats',
-          'Array provides thread safety',
+          '`Sensor(const Sensor&) = delete; Sensor& operator=(const Sensor&) = delete; Sensor(Sensor&&) = default; Sensor& operator=(Sensor&&) = default;`',
+          'Declare all 4 special member functions default',
+          'Only declare move constructor',
+          'Rely on compiler defaults',
         ],
-        correctAnswerIndex: 1,
-        sectionTag: 'Memory Management',
+        correctAnswerIndex: 0,
+        sectionTag: 'Robotics C++',
       },
       {
-        promptText: `<h3>Move Semantics Benefits</h3>
-<p>Consider moving a large std::vector:</p>
-<pre><code>std::vector&lt;uint8_t&gt; large_data(1000000);
-std::vector&lt;uint8_t&gt; moved_data = std::move(large_data);</code></pre>
-<p><strong>What's the primary benefit of std::move here?</strong></p>`,
+        promptText:
+          '**During code review you spot `new` and `delete` in a control loop. Preferred modern C++ fix?**',
         category: 'OTHER',
-        timerSeconds: 90,
+        timerSeconds: 30,
         answerOptions: [
-          'It copies the data faster',
-          '<strong>It avoids copying 1 million bytes</strong>',
-          'It compresses the data',
-          'It validates the data',
+          'Leave as is',
+          'Replace with `std::make_unique` or stack objects to remove manual delete',
+          'Use `malloc`/`free` for speed',
+          'Add comments explaining why',
         ],
         correctAnswerIndex: 1,
-        sectionTag: 'Memory Management',
-      },
-      {
-        promptText: `<h3>Custom Deleters</h3>
-<p>You're interfacing with a C library that requires special cleanup:</p>
-<pre><code>// C library functions
-Device* create_device();
-void destroy_device(Device* dev);</code></pre>
-<p><strong>How do you properly wrap this in a smart pointer?</strong></p>`,
-        category: 'OTHER',
-        timerSeconds: 90,
-        answerOptions: [
-          '<code>std::unique_ptr&lt;Device&gt; ptr(create_device());</code>',
-          '<strong><code>std::unique_ptr&lt;Device, decltype(&destroy_device)&gt; ptr(create_device(), destroy_device);</code></strong>',
-          '<code>std::shared_ptr&lt;Device&gt; ptr(create_device());</code>',
-          'Use raw pointers only',
-        ],
-        correctAnswerIndex: 1,
-        sectionTag: 'Memory Management',
+        sectionTag: 'Robotics C++',
       },
     ];
 
-    // Create all questions
-    console.log('📝 Creating questions...\n');
-
-    for (let i = 0; i < questions.length; i++) {
-      const questionData = questions[i];
-
-      const question = await prisma.question.create({
+    console.log('📝 Creating 30 questions...');
+    for (const [index, q] of questions.entries()) {
+      await prisma.question.create({
         data: {
-          promptText: questionData.promptText,
-          timerSeconds: questionData.timerSeconds,
-          answerOptions: questionData.answerOptions,
-          correctAnswerIndex: questionData.correctAnswerIndex,
-          category: questionData.category,
-          sectionTag: questionData.sectionTag,
+          promptText: q.promptText,
+          category: q.category,
+          timerSeconds: q.timerSeconds,
+          answerOptions: q.answerOptions,
+          correctAnswerIndex: q.correctAnswerIndex,
+          sectionTag: q.sectionTag,
           testId: test.id,
         },
       });
-
-      console.log(`   ✅ Question ${i + 1}: ${questionData.sectionTag}`);
+      console.log(`   ✅ Question ${index + 1}: ${q.sectionTag}`);
     }
 
-    console.log(`\n🎉 Successfully created improved C++ Programming Test!`);
-    console.log(`   📊 Total questions: ${questions.length}`);
-    console.log(`   🆔 Test ID: ${test.id}`);
     console.log(
-      `   ⏱️  Time limit: ${test.overallTimeLimitSeconds / 60} minutes`
+      `\n🎉 Successfully created C++ Programming Test with 30 questions!`
     );
-    console.log(`\n💡 Features:`);
-    console.log(`   🎨 HTML formatted questions with syntax highlighting`);
-    console.log(`   📱 Optimized for single-page display`);
+    console.log(`   📊 Questions: ${questions.length}`);
     console.log(
-      `   🔧 Covers: STL, Smart Pointers, Threading, Modern C++, Performance`
-    );
-    console.log(
-      `\n💡 You can now use this test by creating invitations or public links!`
+      `   ⏰ Time per question: ${questions[0].timerSeconds} seconds`
     );
   } catch (error) {
-    console.error('❌ Error creating improved C++ test:', error);
-    throw error;
+    console.error('❌ Error creating test:', error);
   } finally {
     await prisma.$disconnect();
   }
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main();

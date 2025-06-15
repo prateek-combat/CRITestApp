@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
       data: {
         title: title.trim(),
         description: description?.trim() || null,
-        overallTimeLimitSeconds: 3600, // Default 1 hour
+
         createdById: adminUser.id,
       },
     });

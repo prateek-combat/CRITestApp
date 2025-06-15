@@ -1777,51 +1777,72 @@ export default function TestPage() {
               </div>
             </div>
           </div>
+        </main>
 
-          {/* Compact Footer with Navigation and Timer */}
-          <div className="flex-shrink-0 border-t border-gray-200 bg-white px-6 py-4">
-            <div className="flex flex-col items-center space-y-3">
-              {/* Top Row - Timer and Status */}
-              <div className="flex items-center space-x-6">
-                {/* Answer Status */}
-                <div className="flex items-center space-x-2">
-                  {answers[currentQuestion.id] ? (
-                    <div
-                      className={`flex items-center space-x-1 ${
-                        isPersonalityQuestion(currentQuestion)
-                          ? 'text-blue-600'
-                          : 'text-green-600'
-                      }`}
+        {/* Compact Footer with Navigation and Timer */}
+        <div className="flex-shrink-0 border-t border-gray-200 bg-white px-6 py-4">
+          <div className="flex flex-col items-center space-y-3">
+            {/* Top Row - Timer and Status */}
+            <div className="flex items-center space-x-6">
+              {/* Answer Status */}
+              <div className="flex items-center space-x-2">
+                {answers[currentQuestion.id] ? (
+                  <div
+                    className={`flex items-center space-x-1 ${
+                      isPersonalityQuestion(currentQuestion)
+                        ? 'text-blue-600'
+                        : 'text-green-600'
+                    }`}
+                  >
+                    <svg
+                      className="h-3 w-3"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
                     >
-                      <svg
-                        className="h-3 w-3"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      <span className="text-xs font-medium">
-                        {isPersonalityQuestion(currentQuestion)
-                          ? 'Recorded'
-                          : 'Selected'}
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-gray-400">
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="text-xs font-medium">
                       {isPersonalityQuestion(currentQuestion)
-                        ? 'Select response'
-                        : 'Select answer'}
+                        ? 'Recorded'
+                        : 'Selected'}
                     </span>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-400">
+                    {isPersonalityQuestion(currentQuestion)
+                      ? 'Select response'
+                      : 'Select answer'}
+                  </span>
+                )}
+              </div>
 
-                {/* Compact Timer */}
-                <div
-                  className={`flex items-center space-x-2 rounded-full px-3 py-1 ${(() => {
+              {/* Compact Timer */}
+              <div
+                className={`flex items-center space-x-2 rounded-full px-3 py-1 ${(() => {
+                  const timeEpoch =
+                    questionStartTime[currentQuestion.id]?.epoch || 0;
+                  const elapsed = timeEpoch
+                    ? Math.floor((currentTime - timeEpoch) / 1000)
+                    : 0;
+                  const remaining = Math.max(
+                    0,
+                    currentQuestion.timerSeconds - elapsed
+                  );
+                  const remainingPercent =
+                    (remaining / currentQuestion.timerSeconds) * 100;
+
+                  if (remainingPercent <= 20) {
+                    return 'animate-pulse border border-red-200 bg-red-100';
+                  }
+                  return 'bg-gray-100';
+                })()}`}
+              >
+                <svg
+                  className={`h-4 w-4 ${(() => {
                     const timeEpoch =
                       questionStartTime[currentQuestion.id]?.epoch || 0;
                     const elapsed = timeEpoch
@@ -1835,171 +1856,106 @@ export default function TestPage() {
                       (remaining / currentQuestion.timerSeconds) * 100;
 
                     if (remainingPercent <= 20) {
-                      return 'animate-pulse border border-red-200 bg-red-100';
+                      return 'text-red-600';
                     }
-                    return 'bg-gray-100';
+                    return 'text-gray-600';
+                  })()}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span
+                  className={`text-sm font-medium ${(() => {
+                    const timeEpoch =
+                      questionStartTime[currentQuestion.id]?.epoch || 0;
+                    const elapsed = timeEpoch
+                      ? Math.floor((currentTime - timeEpoch) / 1000)
+                      : 0;
+                    const remaining = Math.max(
+                      0,
+                      currentQuestion.timerSeconds - elapsed
+                    );
+                    const remainingPercent =
+                      (remaining / currentQuestion.timerSeconds) * 100;
+
+                    if (remainingPercent <= 20) {
+                      return 'text-red-800';
+                    }
+                    return 'text-gray-900';
                   })()}`}
                 >
-                  <svg
-                    className={`h-4 w-4 ${(() => {
-                      const timeEpoch =
-                        questionStartTime[currentQuestion.id]?.epoch || 0;
-                      const elapsed = timeEpoch
-                        ? Math.floor((currentTime - timeEpoch) / 1000)
-                        : 0;
-                      const remaining = Math.max(
-                        0,
-                        currentQuestion.timerSeconds - elapsed
-                      );
-                      const remainingPercent =
-                        (remaining / currentQuestion.timerSeconds) * 100;
-
-                      if (remainingPercent <= 20) {
-                        return 'text-red-600';
-                      }
-                      return 'text-gray-600';
-                    })()}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <span
-                    className={`text-sm font-medium ${(() => {
-                      const timeEpoch =
-                        questionStartTime[currentQuestion.id]?.epoch || 0;
-                      const elapsed = timeEpoch
-                        ? Math.floor((currentTime - timeEpoch) / 1000)
-                        : 0;
-                      const remaining = Math.max(
-                        0,
-                        currentQuestion.timerSeconds - elapsed
-                      );
-                      const remainingPercent =
-                        (remaining / currentQuestion.timerSeconds) * 100;
-
-                      if (remainingPercent <= 20) {
-                        return 'text-red-800';
-                      }
-                      return 'text-gray-900';
-                    })()}`}
-                  >
-                    {(() => {
-                      const timeEpoch =
-                        questionStartTime[currentQuestion.id]?.epoch || 0;
-                      const elapsed = timeEpoch
-                        ? Math.floor((currentTime - timeEpoch) / 1000)
-                        : 0;
-                      const remaining = Math.max(
-                        0,
-                        currentQuestion.timerSeconds - elapsed
-                      );
-                      const minutes = Math.floor(remaining / 60);
-                      const seconds = remaining % 60;
-                      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                    })()}
-                  </span>
-                </div>
-
-                {/* Progress indicator */}
-                <div className="h-2 w-32 rounded-full bg-gray-200">
-                  <div
-                    className={`h-2 rounded-full transition-all duration-1000 ${(() => {
-                      const timeEpoch =
-                        questionStartTime[currentQuestion.id]?.epoch || 0;
-                      const elapsed = timeEpoch
-                        ? Math.floor((currentTime - timeEpoch) / 1000)
-                        : 0;
-                      const remaining = Math.max(
-                        0,
-                        currentQuestion.timerSeconds - elapsed
-                      );
-                      const remainingPercent =
-                        (remaining / currentQuestion.timerSeconds) * 100;
-
-                      if (remainingPercent <= 20) {
-                        return 'bg-red-500';
-                      }
-                      return 'bg-indigo-600';
-                    })()}`}
-                    style={{
-                      width: `${(() => {
-                        const timeEpoch =
-                          questionStartTime[currentQuestion.id]?.epoch || 0;
-                        const elapsed = timeEpoch
-                          ? Math.floor((currentTime - timeEpoch) / 1000)
-                          : 0;
-                        const remaining = Math.max(
-                          0,
-                          currentQuestion.timerSeconds - elapsed
-                        );
-                        return (remaining / currentQuestion.timerSeconds) * 100;
-                      })()}%`,
-                    }}
-                  ></div>
-                </div>
-
-                {/* Progress Text */}
-                <span className="text-sm text-gray-500">
-                  {Object.keys(answers).length} of{' '}
-                  {invitation.test.questions.length} answered
+                  {(() => {
+                    const timeEpoch =
+                      questionStartTime[currentQuestion.id]?.epoch || 0;
+                    const elapsed = timeEpoch
+                      ? Math.floor((currentTime - timeEpoch) / 1000)
+                      : 0;
+                    const remaining = Math.max(
+                      0,
+                      currentQuestion.timerSeconds - elapsed
+                    );
+                    const minutes = Math.floor(remaining / 60);
+                    const seconds = remaining % 60;
+                    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                  })()}
                 </span>
-
-                {/* Bookmark indicator */}
-                {invitation.test.allowReview &&
-                  bookmarkedQuestions.has(currentQuestion.id) && (
-                    <div className="flex items-center space-x-1 text-amber-600">
-                      <svg
-                        className="h-4 w-4"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
-                      </svg>
-                      <span className="text-xs font-medium">Bookmarked</span>
-                    </div>
-                  )}
               </div>
 
-              {/* Bottom Row - Navigation and Action Buttons */}
-              <div className="flex items-center justify-center space-x-4">
-                {/* Previous Button */}
-                <button
-                  onClick={() => navigateQuestion('prev')}
-                  disabled={
-                    currentQuestionIndex === 0 || !invitation.test.allowReview
-                  }
-                  className={`rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 ${
-                    currentQuestionIndex === 0 || !invitation.test.allowReview
-                      ? 'cursor-not-allowed bg-gray-100 text-gray-400'
-                      : 'border border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100'
-                  }`}
-                  title={
-                    !invitation.test.allowReview
-                      ? 'Navigation back to previous questions is disabled for this test'
-                      : ''
-                  }
-                >
-                  Previous
-                </button>
+              {/* Progress indicator */}
+              <div className="h-2 w-32 rounded-full bg-gray-200">
+                <div
+                  className={`h-2 rounded-full transition-all duration-1000 ${(() => {
+                    const timeEpoch =
+                      questionStartTime[currentQuestion.id]?.epoch || 0;
+                    const elapsed = timeEpoch
+                      ? Math.floor((currentTime - timeEpoch) / 1000)
+                      : 0;
+                    const remaining = Math.max(
+                      0,
+                      currentQuestion.timerSeconds - elapsed
+                    );
+                    const remainingPercent =
+                      (remaining / currentQuestion.timerSeconds) * 100;
 
-                {/* Bookmark Button */}
-                {invitation.test.allowReview && (
-                  <button
-                    onClick={() => handleBookmarkToggle(currentQuestion.id)}
-                    className={`rounded-md px-3 py-2 text-sm transition-all duration-200 ${
-                      bookmarkedQuestions.has(currentQuestion.id)
-                        ? 'border border-amber-300 bg-amber-100 text-amber-700 hover:bg-amber-200'
-                        : 'border border-gray-300 bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                    title="Bookmark for review"
-                  >
+                    if (remainingPercent <= 20) {
+                      return 'bg-red-500';
+                    }
+                    return 'bg-indigo-600';
+                  })()}`}
+                  style={{
+                    width: `${(() => {
+                      const timeEpoch =
+                        questionStartTime[currentQuestion.id]?.epoch || 0;
+                      const elapsed = timeEpoch
+                        ? Math.floor((currentTime - timeEpoch) / 1000)
+                        : 0;
+                      const remaining = Math.max(
+                        0,
+                        currentQuestion.timerSeconds - elapsed
+                      );
+                      return (remaining / currentQuestion.timerSeconds) * 100;
+                    })()}%`,
+                  }}
+                ></div>
+              </div>
+
+              {/* Progress Text */}
+              <span className="text-sm text-gray-500">
+                {Object.keys(answers).length} of{' '}
+                {invitation.test.questions.length} answered
+              </span>
+
+              {/* Bookmark indicator */}
+              {invitation.test.allowReview &&
+                bookmarkedQuestions.has(currentQuestion.id) && (
+                  <div className="flex items-center space-x-1 text-amber-600">
                     <svg
                       className="h-4 w-4"
                       fill="currentColor"
@@ -2007,41 +1963,84 @@ export default function TestPage() {
                     >
                       <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
                     </svg>
-                  </button>
+                    <span className="text-xs font-medium">Bookmarked</span>
+                  </div>
                 )}
+            </div>
 
-                {/* Review Button */}
-                {invitation.test.allowReview &&
-                  bookmarkedQuestions.size > 0 && (
-                    <button
-                      onClick={() => setShowBookmarkedReview(true)}
-                      className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-military-green transition-all duration-200 hover:bg-green-100"
-                    >
-                      Review ({bookmarkedQuestions.size})
-                    </button>
-                  )}
+            {/* Bottom Row - Navigation and Action Buttons */}
+            <div className="flex items-center justify-center space-x-4">
+              {/* Previous Button */}
+              <button
+                onClick={() => navigateQuestion('prev')}
+                disabled={
+                  currentQuestionIndex === 0 || !invitation.test.allowReview
+                }
+                className={`rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                  currentQuestionIndex === 0 || !invitation.test.allowReview
+                    ? 'cursor-not-allowed bg-gray-100 text-gray-400'
+                    : 'border border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100'
+                }`}
+                title={
+                  !invitation.test.allowReview
+                    ? 'Navigation back to previous questions is disabled for this test'
+                    : ''
+                }
+              >
+                Previous
+              </button>
 
-                {/* Next/Submit Button */}
-                {currentQuestionIndex < invitation.test.questions.length - 1 ? (
-                  <button
-                    onClick={() => navigateQuestion('next')}
-                    className="rounded-md bg-military-green px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-opacity-90"
+              {/* Bookmark Button */}
+              {invitation.test.allowReview && (
+                <button
+                  onClick={() => handleBookmarkToggle(currentQuestion.id)}
+                  className={`rounded-md px-3 py-2 text-sm transition-all duration-200 ${
+                    bookmarkedQuestions.has(currentQuestion.id)
+                      ? 'border border-amber-300 bg-amber-100 text-amber-700 hover:bg-amber-200'
+                      : 'border border-gray-300 bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                  title="Bookmark for review"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
                   >
-                    Next
-                  </button>
-                ) : (
-                  <button
-                    onClick={submitTest}
-                    disabled={isSubmitting}
-                    className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isSubmitting ? 'Submitting...' : 'Submit'}
-                  </button>
-                )}
-              </div>
+                    <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+                  </svg>
+                </button>
+              )}
+
+              {/* Review Button */}
+              {invitation.test.allowReview && bookmarkedQuestions.size > 0 && (
+                <button
+                  onClick={() => setShowBookmarkedReview(true)}
+                  className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-military-green transition-all duration-200 hover:bg-green-100"
+                >
+                  Review ({bookmarkedQuestions.size})
+                </button>
+              )}
+
+              {/* Next/Submit Button */}
+              {currentQuestionIndex < invitation.test.questions.length - 1 ? (
+                <button
+                  onClick={() => navigateQuestion('next')}
+                  className="rounded-md bg-military-green px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-opacity-90"
+                >
+                  Next
+                </button>
+              ) : (
+                <button
+                  onClick={submitTest}
+                  disabled={isSubmitting}
+                  className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                </button>
+              )}
             </div>
           </div>
-        </main>
+        </div>
 
         {/* Hidden video element for recording */}
         <video

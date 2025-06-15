@@ -38,7 +38,6 @@ export async function GET(request: Request) {
         select: {
           id: true,
           title: true,
-          // overallTimeLimitSeconds: true, // This was removed from schema, ensure it's not expected here
         },
       },
       invitation: {

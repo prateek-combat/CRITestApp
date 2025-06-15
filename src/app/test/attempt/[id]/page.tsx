@@ -289,74 +289,313 @@ export default function TestTakingPage({
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 px-4 py-8">
-      <div className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl sm:p-8">
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold text-gray-800 sm:text-3xl">
-            {testAttempt.test.title}
-          </h1>
-          <p className="text-gray-600">
-            Question {currentQuestionIndex + 1} of{' '}
-            {testAttempt.test.questions.length}
-          </p>
-        </div>
-
-        <div className="mb-6 rounded-lg border border-gray-200 bg-gray-50 p-4">
-          <MarkdownRenderer
-            content={currentQuestion.promptText}
-            className="text-lg text-gray-700 sm:text-xl"
-          />
-          {currentQuestion.promptImageUrl && (
-            <div className="mt-4">
-              <img
-                src={currentQuestion.promptImageUrl}
-                alt="Question visual"
-                className="max-h-96 w-full rounded-lg object-contain"
-                onError={(e) => {
-                  // Hide image if it fails to load
-                  (e.target as HTMLImageElement).style.display = 'none';
-                }}
-              />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      {/* Header with Progress */}
+      <div className="sticky top-0 z-10 border-b border-white/20 bg-white/90 shadow-lg backdrop-blur-md">
+        <div className="mx-auto max-w-4xl px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="test-question-card">
+              <h1 className="text-lg font-semibold tracking-tight text-gray-900">
+                {testAttempt.test.title}
+              </h1>
+              <p className="text-sm text-gray-600">
+                Question {currentQuestionIndex + 1} of{' '}
+                {testAttempt.test.questions.length}
+              </p>
             </div>
-          )}
+
+            {/* Enhanced Circular Timer */}
+            <div className="timer-circle relative">
+              <svg className="h-16 w-16 -rotate-90 transform">
+                <circle
+                  cx="32"
+                  cy="32"
+                  r="28"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  fill="transparent"
+                  className="text-gray-200"
+                />
+                <circle
+                  cx="32"
+                  cy="32"
+                  r="28"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  fill="transparent"
+                  strokeDasharray={`${2 * Math.PI * 28}`}
+                  strokeDashoffset={`${
+                    2 *
+                    Math.PI *
+                    28 *
+                    (1 - (timeLeft || 0) / currentQuestion.timerSeconds)
+                  }`}
+                  className={`transition-all duration-1000 ${
+                    (timeLeft || 0) / currentQuestion.timerSeconds > 0.5
+                      ? 'text-emerald-500'
+                      : (timeLeft || 0) / currentQuestion.timerSeconds > 0.25
+                        ? 'text-amber-500'
+                        : 'timer-warning text-red-500'
+                  }`}
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span
+                  className={`text-sm font-bold ${
+                    (timeLeft || 0) / currentQuestion.timerSeconds > 0.25
+                      ? 'text-gray-700'
+                      : 'text-red-600'
+                  }`}
+                >
+                  {timeLeft || 0}s
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Enhanced Progress Bar */}
+          <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-gray-200">
+            <div
+              className="progress-bar h-2 rounded-full transition-all duration-700 ease-out"
+              style={{
+                width: `${((currentQuestionIndex + 1) / testAttempt.test.questions.length) * 100}%`,
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="mx-auto max-w-6xl px-4 py-8">
+        <div className="grid gap-8 lg:grid-cols-2">
+          {/* Question Panel */}
+          <div className="order-2 lg:order-1">
+            <div className="test-question-card rounded-2xl border border-gray-200/50 bg-white/80 p-8 shadow-xl backdrop-blur-sm">
+              <div className="mb-6 flex items-center space-x-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-sm font-bold text-white shadow-lg">
+                  {currentQuestionIndex + 1}
+                </div>
+                <div>
+                  <span className="text-sm font-medium uppercase tracking-wide text-gray-500">
+                    Question
+                  </span>
+                  <div className="mt-1 text-xs text-gray-400">
+                    Read carefully and analyze
+                  </div>
+                </div>
+              </div>
+
+              <div className="prose prose-gray prose-enhanced max-w-none">
+                <MarkdownRenderer
+                  content={currentQuestion.promptText}
+                  className="leading-relaxed text-gray-800"
+                />
+              </div>
+
+              {currentQuestion.promptImageUrl && (
+                <div className="mt-8 rounded-2xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 p-6 shadow-inner">
+                  <img
+                    src={currentQuestion.promptImageUrl}
+                    alt="Question visual"
+                    className="mx-auto max-h-80 w-full rounded-xl object-contain shadow-lg"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Answer Options Panel */}
+          <div className="order-1 lg:order-2">
+            <div className="test-question-card rounded-2xl border border-gray-200/50 bg-white/80 p-8 shadow-xl backdrop-blur-sm">
+              <div className="mb-8 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    Choose your answer
+                  </h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Select the best option below
+                  </p>
+                </div>
+
+                {/* Question Type Badge */}
+                <div className="rounded-full bg-gradient-to-r from-indigo-100 to-purple-100 px-4 py-2">
+                  <span className="text-sm font-medium text-indigo-700">
+                    Multiple Choice
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {currentQuestion.answerOptions.map((option, index) => {
+                  const isSelected = selectedAnswer === index;
+                  const optionLetter = String.fromCharCode(65 + index);
+
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => handleAnswerSelect(index)}
+                      className={`test-answer-option group relative w-full rounded-2xl border-2 p-6 text-left transition-all duration-300 hover:scale-[1.02] hover:shadow-xl ${
+                        isSelected
+                          ? 'selected border-blue-500 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg ring-2 ring-blue-200'
+                          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50'
+                      }`}
+                      style={{ animationDelay: `${index * 0.1}s` }}
+                    >
+                      <div className="flex items-start space-x-4">
+                        {/* Enhanced Option Letter Badge */}
+                        <div
+                          className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border-2 font-bold transition-all duration-300 ${
+                            isSelected
+                              ? 'border-blue-500 bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
+                              : 'border-gray-300 bg-white text-gray-600 group-hover:border-blue-400 group-hover:bg-blue-50 group-hover:text-blue-600'
+                          }`}
+                        >
+                          {optionLetter}
+                        </div>
+
+                        {/* Option Content */}
+                        <div className="min-w-0 flex-1">
+                          <div
+                            className={`font-medium leading-relaxed transition-colors ${
+                              isSelected
+                                ? 'text-blue-900'
+                                : 'text-gray-800 group-hover:text-gray-900'
+                            }`}
+                            dangerouslySetInnerHTML={{ __html: option }}
+                          />
+                        </div>
+
+                        {/* Enhanced Selection Indicator */}
+                        <div
+                          className={`flex-shrink-0 transition-all duration-300 ${
+                            isSelected
+                              ? 'scale-100 opacity-100'
+                              : 'scale-75 opacity-0'
+                          }`}
+                        >
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-r from-green-500 to-emerald-600 shadow-lg">
+                            <svg
+                              className="h-4 w-4 text-white"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Enhanced Action Button */}
+              <div className="mt-10">
+                <button
+                  onClick={handleNextQuestion}
+                  disabled={loading || selectedAnswer === null}
+                  className="btn-primary w-full rounded-2xl px-8 py-4 font-semibold text-white shadow-xl transition-all duration-300 hover:shadow-2xl disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-xl"
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center space-x-3">
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      <span>Saving your answer...</span>
+                    </div>
+                  ) : currentQuestionIndex <
+                    testAttempt.test.questions.length - 1 ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <span>Continue to Next Question</span>
+                      <svg
+                        className="h-5 w-5 transition-transform group-hover:translate-x-1"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 7l5 5-5 5M6 12h12"
+                        />
+                      </svg>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center space-x-2">
+                      <span>Complete Test</span>
+                      <svg
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+
+                {selectedAnswer === null && (
+                  <div className="mt-4 flex items-center justify-center space-x-2 text-amber-600">
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                      />
+                    </svg>
+                    <p className="text-sm font-medium">
+                      Please select an answer to continue
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="mb-6 text-center text-2xl font-bold text-indigo-600 sm:text-3xl">
-          Time Left: {timeLeft !== null ? timeLeft : '-'}s
-        </div>
-
-        <div className="mb-8 space-y-3">
-          {currentQuestion.answerOptions.map((option, index) => (
-            <button
-              key={index}
-              onClick={() => handleAnswerSelect(index)}
-              className={`w-full rounded-lg border-2 p-4 text-left transition-colors duration-150 ease-in-out ${
-                selectedAnswer === index
-                  ? 'border-indigo-600 bg-indigo-500 text-white shadow-md'
-                  : 'border-gray-300 bg-white hover:border-indigo-400 hover:bg-indigo-50'
-              } `}
-            >
-              <span
-                className={`font-medium ${selectedAnswer === index ? 'text-white' : 'text-gray-700'}`}
-              >
-                {option}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        <button
-          onClick={handleNextQuestion}
-          disabled={loading || selectedAnswer === null}
-          className="w-full rounded-lg bg-indigo-600 px-6 py-3 font-bold text-white transition duration-150 ease-in-out hover:bg-indigo-700 disabled:opacity-50"
-        >
-          {loading
-            ? 'Saving...'
-            : currentQuestionIndex < testAttempt.test.questions.length - 1
-              ? 'Next Question'
-              : 'Finish Test'}
-        </button>
-        {error && <p className="mt-4 text-red-500">Error: {error}</p>}
+        {error && (
+          <div className="mt-8 rounded-2xl border border-red-200 bg-gradient-to-r from-red-50 to-pink-50 p-6 shadow-lg">
+            <div className="flex items-center space-x-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100">
+                <svg
+                  className="h-5 w-5 text-red-600"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h4 className="font-semibold text-red-800">
+                  Something went wrong
+                </h4>
+                <p className="text-red-700">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

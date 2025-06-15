@@ -60,12 +60,12 @@ describe('API Integration Tests', () => {
       const testData = {
         title: 'Sample Test',
         description: 'A test for integration testing',
-        overallTimeLimitSeconds: 3600,
+
         lockOrder: false,
       };
 
       expect(testData.title).toBe('Sample Test');
-      expect(testData.overallTimeLimitSeconds).toBe(3600);
+
       expect(testData.lockOrder).toBe(false);
     });
 
@@ -73,7 +73,7 @@ describe('API Integration Tests', () => {
       const invalidTestData: Partial<{
         title: string;
         description: string;
-        overallTimeLimitSeconds: number;
+
         lockOrder: boolean;
       }> = {
         description: 'Missing title',
