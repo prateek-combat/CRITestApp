@@ -58,7 +58,7 @@ async function main() {
         title: 'Complete Conversational Aptitude Test for Engineering Roles',
         description:
           'A comprehensive assessment covering verbal reasoning, logical reasoning, numerical reasoning, and attention to detail - designed for engineering roles with modern interactive formats.',
-        overallTimeLimitSeconds: 3600, // 60 minutes total
+
         lockOrder: false,
         allowReview: true,
         createdById: adminUser.id,

@@ -663,7 +663,11 @@ export default function TestResultsPage() {
                             {item.dimension}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-900">
-                            {item.selectedAnswer}
+                            <span
+                              dangerouslySetInnerHTML={{
+                                __html: item.selectedAnswer,
+                              }}
+                            />
                           </td>
                           <td className="px-4 py-3">
                             <span

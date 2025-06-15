@@ -43,7 +43,7 @@ async function main() {
         title: 'C++ Programming Test',
         description:
           'A comprehensive C++ programming assessment covering data structures, algorithms, memory management, STL, and modern C++ features.',
-        overallTimeLimitSeconds: 3600, // 60 minutes total
+
         lockOrder: false,
         allowReview: true,
         createdById: adminUser.id,
@@ -469,9 +469,7 @@ async function main() {
     console.log(`\n🎉 Successfully created C++ Programming Test!`);
     console.log(`   📊 Total questions: ${questions.length}`);
     console.log(`   🆔 Test ID: ${test.id}`);
-    console.log(
-      `   ⏱️  Time limit: ${test.overallTimeLimitSeconds / 60} minutes`
-    );
+    console.log(`   📊 Questions: ${questions.length}`);
     console.log(
       `\n💡 You can now use this test by creating invitations or public links!`
     );

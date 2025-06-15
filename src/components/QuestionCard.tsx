@@ -40,12 +40,6 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
         </span>
 
         <div className="flex flex-1 flex-wrap items-center gap-2">
-          {question.category && (
-            <span className="rounded bg-gray-100 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-gray-600">
-              {question.category}
-            </span>
-          )}
-
           {isPersonality && question.personalityDimension && (
             <span className="rounded bg-blue-100 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-blue-700">
               {question.personalityDimension.name}

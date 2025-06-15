@@ -1,5 +1,9 @@
 import React from 'react';
-import DOMPurify from 'isomorphic-dompurify';
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vs } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 interface MarkdownRendererProps {
   content: string;
@@ -10,153 +14,68 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   content,
   className = '',
 }) => {
-  // Check if content looks like HTML (contains HTML tags)
-  const isHTML = /<[^>]*>/g.test(content);
+  const CodeBlock = {
+    code({ node, inline, className, children, ...props }: any) {
+      const match = /language-(\w+)/.exec(className || '');
+      const language = match ? match[1] : 'text';
 
-  if (isHTML) {
-    // Sanitize HTML content for security
-    const sanitizedHTML = DOMPurify.sanitize(content, {
-      ALLOWED_TAGS: [
-        'h1',
-        'h2',
-        'h3',
-        'h4',
-        'h5',
-        'h6',
-        'p',
-        'br',
-        'div',
-        'span',
-        'strong',
-        'b',
-        'em',
-        'i',
-        'u',
-        'ul',
-        'ol',
-        'li',
-        'table',
-        'thead',
-        'tbody',
-        'tr',
-        'th',
-        'td',
-        'pre',
-        'code',
-        'blockquote',
-        'a',
-      ],
-      ALLOWED_ATTR: ['class', 'href', 'target', 'rel'],
-      ALLOW_DATA_ATTR: false,
-    });
-
-    return (
-      <div
-        className={`html-content ${className}`}
-        dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
-      />
-    );
-  }
-
-  // Fallback: Simple markdown-like rendering for plain text
-  const renderMarkdown = (text: string) => {
-    const lines = text.split('\n');
-    const elements: React.ReactNode[] = [];
-    let currentCodeBlock = '';
-    let inCodeBlock = false;
-    let codeLanguage = '';
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-
-      // Handle code blocks
-      if (line.startsWith('```')) {
-        if (inCodeBlock) {
-          elements.push(
-            <pre
-              key={i}
-              className="mb-4 overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 p-4"
-            >
-              <code className={`language-${codeLanguage}`}>
-                {currentCodeBlock}
-              </code>
-            </pre>
-          );
-          currentCodeBlock = '';
-          inCodeBlock = false;
-          codeLanguage = '';
-        } else {
-          codeLanguage = line.substring(3).trim();
-          inCodeBlock = true;
-        }
-        continue;
-      }
-
-      if (inCodeBlock) {
-        currentCodeBlock += line + '\n';
-        continue;
-      }
-
-      // Handle headers
-      if (line.startsWith('# ')) {
-        elements.push(
-          <h1
-            key={i}
-            className="mb-4 border-b border-gray-200 pb-2 text-2xl font-bold text-gray-900"
+      // For code blocks, make them much more compact
+      if (!inline) {
+        return (
+          <code
+            className={className}
+            {...props}
+            style={{
+              backgroundColor: '#f3f4f6',
+              color: '#1f2937',
+              borderRadius: '0.375rem',
+              padding: '0.25rem 0.5rem',
+              fontFamily:
+                'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+              fontSize: '0.875rem',
+              border: '1px solid #e5e7eb',
+              display: 'inline-block',
+              lineHeight: '1.4',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+            }}
           >
-            {line.substring(2)}
-          </h1>
-        );
-      } else if (line.startsWith('## ')) {
-        elements.push(
-          <h2
-            key={i}
-            className="mb-3 border-b border-gray-200 pb-1 text-xl font-semibold text-gray-900"
-          >
-            {line.substring(3)}
-          </h2>
-        );
-      } else if (line.startsWith('### ')) {
-        elements.push(
-          <h3 key={i} className="mb-2 text-lg font-medium text-gray-900">
-            {line.substring(4)}
-          </h3>
-        );
-      } else if (line.startsWith('- ')) {
-        elements.push(
-          <div key={i} className="mb-1 pl-4">
-            <span className="text-gray-600">•</span> {line.substring(2)}
-          </div>
-        );
-      } else if (line.trim() === '') {
-        elements.push(<br key={i} />);
-      } else {
-        let processedLine = line;
-        processedLine = processedLine.replace(
-          /\*\*(.*?)\*\*/g,
-          '<strong>$1</strong>'
-        );
-        processedLine = processedLine.replace(
-          /`([^`]+)`/g,
-          '<code class="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-sm text-gray-800">$1</code>'
-        );
-
-        elements.push(
-          <p
-            key={i}
-            className="mb-3 leading-relaxed text-gray-800"
-            dangerouslySetInnerHTML={{ __html: processedLine }}
-          />
+            {String(children).replace(/\n$/, '')}
+          </code>
         );
       }
-    }
 
-    return elements;
+      // Handle inline code
+      return (
+        <code
+          className={className}
+          {...props}
+          style={{
+            backgroundColor: '#f3f4f6',
+            color: '#1f2937',
+            borderRadius: '0.25rem',
+            padding: '0.125rem 0.25rem',
+            fontFamily:
+              'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+            fontSize: '0.875rem',
+            border: '1px solid #e5e7eb',
+          }}
+        >
+          {children}
+        </code>
+      );
+    },
   };
 
   return (
-    <div className={`content-renderer ${className}`}>
-      {renderMarkdown(content)}
+    <div className={`prose max-w-none ${className}`}>
+      <ReactMarkdown
+        components={CodeBlock}
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw]}
+      >
+        {content}
+      </ReactMarkdown>
     </div>
   );
 };

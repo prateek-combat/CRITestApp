@@ -27,7 +27,6 @@ model Test {
   title                   String
   description             String?
   lockOrder               Boolean          @default(false)
-  overallTimeLimitSeconds Int
   createdAt               DateTime         @default(now())
   updatedAt               DateTime         @updatedAt
   createdById             String

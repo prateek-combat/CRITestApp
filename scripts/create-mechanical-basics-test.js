@@ -43,7 +43,7 @@ async function main() {
         title: 'Mechanical Basics Test',
         description:
           'A comprehensive mechanical engineering assessment covering UGV design, robotics, materials, manufacturing, and mechanical systems.',
-        overallTimeLimitSeconds: 7200, // 120 minutes total for comprehensive test
+
         lockOrder: false,
         allowReview: true,
         createdById: adminUser.id,
@@ -647,9 +647,7 @@ async function main() {
     console.log(`\n🎉 Successfully created Mechanical Basics Test!`);
     console.log(`   📊 Total questions: ${questions.length}`);
     console.log(`   🆔 Test ID: ${test.id}`);
-    console.log(
-      `   ⏱️  Time limit: ${test.overallTimeLimitSeconds / 60} minutes`
-    );
+    console.log(`   📊 Questions: ${questions.length}`);
     console.log(
       `\n💡 You can now use this test by creating invitations or public links!`
     );

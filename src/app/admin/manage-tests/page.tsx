@@ -34,7 +34,6 @@ interface Test {
   title: string;
   description: string | null;
   questions: Question[];
-  overallTimeLimitSeconds: number;
   allowReview?: boolean;
   // Fields from API list view
   createdBy?: { firstName?: string | null; lastName?: string | null };
@@ -192,7 +191,7 @@ export default function ManageTestsPage() {
           title: newTestTitle,
           description: newTestDescription,
           createdById: ADMIN_USER_ID,
-          overallTimeLimitSeconds: 1800, // Default: 30 mins
+
           lockOrder: false,
           allowReview: allowReview,
         }),

@@ -32,7 +32,7 @@ async function main() {
         title: 'Markdown Formatting Demo Test',
         description:
           'Demonstrates various markdown formatting options for questions',
-        overallTimeLimitSeconds: 1800, // 30 minutes
+
         lockOrder: false,
         allowReview: true,
         createdById: adminUser.id,

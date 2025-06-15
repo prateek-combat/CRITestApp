@@ -63,14 +63,14 @@ describe('Database Integration Tests', () => {
         id: 'test-456',
         title: 'Mathematics Quiz',
         description: 'Basic math assessment',
-        overallTimeLimitSeconds: 1800,
+
         lockOrder: false,
         createdById: 'user-123',
         createdAt: new Date(),
       };
 
       expect(mockTest.title).toBe('Mathematics Quiz');
-      expect(mockTest.overallTimeLimitSeconds).toBe(1800);
+
       expect(mockTest.createdById).toBe('user-123');
     });
 

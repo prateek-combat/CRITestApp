@@ -31,7 +31,7 @@ async function main() {
       data: {
         title: 'HTML Formatting Demo Test',
         description: 'Demonstrates HTML formatting options for questions',
-        overallTimeLimitSeconds: 1800, // 30 minutes
+
         lockOrder: false,
         allowReview: true,
         createdById: adminUser.id,

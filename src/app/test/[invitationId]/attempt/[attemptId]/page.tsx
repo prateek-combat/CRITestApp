@@ -175,96 +175,89 @@ export default function TestAttemptPage() {
   const currentQuestion = attempt.test.questions[currentQuestionIndex];
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-gray-50">
-      {/* Compact Header */}
-      <div className="flex-shrink-0 border-b bg-white px-4 py-2 shadow-sm">
-        <div className="flex items-center justify-between">
-          <h1 className="truncate text-lg font-semibold text-gray-900">
-            {attempt.test.title}
-          </h1>
-          <div className="text-xs text-gray-500">
-            Question {currentQuestionIndex + 1} of{' '}
-            {attempt.test.questions.length}
-          </div>
-        </div>
-      </div>
+    <div className="flex h-screen flex-col bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* VS Code Style Header */}
+      <div className="flex-shrink-0 border-b border-gray-700 bg-gray-900">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* VS Code Style Title Bar */}
+            <div className="flex items-center space-x-4">
+              <div className="flex space-x-2">
+                <div className="h-3 w-3 rounded-full bg-red-500"></div>
+                <div className="h-3 w-3 rounded-full bg-yellow-500"></div>
+                <div className="h-3 w-3 rounded-full bg-green-500"></div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <svg
+                  className="h-6 w-6 text-blue-400"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M24 12l-5.657 5.657-1.414-1.414L21.172 12l-4.243-4.243 1.414-1.414L24 12zM2.828 12l4.243 4.243-1.414 1.414L0 12l5.657-5.657 1.414 1.414L2.828 12z" />
+                </svg>
+                <h1 className="text-lg font-semibold text-white">
+                  {attempt?.test.title || 'Loading...'}
+                </h1>
+                <span className="rounded bg-blue-600 px-2 py-1 font-mono text-xs text-white">
+                  Q{currentQuestionIndex + 1}/{attempt?.test.questions.length}
+                </span>
+              </div>
+            </div>
 
-      {/* Main Content Area - Fixed Height */}
-      <div className="flex min-h-0 flex-1">
-        {/* Left Half - Question Content */}
-        <div className="flex min-h-0 w-1/2 flex-col border-r border-gray-200 bg-white p-4">
-          <div className="flex-1 overflow-y-auto">
-            {currentQuestion && (
-              <div className="space-y-4">
-                <div>
-                  <MarkdownRenderer
-                    content={currentQuestion.promptText}
-                    className="text-base leading-relaxed"
+            {/* VS Code Style Status Bar */}
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2 text-gray-300">
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
-                </div>
-                {currentQuestion.promptImageUrl && (
-                  <div className="flex justify-center">
-                    <img
-                      src={currentQuestion.promptImageUrl}
-                      alt="Question visual"
-                      className="max-h-64 max-w-full rounded-lg object-contain shadow-sm"
-                    />
-                  </div>
-                )}
+                </svg>
+                <span className="font-mono text-sm">
+                  {Object.keys(answers).length}/{attempt?.test.questions.length}{' '}
+                  completed
+                </span>
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* Right Half - Answer Options */}
-        <div className="flex min-h-0 w-1/2 flex-col bg-gray-50 p-4">
-          <div className="flex-1 overflow-y-auto">
-            {currentQuestion && (
-              <div className="space-y-2">
-                <h3 className="mb-3 text-base font-medium text-gray-900">
-                  Choose your answer:
-                </h3>
-                {currentQuestion.answerOptions.map((option, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleAnswer(currentQuestion.id, index)}
-                    className={`w-full rounded-lg border-2 p-3 text-left transition-all duration-200 ${
-                      answers[currentQuestion.id] === index
-                        ? 'border-indigo-500 bg-indigo-50 text-indigo-900 shadow-md'
-                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-start space-x-3">
-                      <div
-                        className={`mt-0.5 h-4 w-4 flex-shrink-0 rounded-full border-2 ${
-                          answers[currentQuestion.id] === index
-                            ? 'border-indigo-500 bg-indigo-500'
-                            : 'border-gray-300'
-                        }`}
-                      >
-                        {answers[currentQuestion.id] === index && (
-                          <div className="m-0.5 h-2 w-2 rounded-full bg-white"></div>
-                        )}
-                      </div>
-                      <span className="text-sm leading-relaxed">{option}</span>
-                    </div>
-                  </button>
-                ))}
+              <div className="h-6 w-32 overflow-hidden rounded bg-gray-700">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500"
+                  style={{
+                    width: `${attempt ? (Object.keys(answers).length / attempt.test.questions.length) * 100 : 0}%`,
+                  }}
+                />
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Compact Footer with Navigation and Timer */}
-      <div className="flex-shrink-0 border-t border-gray-200 bg-white px-6 py-4">
-        <div className="flex flex-col items-center space-y-3">
-          {/* Top Row - Timer and Status */}
-          <div className="flex items-center space-x-6">
-            {/* Answer Status */}
-            <div className="flex items-center space-x-2">
-              {answers[currentQuestion.id] !== undefined ? (
-                <div className="flex items-center space-x-1 text-green-600">
+      {/* VS Code Style Main Content */}
+      <div className="flex min-h-0 flex-1 bg-gray-900">
+        {/* Question Panel - VS Code Editor Style */}
+        <div className="flex min-h-0 w-1/2 flex-col border-r border-gray-700 bg-gray-900">
+          {/* File Tab */}
+          <div className="flex-shrink-0 border-b border-gray-700 bg-gray-800">
+            <div className="flex items-center px-4 py-2">
+              <div className="flex items-center space-x-2 rounded-t border-t-2 border-blue-500 bg-gray-900 px-3 py-1">
+                <svg
+                  className="h-4 w-4 text-blue-400"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                </svg>
+                <span className="font-mono text-sm text-white">
+                  question.md
+                </span>
+                <button className="text-gray-400 hover:text-white">
                   <svg
                     className="h-3 w-3"
                     fill="currentColor"
@@ -272,104 +265,221 @@ export default function TestAttemptPage() {
                   >
                     <path
                       fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
                       clipRule="evenodd"
                     />
                   </svg>
-                  <span className="text-xs font-medium">Selected</span>
-                </div>
-              ) : (
-                <span className="text-xs text-gray-400">Select an answer</span>
-              )}
+                </button>
+              </div>
             </div>
+          </div>
 
-            {/* Compact Timer */}
-            <div className="flex items-center space-x-2 rounded-full bg-gray-100 px-3 py-1">
-              <svg
-                className="h-4 w-4 text-gray-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-sm font-medium text-gray-900">
-                {timeLeft !== null ? formatTime(timeLeft) : '--:--'}
+          {/* Editor Content */}
+          <div className="vscode-scrollbar flex-1 overflow-y-auto bg-gray-900">
+            {currentQuestion && (
+              <div className="p-6">
+                {/* Line Numbers and Content */}
+                <div className="flex">
+                  {/* Line Numbers */}
+                  <div className="w-12 flex-shrink-0 select-none pr-4 text-right font-mono text-sm leading-relaxed text-gray-500">
+                    <div>1</div>
+                    <div>2</div>
+                    <div>3</div>
+                    <div>4</div>
+                    <div>5</div>
+                    <div>6</div>
+                    <div>7</div>
+                    <div>8</div>
+                    <div>9</div>
+                    <div>10</div>
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 border-l border-gray-700 pl-4">
+                    <div className="space-y-4">
+                      {/* Question Header Comment */}
+                      <div className="font-mono text-sm text-green-400">
+                        <span className="text-gray-500">{'/*'}</span>
+                        <br />
+                        <span className="text-gray-500">
+                          {' '}
+                          {`*`} Question {currentQuestionIndex + 1} of{' '}
+                          {attempt?.test.questions.length}
+                        </span>
+                        <br />
+                        <span className="text-gray-500">
+                          {' '}
+                          {`*`} Category: Programming Assessment
+                        </span>
+                        <br />
+                        <span className="text-gray-500"> {'*/'}</span>
+                      </div>
+
+                      {/* Question Content */}
+                      <div className="prose prose-invert max-w-none">
+                        <div className="text-base leading-relaxed text-gray-100">
+                          <MarkdownRenderer
+                            content={currentQuestion.promptText}
+                            className="text-gray-100"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Question Image */}
+                      {currentQuestion.promptImageUrl && (
+                        <div className="mt-6 rounded-lg border border-gray-700 bg-gray-800 p-4">
+                          <img
+                            src={currentQuestion.promptImageUrl}
+                            alt="Question visual"
+                            className="mx-auto max-h-80 w-full rounded object-contain"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Answer Panel - VS Code Terminal Style */}
+        <div className="flex min-h-0 w-1/2 flex-col bg-gray-900">
+          {/* Terminal Tab */}
+          <div className="flex-shrink-0 border-b border-gray-700 bg-gray-800">
+            <div className="flex items-center justify-between px-4 py-2">
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 rounded-t border-t-2 border-green-500 bg-gray-900 px-3 py-1">
+                  <svg
+                    className="h-4 w-4 text-green-400"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M20,19V7H4V19H20M20,3A2,2 0 0,1 22,5V19A2,2 0 0,1 20,21H4A2,2 0 0,1 2,19V5C2,3.89 2.9,3 4,3H20M13,17V15H18V17H13M9.58,13L5.57,9H8.4L11.7,12.3C12.09,12.69 12.09,13.33 11.7,13.72L8.42,17H5.59L9.58,13Z" />
+                  </svg>
+                  <span className="font-mono text-sm text-white">terminal</span>
+                </div>
+              </div>
+
+              {/* Timer in Terminal Style */}
+              <div className="flex items-center space-x-2 font-mono text-sm text-green-400">
+                <span>⏱</span>
+                <span>
+                  {timeLeft !== null ? formatTime(timeLeft) : '--:--'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Terminal Content */}
+          <div className="vscode-scrollbar flex-1 overflow-y-auto bg-gray-900 p-6">
+            {currentQuestion && (
+              <div className="space-y-4">
+                {/* Terminal Prompt */}
+                <div className="font-mono text-sm text-green-400">
+                  <span className="text-blue-400">user@assessment</span>
+                  <span className="text-white">:</span>
+                  <span className="text-purple-400">~/questions</span>
+                  <span className="text-white">$ </span>
+                  <span className="text-yellow-400">select-answer</span>
+                </div>
+
+                {/* Answer Options */}
+                <div className="ml-4 space-y-3">
+                  {currentQuestion.answerOptions.map((option, index) => {
+                    const isSelected = answers[currentQuestion.id] === index;
+                    const optionLetter = String.fromCharCode(65 + index);
+
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => handleAnswer(currentQuestion.id, index)}
+                        className={`group w-full text-left transition-all duration-200 ${
+                          isSelected
+                            ? 'border-l-4 border-blue-400 bg-blue-900/30'
+                            : 'hover:bg-gray-800/50'
+                        } rounded-r p-4 font-mono text-sm`}
+                      >
+                        <div className="flex items-start space-x-3">
+                          {/* Terminal Style Option */}
+                          <span
+                            className={`flex-shrink-0 ${
+                              isSelected ? 'text-blue-400' : 'text-green-400'
+                            }`}
+                          >
+                            [{optionLetter}]
+                          </span>
+
+                          {/* Option Content */}
+                          <div className="flex-1">
+                            <span
+                              className={`${
+                                isSelected
+                                  ? 'text-blue-100'
+                                  : 'text-gray-300 group-hover:text-white'
+                              } leading-relaxed`}
+                              dangerouslySetInnerHTML={{ __html: option }}
+                            />
+                          </div>
+
+                          {/* Selection Indicator */}
+                          {isSelected && (
+                            <span className="text-green-400">✓</span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Terminal Output */}
+                <div className="ml-4 mt-6">
+                  {answers[currentQuestion.id] !== undefined ? (
+                    <div className="font-mono text-sm text-green-400">
+                      <span className="text-gray-500">&gt;</span> Answer
+                      selected: Option{' '}
+                      {String.fromCharCode(65 + answers[currentQuestion.id])}
+                      <br />
+                      <span className="text-gray-500">&gt;</span>{' '}
+                      <span className="text-green-400">
+                        Ready for next question
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="font-mono text-sm text-yellow-400">
+                      <span className="text-gray-500">&gt;</span> Waiting for
+                      input...
+                      <br />
+                      <span className="text-gray-500">&gt;</span>{' '}
+                      <span className="animate-pulse">_</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* VS Code Style Footer/Status Bar */}
+      <div className="flex-shrink-0 bg-blue-600 text-white">
+        <div className="px-6 py-2">
+          <div className="flex items-center justify-between text-sm">
+            {/* Left Status */}
+            <div className="flex items-center space-x-4 font-mono">
+              <span>⚡ Assessment Mode</span>
+              <span>
+                🎯 Question {currentQuestionIndex + 1}/
+                {attempt?.test.questions.length}
               </span>
             </div>
 
-            {/* Progress indicator */}
-            <div className="h-2 w-32 rounded-full bg-gray-200">
-              <div
-                className="h-2 rounded-full bg-indigo-600 transition-all duration-1000"
-                style={{
-                  width: `${
-                    timeLeft !== null && currentQuestion
-                      ? (timeLeft / currentQuestion.timerSeconds) * 100
-                      : 0
-                  }%`,
-                }}
-              ></div>
-            </div>
-
-            {/* Progress Text */}
-            <span className="text-sm text-gray-500">
-              {Object.keys(answers).length} of {attempt.test.questions.length}{' '}
-              answered
-            </span>
-          </div>
-
-          {/* Bottom Row - Navigation Buttons */}
-          <div className="flex items-center justify-center space-x-4">
-            {/* Previous Button */}
-            <button
-              onClick={() =>
-                setCurrentQuestionIndex((prev) => {
-                  const newIndex = Math.max(0, prev - 1);
-                  if (attempt && newIndex !== prev) {
-                    const newQuestion = attempt.test.questions[newIndex];
-                    setTimeLeft(newQuestion.timerSeconds);
-                  }
-                  return newIndex;
-                })
-              }
-              disabled={currentQuestionIndex === 0 || !attempt.test.allowReview}
-              className={`rounded-md px-4 py-2 text-sm font-medium transition-all duration-200 ${
-                currentQuestionIndex === 0 || !attempt.test.allowReview
-                  ? 'cursor-not-allowed bg-gray-100 text-gray-400'
-                  : 'border border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100'
-              }`}
-              title={
-                !attempt.test.allowReview
-                  ? 'Navigation back to previous questions is disabled for this test'
-                  : ''
-              }
-            >
-              Previous
-            </button>
-
-            {/* Next/Submit Button */}
-            {currentQuestionIndex === attempt.test.questions.length - 1 ? (
-              <button
-                onClick={submitTest}
-                disabled={submitting}
-                className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {submitting ? 'Submitting...' : 'Submit Test'}
-              </button>
-            ) : (
+            {/* Navigation */}
+            <div className="flex items-center space-x-3">
               <button
                 onClick={() =>
                   setCurrentQuestionIndex((prev) => {
-                    const newIndex = Math.min(
-                      attempt.test.questions.length - 1,
-                      prev + 1
-                    );
+                    const newIndex = Math.max(0, prev - 1);
                     if (attempt && newIndex !== prev) {
                       const newQuestion = attempt.test.questions[newIndex];
                       setTimeLeft(newQuestion.timerSeconds);
@@ -377,11 +487,62 @@ export default function TestAttemptPage() {
                     return newIndex;
                   })
                 }
-                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-indigo-700"
+                disabled={currentQuestionIndex === 0}
+                className="rounded bg-blue-700 px-3 py-1 font-mono text-xs transition-colors hover:bg-blue-800 disabled:bg-blue-800 disabled:opacity-50"
               >
-                Next
+                ← Prev
               </button>
-            )}
+
+              <button
+                onClick={() =>
+                  setCurrentQuestionIndex((prev) => {
+                    if (!attempt) return prev;
+                    const newIndex = Math.min(
+                      attempt.test.questions.length - 1,
+                      prev + 1
+                    );
+                    if (newIndex !== prev) {
+                      const newQuestion = attempt.test.questions[newIndex];
+                      setTimeLeft(newQuestion.timerSeconds);
+                    }
+                    return newIndex;
+                  })
+                }
+                disabled={
+                  !attempt ||
+                  currentQuestionIndex === attempt.test.questions.length - 1
+                }
+                className="rounded bg-blue-700 px-3 py-1 font-mono text-xs transition-colors hover:bg-blue-800 disabled:bg-blue-800 disabled:opacity-50"
+              >
+                Next →
+              </button>
+
+              {Object.keys(answers).length ===
+                attempt?.test.questions.length && (
+                <button
+                  onClick={submitTest}
+                  className="rounded bg-green-600 px-4 py-1 font-mono text-xs font-bold transition-colors hover:bg-green-700"
+                >
+                  Submit Test
+                </button>
+              )}
+            </div>
+
+            {/* Right Status */}
+            <div className="flex items-center space-x-4 font-mono text-xs">
+              <span>
+                Progress:{' '}
+                {Math.round(
+                  (Object.keys(answers).length /
+                    (attempt?.test.questions.length || 1)) *
+                    100
+                )}
+                %
+              </span>
+              <span>
+                ⏱ {timeLeft !== null ? formatTime(timeLeft) : '--:--'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
