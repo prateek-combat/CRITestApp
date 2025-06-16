@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
 import { UserRole } from '@prisma/client';
 import { authLogger } from './logger';
-import { debugAuth } from './debug';
+import { debugAuth } from '@/app/api/debug-utils';
 
 export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'production', // Enable debug in production
