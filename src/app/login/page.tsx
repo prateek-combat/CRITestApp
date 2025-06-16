@@ -63,29 +63,30 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // Bypass NextAuth and go directly to Google OAuth
-      const googleClientId =
-        '659780694762-shvlosoelr4ofbb7bu4it5km04laqs25.apps.googleusercontent.com';
-      const callbackUrl =
-        'https://cri-test-app.vercel.app/api/auth/callback/google';
-      const state = encodeURIComponent('/admin/dashboard'); // Store the redirect URL in state
+      const result = await signIn('google', {
+        redirect: false,
+        callbackUrl: '/admin/dashboard',
+      });
 
-      const googleAuthUrl = new URL(
-        'https://accounts.google.com/o/oauth2/v2/auth'
-      );
-      googleAuthUrl.searchParams.set('client_id', googleClientId);
-      googleAuthUrl.searchParams.set('redirect_uri', callbackUrl);
-      googleAuthUrl.searchParams.set('response_type', 'code');
-      googleAuthUrl.searchParams.set('scope', 'openid email profile');
-      googleAuthUrl.searchParams.set('state', state);
-      googleAuthUrl.searchParams.set('prompt', 'consent');
-      googleAuthUrl.searchParams.set('access_type', 'offline');
+      if (result?.error) {
+        setError('Google sign-in failed');
+      } else if (result?.ok) {
+        // Check if login was successful
+        const session = await getSession();
+        if (session) {
+          // Get the callback URL from the URL parameters or default to dashboard
+          const urlParams = new URLSearchParams(window.location.search);
+          const callbackUrl =
+            urlParams.get('callbackUrl') || '/admin/dashboard';
 
-      // Direct redirect to Google OAuth
-      window.location.href = googleAuthUrl.toString();
+          // Use window.location for more reliable redirect
+          window.location.href = callbackUrl;
+        }
+      }
     } catch (error) {
-      const errorMsg = 'Failed to redirect to Google OAuth';
+      const errorMsg = 'Failed to initiate Google sign-in';
       setError(errorMsg);
+    } finally {
       setIsLoading(false);
     }
   };
