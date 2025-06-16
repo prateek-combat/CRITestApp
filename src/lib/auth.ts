@@ -1,5 +1,5 @@
 import NextAuth from 'next-auth';
-import { PrismaAdapter } from '@auth/prisma-adapter';
+// import { PrismaAdapter } from '@auth/prisma-adapter';
 import Credentials from 'next-auth/providers/credentials';
 import Google from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
@@ -9,7 +9,7 @@ import { authLogger } from './logger';
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   debug: process.env.NODE_ENV === 'production', // Enable debug in production
-  adapter: PrismaAdapter(prisma),
+  // adapter: PrismaAdapter(prisma), // Temporarily disabled for testing
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -134,30 +134,73 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // Use database ID if available, otherwise use the provider ID
         token.id = (user as any).dbId || user.id;
         token.role = (user as any).role;
+
+        authLogger.debug('JWT CALLBACK', {
+          hasUser: !!user,
+          tokenId: token.id,
+          tokenEmail: token.email,
+          userRole: (user as any).role,
+          timestamp: new Date().toISOString(),
+        });
       }
       return token;
     },
     async session({ session, token }: any) {
-      if (session.user) {
+      if (session.user && token) {
         session.user.id = token.id as string;
         session.user.role = token.role as UserRole;
+
+        authLogger.debug('SESSION CALLBACK', {
+          hasSession: !!session,
+          hasUser: !!session.user,
+          tokenId: token.id,
+          tokenRole: token.role,
+          sessionUserEmail: session.user.email,
+          timestamp: new Date().toISOString(),
+        });
+
+        authLogger.debug('SESSION UPDATED', {
+          userId: session.user.id,
+          userRole: session.user.role,
+          userEmail: session.user.email,
+        });
       }
       return session;
     },
   },
   events: {
     async signIn(message: any) {
-      // Sign-in event logged
+      authLogger.debug('SIGNIN EVENT', {
+        hasUser: !!message.user,
+        userEmail: message.user?.email,
+        timestamp: new Date().toISOString(),
+      });
     },
     async signOut(message: any) {
-      // Sign-out event logged
+      authLogger.debug('SIGNOUT EVENT', {
+        hasToken: !!message.token,
+        hasSession: !!message.session,
+        timestamp: new Date().toISOString(),
+      });
     },
     async createUser(message: any) {
-      // Create user event logged
+      authLogger.debug('CREATE USER EVENT', {
+        hasUser: !!message.user,
+        userEmail: message.user?.email,
+        timestamp: new Date().toISOString(),
+      });
     },
     async session(message: any) {
-      // Session event logged
+      authLogger.debug('SESSION EVENT', {
+        hasSession: !!message.session,
+        userEmail: message.session?.user?.email,
+        timestamp: new Date().toISOString(),
+      });
     },
   },
-  secret: process.env.NEXTAUTH_SECRET!,
 });
+
+// For backward compatibility, export the secret
+export const authOptions = {
+  secret: process.env.NEXTAUTH_SECRET!,
+};
