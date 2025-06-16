@@ -67,8 +67,16 @@ export default function LoginPage() {
 
         if (session) {
           debugLogin('🎯 REDIRECTING TO DASHBOARD');
-          router.push('/admin/dashboard');
-          router.refresh();
+
+          // Get the callback URL from the URL parameters or default to dashboard
+          const urlParams = new URLSearchParams(window.location.search);
+          const callbackUrl =
+            urlParams.get('callbackUrl') || '/admin/dashboard';
+
+          debugLogin('🔗 REDIRECT URL', { callbackUrl });
+
+          // Use window.location for more reliable redirect
+          window.location.href = callbackUrl;
         } else {
           const errorMsg = 'Login succeeded but no session created';
           debugLogin('❌ NO SESSION AFTER SUCCESSFUL LOGIN');
@@ -168,8 +176,13 @@ export default function LoginPage() {
         });
 
         if (session) {
-          router.push('/admin/dashboard');
-          router.refresh();
+          // Get the callback URL from the URL parameters or default to dashboard
+          const urlParams = new URLSearchParams(window.location.search);
+          const callbackUrl =
+            urlParams.get('callbackUrl') || '/admin/dashboard';
+
+          // Use window.location for more reliable redirect
+          window.location.href = callbackUrl;
         }
       }
     } catch (error) {
