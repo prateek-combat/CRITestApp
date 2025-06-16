@@ -1,17 +1,18 @@
-import NextAuth from 'next-auth';
-// import { PrismaAdapter } from '@auth/prisma-adapter';
-import Credentials from 'next-auth/providers/credentials';
-import Google from 'next-auth/providers/google';
+import NextAuth, { NextAuthOptions } from 'next-auth';
+import { PrismaAdapter } from '@next-auth/prisma-adapter';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import GoogleProvider from 'next-auth/providers/google';
+import { getServerSession } from 'next-auth/next';
 import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
 import { UserRole } from '@prisma/client';
 import { authLogger } from './logger';
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  debug: process.env.NODE_ENV === 'production', // Enable debug in production
-  // adapter: PrismaAdapter(prisma), // Temporarily disabled for testing
+export const authOptions: NextAuthOptions = {
+  debug: process.env.NODE_ENV === 'development', // Enable debug in development
+  adapter: PrismaAdapter(prisma),
   providers: [
-    Google({
+    GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
@@ -22,7 +23,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         },
       },
     }),
-    Credentials({
+    CredentialsProvider({
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
@@ -198,9 +199,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       });
     },
   },
-});
-
-// For backward compatibility, export the secret
-export const authOptions = {
-  secret: process.env.NEXTAUTH_SECRET!,
 };
+
+export default NextAuth(authOptions);
+
+export const auth = () => getServerSession(authOptions);
