@@ -1,6 +1,8 @@
 import NextAuth from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptionsSimple } from '@/lib/auth-simple';
 
-const handler = NextAuth(authOptions);
+// Use simplified JWT-only auth configuration for both development and production
+// This avoids Prisma adapter issues in serverless environments
+const handler = NextAuth(authOptionsSimple);
 
 export { handler as GET, handler as POST };
