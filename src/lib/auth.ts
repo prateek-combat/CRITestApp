@@ -86,6 +86,7 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
     signIn: '/login',
@@ -93,7 +94,7 @@ export const authOptions: NextAuthOptions = {
   },
   cookies: {
     sessionToken: {
-      name: `next-auth.session-token`,
+      name: 'next-auth.session-token',
       options: {
         httpOnly: true,
         sameSite: 'lax',
@@ -102,7 +103,7 @@ export const authOptions: NextAuthOptions = {
       },
     },
     callbackUrl: {
-      name: `next-auth.callback-url`,
+      name: 'next-auth.callback-url',
       options: {
         sameSite: 'lax',
         path: '/',
@@ -110,7 +111,7 @@ export const authOptions: NextAuthOptions = {
       },
     },
     csrfToken: {
-      name: `next-auth.csrf-token`,
+      name: 'next-auth.csrf-token',
       options: {
         httpOnly: true,
         sameSite: 'lax',
