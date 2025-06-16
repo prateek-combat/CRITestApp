@@ -2,7 +2,8 @@
 
 A comprehensive web-based testing platform built with Next.js, featuring admin management, Google OAuth authentication, AI-powered proctoring, and robust question import capabilities.
 
-**Last Deployment:** June 6, 2025 - Production Ready with AI Proctoring ✅
+**Last Deployment:** June 16, 2025 - Stable Version with NextAuth v4 ✅  
+**Current Status:** Production Ready with AI Proctoring and Dual-Configuration Auth
 
 ## ✨ Features
 
