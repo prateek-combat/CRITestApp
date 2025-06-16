@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { PrismaClient, QuestionCategory } from '@prisma/client';
 import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 
 const prisma = new PrismaClient({
   log: ['query', 'info', 'warn', 'error'], // Optional: configure logging
@@ -107,7 +106,7 @@ export async function PUT(
 ) {
   try {
     // Check authentication and admin access
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -225,7 +224,7 @@ export async function DELETE(
 ) {
   try {
     // Check authentication and admin access
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -1,15 +1,17 @@
-import { NextAuthOptions } from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import GoogleProvider from 'next-auth/providers/google';
+import NextAuth from 'next-auth';
+import { PrismaAdapter } from '@auth/prisma-adapter';
+import Credentials from 'next-auth/providers/credentials';
+import Google from 'next-auth/providers/google';
 import bcrypt from 'bcryptjs';
 import { prisma } from './prisma';
 import { UserRole } from '@prisma/client';
 import { authLogger } from './logger';
 
-export const authOptions: NextAuthOptions = {
+export const { handlers, auth, signIn, signOut } = NextAuth({
   debug: process.env.NODE_ENV === 'production', // Enable debug in production
+  adapter: PrismaAdapter(prisma),
   providers: [
-    GoogleProvider({
+    Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
@@ -20,13 +22,13 @@ export const authOptions: NextAuthOptions = {
         },
       },
     }),
-    CredentialsProvider({
+    Credentials({
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials: any) {
         // Special case for local development - admin login with no credentials
         if (
           process.env.NODE_ENV === 'development' &&
@@ -95,9 +97,8 @@ export const authOptions: NextAuthOptions = {
     signIn: '/login',
     signOut: '/login',
   },
-  // Let NextAuth handle cookies automatically for better Vercel compatibility
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile }: any) {
       authLogger.info('Sign-in attempt', {
         provider: account?.provider,
         email: user.email,
@@ -128,7 +129,7 @@ export const authOptions: NextAuthOptions = {
 
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user }: any) {
       if (user) {
         // Use database ID if available, otherwise use the provider ID
         token.id = (user as any).dbId || user.id;
@@ -136,7 +137,7 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: any) {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as UserRole;
@@ -145,18 +146,18 @@ export const authOptions: NextAuthOptions = {
     },
   },
   events: {
-    async signIn(message) {
+    async signIn(message: any) {
       // Sign-in event logged
     },
-    async signOut(message) {
+    async signOut(message: any) {
       // Sign-out event logged
     },
-    async createUser(message) {
+    async createUser(message: any) {
       // Create user event logged
     },
-    async session(message) {
+    async session(message: any) {
       // Session event logged
     },
   },
   secret: process.env.NEXTAUTH_SECRET!,
-};
+});

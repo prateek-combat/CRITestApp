@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
@@ -153,7 +152,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
   const { id } = await params;
   try {
     // Check authentication and SUPER_ADMIN access
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
