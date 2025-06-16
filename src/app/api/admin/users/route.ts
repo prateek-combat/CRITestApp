@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/admin/users - List all admin users
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session || !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -44,7 +43,7 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/users - Add new admin user
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     // Only SUPER_ADMIN can add new admins
     if (!session || session.user.role !== 'SUPER_ADMIN') {

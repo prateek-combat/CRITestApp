@@ -4,11 +4,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
+import { UserRole } from '@prisma/client';
+import { prisma } from './prisma';
+import { authLogger } from './logger';
+import { auth } from './auth';
 
-const prisma = new PrismaClient();
+// Define admin roles
+const ADMIN_ROLES: UserRole[] = ['ADMIN', 'SUPER_ADMIN'];
 
 export interface AuthenticatedUser {
   id: string;
@@ -19,137 +21,154 @@ export interface AuthenticatedUser {
 }
 
 /**
- * Check if the request is from an authenticated admin user
+ * Middleware to check if user has admin access
+ * @param request - The incoming request
+ * @returns Response or null if authorized
  */
-export async function requireAdmin(
+export async function requireAdminAuth(
   request: NextRequest
-): Promise<{ user?: AuthenticatedUser; error?: NextResponse }> {
+): Promise<NextResponse | null> {
   try {
-    // Get session
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
-    if (!session || !session.user || !session.user.email) {
-      return {
-        error: NextResponse.json(
-          { error: 'Unauthorized - Please login' },
-          { status: 401 }
-        ),
-      };
+    if (!session?.user) {
+      authLogger.warn('Admin access denied - no session', {
+        path: request.nextUrl.pathname,
+        method: request.method,
+      });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        firstName: true,
-        lastName: true,
-      },
+    if (!ADMIN_ROLES.includes(session.user.role)) {
+      authLogger.warn('Admin access denied - insufficient role', {
+        path: request.nextUrl.pathname,
+        method: request.method,
+        userRole: session.user.role,
+        userId: session.user.id,
+      });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    authLogger.info('Admin access granted', {
+      path: request.nextUrl.pathname,
+      method: request.method,
+      userRole: session.user.role,
+      userId: session.user.id,
     });
 
-    if (!user) {
-      return {
-        error: NextResponse.json({ error: 'User not found' }, { status: 404 }),
-      };
-    }
-
-    if (user.role !== 'ADMIN') {
-      return {
-        error: NextResponse.json(
-          { error: 'Forbidden - Admin access required' },
-          { status: 403 }
-        ),
-      };
-    }
-
-    return { user };
+    return null; // Authorized
   } catch (error) {
-    console.error('Authentication error:', error);
-    return {
-      error: NextResponse.json(
-        { error: 'Authentication failed' },
-        { status: 500 }
-      ),
-    };
+    authLogger.error(
+      'Admin auth middleware error',
+      {
+        path: request.nextUrl.pathname,
+        method: request.method,
+      },
+      error as Error
+    );
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
 /**
- * Check if the request is from any authenticated user
+ * Middleware to check if user has super admin access
+ * @param request - The incoming request
+ * @returns Response or null if authorized
  */
-export async function requireAuth(
+export async function requireSuperAdminAuth(
   request: NextRequest
-): Promise<{ user?: AuthenticatedUser; error?: NextResponse }> {
+): Promise<NextResponse | null> {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
-    if (!session || !session.user || !session.user.email) {
-      return {
-        error: NextResponse.json(
-          { error: 'Unauthorized - Please login' },
-          { status: 401 }
-        ),
-      };
+    if (!session?.user) {
+      authLogger.warn('Super admin access denied - no session', {
+        path: request.nextUrl.pathname,
+        method: request.method,
+      });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        firstName: true,
-        lastName: true,
-      },
+    if (session.user.role !== 'SUPER_ADMIN') {
+      authLogger.warn('Super admin access denied - insufficient role', {
+        path: request.nextUrl.pathname,
+        method: request.method,
+        userRole: session.user.role,
+        userId: session.user.id,
+      });
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    authLogger.info('Super admin access granted', {
+      path: request.nextUrl.pathname,
+      method: request.method,
+      userRole: session.user.role,
+      userId: session.user.id,
     });
 
-    if (!user) {
-      return {
-        error: NextResponse.json({ error: 'User not found' }, { status: 404 }),
-      };
-    }
-
-    return { user };
+    return null; // Authorized
   } catch (error) {
-    console.error('Authentication error:', error);
-    return {
-      error: NextResponse.json(
-        { error: 'Authentication failed' },
-        { status: 500 }
-      ),
-    };
+    authLogger.error(
+      'Super admin auth middleware error',
+      {
+        path: request.nextUrl.pathname,
+        method: request.method,
+      },
+      error as Error
+    );
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
 /**
- * Optional authentication - returns user if authenticated, null otherwise
+ * Get current user session with error handling
+ * @returns Session or null
  */
-export async function optionalAuth(
-  request: NextRequest
-): Promise<AuthenticatedUser | null> {
+export async function getCurrentSession() {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !session.user || !session.user.email) {
-      return null;
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        firstName: true,
-        lastName: true,
-      },
-    });
-
-    return user;
+    const session = await auth();
+    return session;
   } catch (error) {
-    console.error('Optional auth error:', error);
+    authLogger.error('Failed to get current session', {}, error as Error);
     return null;
+  }
+}
+
+/**
+ * Check if user has specific role
+ * @param requiredRole - The role to check for
+ * @returns boolean
+ */
+export async function hasRole(requiredRole: UserRole): Promise<boolean> {
+  try {
+    const session = await auth();
+    return session?.user?.role === requiredRole;
+  } catch (error) {
+    authLogger.error(
+      'Failed to check user role',
+      { requiredRole },
+      error as Error
+    );
+    return false;
+  }
+}
+
+/**
+ * Check if user has admin privileges
+ * @returns boolean
+ */
+export async function isAdmin(): Promise<boolean> {
+  try {
+    const session = await auth();
+    return session?.user ? ADMIN_ROLES.includes(session.user.role) : false;
+  } catch (error) {
+    authLogger.error('Failed to check admin status', {}, error as Error);
+    return false;
   }
 }

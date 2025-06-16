@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
@@ -10,7 +9,7 @@ export async function GET(
 ) {
   try {
     // Check if user is authenticated and has access
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user) {
       return new NextResponse('Unauthorized', { status: 401 });
     }

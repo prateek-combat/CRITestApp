@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import { getQueueStatus } from '@/lib/queue';
 import { withLogging } from '@/lib/logging-middleware';
 import { apiLogger, authLogger } from '@/lib/logger';
@@ -10,7 +9,7 @@ async function handleGet(request: NextRequest) {
 
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (
       !session?.user ||
       !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)

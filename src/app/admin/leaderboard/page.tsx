@@ -1,6 +1,5 @@
 import { Suspense } from 'react';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import LeaderboardSidebarLayout from './_components/LeaderboardSidebarLayout';
 
@@ -21,7 +20,7 @@ interface LeaderboardPageProps {
 export default async function LeaderboardPage({
   searchParams,
 }: LeaderboardPageProps) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
 
   if (!session?.user || !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
     redirect('/login');

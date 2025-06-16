@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Prisma, TestAttemptStatus } from '@prisma/client';
 import { withCache, apiCache } from '@/lib/cache';
@@ -59,7 +58,7 @@ interface TestAttemptAnalytics {
 export async function GET(request: NextRequest) {
   try {
     // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (
       !session?.user ||
       !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)

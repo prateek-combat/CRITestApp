@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { requireAdmin } from '@/lib/auth-middleware';
+import { requireAdminAuth } from '@/lib/auth-middleware';
 
 const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
   try {
     // Check admin authentication
-    const { user, error } = await requireAdmin(request);
-    if (error) return error;
+    const authError = await requireAdminAuth(request);
+    if (authError) return authError;
 
     const { searchParams } = new URL(request.url);
 

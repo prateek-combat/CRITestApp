@@ -1,75 +1,85 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    // Check authentication
-    const session = await getServerSession(authOptions);
+    const session = await auth();
+
     if (
       !session?.user ||
       !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
     ) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = (await request.json()) as { ids: string[] };
-    const MAX_IDS = 5;
+    const { searchParams } = new URL(request.url);
+    const attemptIds = searchParams.get('attemptIds')?.split(',') || [];
 
-    if (
-      !body?.ids ||
-      !Array.isArray(body.ids) ||
-      body.ids.length === 0 ||
-      body.ids.length > MAX_IDS
-    ) {
+    if (attemptIds.length === 0) {
       return NextResponse.json(
-        {
-          message: `ids parameter required: array of 1-${MAX_IDS} attempt IDs`,
-        },
+        { error: 'No attempt IDs provided' },
         { status: 400 }
       );
     }
 
-    // Use raw query for now until Prisma generates the view types
-    const rows = await prisma.$queryRaw`
-      SELECT 
-        "attemptId",
-        "invitationId", 
-        "candidateName",
-        "candidateEmail",
-        "completedAt",
-        "durationSeconds",
-        "scoreLogical",
-        "scoreVerbal", 
-        "scoreNumerical",
-        "scoreAttention",
-        "composite",
-        "percentile",
-        "rank"
-      FROM vw_candidate_scores 
-      WHERE "attemptId" = ANY(${body.ids})
-      ORDER BY "rank" ASC
-    `;
+    // Fetch test attempts with their answers
+    const attempts = await prisma.testAttempt.findMany({
+      where: {
+        id: { in: attemptIds },
+        status: 'COMPLETED',
+      },
+      include: {
+        test: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+        submittedAnswers: {
+          include: {
+            question: {
+              select: {
+                id: true,
+                text: true,
+                category: true,
+                correctAnswer: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
-    // Convert BigInt values to numbers for JSON serialization
-    const serializedRows = (rows as any[]).map((row: any) => ({
-      ...row,
-      durationSeconds: Number(row.durationSeconds),
-      scoreLogical: Number(row.scoreLogical),
-      scoreVerbal: Number(row.scoreVerbal),
-      scoreNumerical: Number(row.scoreNumerical),
-      scoreAttention: Number(row.scoreAttention),
-      composite: Number(row.composite),
-      percentile: Number(row.percentile),
-      rank: Number(row.rank),
-    }));
+    if (attempts.length === 0) {
+      return NextResponse.json({ error: 'No attempts found' }, { status: 404 });
+    }
 
-    return NextResponse.json(serializedRows);
+    // Process the comparison data
+    const comparisonData = {
+      attempts: attempts.map((attempt) => ({
+        id: attempt.id,
+        candidateName: attempt.candidateName,
+        candidateEmail: attempt.candidateEmail,
+        compositeScore: attempt.compositeScore || 0,
+        submittedAt: attempt.submittedAt,
+        test: attempt.test,
+        answers: attempt.submittedAnswers.map((answer) => ({
+          questionId: answer.questionId,
+          questionText: answer.question.text,
+          category: answer.question.category,
+          selectedAnswer: answer.selectedAnswer,
+          isCorrect: answer.isCorrect,
+          correctAnswer: answer.question.correctAnswer,
+        })),
+      })),
+    };
+
+    return NextResponse.json(comparisonData);
   } catch (error) {
-    console.error('[API /admin/compare] Error:', error);
+    console.error('Compare API error:', error);
     return NextResponse.json(
-      { message: 'Failed to fetch comparison data' },
+      { error: 'Failed to fetch comparison data' },
       { status: 500 }
     );
   }
