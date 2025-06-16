@@ -5,6 +5,8 @@ import { signIn, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
 
+import { debugLogin, debugError } from '@/app/api/debug-utils';
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,39 +20,86 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
 
+    debugLogin('🚀 LOGIN FORM SUBMIT START', {
+      email,
+      hasPassword: !!password,
+      passwordLength: password.length,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+    });
+
     try {
+      debugLogin('📞 CALLING SIGNIN WITH CREDENTIALS');
       const result = await signIn('credentials', {
         email,
         password,
         redirect: false,
       });
 
+      debugLogin('📋 SIGNIN RESULT', {
+        ok: result?.ok,
+        error: result?.error,
+        status: result?.status,
+        url: result?.url,
+        hasResult: !!result,
+      });
+
       if (result?.error) {
-        setError(`Login failed: ${result.error}`);
+        const errorMsg = `Login failed: ${result.error}`;
+        debugLogin('❌ SIGNIN ERROR', {
+          error: result.error,
+          status: result.status,
+        });
+        setError(errorMsg);
       } else if (result?.ok) {
+        debugLogin('✅ SIGNIN SUCCESS, CHECKING SESSION');
         // Check if login was successful
         const session = await getSession();
+
+        debugLogin('📋 SESSION CHECK RESULT', {
+          hasSession: !!session,
+          userEmail: session?.user?.email,
+          userId: session?.user?.id,
+          userRole: session?.user?.role,
+          expires: session?.expires,
+        });
+
         if (session) {
+          debugLogin('🎯 REDIRECTING TO DASHBOARD');
           router.push('/admin/dashboard');
           router.refresh();
         } else {
-          setError('Login succeeded but no session created');
+          const errorMsg = 'Login succeeded but no session created';
+          debugLogin('❌ NO SESSION AFTER SUCCESSFUL LOGIN');
+          setError(errorMsg);
         }
       } else {
-        setError('Unexpected login result');
+        const errorMsg = 'Unexpected login result';
+        debugLogin('❓ UNEXPECTED SIGNIN RESULT', result);
+        setError(errorMsg);
       }
     } catch (error) {
-      setError(
-        `An error occurred during login: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      const errorMsg = `An error occurred during login: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      debugLogin('💥 LOGIN EXCEPTION', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      setError(errorMsg);
     } finally {
       setIsLoading(false);
+      debugLogin('🏁 LOGIN FORM SUBMIT END');
     }
   };
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError('');
+
+    debugLogin('🔍 GOOGLE SIGNIN START', {
+      timestamp: new Date().toISOString(),
+      url: window.location.href,
+    });
 
     try {
       // Bypass NextAuth and go directly to Google OAuth
@@ -71,10 +120,21 @@ export default function LoginPage() {
       googleAuthUrl.searchParams.set('prompt', 'consent');
       googleAuthUrl.searchParams.set('access_type', 'offline');
 
+      debugLogin('🔗 GOOGLE OAUTH URL CONSTRUCTED', {
+        url: googleAuthUrl.toString(),
+        clientId: googleClientId,
+        callbackUrl,
+      });
+
       // Direct redirect to Google OAuth
+      debugLogin('🚀 REDIRECTING TO GOOGLE OAUTH');
       window.location.href = googleAuthUrl.toString();
     } catch (error) {
-      setError('Failed to redirect to Google OAuth');
+      const errorMsg = 'Failed to redirect to Google OAuth';
+      debugLogin('💥 GOOGLE SIGNIN ERROR', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      setError(errorMsg);
       setIsLoading(false);
     }
   };
@@ -83,6 +143,8 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
 
+    debugLogin('🏠 LOCAL ADMIN LOGIN START');
+
     try {
       const result = await signIn('credentials', {
         email: 'local-admin',
@@ -90,16 +152,30 @@ export default function LoginPage() {
         redirect: false,
       });
 
+      debugLogin('🏠 LOCAL ADMIN SIGNIN RESULT', {
+        ok: result?.ok,
+        error: result?.error,
+      });
+
       if (result?.error) {
+        debugLogin('❌ LOCAL ADMIN LOGIN FAILED', { error: result.error });
         setError('Local admin login failed');
       } else {
         const session = await getSession();
+        debugLogin('🏠 LOCAL ADMIN SESSION CHECK', {
+          hasSession: !!session,
+          userEmail: session?.user?.email,
+        });
+
         if (session) {
           router.push('/admin/dashboard');
           router.refresh();
         }
       }
     } catch (error) {
+      debugLogin('💥 LOCAL ADMIN LOGIN ERROR', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
       setError('An error occurred with local admin login');
     } finally {
       setIsLoading(false);
@@ -109,6 +185,8 @@ export default function LoginPage() {
   const handleDirectTest = async () => {
     setIsLoading(true);
     setError('');
+
+    debugLogin('🧪 DIRECT TEST START', { email, hasPassword: !!password });
 
     try {
       const response = await fetch('/api/test-login', {
@@ -123,7 +201,15 @@ export default function LoginPage() {
         }),
       });
 
+      debugLogin('🧪 DIRECT TEST RESPONSE', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+      });
+
       const result = await response.json();
+
+      debugLogin('🧪 DIRECT TEST RESULT', result);
 
       if (result.success) {
         setError(
@@ -133,6 +219,9 @@ export default function LoginPage() {
         setError(`❌ Direct test failed: ${result.error}`);
       }
     } catch (error) {
+      debugLogin('💥 DIRECT TEST ERROR', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
       setError(
         `Direct test error: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
