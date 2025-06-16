@@ -26,17 +26,23 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError('Invalid email or password');
-      } else {
+        setError(`Login failed: ${result.error}`);
+      } else if (result?.ok) {
         // Check if login was successful
         const session = await getSession();
         if (session) {
           router.push('/admin/dashboard');
           router.refresh();
+        } else {
+          setError('Login succeeded but no session created');
         }
+      } else {
+        setError('Unexpected login result');
       }
     } catch (error) {
-      setError('An error occurred during login');
+      setError(
+        `An error occurred during login: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -95,6 +101,41 @@ export default function LoginPage() {
       }
     } catch (error) {
       setError('An error occurred with local admin login');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDirectTest = async () => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('/api/test-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          debugKey: 'debug-oauth-2024',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setError(
+          `✅ Direct test successful! User: ${result.user.email}, Role: ${result.user.role}`
+        );
+      } else {
+        setError(`❌ Direct test failed: ${result.error}`);
+      }
+    } catch (error) {
+      setError(
+        `Direct test error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -238,6 +279,14 @@ export default function LoginPage() {
                 Local Admin Login (Dev Only)
               </button>
             )}
+
+            <button
+              onClick={handleDirectTest}
+              disabled={isLoading}
+              className="flex w-full items-center justify-center rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-2 text-sm font-medium text-yellow-700 shadow-sm transition-colors hover:bg-yellow-100 focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 disabled:opacity-50"
+            >
+              🧪 Test Credentials (Debug)
+            </button>
           </div>
         </div>
 
