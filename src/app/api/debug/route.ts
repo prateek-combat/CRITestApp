@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 
-export async function GET() {
-  // Only allow in development or if a special debug key is provided
-  const isDev = process.env.NODE_ENV === 'development';
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const debugKey = searchParams.get('key');
 
-  if (!isDev) {
+  // Only allow in development or with correct debug key
+  const isDev = process.env.NODE_ENV === 'development';
+  const hasDebugKey = debugKey === 'debug-oauth-2024';
+
+  if (!isDev && !hasDebugKey) {
     return NextResponse.json(
       { error: 'Debug endpoint disabled in production' },
       { status: 403 }
