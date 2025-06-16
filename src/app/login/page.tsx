@@ -47,10 +47,26 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // Use direct redirect approach to bypass NextAuth client-side issues
-      window.location.href =
-        '/api/auth/signin/google?callbackUrl=' +
-        encodeURIComponent('/admin/dashboard');
+      // Bypass NextAuth and go directly to Google OAuth
+      const googleClientId =
+        '659780694762-shvlosoelr4ofbb7bu4it5km04laqs25.apps.googleusercontent.com';
+      const callbackUrl =
+        'https://cri-test-app.vercel.app/api/auth/callback/google';
+      const state = encodeURIComponent('/admin/dashboard'); // Store the redirect URL in state
+
+      const googleAuthUrl = new URL(
+        'https://accounts.google.com/o/oauth2/v2/auth'
+      );
+      googleAuthUrl.searchParams.set('client_id', googleClientId);
+      googleAuthUrl.searchParams.set('redirect_uri', callbackUrl);
+      googleAuthUrl.searchParams.set('response_type', 'code');
+      googleAuthUrl.searchParams.set('scope', 'openid email profile');
+      googleAuthUrl.searchParams.set('state', state);
+      googleAuthUrl.searchParams.set('prompt', 'consent');
+      googleAuthUrl.searchParams.set('access_type', 'offline');
+
+      // Direct redirect to Google OAuth
+      window.location.href = googleAuthUrl.toString();
     } catch (error) {
       setError('Failed to redirect to Google OAuth');
       setIsLoading(false);
