@@ -1,33 +1,43 @@
-import { Suspense } from 'react';
-import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+'use client';
+
+import { Suspense, useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import LeaderboardSidebarLayout from './_components/LeaderboardSidebarLayout';
 
-interface LeaderboardPageProps {
-  searchParams: Promise<{
-    testId?: string;
-    page?: string;
-    pageSize?: string;
-    dateFrom?: string;
-    dateTo?: string;
-    invitationId?: string;
-    search?: string;
-    sortBy?: string;
-    sortOrder?: string;
-  }>;
-}
+export default function LeaderboardPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
 
-export default async function LeaderboardPage({
-  searchParams,
-}: LeaderboardPageProps) {
-  const session = await auth();
+  useEffect(() => {
+    if (status === 'loading') return; // Still loading session
 
-  if (!session?.user || !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
-    redirect('/login');
+    if (
+      !session?.user ||
+      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
+    ) {
+      router.push('/login');
+      return;
+    }
+
+    setIsLoading(false);
+  }, [session, status, router]);
+
+  if (status === 'loading' || isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
-  // Await searchParams to comply with Next.js 15 requirements
-  const resolvedSearchParams = await searchParams;
+  if (!session?.user || !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
+    return null; // Will redirect to login
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -35,7 +45,7 @@ export default async function LeaderboardPage({
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">
-            Candidate Leaderboard
+            🏆 Candidate Leaderboard
           </h1>
           <p className="mt-2 text-gray-600">
             View and compare candidate performance rankings by test
@@ -45,19 +55,14 @@ export default async function LeaderboardPage({
         <Suspense
           fallback={
             <div className="flex items-center justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-brand-500"></div>
+              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
               <p className="ml-3 text-gray-600">Loading leaderboard...</p>
             </div>
           }
         >
-          <LeaderboardSidebarLayout searchParams={resolvedSearchParams} />
+          <LeaderboardSidebarLayout />
         </Suspense>
       </div>
     </div>
   );
 }
-
-export const metadata = {
-  title: 'Candidate Leaderboard - Test Platform',
-  description: 'View and compare candidate performance rankings by test',
-};

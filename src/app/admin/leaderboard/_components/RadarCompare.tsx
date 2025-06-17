@@ -9,6 +9,12 @@ import {
   Legend,
 } from 'recharts';
 
+// Utility function to safely convert to number and handle NaN
+const safeNumber = (value: any, defaultValue: number = 0): number => {
+  const num = Number(value);
+  return isNaN(num) || !isFinite(num) ? defaultValue : num;
+};
+
 interface CandidateScore {
   attemptId: string;
   candidateName: string;
@@ -33,7 +39,7 @@ const COLORS = [
 ];
 
 export default function RadarCompare({ candidates }: RadarCompareProps) {
-  // Transform data for radar chart
+  // Transform data for radar chart with safe number handling
   const categories = [
     { name: 'Logical', key: 'scoreLogical' },
     { name: 'Verbal', key: 'scoreVerbal' },
@@ -46,12 +52,35 @@ export default function RadarCompare({ candidates }: RadarCompareProps) {
     const dataPoint: any = { category: category.name };
 
     candidates.forEach((candidate, index) => {
-      dataPoint[candidate.candidateName] =
-        candidate[category.key as keyof CandidateScore];
+      const rawValue = candidate[category.key as keyof CandidateScore];
+      dataPoint[candidate.candidateName] = safeNumber(rawValue, 0);
     });
 
     return dataPoint;
   });
+
+  // Filter out candidates with all zero values to avoid rendering issues
+  const validCandidates = candidates.filter((candidate) => {
+    const hasValidScores = categories.some((category) => {
+      const value = safeNumber(
+        candidate[category.key as keyof CandidateScore],
+        0
+      );
+      return value > 0;
+    });
+    return hasValidScores;
+  });
+
+  if (validCandidates.length === 0) {
+    return (
+      <div className="flex h-96 w-full items-center justify-center">
+        <div className="text-center text-gray-500">
+          <div className="mb-4 text-4xl">📊</div>
+          <p>No valid candidate data to display</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-96 w-full">
@@ -70,9 +99,10 @@ export default function RadarCompare({ candidates }: RadarCompareProps) {
             domain={[0, 100]}
             tick={{ fontSize: 10, fill: '#6B7280' }}
             tickCount={5}
+            allowDataOverflow={false}
           />
 
-          {candidates.map((candidate, index) => (
+          {validCandidates.map((candidate, index) => (
             <Radar
               key={candidate.attemptId}
               name={candidate.candidateName}
@@ -87,7 +117,7 @@ export default function RadarCompare({ candidates }: RadarCompareProps) {
 
           <Tooltip
             formatter={(value: any, name: string) => [
-              `${Number(value).toFixed(1)}%`,
+              `${safeNumber(value, 0).toFixed(1)}%`,
               name,
             ]}
             labelFormatter={(label) => `${label} Reasoning`}

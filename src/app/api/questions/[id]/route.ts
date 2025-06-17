@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient, QuestionCategory } from '@prisma/client';
 import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { auth } from '@/lib/auth';
 
 const prisma = new PrismaClient({
   log: ['query', 'info', 'warn', 'error'], // Optional: configure logging

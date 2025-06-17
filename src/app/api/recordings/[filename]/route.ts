@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { getServerSession } from 'next-auth';
+import { auth } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
