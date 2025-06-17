@@ -2,6 +2,7 @@
 
 import { signIn, useSession } from 'next-auth/react';
 import { useState } from 'react';
+import Link from 'next/link';
 
 export default function TestOAuthPage() {
   const { data: session, status } = useSession();
@@ -91,9 +92,9 @@ export default function TestOAuthPage() {
           </button>
 
           <div className="text-center">
-            <a href="/login" className="text-blue-500 hover:underline">
+            <Link href="/login" className="text-blue-500 hover:underline">
               Back to Login Page
-            </a>
+            </Link>
           </div>
         </div>
       </div>
