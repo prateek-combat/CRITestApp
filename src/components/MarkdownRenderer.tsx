@@ -3,7 +3,6 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vs } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
 
 interface MarkdownRendererProps {
   content: string;
@@ -14,6 +13,42 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   content,
   className = '',
 }) => {
+  // Pre-process content to escape problematic C++ template syntax
+  const preprocessContent = (text: string): string => {
+    // Escape C++ template syntax like std::shared_ptr<const Type>
+    return (
+      text
+        // Escape std:: patterns with angle brackets
+        .replace(/std::([a-zA-Z_]+)<([^>]+)>/g, (match, type, inner) => {
+          return `std::${type}&lt;${inner}&gt;`;
+        })
+        // Escape other template patterns
+        .replace(/([a-zA-Z_][a-zA-Z0-9_]*)<([^>]+)>/g, (match, type, inner) => {
+          // Only escape if it looks like C++ and not HTML
+          if (
+            type === 'strong' ||
+            type === 'em' ||
+            type === 'h1' ||
+            type === 'h2' ||
+            type === 'h3' ||
+            type === 'h4' ||
+            type === 'h5' ||
+            type === 'h6' ||
+            type === 'p' ||
+            type === 'div' ||
+            type === 'span' ||
+            type === 'blockquote' ||
+            type === 'br'
+          ) {
+            return match; // Keep HTML tags as-is
+          }
+          return `${type}&lt;${inner}&gt;`;
+        })
+    );
+  };
+
+  const processedContent = preprocessContent(content);
+
   const CodeBlock = {
     code({ node, inline, className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || '');
@@ -69,12 +104,8 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
 
   return (
     <div className={`prose max-w-none ${className}`}>
-      <ReactMarkdown
-        components={CodeBlock}
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw]}
-      >
-        {content}
+      <ReactMarkdown components={CodeBlock} remarkPlugins={[remarkGfm]}>
+        {processedContent}
       </ReactMarkdown>
     </div>
   );
