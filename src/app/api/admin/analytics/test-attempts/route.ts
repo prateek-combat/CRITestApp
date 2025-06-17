@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Prisma, TestAttemptStatus } from '@prisma/client';
 import { withCache, apiCache } from '@/lib/cache';

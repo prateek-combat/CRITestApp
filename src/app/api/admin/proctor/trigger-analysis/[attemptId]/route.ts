@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
+import { auth } from '@/lib/auth';
 
 // Custom AI Service configuration
 // The AI service will be deployed on Google Cloud Platform

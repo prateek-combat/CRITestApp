@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import LeaderboardTable from './LeaderboardTable';
 import CompareDrawer from './CompareDrawer';
@@ -70,12 +70,47 @@ interface LeaderboardData {
 }
 
 interface LeaderboardSidebarLayoutProps {
-  searchParams: Record<string, string | undefined>;
+  searchParams?: Record<string, string | undefined>;
 }
 
 export default function LeaderboardSidebarLayout({
-  searchParams,
+  searchParams: searchParamsProp = {},
 }: LeaderboardSidebarLayoutProps) {
+  // Use useSearchParams to get current URL search params
+  const urlSearchParams = useSearchParams();
+
+  // Memoize searchParams to prevent infinite re-renders
+  const searchParams = useMemo(
+    () => ({
+      testId:
+        urlSearchParams.get('testId') || searchParamsProp.testId || undefined,
+      page: urlSearchParams.get('page') || searchParamsProp.page || undefined,
+      pageSize:
+        urlSearchParams.get('pageSize') ||
+        searchParamsProp.pageSize ||
+        undefined,
+      dateFrom:
+        urlSearchParams.get('dateFrom') ||
+        searchParamsProp.dateFrom ||
+        undefined,
+      dateTo:
+        urlSearchParams.get('dateTo') || searchParamsProp.dateTo || undefined,
+      invitationId:
+        urlSearchParams.get('invitationId') ||
+        searchParamsProp.invitationId ||
+        undefined,
+      search:
+        urlSearchParams.get('search') || searchParamsProp.search || undefined,
+      sortBy:
+        urlSearchParams.get('sortBy') || searchParamsProp.sortBy || undefined,
+      sortOrder:
+        urlSearchParams.get('sortOrder') ||
+        searchParamsProp.sortOrder ||
+        undefined,
+    }),
+    [urlSearchParams, searchParamsProp]
+  );
+
   const [tests, setTests] = useState<Test[]>([]);
   const [selectedTestId, setSelectedTestId] = useState<string>('');
   const [data, setData] = useState<LeaderboardData | null>(null);
@@ -145,7 +180,17 @@ export default function LeaderboardSidebarLayout({
     } finally {
       setIsLoading(false);
     }
-  }, [selectedTestId, searchParams]);
+  }, [
+    selectedTestId,
+    searchParams.search,
+    searchParams.page,
+    searchParams.pageSize,
+    searchParams.dateFrom,
+    searchParams.dateTo,
+    searchParams.invitationId,
+    searchParams.sortBy,
+    searchParams.sortOrder,
+  ]);
 
   useEffect(() => {
     fetchTests();
@@ -155,7 +200,7 @@ export default function LeaderboardSidebarLayout({
     if (selectedTestId) {
       fetchLeaderboardData();
     }
-  }, [fetchLeaderboardData, selectedTestId]);
+  }, [selectedTestId, fetchLeaderboardData]);
 
   const handleTestSelect = (testId: string) => {
     setSelectedTestId(testId);
@@ -231,7 +276,7 @@ export default function LeaderboardSidebarLayout({
   if (isLoadingTests) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-brand-500"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
         <p className="ml-3 text-gray-600">Loading tests...</p>
       </div>
     );
@@ -343,7 +388,7 @@ export default function LeaderboardSidebarLayout({
                 </div>
                 <button
                   type="submit"
-                  className="rounded-md bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                  className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
                   Search
                 </button>
