@@ -2,6 +2,8 @@ import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import { UserRole } from '@prisma/client';
+import { prisma } from './prisma';
+import { authLogger } from './logger';
 
 // JWT-only auth configuration optimized for serverless environments
 // Avoids Prisma adapter dependency for better cold start performance
@@ -55,15 +57,43 @@ export const authOptionsSimple: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }: any) {
       if (account?.provider === 'google') {
-        // Only allow prateek@combatrobotics.in for Google OAuth
-        if (user.email === 'prateek@combatrobotics.in') {
-          (user as any).role = 'SUPER_ADMIN';
-          (user as any).dbId = 'prateek-admin-id';
-          return true;
-        }
+        try {
+          // Check if user exists in database with admin role
+          const dbUser = await prisma.user.findFirst({
+            where: {
+              email: user.email,
+              role: {
+                in: ['ADMIN', 'SUPER_ADMIN'],
+              },
+            },
+          });
 
-        // Reject all other Google accounts
-        return false;
+          if (dbUser) {
+            // User is authorized admin
+            (user as any).role = dbUser.role;
+            (user as any).dbId = dbUser.id;
+            (user as any).firstName = dbUser.firstName;
+            (user as any).lastName = dbUser.lastName;
+            return true;
+          }
+
+          // User not found in admin database
+          authLogger.warn('Unauthorized Google login attempt', {
+            email: user.email,
+            provider: 'google',
+          });
+          return false;
+        } catch (error) {
+          authLogger.error(
+            'Error checking user in database during Google sign-in',
+            {
+              email: user.email,
+              provider: 'google',
+            },
+            error as Error
+          );
+          return false;
+        }
       }
 
       return true;
@@ -72,6 +102,8 @@ export const authOptionsSimple: NextAuthOptions = {
       if (user) {
         token.id = (user as any).dbId || user.id;
         token.role = (user as any).role || 'USER';
+        token.firstName = (user as any).firstName;
+        token.lastName = (user as any).lastName;
       }
       return token;
     },
@@ -79,6 +111,10 @@ export const authOptionsSimple: NextAuthOptions = {
       if (session.user && token) {
         session.user.id = token.id as string;
         session.user.role = token.role as UserRole;
+        session.user.name =
+          token.firstName && token.lastName
+            ? `${token.firstName} ${token.lastName}`.trim()
+            : session.user.name;
       }
       return session;
     },
