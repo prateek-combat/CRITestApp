@@ -28,6 +28,10 @@ export default function AdminUsersPage() {
   });
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState('');
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
+    null
+  );
 
   // Only SUPER_ADMIN can access this page
   useEffect(() => {
@@ -115,6 +119,33 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleDeleteUser = async (userId: string) => {
+    setDeletingUserId(userId);
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMessage('✅ Admin user deleted successfully!');
+        fetchUsers();
+      } else {
+        if (data.hasContent) {
+          setMessage(`⚠️ ${data.message}`);
+        } else {
+          setMessage(`❌ Error: ${data.message}`);
+        }
+      }
+    } catch (error) {
+      setMessage('❌ Error deleting user');
+    } finally {
+      setDeletingUserId(null);
+      setShowDeleteConfirm(null);
+    }
+  };
+
   if (session?.user.role !== 'SUPER_ADMIN') {
     return (
       <div className="py-12 text-center">
@@ -147,7 +178,13 @@ export default function AdminUsersPage() {
 
       {message && (
         <div
-          className={`mb-6 rounded-lg p-4 ${message.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+          className={`mb-6 rounded-lg p-4 ${
+            message.includes('✅')
+              ? 'bg-green-100 text-green-800'
+              : message.includes('⚠️')
+                ? 'bg-yellow-100 text-yellow-800'
+                : 'bg-red-100 text-red-800'
+          }`}
         >
           {message}
         </div>
@@ -236,12 +273,21 @@ export default function AdminUsersPage() {
               </button>
             </div>
           </form>
-          <div className="mt-4 rounded-lg bg-primary-50 p-4">
-            <p className="text-sm text-primary-800">
-              <strong>Note:</strong> The user must sign in with their Google
-              account first. Only pre-registered admin emails can access the
-              admin panel.
-            </p>
+          <div className="mt-4 space-y-3">
+            <div className="rounded-lg bg-primary-50 p-4">
+              <p className="text-sm text-primary-800">
+                <strong>Note:</strong> The user must sign in with their Google
+                account first. Only pre-registered admin emails can access the
+                admin panel.
+              </p>
+            </div>
+            <div className="rounded-lg bg-amber-50 p-4">
+              <p className="text-sm text-amber-800">
+                <strong>Delete Policy:</strong> Users who have created tests,
+                invitations, or public links cannot be deleted to preserve data
+                integrity. Change their role instead if needed.
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -303,9 +349,38 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                     {user.id === session?.user.id ? (
-                      <span className="text-blue-600">Current User</span>
+                      <span className="font-medium text-blue-600">
+                        Current User
+                      </span>
                     ) : (
-                      <span className="text-gray-400">-</span>
+                      <div className="flex gap-2">
+                        {showDeleteConfirm === user.id ? (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleDeleteUser(user.id)}
+                              disabled={deletingUserId === user.id}
+                              className="rounded bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-700 disabled:opacity-50"
+                            >
+                              {deletingUserId === user.id
+                                ? 'Deleting...'
+                                : 'Confirm Delete'}
+                            </button>
+                            <button
+                              onClick={() => setShowDeleteConfirm(null)}
+                              className="rounded bg-gray-300 px-3 py-1 text-xs text-gray-700 hover:bg-gray-400"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setShowDeleteConfirm(user.id)}
+                            className="rounded bg-red-100 px-3 py-1 text-xs text-red-700 hover:bg-red-200"
+                          >
+                            🗑️ Delete
+                          </button>
+                        )}
+                      </div>
                     )}
                   </td>
                 </tr>
