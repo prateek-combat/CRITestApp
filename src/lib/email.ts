@@ -644,15 +644,12 @@ function generateTestCompletionCandidateEmailHtml(
 
           <div class="company-branding">
             <div class="company-name">${companyName}</div>
-            <div class="company-tagline">Excellence in Technical Assessment</div>
           </div>
 
           <div class="footer">
             <p class="footer-text">This is an automated confirmation from <strong>${companyName}</strong>.</p>
             <p class="footer-text">Generated on ${new Date().toLocaleString()}</p>
-            <p class="footer-text" style="font-size: 12px; margin-top: 15px;">
-              Thank you for taking the time to complete our assessment. We appreciate your effort and look forward to reviewing your submission.
-            </p>
+
           </div>
         </div>
       </div>
