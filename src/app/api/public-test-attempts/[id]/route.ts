@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { enhancedEmailService as emailService } from '@/lib/enhancedEmailService';
+import { sendTestCompletionCandidateEmail } from '@/lib/email';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -192,7 +193,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           },
         });
 
-        // Send email notification for public test completion (async, don't wait for completion)
+        // Send admin email notification for public test completion (async, don't wait for completion)
         if (status === 'COMPLETED') {
           emailService
             .sendTestCompletionNotification({
@@ -222,11 +223,27 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             })
             .catch((error) => {
               console.error(
-                'Failed to send public test completion email notification:',
+                'Failed to send public test completion email notification to admins:',
                 error
               );
               // Don't fail the test submission if email fails
             });
+
+          // Send candidate confirmation email (async, don't wait for completion)
+          sendTestCompletionCandidateEmail({
+            candidateEmail:
+              existingAttempt.candidateEmail || 'unknown@example.com',
+            candidateName: existingAttempt.candidateName || 'Unknown Candidate',
+            testTitle: publicLink.test.title || 'Assessment',
+            completedAt: new Date(submissionTimeEpoch),
+            companyName: 'Combat Robotics India',
+          }).catch((error) => {
+            console.error(
+              'Failed to send test completion confirmation email to candidate:',
+              error
+            );
+            // Don't fail the test submission if email fails
+          });
         }
       }
     }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient, Prisma, QuestionCategory } from '@prisma/client';
 import { enhancedEmailService as emailService } from '@/lib/enhancedEmailService';
+import { sendTestCompletionCandidateEmail } from '@/lib/email';
 
 const prisma = new PrismaClient({
   log: ['query', 'info', 'warn', 'error'],
@@ -149,6 +150,7 @@ export async function POST(request: Request) {
         test: {
           select: {
             id: true,
+            title: true,
             questions: {
               select: {
                 id: true,
@@ -337,7 +339,7 @@ export async function POST(request: Request) {
         data: { status: 'COMPLETED' },
       });
 
-      // Send email notification (async, don't wait for completion)
+      // Send admin email notification (async, don't wait for completion)
       emailService
         .sendTestCompletionNotification({
           testId: invitation.test.id,
@@ -355,11 +357,26 @@ export async function POST(request: Request) {
         })
         .catch((error: any) => {
           console.error(
-            'Failed to send test completion email notification:',
+            'Failed to send test completion email notification to admins:',
             error
           );
           // Don't fail the test submission if email fails
         });
+
+      // Send candidate confirmation email (async, don't wait for completion)
+      sendTestCompletionCandidateEmail({
+        candidateEmail: invitation.candidateEmail || 'unknown@example.com',
+        candidateName: invitation.candidateName || 'Unknown Candidate',
+        testTitle: invitation.test.title || 'Assessment',
+        completedAt: new Date(submissionTimeEpoch),
+        companyName: 'Combat Robotics India',
+      }).catch((error: any) => {
+        console.error(
+          'Failed to send test completion confirmation email to candidate:',
+          error
+        );
+        // Don't fail the test submission if email fails
+      });
 
       return NextResponse.json(updatedAttempt);
     }
