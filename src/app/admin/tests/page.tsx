@@ -14,6 +14,9 @@ import {
   Send,
   Copy,
   ExternalLink,
+  MoreVertical,
+  Edit,
+  Bell,
 } from 'lucide-react';
 
 interface Test {
@@ -79,7 +82,7 @@ type FilterStatus =
   | 'CANCELLED';
 
 export default function TestsPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [activeTab, setActiveTab] = useState<
     'tests' | 'invitations' | 'publicLinks'
   >('tests');
@@ -114,11 +117,30 @@ export default function TestsPage() {
   const [publicLinksLoading, setPublicLinksLoading] = useState(true);
   const [publicLinksError, setPublicLinksError] = useState<string | null>(null);
 
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
   useEffect(() => {
     fetchTests();
     fetchInvitations();
     fetchPublicLinks();
   }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openDropdown) {
+        setOpenDropdown(null);
+      }
+    };
+
+    if (openDropdown) {
+      document.addEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [openDropdown]);
 
   const fetchTests = async () => {
     try {
@@ -491,6 +513,12 @@ export default function TestsPage() {
 
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
 
+  const handleEmailNotifications = (test: { id: string; title: string }) => {
+    setSelectedTestForEmail(test);
+    setEmailSettingsOpen(true);
+    setOpenDropdown(null);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -602,66 +630,128 @@ export default function TestsPage() {
               {tests.map((test) => (
                 <div
                   key={test.id}
-                  className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
+                  className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
                 >
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {test.title}
-                    </h3>
-                    {test.description && (
-                      <p className="mt-1 text-sm text-gray-600">
-                        {test.description}
-                      </p>
-                    )}
+                  <div className="mb-4 flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {test.title}
+                      </h3>
+                      {test.description && (
+                        <p className="mt-1 text-sm text-gray-600">
+                          {test.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Three-dots menu */}
+                    <div className="relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenDropdown(
+                            openDropdown === test.id ? null : test.id
+                          );
+                        }}
+                        className="rounded-md p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                      >
+                        <MoreVertical className="h-5 w-5" />
+                      </button>
+
+                      {openDropdown === test.id && (
+                        <div className="absolute right-0 top-10 z-10 w-48 rounded-md border border-gray-200 bg-white py-1 shadow-lg">
+                          <Link
+                            href={`/admin/tests/${test.id}`}
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenDropdown(null);
+                            }}
+                          >
+                            <Edit className="mr-3 h-4 w-4" />
+                            Edit Test
+                          </Link>
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEmailNotifications({
+                                id: test.id,
+                                title: test.title,
+                              });
+                            }}
+                            className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <Bell className="mr-3 h-4 w-4" />
+                            Email Notifications
+                          </button>
+
+                          {isSuperAdmin && (
+                            <>
+                              <div className="my-1 border-t border-gray-100"></div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleArchiveTest(test.id);
+                                  setOpenDropdown(null);
+                                }}
+                                disabled={archivingTestId === test.id}
+                                className="flex w-full items-center px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50 disabled:opacity-50"
+                              >
+                                <Archive className="mr-3 h-4 w-4" />
+                                {archivingTestId === test.id
+                                  ? 'Archiving...'
+                                  : 'Archive Test'}
+                              </button>
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteTest(test.id);
+                                  setOpenDropdown(null);
+                                }}
+                                disabled={deletingTestId === test.id}
+                                className="flex w-full items-center px-4 py-2 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
+                              >
+                                <Trash2 className="mr-3 h-4 w-4" />
+                                {deletingTestId === test.id
+                                  ? 'Deleting...'
+                                  : 'Delete Test'}
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="mb-4 text-sm text-gray-600">
-                    <p>Questions: {test.questionsCount}</p>
-                    <p>Invitations: {test.invitationsCount}</p>
-                    <p>
-                      Created: {new Date(test.createdAt).toLocaleDateString()}
-                    </p>
+                  <div className="mb-4 space-y-1 text-sm text-gray-600">
+                    <div className="flex items-center justify-between">
+                      <span>Questions:</span>
+                      <span className="font-medium">{test.questionsCount}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Invitations:</span>
+                      <span className="font-medium">
+                        {test.invitationsCount}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Created:</span>
+                      <span className="font-medium">
+                        {new Date(test.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>Click ⋮ for options</span>
                     <Link
                       href={`/admin/tests/${test.id}`}
-                      className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                      className="inline-flex items-center font-medium text-blue-600 hover:text-blue-800"
                     >
-                      Edit
+                      View Details →
                     </Link>
-                    <button
-                      onClick={() =>
-                        setSelectedTestForEmail({
-                          id: test.id,
-                          title: test.title,
-                        })
-                      }
-                      className="inline-flex items-center rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700"
-                    >
-                      <Mail className="mr-1 h-3 w-3" />
-                      Email
-                    </button>
-                    {isSuperAdmin && (
-                      <>
-                        <button
-                          onClick={() => handleArchiveTest(test.id)}
-                          disabled={archivingTestId === test.id}
-                          className="inline-flex items-center rounded-md bg-yellow-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-yellow-700 disabled:opacity-50"
-                        >
-                          <Archive className="mr-1 h-3 w-3" />
-                          Archive
-                        </button>
-                        <button
-                          onClick={() => handleDeleteTest(test.id)}
-                          disabled={deletingTestId === test.id}
-                          className="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
-                        >
-                          <Trash2 className="mr-1 h-3 w-3" />
-                          Delete
-                        </button>
-                      </>
-                    )}
                   </div>
                 </div>
               ))}
