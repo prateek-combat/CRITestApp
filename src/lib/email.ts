@@ -15,6 +15,14 @@ export interface ReminderEmailData extends InvitationEmailData {
   daysUntilExpiry: number;
 }
 
+export interface TestCompletionCandidateEmailData {
+  candidateEmail: string;
+  candidateName: string;
+  testTitle: string;
+  completedAt: Date;
+  companyName?: string;
+}
+
 // Create Gmail transporter
 function createGmailTransporter() {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
@@ -371,6 +379,288 @@ function generateInvitationEmailHtml(data: InvitationEmailData): string {
 }
 
 // Generate reminder email HTML template
+// Generate candidate test completion confirmation email HTML template
+function generateTestCompletionCandidateEmailHtml(
+  data: TestCompletionCandidateEmailData
+): string {
+  const {
+    candidateEmail,
+    candidateName,
+    testTitle,
+    completedAt,
+    companyName = 'Combat Robotics India',
+  } = data;
+
+  const completedDate = completedAt.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Test Submission Confirmed - ${testTitle}</title>
+      <style>
+        body {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          line-height: 1.6;
+          margin: 0;
+          padding: 20px;
+          background: linear-gradient(135deg, #f8f9fa 0%, #e9f0e9 100%);
+        }
+        .container {
+          max-width: 700px;
+          margin: 0 auto;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+          overflow: hidden;
+        }
+        .header {
+          background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+          color: white;
+          padding: 30px 20px;
+          text-align: center;
+        }
+        .header h1 {
+          margin: 0;
+          font-size: 28px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+        }
+        .header p {
+          margin: 10px 0 0 0;
+          font-size: 18px;
+          opacity: 0.9;
+        }
+        .content {
+          padding: 30px;
+        }
+        .success-banner {
+          background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+          border-left: 5px solid #10B981;
+          border-radius: 10px;
+          padding: 25px;
+          margin: 25px 0;
+          text-align: center;
+        }
+        .success-icon {
+          font-size: 48px;
+          margin-bottom: 15px;
+        }
+        .success-title {
+          font-size: 24px;
+          font-weight: 700;
+          color: #047857;
+          margin-bottom: 10px;
+        }
+        .success-message {
+          font-size: 16px;
+          color: #059669;
+          margin-bottom: 0;
+        }
+        .test-info {
+          background: linear-gradient(135deg, #f0f4e8 0%, #d9e4c4 100%);
+          border-left: 5px solid #4A5D23;
+          border-radius: 10px;
+          padding: 25px;
+          margin: 25px 0;
+        }
+        .test-name {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 20px;
+          font-weight: 700;
+          color: #4A5D23;
+          margin-bottom: 15px;
+        }
+        .completion-details {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 15px;
+          margin-top: 15px;
+        }
+        .detail-item {
+          background: rgba(255,255,255,0.8);
+          padding: 15px;
+          border-radius: 8px;
+        }
+        .detail-label {
+          font-weight: 600;
+          color: #4A5D23;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 5px;
+        }
+        .detail-value {
+          font-size: 16px;
+          color: #323f17;
+        }
+        .next-steps {
+          background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+          border-left: 5px solid #3b82f6;
+          border-radius: 12px;
+          padding: 25px;
+          margin: 25px 0;
+        }
+        .next-steps-title {
+          font-weight: 700;
+          color: #1e40af;
+          margin-bottom: 15px;
+          font-size: 18px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .next-steps-list {
+          margin: 0;
+          padding-left: 20px;
+        }
+        .next-steps-list li {
+          margin: 12px 0;
+          color: #1e3a8a;
+          font-weight: 500;
+          line-height: 1.6;
+        }
+        .contact-info {
+          background: linear-gradient(135deg, #fef7ec 0%, #fed7aa 100%);
+          border-left: 5px solid #F5821F;
+          padding: 20px;
+          margin: 25px 0;
+          border-radius: 10px;
+        }
+        .contact-title {
+          color: #c25b16;
+          font-weight: 700;
+          margin-bottom: 10px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 16px;
+        }
+        .contact-text {
+          color: #c25b16;
+          line-height: 1.6;
+        }
+        .footer {
+          margin-top: 40px;
+          padding: 25px;
+          background: #f8f9fa;
+          border-top: 3px solid #10B981;
+          text-align: center;
+        }
+        .footer-text {
+          color: #6b7280;
+          font-size: 14px;
+          margin: 8px 0;
+        }
+        .company-branding {
+          margin-top: 20px;
+          padding: 20px;
+          background: linear-gradient(135deg, #4A5D23 0%, #3e4e1d 100%);
+          border-radius: 10px;
+          color: white;
+          text-align: center;
+        }
+        .company-name {
+          font-size: 20px;
+          font-weight: 700;
+          color: #F5821F;
+          margin-bottom: 5px;
+        }
+        .company-tagline {
+          font-size: 14px;
+          opacity: 0.9;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>✅ Test Submission Confirmed</h1>
+          <p>Your assessment has been successfully recorded</p>
+        </div>
+        
+        <div class="content">
+          <div class="success-banner">
+            <div class="success-icon">🎉</div>
+            <div class="success-title">Congratulations, ${candidateName}!</div>
+            <div class="success-message">
+              Your test submission has been successfully recorded and is now under review.
+            </div>
+          </div>
+
+          <div class="test-info">
+            <div class="test-name">📋 ${testTitle}</div>
+            <div class="completion-details">
+              <div class="detail-item">
+                <div class="detail-label">Candidate Name</div>
+                <div class="detail-value">${candidateName}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Email Address</div>
+                <div class="detail-value">${candidateEmail}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Completion Date</div>
+                <div class="detail-value">${completedDate}</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Status</div>
+                <div class="detail-value">✅ Successfully Submitted</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="next-steps">
+            <div class="next-steps-title">🚀 What happens next?</div>
+            <ul class="next-steps-list">
+              <li>Our team will review your submission thoroughly</li>
+              <li>We will analyze your responses and performance</li>
+              <li>You may be contacted regarding the next steps in the evaluation process</li>
+              <li>Results and feedback will be communicated as appropriate</li>
+            </ul>
+          </div>
+
+          <div class="contact-info">
+            <div class="contact-title">📞 Need Help?</div>
+            <div class="contact-text">
+              If you have any questions or concerns about your test submission, 
+              please don't hesitate to contact our assessment team. We're here to help!
+            </div>
+          </div>
+
+          <div class="company-branding">
+            <div class="company-name">${companyName}</div>
+            <div class="company-tagline">Excellence in Technical Assessment</div>
+          </div>
+
+          <div class="footer">
+            <p class="footer-text">This is an automated confirmation from <strong>${companyName}</strong>.</p>
+            <p class="footer-text">Generated on ${new Date().toLocaleString()}</p>
+            <p class="footer-text" style="font-size: 12px; margin-top: 15px;">
+              Thank you for taking the time to complete our assessment. We appreciate your effort and look forward to reviewing your submission.
+            </p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
 function generateReminderEmailHtml(data: ReminderEmailData): string {
   const { reminderType, daysUntilExpiry } = data;
 
@@ -526,6 +816,72 @@ Please complete this test as soon as possible.
         testTitle: data.testTitle,
         reminderType: data.reminderType,
         operation: 'send_reminder',
+      },
+      error as Error
+    );
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+// Send test completion confirmation email to candidate
+export async function sendTestCompletionCandidateEmail(
+  data: TestCompletionCandidateEmailData
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  try {
+    const transporter = createGmailTransporter();
+
+    const mailOptions = {
+      from: `${data.companyName || 'Test Platform'} <${process.env.GMAIL_USER}>`,
+      to: data.candidateEmail,
+      subject: `✅ Test Submission Confirmed - ${data.testTitle}`,
+      html: generateTestCompletionCandidateEmailHtml(data),
+      text: `
+Test Submission Confirmed
+
+Dear ${data.candidateName},
+
+Thank you for completing the ${data.testTitle} assessment.
+
+Your responses have been successfully recorded and submitted on ${data.completedAt.toLocaleDateString()}.
+
+What happens next?
+- Our team will review your submission thoroughly
+- We will analyze your responses and performance  
+- You may be contacted regarding the next steps in the evaluation process
+- Results and feedback will be communicated as appropriate
+
+If you have any questions or concerns about your test submission, please don't hesitate to contact our assessment team.
+
+Best regards,
+${data.companyName || 'Combat Robotics India'} Team
+      `.trim(),
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+
+    emailLogger.info('Test completion confirmation email sent successfully', {
+      candidateEmail: data.candidateEmail,
+      candidateName: data.candidateName,
+      testTitle: data.testTitle,
+      operation: 'send_completion_confirmation',
+      messageId: result.messageId,
+    });
+
+    return {
+      success: true,
+      messageId: result.messageId,
+    };
+  } catch (error) {
+    emailLogger.error(
+      'Failed to send test completion confirmation email',
+      {
+        candidateEmail: data.candidateEmail,
+        candidateName: data.candidateName,
+        testTitle: data.testTitle,
+        operation: 'send_completion_confirmation',
       },
       error as Error
     );
