@@ -232,6 +232,16 @@ export default function ProctorAnalysisPage() {
   const { testAttempt, proctorEvents, proctorAssets, analysisResults } = data;
   const riskInfo = getRiskLevel(testAttempt.riskScore || 0);
 
+  // Calculate specific event counts
+  const countSpecificEvents = (eventType: string) => {
+    return proctorEvents.filter((event) => event.type === eventType).length;
+  };
+
+  const tabHiddenCount = countSpecificEvents('TAB_HIDDEN');
+  const copyDetectedCount = countSpecificEvents('COPY_DETECTED');
+  const pasteDetectedCount = countSpecificEvents('PASTE_DETECTED');
+  const windowBlurCount = countSpecificEvents('WINDOW_BLUR');
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -342,19 +352,30 @@ export default function ProctorAnalysisPage() {
                 <p className="text-sm text-gray-500">Risk Score</p>
               </div>
               <div className="mt-4">
-                <div className="text-sm text-gray-600">
+                <div className="space-y-1 text-sm text-gray-600">
                   <p>
-                    Tab Switches:{' '}
-                    <span className="font-medium">
-                      {testAttempt.tabSwitches}
-                    </span>
+                    Tab Switches (Hidden):{' '}
+                    <span className="font-medium">{tabHiddenCount}</span>
                   </p>
                   <p>
-                    Proctoring Events:{' '}
+                    Copy Detected:{' '}
+                    <span className="font-medium">{copyDetectedCount}</span>
+                  </p>
+                  <p>
+                    Paste Detected:{' '}
+                    <span className="font-medium">{pasteDetectedCount}</span>
+                  </p>
+                  <p>
+                    Window Out of Focus (Blur):{' '}
+                    <span className="font-medium">{windowBlurCount}</span>
+                  </p>
+                  <hr className="my-2" />
+                  <p>
+                    Total Proctoring Events:{' '}
                     <span className="font-medium">{proctorEvents.length}</span>
                   </p>
                   <p>
-                    Recordings:{' '}
+                    Total Recordings (Assets):{' '}
                     <span className="font-medium">{proctorAssets.length}</span>
                   </p>
                 </div>

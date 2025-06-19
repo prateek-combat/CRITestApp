@@ -18,8 +18,8 @@ import tempfile
 import shutil
 import logging
 import time
-from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from datetime import datetime, timezone, timedelta
+from typing import Dict, List, Optional, Tuple, Any
 import psycopg2
 import psycopg2.extras
 from dotenv import load_dotenv
@@ -27,7 +27,7 @@ from dotenv import load_dotenv
 # Import analysis modules
 from analysis.video_analysis import VideoAnalyzer
 from analysis.audio_analysis import AudioAnalyzer
-from analysis.risk_calculator import RiskCalculator
+from analysis.risk_calculator import ImprovedRiskCalculator as RiskCalculator
 
 # Load environment variables
 load_dotenv()
@@ -42,19 +42,16 @@ logger = logging.getLogger(__name__)
 class ProctorWorker:
     """Main worker class for proctoring analysis"""
     
-    def __init__(self):
-        # Database connection
-        self.db_connection = psycopg2.connect(
-            os.getenv('DATABASE_URL'),
-            cursor_factory=psycopg2.extras.RealDictCursor
-        )
+    def __init__(self, db_params):
+        self.db_params = db_params
+        self.db_connection = psycopg2.connect(**self.db_params)
         
         # Analysis components
         self.video_analyzer = VideoAnalyzer()
         self.audio_analyzer = AudioAnalyzer()
         self.risk_calculator = RiskCalculator()
         
-        logger.info("ProctorWorker initialized successfully")
+        logger.info("ProctorWorker initialized")
     
     def download_video_from_database(self, asset_id: str, output_path: str) -> bool:
         """Download video data from database and save to file"""
@@ -171,24 +168,76 @@ class ProctorWorker:
             self.db_connection.rollback()
             return False
     
-    def update_risk_score(self, attempt_id: str, risk_score: float) -> bool:
-        """Update the risk score for a test attempt"""
+    def update_risk_score_and_breakdown(self, attempt_id: str, is_public: bool, risk_data: Dict[str, Any]):
+        """Update the risk score and breakdown for a test attempt"""
+        table_name = "PublicTestAttempt" if is_public else "TestAttempt"
+        sql = f"""
+            UPDATE "{table_name}"
+            SET "riskScore" = %s, "riskScoreBreakdown" = %s, "updatedAt" = NOW()
+            WHERE id = %s
+        """
+        
         try:
             with self.db_connection.cursor() as cursor:
-                cursor.execute("""
-                    UPDATE "TestAttempt" 
-                    SET "riskScore" = %s, "updatedAt" = NOW()
-                    WHERE id = %s
-                """, (risk_score, attempt_id))
+                risk_score = risk_data.get('total_score')
+                risk_breakdown_json = json.dumps(risk_data)
                 
+                cursor.execute(sql, (risk_score, risk_breakdown_json, attempt_id))
                 self.db_connection.commit()
-                logger.info(f"Updated risk score for attempt {attempt_id}: {risk_score}")
-                return True
                 
+                logger.info(f"Updated risk score for attempt {attempt_id}: {risk_score}")
+                logger.info(f"Saved risk breakdown for attempt {attempt_id}")
+                return True
+
         except Exception as e:
-            logger.error(f"Failed to update risk score: {e}")
+            logger.error(f"Failed to update risk score and breakdown: {e}")
             self.db_connection.rollback()
             return False
+
+    def get_test_details(self, attempt_id: str) -> Dict[str, Any]:
+        """Fetch test details like question count and duration for risk analysis."""
+        details = {'total_questions': 30, 'duration_minutes': 60, 'is_public': False} # Defaults
+
+        try:
+            with self.db_connection.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+                # First, check TestAttempt
+                cursor.execute("""
+                    SELECT T.id as "testId", TA."startedAt", TA."completedAt",
+                           (SELECT COUNT(*) FROM "Question" WHERE "testId" = T.id) as "questionCount"
+                    FROM "TestAttempt" TA
+                    JOIN "Test" T ON TA."testId" = T.id
+                    WHERE TA.id = %s
+                """, (attempt_id,))
+                attempt = cursor.fetchone()
+
+                if attempt:
+                    details['is_public'] = False
+                else:
+                    # If not found, check PublicTestAttempt
+                    cursor.execute("""
+                        SELECT T.id as "testId", PTA."startedAt", PTA."completedAt",
+                               (SELECT COUNT(*) FROM "Question" WHERE "testId" = T.id) as "questionCount"
+                        FROM "PublicTestAttempt" PTA
+                        JOIN "PublicTestLink" PTL ON PTA."publicLinkId" = PTL.id
+                        JOIN "Test" T ON PTL."testId" = T.id
+                        WHERE PTA.id = %s
+                    """, (attempt_id,))
+                    attempt = cursor.fetchone()
+                    if attempt:
+                        details['is_public'] = True
+
+                if attempt and attempt['questionCount'] > 0:
+                    details['total_questions'] = attempt['questionCount']
+
+                if attempt and attempt['startedAt'] and attempt['completedAt']:
+                    duration = attempt['completedAt'] - attempt['startedAt']
+                    details['duration_minutes'] = max(1, duration.total_seconds() // 60)
+
+        except Exception as e:
+            logger.error(f"Failed to get test details for attempt {attempt_id}: {e}")
+            # Return defaults on error
+
+        return details
     
     def process_video(self, job_data: Dict) -> bool:
         """Main video processing pipeline"""
@@ -222,16 +271,24 @@ class ProctorWorker:
                 # Combine all events
                 all_events = video_events + audio_events
                 
+                # Get test context for the risk calculator
+                test_details = self.get_test_details(attempt_id)
+
                 # Calculate risk score
-                risk_score = self.risk_calculator.calculate_risk_score(all_events)
-                
+                risk_data = self.risk_calculator.calculate_risk_score(
+                    all_events,
+                    test_duration_minutes=test_details['duration_minutes'],
+                    total_questions=test_details['total_questions']
+                )
+
                 # Save events to database
                 if all_events:
                     self.save_proctor_events(attempt_id, all_events)
-                
-                # Update risk score
-                self.update_risk_score(attempt_id, risk_score)
-                
+
+                # Update risk score and breakdown
+                self.update_risk_score_and_breakdown(attempt_id, test_details['is_public'], risk_data)
+
+                risk_score = risk_data.get('total_score', 0)
                 logger.info(f"Analysis complete for attempt {attempt_id}. Risk Score: {risk_score:.2f}")
                 return True
                 
