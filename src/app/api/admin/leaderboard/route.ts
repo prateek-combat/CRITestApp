@@ -34,6 +34,9 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const sortBy = searchParams.get('sortBy') || 'composite';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
+    const invitationId = searchParams.get('invitationId');
 
     const where: any = {
       testId,
@@ -46,41 +49,44 @@ export async function GET(request: NextRequest) {
         { candidateName: { contains: search, mode: 'insensitive' } },
       ];
     }
+    if (invitationId) {
+      where.invitationId = invitationId;
+    }
+    if (dateFrom || dateTo) {
+      where.completedAt = {};
+      if (dateFrom) where.completedAt.gte = new Date(dateFrom);
+      if (dateTo) where.completedAt.lte = new Date(dateTo);
+    }
 
-    // Optimized aggregation query
-    const attemptsWithScores = await prisma.testAttempt.findMany({
-      where,
-      select: {
-        id: true,
-        invitationId: true,
-        candidateName: true,
-        candidateEmail: true,
-        completedAt: true,
-        startedAt: true,
-        rawScore: true,
-        percentile: true,
-        _count: {
-          select: { submittedAnswers: true },
-        },
-        submittedAnswers: {
-          select: {
-            isCorrect: true,
-            question: {
-              select: {
-                category: true,
-              },
+    const orderBy: any = {
+      [sortBy === 'composite' ? 'rawScore' : sortBy]: sortOrder,
+    };
+
+    const [attemptsWithScores, total] = await Promise.all([
+      prisma.testAttempt.findMany({
+        where,
+        orderBy,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        select: {
+          id: true,
+          invitationId: true,
+          candidateName: true,
+          candidateEmail: true,
+          completedAt: true,
+          startedAt: true,
+          rawScore: true,
+          percentile: true,
+          submittedAnswers: {
+            select: {
+              isCorrect: true,
+              question: { select: { category: true } },
             },
           },
         },
-      },
-      orderBy: {
-        [sortBy === 'composite' ? 'rawScore' : sortBy]: sortOrder,
-      },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    });
-
-    const total = await prisma.testAttempt.count({ where });
+      }),
+      prisma.testAttempt.count({ where }),
+    ]);
 
     const leaderboardData = attemptsWithScores.map((attempt, index) => {
       const categoryScores: Record<
@@ -130,32 +136,18 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    const allScores = await prisma.testAttempt.findMany({
+    const allScoresForStats = await prisma.testAttempt.findMany({
       where: { testId, status: 'COMPLETED' },
-      select: { rawScore: true },
+      select: { rawScore: true, completedAt: true },
     });
 
-    const validScores = allScores
+    const validScores = allScoresForStats
       .map((a) => a.rawScore)
       .filter((s) => s !== null) as number[];
 
-    const stats = {
-      totalCandidates: total,
-      avgScore:
-        validScores.length > 0
-          ? validScores.reduce((a, b) => a + b, 0) / validScores.length
-          : 0,
-      topScore: validScores.length > 0 ? Math.max(...validScores) : 0,
-      thisMonth: await prisma.testAttempt.count({
-        where: {
-          testId,
-          status: 'COMPLETED',
-          completedAt: {
-            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-          },
-        },
-      }),
-    };
+    const thisMonthCount = allScoresForStats.filter(
+      (a) => a.completedAt && a.completedAt.getMonth() === new Date().getMonth()
+    ).length;
 
     return NextResponse.json({
       rows: leaderboardData,
@@ -167,7 +159,24 @@ export async function GET(request: NextRequest) {
         hasNext: page * pageSize < total,
         hasPrevious: page > 1,
       },
-      stats,
+      filters: {
+        dateFrom,
+        dateTo,
+        invitationId,
+        testId,
+        search,
+        sortBy,
+        sortOrder,
+      },
+      stats: {
+        totalCandidates: total,
+        avgScore:
+          validScores.length > 0
+            ? validScores.reduce((a, b) => a + b, 0) / validScores.length
+            : 0,
+        topScore: validScores.length > 0 ? Math.max(...validScores) : 0,
+        thisMonth: thisMonthCount,
+      },
     });
   } catch (error) {
     console.error('Leaderboard API error:', error);
