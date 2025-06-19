@@ -296,6 +296,7 @@ enum TestAttemptStatus {
   COMPLETED
   TIMED_OUT
   ABANDONED
+  ARCHIVED
 }
 
 enum QuestionCategory {
