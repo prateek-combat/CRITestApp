@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { Prisma, TestAttemptStatus } from '@prisma/client';
+import { TestAttemptStatus } from '@prisma/client';
 import { withCache, apiCache } from '@/lib/cache';
 
 interface TestAttemptAnalytics {
@@ -58,7 +57,6 @@ interface TestAttemptAnalytics {
  */
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication
     const session = await auth();
     if (
       !session?.user ||
@@ -71,215 +69,74 @@ export async function GET(request: NextRequest) {
     const searchParams = url.searchParams;
     const invitationId = searchParams.get('invitationId');
 
-    // Generate cache key
     const cacheKey = apiCache.generateKey('analytics:test-attempts', {
       invitationId: invitationId || '',
     });
-
-    // Try to get cached result
-    const cachedResult = apiCache.get<TestAttemptAnalytics[]>(cacheKey);
+    const cachedResult = apiCache.get<any[]>(cacheKey);
     if (cachedResult) {
       return NextResponse.json(cachedResult);
     }
 
-    const whereClause: Prisma.TestAttemptWhereInput = {
-      status: TestAttemptStatus.COMPLETED,
-    };
-
-    if (invitationId) {
-      whereClause.invitationId = invitationId;
-    }
-
-    // Query both regular and public test attempts with optimized selects
-    const [completedAttempts, completedPublicAttempts] = await Promise.all([
-      // Regular test attempts
-      prisma.testAttempt.findMany({
-        where: whereClause,
-        select: {
-          id: true,
-          candidateName: true,
-          candidateEmail: true,
-          status: true,
-          completedAt: true,
-          startedAt: true,
-          rawScore: true,
-          categorySubScores: true,
-          testId: true,
-          invitationId: true,
-          test: {
-            select: {
-              id: true,
-              title: true,
-              _count: {
-                select: {
-                  questions: true,
-                },
-              },
-            },
-          },
-          invitation: {
-            select: {
-              id: true,
-              candidateEmail: true,
-              candidateName: true,
-              status: true,
-              expiresAt: true,
-              createdBy: {
-                select: {
-                  id: true,
-                  email: true,
-                  firstName: true,
-                  lastName: true,
-                },
-              },
-            },
-          },
+    const testAttempts = await prisma.testAttempt.findMany({
+      where: {
+        status: {
+          not: TestAttemptStatus.ARCHIVED,
         },
-        orderBy: {
-          completedAt: 'desc',
-        },
-      }),
-      // Public test attempts (exclude invitationId filter since they don't have invitations)
-      prisma.publicTestAttempt.findMany({
-        where: {
-          status: TestAttemptStatus.COMPLETED,
-        },
-        select: {
-          id: true,
-          candidateName: true,
-          candidateEmail: true,
-          status: true,
-          completedAt: true,
-          startedAt: true,
-          rawScore: true,
-          categorySubScores: true,
-          publicLink: {
-            select: {
-              test: {
-                select: {
-                  id: true,
-                  title: true,
-                  _count: {
-                    select: {
-                      questions: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-        orderBy: {
-          completedAt: 'desc',
-        },
-      }),
-    ]);
-
-    // Process and combine attempts data efficiently
-    const analyticsData: TestAttemptAnalytics[] = [
-      // Process regular attempts
-      ...completedAttempts.map((attempt) => {
-        const durationSeconds = attempt.completedAt
-          ? Math.floor(
-              (attempt.completedAt.getTime() - attempt.startedAt.getTime()) /
-                1000
-            )
-          : null;
-
-        // Process category scores
-        const categoryScores: Record<
-          string,
-          { correct: number; total: number }
-        > = {};
-        if (
-          attempt.categorySubScores &&
-          typeof attempt.categorySubScores === 'object'
-        ) {
-          const scores = attempt.categorySubScores as any;
-          Object.keys(scores).forEach((category) => {
-            if (scores[category] && typeof scores[category] === 'object') {
-              categoryScores[category] = {
-                correct: scores[category].correct || 0,
-                total: scores[category].total || 0,
-              };
-            }
-          });
-        }
-
-        return {
-          id: attempt.id,
-          candidateName: attempt.candidateName,
-          candidateEmail: attempt.candidateEmail,
-          status: attempt.status,
-          completedAt: attempt.completedAt,
-          startedAt: attempt.startedAt,
-          durationSeconds,
-          rawScore: attempt.rawScore,
-          totalQuestions: attempt.test._count.questions,
-          categoryScores,
-          testId: attempt.test.id,
-          testTitle: attempt.test.title,
-          isPublicAttempt: false,
-          invitation: attempt.invitation,
-        } as TestAttemptAnalytics;
-      }),
-      // Process public attempts
-      ...completedPublicAttempts.map((attempt) => {
-        const durationSeconds = attempt.completedAt
-          ? Math.floor(
-              (attempt.completedAt.getTime() - attempt.startedAt.getTime()) /
-                1000
-            )
-          : null;
-
-        // Process category scores
-        const categoryScores: Record<
-          string,
-          { correct: number; total: number }
-        > = {};
-        if (
-          attempt.categorySubScores &&
-          typeof attempt.categorySubScores === 'object'
-        ) {
-          const scores = attempt.categorySubScores as any;
-          Object.keys(scores).forEach((category) => {
-            if (scores[category] && typeof scores[category] === 'object') {
-              categoryScores[category] = {
-                correct: scores[category].correct || 0,
-                total: scores[category].total || 0,
-              };
-            }
-          });
-        }
-
-        return {
-          id: attempt.id,
-          candidateName: attempt.candidateName,
-          candidateEmail: attempt.candidateEmail,
-          status: attempt.status,
-          completedAt: attempt.completedAt,
-          startedAt: attempt.startedAt,
-          durationSeconds,
-          rawScore: attempt.rawScore,
-          totalQuestions: attempt.publicLink?.test._count.questions || 0,
-          categoryScores,
-          testId: attempt.publicLink?.test.id || '',
-          testTitle: attempt.publicLink?.test.title || 'Unknown Test',
-          isPublicAttempt: true,
-        } as TestAttemptAnalytics;
-      }),
-    ];
-
-    // Sort by completion date (most recent first)
-    analyticsData.sort((a, b) => {
-      if (!a.completedAt || !b.completedAt) return 0;
-      return b.completedAt.getTime() - a.completedAt.getTime();
+      },
+      include: {
+        test: true,
+      },
+      orderBy: {
+        completedAt: 'desc',
+      },
     });
 
-    // Cache the result for 3 minutes
-    apiCache.set(cacheKey, analyticsData, 180);
+    const publicTestAttempts = await prisma.publicTestAttempt.findMany({
+      where: {
+        status: {
+          not: TestAttemptStatus.ARCHIVED,
+        },
+      },
+      include: {
+        publicTest: true,
+      },
+      orderBy: {
+        completedAt: 'desc',
+      },
+    });
 
-    return NextResponse.json(analyticsData);
+    const combinedData = [
+      ...testAttempts.map((attempt) => ({
+        id: attempt.id,
+        candidateName: attempt.candidateName,
+        candidateEmail: attempt.candidateEmail,
+        testName: attempt.test.title,
+        status: attempt.status,
+        score: attempt.rawScore,
+        riskLevel: attempt.riskLevel,
+        completedAt: attempt.completedAt,
+        type: 'Standard',
+        testId: attempt.testId,
+        proctoring: attempt.proctoringEnabled,
+      })),
+      ...publicTestAttempts.map((attempt) => ({
+        id: attempt.id,
+        candidateName: attempt.candidateName,
+        candidateEmail: attempt.candidateEmail,
+        testName: attempt.publicTest.title,
+        status: attempt.status,
+        score: attempt.rawScore,
+        riskLevel: attempt.riskLevel,
+        completedAt: attempt.completedAt,
+        type: 'Public Link',
+        testId: attempt.publicTestId,
+        proctoring: attempt.proctoringEnabled,
+      })),
+    ];
+
+    apiCache.set(cacheKey, combinedData, 180);
+
+    return NextResponse.json(combinedData);
   } catch (error) {
     console.error('[API /admin/analytics/test-attempts] Error:', error);
     return NextResponse.json(
