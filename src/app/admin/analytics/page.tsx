@@ -14,9 +14,9 @@ import {
 import Link from 'next/link';
 
 // Utility function to safely convert to number and handle NaN
-const safeNumber = (value: any, defaultValue: number = 0): number => {
+const toNumber = (value: any) => {
   const num = Number(value);
-  return isNaN(num) || !isFinite(num) ? defaultValue : num;
+  return isNaN(num) ? 0 : num;
 };
 
 // Utility function to safely calculate percentage
@@ -51,10 +51,10 @@ interface AnalyticsStats {
   completionRate: number;
 }
 
-export default function AnalyticsPage() {
+const AnalyticsPage = () => {
   const { data: session, status } = useSession();
 
-  const [attempts, setAttempts] = useState<TestAttemptData[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<string>('30');
@@ -64,38 +64,28 @@ export default function AnalyticsPage() {
   >('overview');
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  // Fetch analytics data
   const fetchAnalytics = useCallback(async () => {
-    if (status !== 'authenticated') return;
-
     setLoading(true);
     setError(null);
-
     try {
       const response = await fetch('/api/admin/analytics/test-attempts');
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: Failed to fetch analytics`);
       }
-
       const data = await response.json();
 
-      // Ensure data is an array and validate each item
-      const validAttempts = Array.isArray(data)
-        ? data.filter(
-            (attempt) => attempt && typeof attempt === 'object' && attempt.id
-          )
-        : [];
-
-      setAttempts(validAttempts);
-    } catch (err) {
-      console.error('Analytics fetch error:', err);
-      setError(
-        err instanceof Error ? err.message : 'Failed to load analytics data'
-      );
+      if (Array.isArray(data)) {
+        setAnalyticsData(data);
+      } else {
+        throw new Error('Invalid data format received from server');
+      }
+    } catch (e: any) {
+      console.error(e);
+      setError(e.message || 'An unknown error occurred');
     } finally {
       setLoading(false);
     }
-  }, [status]);
+  }, []);
 
   const handleDelete = async (attemptId: string) => {
     if (
@@ -120,8 +110,8 @@ export default function AnalyticsPage() {
       }
 
       // Remove the deleted attempt from the state
-      setAttempts((prevAttempts) =>
-        prevAttempts.filter((attempt) => attempt.id !== attemptId)
+      setAnalyticsData((prevAnalyticsData) =>
+        prevAnalyticsData.filter((attempt) => attempt.id !== attemptId)
       );
     } catch (err) {
       setError(
@@ -138,20 +128,20 @@ export default function AnalyticsPage() {
 
   // Filter data by time range
   const filteredAttempts = useMemo(() => {
-    if (timeRange === 'all' || !timeRange) return attempts;
+    if (timeRange === 'all' || !timeRange) return analyticsData;
 
     const days = parseInt(timeRange);
-    if (isNaN(days)) return attempts;
+    if (isNaN(days)) return analyticsData;
 
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
 
-    return attempts.filter((attempt) => {
+    return analyticsData.filter((attempt) => {
       if (!attempt.completedAt) return false;
       const completedDate = new Date(attempt.completedAt);
       return completedDate >= cutoffDate;
     });
-  }, [attempts, timeRange]);
+  }, [analyticsData, timeRange]);
 
   // Search filtered data
   const searchFilteredAttempts = useMemo(() => {
@@ -176,21 +166,21 @@ export default function AnalyticsPage() {
 
     // Safe calculations for scores and durations
     const validScores = completed.filter((a) => {
-      const score = safeNumber(a.rawScore);
-      const total = safeNumber(a.totalQuestions);
+      const score = toNumber(a.rawScore);
+      const total = toNumber(a.totalQuestions);
       return score >= 0 && total > 0;
     });
 
     const validDurations = completed.filter((a) => {
-      const duration = safeNumber(a.durationSeconds);
+      const duration = toNumber(a.durationSeconds);
       return duration > 0;
     });
 
     const avgScore =
       validScores.length > 0
         ? validScores.reduce((sum, a) => {
-            const score = safeNumber(a.rawScore);
-            const total = safeNumber(a.totalQuestions);
+            const score = toNumber(a.rawScore);
+            const total = toNumber(a.totalQuestions);
             return sum + safePercentage(score, total);
           }, 0) / validScores.length
         : 0;
@@ -198,7 +188,7 @@ export default function AnalyticsPage() {
     const avgDuration =
       validDurations.length > 0
         ? validDurations.reduce(
-            (sum, a) => sum + safeNumber(a.durationSeconds),
+            (sum, a) => sum + toNumber(a.durationSeconds),
             0
           ) /
           validDurations.length /
@@ -210,8 +200,8 @@ export default function AnalyticsPage() {
       totalCandidates: uniqueCandidates,
       totalAttempts: filteredAttempts.length,
       completedAttempts: completed.length,
-      averageScore: safeNumber(avgScore),
-      averageDuration: safeNumber(avgDuration),
+      averageScore: toNumber(avgScore),
+      averageDuration: toNumber(avgDuration),
       completionRate: safePercentage(completed.length, filteredAttempts.length),
     };
   }, [filteredAttempts]);
@@ -229,8 +219,8 @@ export default function AnalyticsPage() {
     const completed = filteredAttempts.filter((a) => a.status === 'COMPLETED');
 
     completed.forEach((attempt) => {
-      const score = safeNumber(attempt.rawScore);
-      const total = safeNumber(attempt.totalQuestions);
+      const score = toNumber(attempt.rawScore);
+      const total = toNumber(attempt.totalQuestions);
 
       if (total > 0) {
         const percentage = safePercentage(score, total);
@@ -245,7 +235,7 @@ export default function AnalyticsPage() {
     return ranges
       .map((range) => ({
         name: range.name,
-        value: safeNumber(range.count, 0),
+        value: toNumber(range.count),
         count: range.count,
       }))
       .filter(
@@ -455,7 +445,7 @@ export default function AnalyticsPage() {
                     />
                     <Tooltip
                       formatter={(value: any) => [
-                        `${safeNumber(value)} candidates`,
+                        `${toNumber(value)} candidates`,
                         'Count',
                       ]}
                       labelFormatter={(label) => `Score Range: ${label}`}
@@ -583,8 +573,8 @@ export default function AnalyticsPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-200 bg-white">
                   {searchFilteredAttempts.slice(0, 50).map((attempt) => {
-                    const score = safeNumber(attempt.rawScore);
-                    const total = safeNumber(attempt.totalQuestions);
+                    const score = toNumber(attempt.rawScore);
+                    const total = toNumber(attempt.totalQuestions);
                     const percentage =
                       total > 0 ? safePercentage(score, total) : 0;
 
@@ -672,4 +662,6 @@ export default function AnalyticsPage() {
       </div>
     </div>
   );
-}
+};
+
+export default AnalyticsPage;
