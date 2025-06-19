@@ -11,6 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import Link from 'next/link';
 
 // Utility function to safely convert to number and handle NaN
 const safeNumber = (value: any, defaultValue: number = 0): number => {
@@ -61,6 +62,7 @@ export default function AnalyticsPage() {
   const [activeTab, setActiveTab] = useState<
     'overview' | 'tests' | 'candidates'
   >('overview');
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   // Fetch analytics data
   const fetchAnalytics = useCallback(async () => {
@@ -94,6 +96,41 @@ export default function AnalyticsPage() {
       setLoading(false);
     }
   }, [status]);
+
+  const handleDelete = async (attemptId: string) => {
+    if (
+      !confirm(
+        'Are you sure you want to permanently delete this test attempt and all its data? This action cannot be undone.'
+      )
+    ) {
+      return;
+    }
+
+    setDeleting(attemptId);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/admin/test-attempts/${attemptId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete test attempt');
+      }
+
+      // Remove the deleted attempt from the state
+      setAttempts((prevAttempts) =>
+        prevAttempts.filter((attempt) => attempt.id !== attemptId)
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'An unknown error occurred'
+      );
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   useEffect(() => {
     fetchAnalytics();
@@ -592,16 +629,22 @@ export default function AnalyticsPage() {
                             : 'N/A'}
                         </td>
                         <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                          {attempt.status === 'COMPLETED' ? (
-                            <a
-                              href={`/admin/analytics/analysis/${attempt.id}`}
-                              className="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                              title="View detailed analysis"
+                          <Link
+                            href={`/admin/analytics/analysis/${attempt.id}`}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            Analysis
+                          </Link>
+                          {session?.user?.role === 'SUPER_ADMIN' && (
+                            <button
+                              onClick={() => handleDelete(attempt.id)}
+                              disabled={deleting === attempt.id}
+                              className="ml-4 text-red-600 hover:text-red-800 disabled:cursor-not-allowed disabled:text-gray-400"
                             >
-                              🔍 Analysis
-                            </a>
-                          ) : (
-                            <span className="text-xs text-gray-400">-</span>
+                              {deleting === attempt.id
+                                ? 'Deleting...'
+                                : 'Delete'}
+                            </button>
                           )}
                         </td>
                       </tr>
