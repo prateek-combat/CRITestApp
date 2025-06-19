@@ -107,6 +107,8 @@ model TestAttempt {
   status              TestAttemptStatus @default(IN_PROGRESS)
   rawScore            Int?
   percentile          Float?
+  riskScore           Float?
+  riskScoreBreakdown  Json?
   categorySubScores   Json?
   tabSwitches         Int               @default(0)
   proctoringEnabled   Boolean           @default(true)
@@ -118,7 +120,6 @@ model TestAttempt {
   proctoringStartedAt DateTime?
   proctoringEndedAt   DateTime?
   permissionsGranted  Boolean           @default(false)
-  riskScore           Float?
   currentQuestionIndex Int?             @default(0)
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
@@ -202,6 +203,8 @@ model PublicTestAttempt {
   status              TestAttemptStatus       @default(IN_PROGRESS)
   rawScore            Int?
   percentile          Float?
+  riskScore           Float?
+  riskScoreBreakdown  Json?
   categorySubScores   Json?
   tabSwitches         Int                     @default(0)
   proctoringEnabled   Boolean                 @default(true)
@@ -213,8 +216,7 @@ model PublicTestAttempt {
   proctoringStartedAt DateTime?
   proctoringEndedAt   DateTime?
   permissionsGranted  Boolean                 @default(false)
-  riskScore           Float?
-  currentQuestionIndex Int?                   @default(0)
+  currentQuestionIndex Int?                    @default(0)
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
   personalityProfile  Json?

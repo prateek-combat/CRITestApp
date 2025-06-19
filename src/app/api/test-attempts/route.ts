@@ -298,6 +298,7 @@ export async function POST(request: Request) {
             selectedAnswerIndex: selectedAnswerIndexValue,
             isCorrect,
             timeTakenSeconds,
+            submittedAt: new Date(),
           });
         } else {
           // Handle unanswered question if necessary, e.g., if it should count towards total for a category
