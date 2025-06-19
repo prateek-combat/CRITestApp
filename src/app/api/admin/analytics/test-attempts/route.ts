@@ -57,6 +57,7 @@ interface TestAttemptAnalytics {
  */
 export async function GET(request: NextRequest) {
   try {
+    console.log('[API /admin/analytics/test-attempts] Function start.');
     const session = await auth();
     if (
       !session?.user ||
@@ -77,6 +78,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(cachedResult);
     }
 
+    console.log(
+      '[API /admin/analytics/test-attempts] Attempting to query database.'
+    );
     const testAttempts = await prisma.testAttempt.findMany({
       where: {
         status: {
@@ -84,12 +88,22 @@ export async function GET(request: NextRequest) {
         },
       },
       include: {
-        test: true,
+        test: {
+          include: {
+            questions: {
+              select: { id: true },
+            },
+          },
+        },
       },
       orderBy: {
         completedAt: 'desc',
       },
+      take: 50,
     });
+    console.log(
+      `[API /admin/analytics/test-attempts] Found ${testAttempts.length} standard attempts.`
+    );
 
     const publicTestAttempts = await prisma.publicTestAttempt.findMany({
       where: {
@@ -98,47 +112,69 @@ export async function GET(request: NextRequest) {
         },
       },
       include: {
-        publicTest: true,
+        publicLink: {
+          include: {
+            test: {
+              include: {
+                questions: {
+                  select: { id: true },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: {
         completedAt: 'desc',
       },
+      take: 50,
     });
 
     const combinedData = [
-      ...testAttempts.map((attempt) => ({
-        id: attempt.id,
-        candidateName: attempt.candidateName,
-        candidateEmail: attempt.candidateEmail,
-        testName: attempt.test.title,
-        status: attempt.status,
-        score: attempt.rawScore,
-        riskLevel: attempt.riskLevel,
-        completedAt: attempt.completedAt,
-        type: 'Standard',
-        testId: attempt.testId,
-        proctoring: attempt.proctoringEnabled,
-      })),
-      ...publicTestAttempts.map((attempt) => ({
-        id: attempt.id,
-        candidateName: attempt.candidateName,
-        candidateEmail: attempt.candidateEmail,
-        testName: attempt.publicTest.title,
-        status: attempt.status,
-        score: attempt.rawScore,
-        riskLevel: attempt.riskLevel,
-        completedAt: attempt.completedAt,
-        type: 'Public Link',
-        testId: attempt.publicTestId,
-        proctoring: attempt.proctoringEnabled,
-      })),
+      ...testAttempts
+        .filter((attempt) => attempt.test)
+        .map((attempt) => ({
+          id: attempt.id,
+          candidateName: attempt.candidateName,
+          candidateEmail: attempt.candidateEmail,
+          testName: attempt.test.title,
+          status: attempt.status,
+          rawScore: attempt.rawScore,
+          totalQuestions: attempt.test.questions.length,
+          riskScore: attempt.riskScore,
+          completedAt: attempt.completedAt,
+          type: 'Standard',
+          testId: attempt.testId,
+          proctoring: attempt.proctoringEnabled,
+        })),
+      ...publicTestAttempts
+        .filter((attempt) => attempt.publicLink && attempt.publicLink.test)
+        .map((attempt) => ({
+          id: attempt.id,
+          candidateName: attempt.candidateName,
+          candidateEmail: attempt.candidateEmail,
+          testName: attempt.publicLink.test.title,
+          status: attempt.status,
+          rawScore: attempt.rawScore,
+          totalQuestions: attempt.publicLink.test.questions.length,
+          riskScore: attempt.riskScore,
+          completedAt: attempt.completedAt,
+          type: 'Public Link',
+          testId: attempt.publicLink.testId,
+          proctoring: attempt.proctoringEnabled,
+        })),
     ];
 
     apiCache.set(cacheKey, combinedData, 180);
-
+    console.log(
+      '[API /admin/analytics/test-attempts] Successfully processed data. Sending response.'
+    );
     return NextResponse.json(combinedData);
   } catch (error) {
-    console.error('[API /admin/analytics/test-attempts] Error:', error);
+    console.error(
+      '[API /admin/analytics/test-attempts] CRITICAL ERROR:',
+      error
+    );
     return NextResponse.json(
       {
         message: 'Failed to fetch analytics data',
