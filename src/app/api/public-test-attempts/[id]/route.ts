@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { enhancedEmailService as emailService } from '@/lib/enhancedEmailService';
 import { sendTestCompletionCandidateEmail } from '@/lib/email';
+import {
+  calculateTestScore,
+  prepareSubmittedAnswers,
+} from '@/lib/scoring/scoringEngine';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -113,88 +117,50 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       });
 
       if (publicLink) {
-        // Save answers
-        const answerRecords = Object.entries(answers).map(
-          ([questionId, answer]: [string, any]) => ({
-            attemptId,
-            questionId,
-            selectedAnswerIndex: answer.answerIndex,
-            timeTakenSeconds: answer.timeTaken || 0,
-            submittedAt: new Date(),
-          })
+        // Calculate score
+        const scoringResult = await calculateTestScore(
+          'OBJECTIVE',
+          answers,
+          publicLink.test.questions as any[]
         );
 
-        // Delete existing answers for this attempt
-        await prisma.publicSubmittedAnswer.deleteMany({
-          where: { attemptId },
-        });
+        // Prepare submitted answers for storage
+        const answerRecords = prepareSubmittedAnswers(
+          answers,
+          publicLink.test.questions as any[],
+          'OBJECTIVE'
+        ).map((answer) => ({
+          ...answer,
+          attemptId,
+          submittedAt: new Date(),
+        }));
 
-        // Create new answers
-        await prisma.publicSubmittedAnswer.createMany({
-          data: answerRecords,
-        });
-
-        // Calculate detailed score with category breakdown (matching regular test attempts)
-        let correctAnswers = 0;
-        const submissionTimeEpoch = new Date().getTime();
-
-        // Initialize category scores
-        const finalCategorySubScores: Record<
-          string,
-          { correct: number; total: number }
-        > = {
-          LOGICAL: { correct: 0, total: 0 },
-          VERBAL: { correct: 0, total: 0 },
-          NUMERICAL: { correct: 0, total: 0 },
-          ATTENTION_TO_DETAIL: { correct: 0, total: 0 },
-          OTHER: { correct: 0, total: 0 },
-        };
-
-        // First, populate total questions for each category
-        publicLink.test.questions.forEach((q: any) => {
-          const category = q.category;
-          if (finalCategorySubScores[category]) {
-            finalCategorySubScores[category].total++;
-          }
-        });
-
-        // Calculate correct answers and category scores
-        for (const question of publicLink.test.questions) {
-          const questionId = question.id;
-          const clientAnswerData = answers[questionId];
-          const category = question.category;
-
-          if (clientAnswerData && clientAnswerData.answerIndex !== undefined) {
-            const selectedAnswerIndexValue = clientAnswerData.answerIndex;
-            const isCorrect =
-              selectedAnswerIndexValue === question.correctAnswerIndex;
-
-            if (isCorrect) {
-              correctAnswers++;
-              if (finalCategorySubScores[category]) {
-                finalCategorySubScores[category].correct++;
-              }
-            }
-          }
-        }
-
-        const totalQuestions = publicLink.test.questions.length;
-        const rawScore = correctAnswers;
-        const percentile =
-          totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
-
-        // Update attempt with detailed score
-        await prisma.publicTestAttempt.update({
-          where: { id: attemptId },
-          data: {
-            rawScore,
-            percentile,
-            categorySubScores: finalCategorySubScores,
-          },
-        });
+        // Use a transaction to ensure atomicity
+        await prisma.$transaction([
+          // Delete existing answers for this attempt
+          prisma.publicSubmittedAnswer.deleteMany({
+            where: { attemptId },
+          }),
+          // Create new answers
+          prisma.publicSubmittedAnswer.createMany({
+            data: answerRecords,
+          }),
+          // Update attempt with detailed score
+          prisma.publicTestAttempt.update({
+            where: { id: attemptId },
+            data: {
+              rawScore: scoringResult.rawScore,
+              percentile: scoringResult.percentile,
+              categorySubScores: scoringResult.categorySubScores,
+            },
+          }),
+        ]);
 
         // Send admin email notification for public test completion (async, don't wait for completion)
         if (status === 'COMPLETED') {
+          const totalQuestions = publicLink.test.questions.length;
+          const submissionTimeEpoch = new Date().getTime();
+
           emailService
             .sendTestCompletionNotification({
               testId: publicLink.test.id,
@@ -204,7 +170,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
                 existingAttempt.candidateEmail || 'unknown@example.com',
               candidateName:
                 existingAttempt.candidateName || 'Unknown Candidate',
-              score: correctAnswers,
+              score: scoringResult.rawScore,
               maxScore: totalQuestions,
               completedAt: new Date(submissionTimeEpoch),
               timeTaken: Math.floor(
