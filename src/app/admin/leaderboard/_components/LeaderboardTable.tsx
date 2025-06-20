@@ -280,7 +280,7 @@ export default function LeaderboardTable({
                 <td className="whitespace-nowrap px-3 py-2 text-center">
                   <div className="flex items-center justify-center space-x-2">
                     <Link
-                      href={`/admin/proctor/${candidate.attemptId}`}
+                      href={`/admin/analytics/analysis/${candidate.attemptId}`}
                       className="inline-flex items-center rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-200"
                       title="View Analysis"
                     >

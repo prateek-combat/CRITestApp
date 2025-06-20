@@ -56,6 +56,44 @@ class ImprovedRiskCalculator:
             'INACTIVITY_DETECTED': 1.0,  # Low base - adjusted by duration
         }
 
+        # Centralized event definitions
+        self.event_definitions = {
+            # Browser Navigation
+            'TAB_HIDDEN': {'category': 'BROWSER', 'criticality': 'HIGH'},
+            'WINDOW_BLUR': {'category': 'BROWSER', 'criticality': 'HIGH'},
+            'TAB_SWITCH': {'category': 'BROWSER', 'criticality': 'CRITICAL'},
+            'NEW_TAB_OPENED': {'category': 'BROWSER', 'criticality': 'CRITICAL'},
+            'MOUSE_LEFT_WINDOW': {'category': 'BROWSER', 'criticality': 'MEDIUM'},
+            # Copy/Paste
+            'COPY_DETECTED': {'category': 'COPY_PASTE', 'criticality': 'CRITICAL'},
+            'PASTE_DETECTED': {'category': 'COPY_PASTE', 'criticality': 'LOW'},
+            'SELECT_ALL_DETECTED': {'category': 'COPY_PASTE', 'criticality': 'MEDIUM'},
+            # Developer Tools (Tracked but not scored)
+            'DEVTOOLS_DETECTED': {'category': 'DEV_TOOLS', 'criticality': 'NONE'},
+            'DEVTOOLS_SHORTCUT': {'category': 'DEV_TOOLS', 'criticality': 'NONE'},
+            'F12_PRESSED': {'category': 'DEV_TOOLS', 'criticality': 'NONE'},
+            'CONTEXT_MENU_DETECTED': {'category': 'BROWSER', 'criticality': 'LOW'},
+            # Keyboard Shortcuts
+            'CTRL_C': {'category': 'KEYBOARD', 'criticality': 'CRITICAL'},
+            'CTRL_V': {'category': 'KEYBOARD', 'criticality': 'LOW'},
+            'CTRL_A': {'category': 'KEYBOARD', 'criticality': 'MEDIUM'},
+            'CTRL_TAB': {'category': 'KEYBOARD', 'criticality': 'CRITICAL'},
+            'ALT_TAB': {'category': 'KEYBOARD', 'criticality': 'HIGH'},
+            'KEYBOARD_SHORTCUT': {'category': 'KEYBOARD', 'criticality': 'LOW'},
+            # Video Analysis
+            'LOOK_AWAY': {'category': 'PHYSICAL', 'criticality': 'MEDIUM'},
+            'PHONE_DETECTED': {'category': 'PHYSICAL', 'criticality': 'CRITICAL'},
+            'MULTIPLE_PEOPLE': {'category': 'PHYSICAL', 'criticality': 'CRITICAL'},
+            'EYES_NOT_ON_SCREEN': {'category': 'PHYSICAL', 'criticality': 'MEDIUM'},
+            # Audio Analysis
+            'MULTIPLE_SPEAKERS_DETECTED': {'category': 'AUDIO', 'criticality': 'HIGH'},
+            'SUSPICIOUS_SILENCE': {'category': 'AUDIO', 'criticality': 'LOW'},
+            'POSSIBLE_SPEAKER_CHANGE': {'category': 'AUDIO', 'criticality': 'MEDIUM'},
+            'BACKGROUND_NOISE': {'category': 'AUDIO', 'criticality': 'VERY_LOW'},
+            # Inactivity
+            'INACTIVITY_DETECTED': {'category': 'INACTIVITY', 'criticality': 'LOW'},
+        }
+
         # Risk thresholds
         self.risk_thresholds = {
             'LOW': 0,
@@ -148,19 +186,20 @@ class ImprovedRiskCalculator:
 
         for event_type, count in event_counts.items():
             base_weight = self.risk_weights.get(event_type, 1.0)
+            event_def = self.event_definitions.get(event_type, {})
+            criticality = event_def.get('criticality')
+            category = event_def.get('category')
             
-            if base_weight == 0.0:
+            if base_weight == 0.0 or criticality == 'NONE':
                 continue
 
             # Calculate violation rate per question
             violation_rate = count / max(total_questions, 1)
             
             question_multiplier = 1.0
-            critical_events = ['COPY_DETECTED', 'TAB_HIDDEN', 'TAB_SWITCH', 'NEW_TAB_OPENED']
-            physical_violations = ['PHONE_DETECTED', 'MULTIPLE_PEOPLE']
-
+            
             # Apply question-based multiplier for critical events
-            if event_type in critical_events:
+            if criticality in ['CRITICAL', 'HIGH']:
                 # These events are particularly concerning relative to question count
                 if violation_rate >= 0.5:  # 50%+ of questions involved violations
                     question_multiplier = 3.0
@@ -177,7 +216,7 @@ class ImprovedRiskCalculator:
                 elif total_questions <= 10 and count >= 2:
                     question_multiplier = max(question_multiplier, 1.8)
 
-            elif event_type in physical_violations:
+            elif category == 'PHYSICAL':
                 # Critical violations - less dependent on question count but still matters
                 question_multiplier = 1.0 + (violation_rate * 2.0)
 
@@ -187,7 +226,7 @@ class ImprovedRiskCalculator:
 
             # Progressive penalty system with question context
             frequency_multiplier = 1.0
-            if event_type in critical_events:
+            if criticality == 'CRITICAL':
                 # Severe penalties for repeated navigation/copying
                 if count == 1:
                     frequency_multiplier = 1.0
@@ -195,7 +234,7 @@ class ImprovedRiskCalculator:
                     frequency_multiplier = 1.0 + (count - 1) * 0.8
                 else:
                     frequency_multiplier = 1.0 + 2 * 0.8 + (count - 3) * 1.2
-            elif event_type in physical_violations:
+            elif category == 'PHYSICAL' and criticality == 'CRITICAL':
                 # Critical violations - severe even on first occurrence
                 frequency_multiplier = min(count * 1.5, 4.0)
             else:
