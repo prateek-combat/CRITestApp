@@ -592,7 +592,9 @@ const AnalyticsPage = () => {
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
-                            {attempt.testTitle}
+                            {attempt.testTitle ||
+                              `Test ${attempt.testId.slice(-8)}` ||
+                              'Unknown Test'}
                           </div>
                         </td>
                         <td className="whitespace-nowrap px-6 py-4">
