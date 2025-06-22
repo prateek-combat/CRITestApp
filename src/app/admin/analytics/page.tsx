@@ -29,7 +29,8 @@ const safePercentage = (value: number, total: number): number => {
 interface TestAttemptData {
   id: string;
   testId: string;
-  testTitle: string;
+  testTitle?: string;
+  testName?: string;
   candidateName: string | null;
   candidateEmail: string | null;
   completedAt: string | null;
@@ -152,7 +153,8 @@ const AnalyticsPage = () => {
       (attempt) =>
         attempt.candidateName?.toLowerCase().includes(term) ||
         attempt.candidateEmail?.toLowerCase().includes(term) ||
-        attempt.testTitle?.toLowerCase().includes(term)
+        attempt.testTitle?.toLowerCase().includes(term) ||
+        attempt.testName?.toLowerCase().includes(term)
     );
   }, [filteredAttempts, searchTerm]);
 
@@ -592,8 +594,8 @@ const AnalyticsPage = () => {
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">
-                            {attempt.testTitle ||
-                              `Test ${attempt.testId.slice(-8)}` ||
+                            {attempt.testName ||
+                              attempt.testTitle ||
                               'Unknown Test'}
                           </div>
                         </td>
