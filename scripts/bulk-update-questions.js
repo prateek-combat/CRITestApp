@@ -889,7 +889,7 @@ What is the motto of the Indian Navy?`,
 ];
 
 async function main() {
-  const test = await prisma.test.findUnique({
+  const test = await prisma.test.findFirst({
     where: { title: 'Conversational Aptitude Test for Engineering Roles' },
     include: {
       questions: {
