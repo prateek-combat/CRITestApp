@@ -166,19 +166,19 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
+    <div className="p-4">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">
           Admin User Management
         </h1>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-1 text-sm text-gray-600">
           Manage admin users who can access the admin panel via Google sign-in
         </p>
       </div>
 
       {message && (
         <div
-          className={`mb-6 rounded-lg p-4 ${
+          className={`mb-4 rounded-lg p-3 ${
             message.includes('✅')
               ? 'bg-green-100 text-green-800'
               : message.includes('⚠️')
@@ -191,10 +191,10 @@ export default function AdminUsersPage() {
       )}
 
       {/* Add User Button */}
-      <div className="mb-6">
+      <div className="mb-4">
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="rounded-lg bg-primary-600 px-4 py-2 text-white transition-colors hover:bg-primary-700"
+          className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-primary-700"
         >
           {showAddForm ? 'Cancel' : '+ Add New Admin'}
         </button>

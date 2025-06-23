@@ -424,16 +424,16 @@ export default function ManageTestsPage() {
     } disabled:opacity-50 disabled:cursor-not-allowed`;
 
   return (
-    <div className="min-h-screen bg-off-white p-4 md:p-6 lg:p-8">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Manage Tests</h1>
+    <div className="min-h-screen bg-off-white p-3 md:p-4 lg:p-6">
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Manage Tests</h1>
       </header>
 
-      <section className="mb-10 rounded-lg bg-primary-white p-6 shadow-xl">
-        <h2 className="mb-5 border-b pb-3 text-2xl font-semibold text-text-dark">
+      <section className="mb-8 rounded-lg bg-primary-white p-4 shadow-xl">
+        <h2 className="mb-4 border-b pb-2 text-lg font-semibold text-text-dark">
           Create New Test
         </h2>
-        <form onSubmit={handleCreateTestSubmit} className="space-y-5">
+        <form onSubmit={handleCreateTestSubmit} className="space-y-4">
           <div>
             <label htmlFor="newTestTitle" className={labelClasses}>
               Test Title
@@ -456,7 +456,7 @@ export default function ManageTestsPage() {
               id="newTestDescription"
               value={newTestDescription}
               onChange={(e) => setNewTestDescription(e.target.value)}
-              rows={3}
+              rows={2}
               className={inputClasses}
               placeholder="A brief overview"
             />
@@ -486,8 +486,8 @@ export default function ManageTestsPage() {
         </form>
       </section>
 
-      <section className="mb-10 rounded-lg bg-primary-white p-6 shadow-xl">
-        <h2 className="mb-5 border-b pb-3 text-2xl font-semibold text-text-dark">
+      <section className="mb-8 rounded-lg bg-primary-white p-4 shadow-xl">
+        <h2 className="mb-4 border-b pb-2 text-lg font-semibold text-text-dark">
           Existing Tests
         </h2>
         {isLoadingTests && <p className="text-text-light">Loading tests...</p>}
@@ -496,17 +496,17 @@ export default function ManageTestsPage() {
           <p className="text-text-light">No tests found. Create one above.</p>
         )}
         {!isLoadingTests && !errorTests && tests.length > 0 && (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {tests.map((test) => (
               <div
                 key={test.id}
-                className={`rounded-lg border p-5 shadow-lg transition-all duration-200 ease-in-out hover:shadow-2xl ${selectedTest?.id === test.id ? 'bg-orange-50 ring-2 ring-accent-orange' : 'border-gray-200 bg-primary-white'}`}
+                className={`rounded-lg border p-4 shadow-lg transition-all duration-200 ease-in-out hover:shadow-2xl ${selectedTest?.id === test.id ? 'bg-orange-50 ring-2 ring-accent-orange' : 'border-gray-200 bg-primary-white'}`}
               >
                 <div
                   onClick={() => handleSelectTest(test)}
                   className="cursor-pointer"
                 >
-                  <h3 className="mb-2 text-xl font-semibold text-military-green">
+                  <h3 className="mb-2 text-lg font-semibold text-military-green">
                     {test.title}
                   </h3>
                   <p className="mb-1 truncate text-sm text-text-light">
@@ -522,14 +522,14 @@ export default function ManageTestsPage() {
                         : 0}
                   </p>
                 </div>
-                <div className="mt-4 flex justify-end border-t border-gray-200 pt-3">
+                <div className="mt-3 flex justify-end border-t border-gray-200 pt-2">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteTest(test.id);
                     }}
                     disabled={deletingTestId === test.id}
-                    className={`rounded-md px-4 py-1.5 text-xs font-medium shadow-sm transition-colors ${deletingTestId === test.id ? 'bg-gray-200 text-gray-500' : 'bg-red-500 text-primary-white hover:bg-red-600 focus:ring-2 focus:ring-red-500 focus:ring-offset-1'}`}
+                    className={`rounded-md px-3 py-1 text-xs font-medium shadow-sm transition-colors ${deletingTestId === test.id ? 'bg-gray-200 text-gray-500' : 'bg-red-500 text-primary-white hover:bg-red-600 focus:ring-2 focus:ring-red-500 focus:ring-offset-1'}`}
                   >
                     {deletingTestId === test.id ? 'Deleting...' : 'Delete Test'}
                   </button>
@@ -541,15 +541,15 @@ export default function ManageTestsPage() {
       </section>
 
       {selectedTest && (
-        <section className="mt-10 rounded-lg border-t-4 border-military-green bg-primary-white p-6 shadow-2xl">
-          <div className="mb-6 flex flex-wrap items-center justify-between border-b pb-3">
-            <h2 className="text-3xl font-semibold text-military-green">
+        <section className="mt-8 rounded-lg border-t-4 border-military-green bg-primary-white p-4 shadow-2xl">
+          <div className="mb-4 flex flex-wrap items-center justify-between border-b pb-2">
+            <h2 className="text-xl font-semibold text-military-green">
               Details for:{' '}
               <span className="text-accent-orange">{selectedTest.title}</span>
             </h2>
             <button
               onClick={() => setSelectedTest(null)}
-              className="mt-2 rounded-md border px-4 py-2 text-sm font-medium text-text-light transition hover:bg-gray-100 md:mt-0"
+              className="mt-2 rounded-md border px-3 py-1.5 text-sm font-medium text-text-light transition hover:bg-gray-100 md:mt-0"
             >
               Close Details
             </button>
@@ -563,28 +563,28 @@ export default function ManageTestsPage() {
           )}
 
           {!isLoadingSelectedTest && !errorSelectedTest && (
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {/* Left Column: Questions List & Invite */}
               <div>
-                <div className="mb-8">
-                  <h3 className="mb-4 text-xl font-semibold text-text-dark">
+                <div className="mb-6">
+                  <h3 className="mb-3 text-lg font-semibold text-text-dark">
                     Existing Questions ({selectedTest.questions.length})
                   </h3>
                   {selectedTest.questions.length === 0 ? (
-                    <p className="rounded-md bg-gray-50 p-4 text-text-light">
+                    <p className="rounded-md bg-gray-50 p-3 text-text-light">
                       No questions yet. Add one using the form.
                     </p>
                   ) : (
-                    <ul className="max-h-96 space-y-3 overflow-y-auto pr-2">
+                    <ul className="max-h-80 space-y-2 overflow-y-auto pr-2">
                       {selectedTest.questions.map((q, index) => (
                         <li
                           key={q.id}
-                          className="rounded-md border bg-off-white p-4 shadow-sm"
+                          className="rounded-md border bg-off-white p-3 shadow-sm"
                         >
                           <div className="font-medium text-text-dark">
                             {index + 1}.{' '}
-                            {q.promptText.length > 100
-                              ? q.promptText.substring(0, 100) + '...'
+                            {q.promptText.length > 80
+                              ? q.promptText.substring(0, 80) + '...'
                               : q.promptText}
                           </div>
                           <p className="mt-1 text-xs text-text-light">

@@ -272,20 +272,20 @@ const AnalyticsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4">
       <div className="mx-auto max-w-7xl">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="mb-2 text-3xl font-bold text-gray-900">
+        <div className="mb-6">
+          <h1 className="mb-1 text-2xl font-bold text-gray-900">
             📊 Analytics Dashboard
           </h1>
-          <p className="text-gray-600">
+          <p className="text-sm text-gray-600">
             Comprehensive insights into test performance and candidate analytics
           </p>
         </div>
 
         {/* Controls */}
-        <div className="mb-8 rounded-lg bg-white p-6 shadow">
+        <div className="mb-6 rounded-lg bg-white p-4 shadow">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             {/* Time Range Filter */}
             <div className="flex items-center gap-4">
@@ -326,9 +326,9 @@ const AnalyticsPage = () => {
         </div>
 
         {/* Tabs */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
+            <nav className="-mb-px flex space-x-6">
               {[
                 { id: 'overview', name: 'Overview', icon: '📊' },
                 { id: 'tests', name: 'Tests', icon: '📝' },
@@ -353,67 +353,67 @@ const AnalyticsPage = () => {
 
         {/* Overview Tab */}
         {activeTab === 'overview' && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-lg bg-white p-6 shadow">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-lg bg-white p-4 shadow">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <span className="text-3xl">📝</span>
+                    <span className="text-2xl">📝</span>
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">
+                  <div className="ml-3">
+                    <p className="text-xs font-medium text-gray-500">
                       Total Tests
                     </p>
-                    <p className="text-2xl font-semibold text-gray-900">
+                    <p className="text-lg font-semibold text-gray-900">
                       {stats.totalTests}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-lg bg-white p-6 shadow">
+              <div className="rounded-lg bg-white p-4 shadow">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <span className="text-3xl">👥</span>
+                    <span className="text-2xl">👥</span>
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">
+                  <div className="ml-3">
+                    <p className="text-xs font-medium text-gray-500">
                       Total Candidates
                     </p>
-                    <p className="text-2xl font-semibold text-gray-900">
+                    <p className="text-lg font-semibold text-gray-900">
                       {stats.totalCandidates}
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-lg bg-white p-6 shadow">
+              <div className="rounded-lg bg-white p-4 shadow">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <span className="text-3xl">🏆</span>
+                    <span className="text-2xl">🏆</span>
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">
+                  <div className="ml-3">
+                    <p className="text-xs font-medium text-gray-500">
                       Average Score
                     </p>
-                    <p className="text-2xl font-semibold text-gray-900">
+                    <p className="text-lg font-semibold text-gray-900">
                       {stats.averageScore.toFixed(1)}%
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-lg bg-white p-6 shadow">
+              <div className="rounded-lg bg-white p-4 shadow">
                 <div className="flex items-center">
                   <div className="flex-shrink-0">
-                    <span className="text-3xl">⏰</span>
+                    <span className="text-2xl">⏰</span>
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">
+                  <div className="ml-3">
+                    <p className="text-xs font-medium text-gray-500">
                       Avg Duration
                     </p>
-                    <p className="text-2xl font-semibold text-gray-900">
+                    <p className="text-lg font-semibold text-gray-900">
                       {stats.averageDuration.toFixed(1)}m
                     </p>
                   </div>
@@ -422,16 +422,16 @@ const AnalyticsPage = () => {
             </div>
 
             {/* Chart - Safe version with extra protection */}
-            <div className="rounded-lg bg-white p-6 shadow">
-              <h3 className="mb-4 text-lg font-semibold text-gray-900">
+            <div className="rounded-lg bg-white p-4 shadow">
+              <h3 className="mb-3 text-base font-semibold text-gray-900">
                 📈 Score Distribution
               </h3>
               {performanceData.length > 0 &&
               performanceData.some((d) => d.value > 0) ? (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={250}>
                   <BarChart
                     data={performanceData}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    margin={{ top: 10, right: 20, left: 10, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" tick={{ fontSize: 12 }} />
@@ -451,11 +451,11 @@ const AnalyticsPage = () => {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex h-64 items-center justify-center text-gray-500">
+                <div className="flex h-48 items-center justify-center text-gray-500">
                   <div className="text-center">
-                    <div className="mb-4 text-6xl">📊</div>
-                    <p>No performance data available</p>
-                    <p className="mt-2 text-sm">
+                    <div className="mb-3 text-4xl">📊</div>
+                    <p className="text-sm">No performance data available</p>
+                    <p className="mt-1 text-xs">
                       Complete some tests to see the distribution
                     </p>
                   </div>
@@ -464,34 +464,34 @@ const AnalyticsPage = () => {
             </div>
 
             {/* Quick Stats */}
-            <div className="rounded-lg bg-white p-6 shadow">
-              <h3 className="mb-4 text-lg font-semibold text-gray-900">
+            <div className="rounded-lg bg-white p-4 shadow">
+              <h3 className="mb-3 text-base font-semibold text-gray-900">
                 📋 Quick Summary
               </h3>
-              <div className="grid grid-cols-2 gap-4 text-center md:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 text-center md:grid-cols-4">
                 <div>
-                  <div className="text-2xl font-bold text-blue-600">
+                  <div className="text-lg font-bold text-blue-600">
                     {stats.totalAttempts}
                   </div>
-                  <div className="text-sm text-gray-500">Total Attempts</div>
+                  <div className="text-xs text-gray-500">Total Attempts</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-green-600">
+                  <div className="text-lg font-bold text-green-600">
                     {stats.completedAttempts}
                   </div>
-                  <div className="text-sm text-gray-500">Completed</div>
+                  <div className="text-xs text-gray-500">Completed</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-purple-600">
+                  <div className="text-lg font-bold text-purple-600">
                     {stats.completionRate.toFixed(1)}%
                   </div>
-                  <div className="text-sm text-gray-500">Completion Rate</div>
+                  <div className="text-xs text-gray-500">Completion Rate</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-orange-600">
+                  <div className="text-lg font-bold text-orange-600">
                     {stats.averageScore.toFixed(1)}%
                   </div>
-                  <div className="text-sm text-gray-500">Average Score</div>
+                  <div className="text-xs text-gray-500">Average Score</div>
                 </div>
               </div>
             </div>
@@ -501,30 +501,30 @@ const AnalyticsPage = () => {
         {/* Tests Tab */}
         {activeTab === 'tests' && (
           <div className="rounded-lg bg-white shadow">
-            <div className="border-b border-gray-200 px-6 py-4">
-              <h3 className="text-lg font-semibold text-gray-900">
+            <div className="border-b border-gray-200 px-4 py-3">
+              <h3 className="text-base font-semibold text-gray-900">
                 📝 Test Summary
               </h3>
             </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                <div className="rounded-lg bg-blue-50 p-4 text-center">
-                  <div className="text-3xl font-bold text-blue-600">
+            <div className="p-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="rounded-lg bg-blue-50 p-3 text-center">
+                  <div className="text-2xl font-bold text-blue-600">
                     {stats.totalTests}
                   </div>
-                  <div className="text-sm text-gray-600">Total Tests</div>
+                  <div className="text-xs text-gray-600">Total Tests</div>
                 </div>
-                <div className="rounded-lg bg-green-50 p-4 text-center">
-                  <div className="text-3xl font-bold text-green-600">
+                <div className="rounded-lg bg-green-50 p-3 text-center">
+                  <div className="text-2xl font-bold text-green-600">
                     {stats.totalAttempts}
                   </div>
-                  <div className="text-sm text-gray-600">Total Attempts</div>
+                  <div className="text-xs text-gray-600">Total Attempts</div>
                 </div>
-                <div className="rounded-lg bg-purple-50 p-4 text-center">
-                  <div className="text-3xl font-bold text-purple-600">
+                <div className="rounded-lg bg-purple-50 p-3 text-center">
+                  <div className="text-2xl font-bold text-purple-600">
                     {stats.completionRate.toFixed(1)}%
                   </div>
-                  <div className="text-sm text-gray-600">Completion Rate</div>
+                  <div className="text-xs text-gray-600">Completion Rate</div>
                 </div>
               </div>
             </div>
@@ -534,8 +534,8 @@ const AnalyticsPage = () => {
         {/* Candidates Tab */}
         {activeTab === 'candidates' && (
           <div className="rounded-lg bg-white shadow">
-            <div className="border-b border-gray-200 px-6 py-4">
-              <h3 className="text-lg font-semibold text-gray-900">
+            <div className="border-b border-gray-200 px-4 py-3">
+              <h3 className="text-base font-semibold text-gray-900">
                 👥 Candidate Results
                 {searchTerm && (
                   <span className="ml-2 text-sm font-normal text-gray-500">
@@ -548,22 +548,22 @@ const AnalyticsPage = () => {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                       Candidate
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                       Test
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                       Score
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                       Completed
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                       Analysis
                     </th>
                   </tr>
@@ -577,29 +577,29 @@ const AnalyticsPage = () => {
 
                     return (
                       <tr key={attempt.id} className="hover:bg-gray-50">
-                        <td className="whitespace-nowrap px-6 py-4">
+                        <td className="whitespace-nowrap px-3 py-2">
                           <div>
                             <div className="text-sm font-medium text-gray-900">
                               {attempt.candidateName || 'Anonymous'}
                             </div>
-                            <div className="text-sm text-gray-500">
+                            <div className="text-xs text-gray-500">
                               {attempt.candidateEmail}
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-3 py-2">
                           <div className="text-sm text-gray-900">
                             {attempt.testName ||
                               attempt.testTitle ||
                               'Unknown Test'}
                           </div>
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4">
+                        <td className="whitespace-nowrap px-3 py-2">
                           <div className="text-sm text-gray-900">
                             {score}/{total} ({percentage.toFixed(1)}%)
                           </div>
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4">
+                        <td className="whitespace-nowrap px-3 py-2">
                           <span
                             className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
                               attempt.status === 'COMPLETED'
@@ -612,12 +612,12 @@ const AnalyticsPage = () => {
                             {attempt.status}
                           </span>
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                        <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-500">
                           {attempt.completedAt
                             ? new Date(attempt.completedAt).toLocaleDateString()
                             : 'N/A'}
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                        <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-500">
                           <Link
                             href={`/admin/analytics/analysis/${attempt.id}`}
                             className="text-blue-600 hover:text-blue-800"
