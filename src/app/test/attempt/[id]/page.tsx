@@ -249,19 +249,23 @@ export default function TestTakingPage() {
       setTimeLeft((prevTime) => (prevTime !== null ? prevTime - 1 : null));
     }, 1000);
     return () => clearInterval(timerId);
-  }, [timeLeft, testReady, handleNextQuestion]);
+  }, [timeLeft, testReady]); // Removed handleNextQuestion to prevent circular dependency
 
   // Start/Stop proctoring - only after test is ready
   useEffect(() => {
-    if (testReady && attemptId) {
+    if (testReady && attemptId && !isRecording) {
       startRecording();
     }
+  }, [testReady, attemptId, isRecording, startRecording]);
+
+  // Separate cleanup effect for proctoring
+  useEffect(() => {
     return () => {
       if (recordingSession) {
         stopRecording();
       }
     };
-  }, [testReady, attemptId, startRecording, stopRecording, recordingSession]);
+  }, [recordingSession, stopRecording]);
 
   const handleAnswerSelect = (optionIndex: number) => {
     const currentQuestionId = data.test.questions[currentQuestionIndex].id;
