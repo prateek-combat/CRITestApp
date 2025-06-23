@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { ArrowLeft, ArrowRight, Clock, Eye, AlertCircle } from 'lucide-react';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 
 interface Question {
   id: string;
@@ -289,10 +290,9 @@ export default function TestPreviewPage() {
               </div>
 
               <div className="prose max-w-none">
-                <div
-                  dangerouslySetInnerHTML={{
-                    __html: currentQuestion.promptText.replace(/\n/g, '<br>'),
-                  }}
+                <MarkdownRenderer
+                  content={currentQuestion.promptText}
+                  className="text-gray-900"
                 />
               </div>
 
@@ -329,7 +329,12 @@ export default function TestPreviewPage() {
                     >
                       {selectedAnswer === index && '✓'}
                     </div>
-                    <span className="text-gray-900">{option}</span>
+                    <div className="text-gray-900">
+                      <MarkdownRenderer
+                        content={option}
+                        className="text-gray-900"
+                      />
+                    </div>
                   </div>
                 </button>
               ))}
