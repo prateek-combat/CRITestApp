@@ -232,9 +232,9 @@ export default function TestTakingPage() {
     return () => clearInterval(timerId);
   }, [timeLeft, testReady, handleNextQuestion]);
 
-  // Start/Stop proctoring
+  // Start/Stop proctoring - only after test is ready
   useEffect(() => {
-    if (attemptId) {
+    if (testReady && attemptId) {
       startRecording();
     }
     return () => {
@@ -242,7 +242,7 @@ export default function TestTakingPage() {
         stopRecording();
       }
     };
-  }, [attemptId, startRecording, stopRecording, recordingSession]);
+  }, [testReady, attemptId, startRecording, stopRecording, recordingSession]);
 
   const handleAnswerSelect = (optionIndex: number) => {
     const currentQuestionId = data.test.questions[currentQuestionIndex].id;
