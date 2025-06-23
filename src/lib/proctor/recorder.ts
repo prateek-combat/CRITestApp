@@ -23,15 +23,21 @@ export function useProctoring(attemptId: string) {
       if (videoRef.current) {
         videoRef.current.srcObject = recordingSession.stream;
       }
+      proctorLogger.info('Proctoring started successfully', { attemptId });
     } catch (error) {
-      proctorLogger.error(
-        'Failed to start proctoring session',
-        { attemptId },
-        error as Error
+      proctorLogger.warn(
+        'Proctoring failed to start - continuing test without recording',
+        {
+          attemptId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
       );
       // Set recording to false and don't throw - allow test to continue without recording
       setIsRecording(false);
       setSession(null);
+
+      // Don't show error to user - just log it and continue
+      // The test should work fine without proctoring
     }
   }, [attemptId]);
 
