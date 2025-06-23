@@ -303,21 +303,21 @@ export default function LeaderboardSidebarLayout({
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-200px)] gap-6">
+    <div className="flex min-h-[calc(100vh-200px)] gap-4">
       {/* Sidebar */}
       <div className="sticky top-0 w-64 flex-shrink-0 self-start overflow-hidden rounded-lg bg-white shadow">
-        <div className="border-b border-gray-200 p-4">
-          <h2 className="text-lg font-semibold text-gray-900">Tests</h2>
-          <p className="mt-1 text-sm text-gray-500">
+        <div className="border-b border-gray-200 p-3">
+          <h2 className="text-base font-semibold text-gray-900">Tests</h2>
+          <p className="mt-1 text-xs text-gray-500">
             Select a test to view its leaderboard
           </p>
         </div>
 
-        <div className="max-h-[calc(100vh-300px)] overflow-y-auto">
+        <div className="max-h-[calc(100vh-280px)] overflow-y-auto">
           {tests.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
-              <Trophy className="mx-auto mb-2 h-12 w-12 text-gray-300" />
-              <p>No tests available</p>
+              <Trophy className="mx-auto mb-2 h-8 w-8 text-gray-300" />
+              <p className="text-sm">No tests available</p>
             </div>
           ) : (
             <div className="space-y-1 p-2">
@@ -325,7 +325,7 @@ export default function LeaderboardSidebarLayout({
                 <button
                   key={test.id}
                   onClick={() => handleTestSelect(test.id)}
-                  className={`w-full rounded-lg border p-3 text-left transition-all ${
+                  className={`w-full rounded-md border p-2.5 text-left transition-all ${
                     selectedTestId === test.id
                       ? 'border-blue-200 bg-blue-50 text-blue-900'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
@@ -333,20 +333,24 @@ export default function LeaderboardSidebarLayout({
                 >
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
-                      <h3 className="truncate font-medium">{test.title}</h3>
+                      <h3 className="truncate text-sm font-medium">
+                        {test.title}
+                      </h3>
                       {test.description && (
-                        <p className="mt-1 line-clamp-2 text-xs text-gray-500">
-                          {test.description}
+                        <p className="mt-1 line-clamp-1 text-xs text-gray-500">
+                          {test.description.length > 60
+                            ? `${test.description.substring(0, 60)}...`
+                            : test.description}
                         </p>
                       )}
-                      <div className="mt-2 flex items-center text-xs text-gray-400">
+                      <div className="mt-1.5 flex items-center text-xs text-gray-400">
                         <Calendar className="mr-1 h-3 w-3" />
                         {new Date(test.createdAt).toLocaleDateString()}
                       </div>
                     </div>
                     {selectedTestId === test.id && (
                       <div className="ml-2 flex-shrink-0">
-                        <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+                        <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
                       </div>
                     )}
                   </div>
@@ -358,64 +362,64 @@ export default function LeaderboardSidebarLayout({
       </div>
 
       {/* Main Content */}
-      <div className="min-w-0 flex-1 space-y-6">
+      <div className="min-w-0 flex-1 space-y-4">
         {selectedTest && (
-          <div className="rounded-lg bg-white p-6 shadow">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">
+          <div className="rounded-lg bg-white p-4 shadow">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="min-w-0 flex-1">
+                <h2 className="truncate text-lg font-semibold text-gray-900">
                   {selectedTest.title}
                 </h2>
-                {selectedTest.description && (
-                  <p className="mt-1 text-gray-600">
-                    {selectedTest.description}
-                  </p>
-                )}
               </div>
 
               {data?.stats && (
-                <div className="flex items-center space-x-6 text-sm">
+                <div className="flex items-center space-x-4 text-sm">
                   <div className="flex items-center text-gray-600">
                     <Users className="mr-1 h-4 w-4" />
-                    {data.stats.totalCandidates} candidates
+                    <span className="font-medium">
+                      {data.stats.totalCandidates}
+                    </span>
+                    <span className="ml-1 hidden sm:inline">candidates</span>
                   </div>
                   <div className="flex items-center text-gray-600">
                     <TrendingUp className="mr-1 h-4 w-4" />
-                    {data.stats.avgScore}% avg score
+                    <span className="font-medium">{data.stats.avgScore}%</span>
+                    <span className="ml-1 hidden sm:inline">avg</span>
                   </div>
                   <div className="flex items-center text-gray-600">
                     <Trophy className="mr-1 h-4 w-4" />
-                    {data.stats.topScore}% top score
+                    <span className="font-medium">{data.stats.topScore}%</span>
+                    <span className="ml-1 hidden sm:inline">top</span>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Search and Filters */}
-            <div className="space-y-4">
-              <form onSubmit={handleSearchSubmit} className="flex gap-4">
+            <div className="space-y-3">
+              <form onSubmit={handleSearchSubmit} className="flex gap-3">
                 <div className="relative flex-1">
                   <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <Search className="h-5 w-5 text-gray-400" />
+                    <Search className="h-4 w-4 text-gray-400" />
                   </div>
                   <input
                     type="text"
                     placeholder="Search by candidate name or email..."
                     value={localSearch}
                     onChange={(e) => setLocalSearch(e.target.value)}
-                    className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 leading-5 placeholder-gray-500 focus:border-blue-500 focus:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm placeholder-gray-500 focus:border-blue-500 focus:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
                   Search
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                  className="flex items-center gap-2 rounded-md bg-gray-100 px-4 py-2 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                  className="flex items-center gap-2 rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
                 >
                   <Filter className="h-4 w-4" />
                   Filters
@@ -424,8 +428,8 @@ export default function LeaderboardSidebarLayout({
 
               {/* Advanced Filters */}
               {showAdvancedFilters && (
-                <div className="space-y-4 border-t border-gray-200 pt-4">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-3 border-t border-gray-200 pt-3">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     {/* Date From */}
                     <div>
                       <label
@@ -448,7 +452,7 @@ export default function LeaderboardSidebarLayout({
                             page: '1',
                           })
                         }
-                        className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       />
                     </div>
 
@@ -474,7 +478,7 @@ export default function LeaderboardSidebarLayout({
                             page: '1',
                           })
                         }
-                        className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       />
                     </div>
                   </div>
@@ -505,7 +509,7 @@ export default function LeaderboardSidebarLayout({
 
         {/* Leaderboard Table */}
         {isLoading ? (
-          <div className="rounded-lg bg-white p-6 shadow">
+          <div className="rounded-lg bg-white p-4 shadow">
             <TableSkeleton rows={10} columns={8} />
           </div>
         ) : error ? (

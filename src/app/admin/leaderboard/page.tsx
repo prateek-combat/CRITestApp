@@ -41,22 +41,24 @@ export default function LeaderboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <div className="p-6">
+      <div className="p-4">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold text-gray-900">
             🏆 Candidate Leaderboard
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-1 text-sm text-gray-600">
             View and compare candidate performance rankings by test
           </p>
         </div>
 
         <Suspense
           fallback={
-            <div className="flex items-center justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
-              <p className="ml-3 text-gray-600">Loading leaderboard...</p>
+            <div className="flex items-center justify-center py-8">
+              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-blue-500"></div>
+              <p className="ml-3 text-sm text-gray-600">
+                Loading leaderboard...
+              </p>
             </div>
           }
         >

@@ -55,8 +55,8 @@ const InlineBar = ({ value, max = 100 }: { value: number; max?: number }) => {
           style={{ width: `${percentage}%` }}
         />
       </div>
-      <span className="w-8 text-right text-xs text-gray-600">
-        {value !== null && value !== undefined ? value.toFixed(0) : '0'}
+      <span className="w-10 text-right text-xs text-gray-600">
+        {value !== null && value !== undefined ? `${value.toFixed(0)}%` : '0%'}
       </span>
     </div>
   );
@@ -81,13 +81,13 @@ const SortButton = ({
     const labels: Record<string, string> = {
       rank: 'Rank',
       candidateName: 'Name',
-      composite: 'Score',
+      composite: 'Score %',
       percentile: 'Percentile',
-      scoreLogical: 'Logical',
-      scoreVerbal: 'Verbal',
-      scoreNumerical: 'Numerical',
-      scoreAttention: 'Attention',
-      scoreOther: 'Other',
+      scoreLogical: 'Logical %',
+      scoreVerbal: 'Verbal %',
+      scoreNumerical: 'Numerical %',
+      scoreAttention: 'Attention %',
+      scoreOther: 'Other %',
       completedAt: 'Date',
     };
     return labels[col] || col.charAt(0).toUpperCase() + col.slice(1);
@@ -141,6 +141,36 @@ export default function LeaderboardTable({
     if (rank <= 10) return 'bg-primary-100 text-primary-800 border-primary-200';
     return 'bg-gray-50 text-gray-600 border-gray-200';
   };
+
+  // Determine which columns should be visible based on data
+  const getVisibleColumns = () => {
+    if (!data.rows.length) {
+      return {
+        scoreLogical: false,
+        scoreVerbal: false,
+        scoreNumerical: false,
+        scoreAttention: false,
+        scoreOther: false,
+      };
+    }
+
+    // Check if any candidate has a non-zero score in each category
+    const hasLogical = data.rows.some((row) => row.scoreLogical > 0);
+    const hasVerbal = data.rows.some((row) => row.scoreVerbal > 0);
+    const hasNumerical = data.rows.some((row) => row.scoreNumerical > 0);
+    const hasAttention = data.rows.some((row) => row.scoreAttention > 0);
+    const hasOther = data.rows.some((row) => row.scoreOther > 0);
+
+    return {
+      scoreLogical: hasLogical,
+      scoreVerbal: hasVerbal,
+      scoreNumerical: hasNumerical,
+      scoreAttention: hasAttention,
+      scoreOther: hasOther,
+    };
+  };
+
+  const visibleColumns = getVisibleColumns();
 
   return (
     <div className="overflow-hidden rounded-lg bg-white shadow">
@@ -213,46 +243,56 @@ export default function LeaderboardTable({
                   onSort={onSort}
                 />
               </th>
-              <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                <SortButton
-                  column="scoreLogical"
-                  currentSort={data.filters.sortBy}
-                  currentOrder={data.filters.sortOrder}
-                  onSort={onSort}
-                />
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                <SortButton
-                  column="scoreVerbal"
-                  currentSort={data.filters.sortBy}
-                  currentOrder={data.filters.sortOrder}
-                  onSort={onSort}
-                />
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                <SortButton
-                  column="scoreNumerical"
-                  currentSort={data.filters.sortBy}
-                  currentOrder={data.filters.sortOrder}
-                  onSort={onSort}
-                />
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                <SortButton
-                  column="scoreAttention"
-                  currentSort={data.filters.sortBy}
-                  currentOrder={data.filters.sortOrder}
-                  onSort={onSort}
-                />
-              </th>
-              <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                <SortButton
-                  column="scoreOther"
-                  currentSort={data.filters.sortBy}
-                  currentOrder={data.filters.sortOrder}
-                  onSort={onSort}
-                />
-              </th>
+              {visibleColumns.scoreLogical && (
+                <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <SortButton
+                    column="scoreLogical"
+                    currentSort={data.filters.sortBy}
+                    currentOrder={data.filters.sortOrder}
+                    onSort={onSort}
+                  />
+                </th>
+              )}
+              {visibleColumns.scoreVerbal && (
+                <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <SortButton
+                    column="scoreVerbal"
+                    currentSort={data.filters.sortBy}
+                    currentOrder={data.filters.sortOrder}
+                    onSort={onSort}
+                  />
+                </th>
+              )}
+              {visibleColumns.scoreNumerical && (
+                <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <SortButton
+                    column="scoreNumerical"
+                    currentSort={data.filters.sortBy}
+                    currentOrder={data.filters.sortOrder}
+                    onSort={onSort}
+                  />
+                </th>
+              )}
+              {visibleColumns.scoreAttention && (
+                <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <SortButton
+                    column="scoreAttention"
+                    currentSort={data.filters.sortBy}
+                    currentOrder={data.filters.sortOrder}
+                    onSort={onSort}
+                  />
+                </th>
+              )}
+              {visibleColumns.scoreOther && (
+                <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  <SortButton
+                    column="scoreOther"
+                    currentSort={data.filters.sortBy}
+                    currentOrder={data.filters.sortOrder}
+                    onSort={onSort}
+                  />
+                </th>
+              )}
               <th className="px-3 py-2 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
                 <SortButton
                   column="completedAt"
@@ -297,7 +337,7 @@ export default function LeaderboardTable({
                   <div className="text-lg font-bold text-gray-900">
                     {candidate.composite !== null &&
                     candidate.composite !== undefined
-                      ? candidate.composite.toFixed(1)
+                      ? `${candidate.composite.toFixed(1)}%`
                       : 'N/A'}
                   </div>
                   <div className="text-xs text-gray-500">Score</div>
@@ -313,25 +353,35 @@ export default function LeaderboardTable({
                   <div className="text-xs text-gray-500">Percentile</div>
                 </td>
 
-                <td className="whitespace-nowrap px-3 py-2">
-                  <InlineBar value={candidate.scoreLogical} />
-                </td>
+                {visibleColumns.scoreLogical && (
+                  <td className="whitespace-nowrap px-3 py-2">
+                    <InlineBar value={candidate.scoreLogical} />
+                  </td>
+                )}
 
-                <td className="whitespace-nowrap px-3 py-2">
-                  <InlineBar value={candidate.scoreVerbal} />
-                </td>
+                {visibleColumns.scoreVerbal && (
+                  <td className="whitespace-nowrap px-3 py-2">
+                    <InlineBar value={candidate.scoreVerbal} />
+                  </td>
+                )}
 
-                <td className="whitespace-nowrap px-3 py-2">
-                  <InlineBar value={candidate.scoreNumerical} />
-                </td>
+                {visibleColumns.scoreNumerical && (
+                  <td className="whitespace-nowrap px-3 py-2">
+                    <InlineBar value={candidate.scoreNumerical} />
+                  </td>
+                )}
 
-                <td className="whitespace-nowrap px-3 py-2">
-                  <InlineBar value={candidate.scoreAttention} />
-                </td>
+                {visibleColumns.scoreAttention && (
+                  <td className="whitespace-nowrap px-3 py-2">
+                    <InlineBar value={candidate.scoreAttention} />
+                  </td>
+                )}
 
-                <td className="whitespace-nowrap px-3 py-2">
-                  <InlineBar value={candidate.scoreOther} />
-                </td>
+                {visibleColumns.scoreOther && (
+                  <td className="whitespace-nowrap px-3 py-2">
+                    <InlineBar value={candidate.scoreOther} />
+                  </td>
+                )}
 
                 <td className="whitespace-nowrap px-3 py-2 text-center text-xs text-gray-500">
                   {formatDate(candidate.completedAt)}
