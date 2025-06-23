@@ -464,8 +464,16 @@ export default function TestTakingPage({
                                 ? 'text-blue-900'
                                 : 'text-gray-800 group-hover:text-gray-900'
                             }`}
-                            dangerouslySetInnerHTML={{ __html: option }}
-                          />
+                          >
+                            <MarkdownRenderer
+                              content={option}
+                              className={`${
+                                isSelected
+                                  ? 'text-blue-900'
+                                  : 'text-gray-800 group-hover:text-gray-900'
+                              }`}
+                            />
+                          </div>
                         </div>
 
                         {/* Enhanced Selection Indicator */}

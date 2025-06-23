@@ -235,10 +235,14 @@ export default function BookmarkedQuestionsReview({
                           >
                             Option {String.fromCharCode(65 + index)}
                           </span>
-                          <p
+                          <div
                             className={`mt-1 ${isSelected ? 'text-primary-800' : 'text-gray-600'}`}
-                            dangerouslySetInnerHTML={{ __html: option }}
-                          />
+                          >
+                            <MarkdownRenderer
+                              content={option}
+                              className={`${isSelected ? 'text-primary-800' : 'text-gray-600'}`}
+                            />
+                          </div>
                         </div>
                       </div>
                     </button>

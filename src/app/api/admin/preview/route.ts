@@ -1,30 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-
-// In-memory store for preview tokens (valid for 1 hour)
-const previewTokens = new Map<
-  string,
-  {
-    testId: string;
-    userId: string;
-    expiresAt: number;
-    testTitle: string;
-  }
->();
-
-// Clean up expired tokens every 10 minutes
-setInterval(
-  () => {
-    const now = Date.now();
-    for (const [token, data] of previewTokens.entries()) {
-      if (data.expiresAt < now) {
-        previewTokens.delete(token);
-      }
-    }
-  },
-  10 * 60 * 1000
-);
+import { getPreviewToken, deletePreviewToken } from '@/lib/preview-tokens';
 
 /**
  * Validate a preview token and get test data
@@ -41,19 +18,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const tokenData = previewTokens.get(token);
+    const tokenData = getPreviewToken(token);
     if (!tokenData) {
       return NextResponse.json(
         { error: 'Invalid or expired preview token' },
         { status: 404 }
-      );
-    }
-
-    if (tokenData.expiresAt < Date.now()) {
-      previewTokens.delete(token);
-      return NextResponse.json(
-        { error: 'Preview token expired' },
-        { status: 410 }
       );
     }
 
@@ -105,5 +74,4 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Export the token store so other routes can access it
-export { previewTokens };
+// Token management is now handled by the shared module
