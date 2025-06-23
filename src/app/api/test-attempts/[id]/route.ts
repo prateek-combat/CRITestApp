@@ -26,6 +26,9 @@ export async function GET(
         test: {
           include: {
             questions: {
+              orderBy: {
+                createdAt: 'asc',
+              },
               include: {
                 personalityDimension: true,
               },
@@ -58,6 +61,9 @@ export async function GET(
               test: {
                 include: {
                   questions: {
+                    orderBy: {
+                      createdAt: 'asc',
+                    },
                     include: {
                       personalityDimension: true,
                     },
@@ -166,6 +172,7 @@ export async function GET(
           correctAnswerIndex: q.correctAnswerIndex,
           personalityDimension: q.personalityDimension,
           answerWeights: q.answerWeights,
+          timerSeconds: q.timerSeconds,
         })),
       },
     };

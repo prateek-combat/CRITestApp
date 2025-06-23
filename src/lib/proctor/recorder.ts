@@ -1,12 +1,71 @@
 import { proctorLogger } from '../logger';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
-interface RecordingSession {
+export interface RecordingSession {
   stream: MediaStream;
   canvas: HTMLCanvasElement;
   context: CanvasRenderingContext2D;
   intervalId: number;
   capturedFrames: Blob[];
   isRecording: boolean;
+}
+
+export function useProctoring(attemptId: string) {
+  const [session, setSession] = useState<RecordingSession | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const start = useCallback(async () => {
+    try {
+      const recordingSession = await startRecording();
+      setSession(recordingSession);
+      setIsRecording(true);
+      if (videoRef.current) {
+        videoRef.current.srcObject = recordingSession.stream;
+      }
+    } catch (error) {
+      proctorLogger.error(
+        'Failed to start proctoring session',
+        { attemptId },
+        error as Error
+      );
+      // Optionally, set an error state to show in the UI
+    }
+  }, [attemptId]);
+
+  const stop = useCallback(async () => {
+    if (session) {
+      try {
+        await stopAndUpload(session, attemptId);
+        destroyRecording(session);
+        setSession(null);
+        setIsRecording(false);
+      } catch (error) {
+        proctorLogger.error(
+          'Failed to stop and upload proctoring session',
+          { attemptId },
+          error as Error
+        );
+      }
+    }
+  }, [session, attemptId]);
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      if (session) {
+        destroyRecording(session);
+      }
+    };
+  }, [session]);
+
+  return {
+    isRecording,
+    startRecording: start,
+    stopRecording: stop,
+    recordingSession: session,
+    videoRef,
+  };
 }
 
 export async function startRecording(): Promise<RecordingSession> {
