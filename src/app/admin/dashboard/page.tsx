@@ -60,21 +60,21 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen space-y-6 bg-gray-100 p-4 md:p-6 lg:p-8">
+    <div className="min-h-screen space-y-4 bg-gray-100 p-3 md:p-4 lg:p-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600">Welcome to Test Platform</p>
+        <h1 className="text-xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-sm text-gray-600">Welcome to Test Platform</p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Total Tests Card */}
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-md transition-shadow duration-300 hover:shadow-lg">
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-md transition-shadow duration-300 hover:shadow-lg">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-500">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-500">
                 <svg
-                  className="h-6 w-6 text-white"
+                  className="h-5 w-5 text-white"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -88,12 +88,12 @@ export default function DashboardPage() {
                 </svg>
               </div>
             </div>
-            <div className="ml-5 w-0 flex-1">
+            <div className="ml-4 w-0 flex-1">
               <dl>
-                <dt className="truncate text-sm font-medium text-gray-500">
+                <dt className="truncate text-xs font-medium text-gray-500">
                   Total Tests
                 </dt>
-                <dd className="text-xl font-semibold text-gray-900">
+                <dd className="text-lg font-semibold text-gray-900">
                   {stats.totalTests}
                 </dd>
               </dl>
@@ -102,12 +102,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Invitations Card */}
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-md transition-shadow duration-300 hover:shadow-lg">
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-md transition-shadow duration-300 hover:shadow-lg">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-500">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500">
                 <svg
-                  className="h-6 w-6 text-white"
+                  className="h-5 w-5 text-white"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -121,12 +121,12 @@ export default function DashboardPage() {
                 </svg>
               </div>
             </div>
-            <div className="ml-5 w-0 flex-1">
+            <div className="ml-4 w-0 flex-1">
               <dl>
-                <dt className="truncate text-sm font-medium text-gray-500">
+                <dt className="truncate text-xs font-medium text-gray-500">
                   Invitations
                 </dt>
-                <dd className="text-xl font-semibold text-gray-900">
+                <dd className="text-lg font-semibold text-gray-900">
                   {stats.totalInvitations}
                 </dd>
               </dl>
@@ -135,12 +135,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Attempts Card */}
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-md transition-shadow duration-300 hover:shadow-lg">
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-md transition-shadow duration-300 hover:shadow-lg">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-500">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-500">
                 <svg
-                  className="h-6 w-6 text-white"
+                  className="h-5 w-5 text-white"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -154,12 +154,12 @@ export default function DashboardPage() {
                 </svg>
               </div>
             </div>
-            <div className="ml-5 w-0 flex-1">
+            <div className="ml-4 w-0 flex-1">
               <dl>
-                <dt className="truncate text-sm font-medium text-gray-500">
+                <dt className="truncate text-xs font-medium text-gray-500">
                   Attempts
                 </dt>
-                <dd className="text-xl font-semibold text-gray-900">
+                <dd className="text-lg font-semibold text-gray-900">
                   {stats.totalAttempts}
                 </dd>
               </dl>
@@ -168,12 +168,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Completion Rate Card */}
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-md transition-shadow duration-300 hover:shadow-lg">
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-md transition-shadow duration-300 hover:shadow-lg">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary-500">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-500">
                 <svg
-                  className="h-6 w-6 text-white"
+                  className="h-5 w-5 text-white"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -187,12 +187,12 @@ export default function DashboardPage() {
                 </svg>
               </div>
             </div>
-            <div className="ml-5 w-0 flex-1">
+            <div className="ml-4 w-0 flex-1">
               <dl>
-                <dt className="truncate text-sm font-medium text-gray-500">
+                <dt className="truncate text-xs font-medium text-gray-500">
                   Completion Rate
                 </dt>
-                <dd className="text-xl font-semibold text-gray-900">
+                <dd className="text-lg font-semibold text-gray-900">
                   {stats.completionRate.toFixed(1)}%
                 </dd>
               </dl>
@@ -201,21 +201,21 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Quick Actions */}
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-md transition-shadow duration-300 hover:shadow-lg">
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-md transition-shadow duration-300 hover:shadow-lg">
+          <h3 className="mb-3 text-base font-semibold text-gray-900">
             Quick Actions
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-2">
             <Link
               href="/admin/tests/new"
-              className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50"
+              className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-2.5 transition-colors hover:bg-gray-50"
             >
               <div className="flex items-center">
-                <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-primary-500">
+                <div className="mr-2.5 flex h-7 w-7 items-center justify-center rounded-lg bg-primary-500">
                   <svg
-                    className="h-4 w-4 text-white"
+                    className="h-3.5 w-3.5 text-white"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -228,12 +228,12 @@ export default function DashboardPage() {
                     />
                   </svg>
                 </div>
-                <span className="font-medium text-gray-900">
+                <span className="text-sm font-medium text-gray-900">
                   Create New Test
                 </span>
               </div>
               <svg
-                className="h-5 w-5 text-gray-400"
+                className="h-4 w-4 text-gray-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -249,12 +249,12 @@ export default function DashboardPage() {
 
             <Link
               href="/admin/invitations"
-              className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50"
+              className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-2.5 transition-colors hover:bg-gray-50"
             >
               <div className="flex items-center">
-                <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500">
+                <div className="mr-2.5 flex h-7 w-7 items-center justify-center rounded-lg bg-orange-500">
                   <svg
-                    className="h-4 w-4 text-white"
+                    className="h-3.5 w-3.5 text-white"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -267,12 +267,12 @@ export default function DashboardPage() {
                     />
                   </svg>
                 </div>
-                <span className="font-medium text-gray-900">
+                <span className="text-sm font-medium text-gray-900">
                   Send Invitation
                 </span>
               </div>
               <svg
-                className="h-5 w-5 text-gray-400"
+                className="h-4 w-4 text-gray-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -288,12 +288,12 @@ export default function DashboardPage() {
 
             <Link
               href="/admin/personality-dimensions"
-              className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50"
+              className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-2.5 transition-colors hover:bg-gray-50"
             >
               <div className="flex items-center">
-                <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500">
+                <div className="mr-2.5 flex h-7 w-7 items-center justify-center rounded-lg bg-purple-500">
                   <svg
-                    className="h-4 w-4 text-white"
+                    className="h-3.5 w-3.5 text-white"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -306,12 +306,12 @@ export default function DashboardPage() {
                     />
                   </svg>
                 </div>
-                <span className="font-medium text-gray-900">
+                <span className="text-sm font-medium text-gray-900">
                   Personality Dimensions
                 </span>
               </div>
               <svg
-                className="h-5 w-5 text-gray-400"
+                className="h-4 w-4 text-gray-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -327,12 +327,12 @@ export default function DashboardPage() {
 
             <Link
               href="/admin/analytics"
-              className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-3 transition-colors hover:bg-gray-50"
+              className="flex w-full items-center justify-between rounded-lg border border-gray-200 p-2.5 transition-colors hover:bg-gray-50"
             >
               <div className="flex items-center">
-                <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-lg bg-primary-500">
+                <div className="mr-2.5 flex h-7 w-7 items-center justify-center rounded-lg bg-primary-500">
                   <svg
-                    className="h-4 w-4 text-white"
+                    className="h-3.5 w-3.5 text-white"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -345,12 +345,12 @@ export default function DashboardPage() {
                     />
                   </svg>
                 </div>
-                <span className="font-medium text-gray-900">
+                <span className="text-sm font-medium text-gray-900">
                   View Analytics
                 </span>
               </div>
               <svg
-                className="h-5 w-5 text-gray-400"
+                className="h-4 w-4 text-gray-400"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -367,20 +367,20 @@ export default function DashboardPage() {
         </div>
 
         {/* Recent Activity */}
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-md transition-shadow duration-300 hover:shadow-lg">
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-md transition-shadow duration-300 hover:shadow-lg">
+          <h3 className="mb-3 text-base font-semibold text-gray-900">
             Recent Activity
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {recentActivity.length === 0 ? (
-              <p className="py-4 text-center text-gray-500">
+              <p className="py-3 text-center text-sm text-gray-500">
                 No recent activity
               </p>
             ) : (
               recentActivity.slice(0, 5).map((activity) => (
-                <div key={activity.id} className="flex items-start space-x-3">
+                <div key={activity.id} className="flex items-start space-x-2.5">
                   <div
-                    className={`mt-1.5 h-2.5 w-2.5 flex-shrink-0 rounded-full ${
+                    className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${
                       activity.type === 'test_created'
                         ? 'bg-primary-500'
                         : activity.type === 'invitation_sent'
