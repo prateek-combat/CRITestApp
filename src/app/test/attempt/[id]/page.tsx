@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 
 interface AnswerOption {
@@ -39,6 +39,12 @@ interface TestAttempt {
   // Add other relevant fields from your TestAttempt model
 }
 
+interface UserAnswer {
+  questionId: string;
+  selectedAnswerIndex: number | null;
+  timeTakenSeconds?: number;
+}
+
 export default function TestTakingPage({
   params,
 }: {
@@ -46,12 +52,14 @@ export default function TestTakingPage({
 }) {
   const router = useRouter();
   const { id: testAttemptId } = use(params);
+  const searchParams = useSearchParams();
 
+  const [isPublicTest, setIsPublicTest] = useState(false);
   const [testAttempt, setTestAttempt] = useState<TestAttempt | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [userAnswers, setUserAnswers] = useState<SubmittedAnswerPayload[]>([]);
+  const [userAnswers, setUserAnswers] = useState<UserAnswer[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,10 +68,16 @@ export default function TestTakingPage({
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/test-attempts/${testAttemptId}`);
+      const isPublic = searchParams.get('type') === 'public';
+      setIsPublicTest(isPublic);
+
+      const url = isPublic
+        ? `/api/public-test-attempts/${testAttemptId}`
+        : `/api/test-attempts/${testAttemptId}`;
+      const response = await fetch(url);
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to fetch test attempt');
+        throw new Error(errorData.error || 'Failed to fetch test attempt');
       }
       const data: TestAttempt = await response.json();
       setTestAttempt(data);
@@ -101,7 +115,7 @@ export default function TestTakingPage({
     } finally {
       setLoading(false);
     }
-  }, [testAttemptId]);
+  }, [testAttemptId, searchParams]);
 
   useEffect(() => {
     if (testAttemptId) {
@@ -134,8 +148,10 @@ export default function TestTakingPage({
     // Optionally submit answer immediately or wait for next button
   };
 
-  const handleNextQuestion = useCallback(() => {
+  const handleNextQuestion = useCallback(async () => {
     if (!testAttempt) return;
+    setLoading(true);
+    setError(null);
 
     // Store current answer
     const currentQuestion = testAttempt.test.questions[currentQuestionIndex];
@@ -170,7 +186,7 @@ export default function TestTakingPage({
       setTimeLeft(testAttempt.test.questions[nextIndex].timerSeconds);
     } else {
       // Last question answered, move to submit/summary
-      handleSubmitTest();
+      await handleSubmitTest();
     }
   }, [
     currentQuestionIndex,
@@ -216,20 +232,48 @@ export default function TestTakingPage({
     }
 
     try {
-      const response = await fetch(`/api/test-attempts/${testAttemptId}`, {
-        method: 'PUT',
+      const isPublic = searchParams.get('type') === 'public';
+      const url = isPublic
+        ? `/api/public-test-attempts/${testAttemptId}/progress`
+        : `/api/test-attempts/${testAttemptId}/progress`;
+      await fetch(url, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          status: 'COMPLETED', // Or other appropriate status
-          submittedAnswers: finalAnswers,
+          answers: finalAnswers,
+          currentQuestionIndex: testAttempt.test.questions.length - 1, // -1 for summary
         }),
       });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to submit test');
+
+      if (testAttempt.test.questions.length - 1 === currentQuestionIndex) {
+        // Now submit the final completion status
+        const finalUrl = isPublic
+          ? `/api/public-test-attempts/${testAttemptId}`
+          : `/api/test-attempts/${testAttemptId}`;
+        await fetch(finalUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            status: 'COMPLETED',
+            answers: finalAnswers.reduce(
+              (acc, ans) => {
+                acc[ans.questionId] = { answerIndex: ans.selectedAnswerIndex };
+                return acc;
+              },
+              {} as Record<string, { answerIndex: number | null }>
+            ),
+          }),
+        });
+
+        router.push(
+          isPublic
+            ? `/test/results/${testAttemptId}?type=public`
+            : `/test/results/${testAttemptId}`
+        );
+      } else {
+        setCurrentQuestionIndex(testAttempt.test.questions.length - 1);
+        setSelectedAnswer(null); // Reset for next question
       }
-      // const result = await response.json();
-      router.push(`/test/results/${testAttemptId}`); // Redirect to a results page
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit test');
       setLoading(false);
