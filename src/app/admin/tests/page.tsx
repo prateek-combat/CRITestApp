@@ -521,14 +521,14 @@ export default function TestsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-xl font-bold text-gray-900">
             Tests & Invitations
           </h1>
-          <p className="text-gray-600">
+          <p className="text-sm text-gray-600">
             Create tests, manage questions, and send invitations
           </p>
         </div>
@@ -536,7 +536,7 @@ export default function TestsPage() {
 
       {/* Tab Navigation */}
       <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
+        <nav className="-mb-px flex space-x-6">
           <button
             onClick={() => setActiveTab('tests')}
             className={`border-b-2 px-1 py-2 text-sm font-medium ${
@@ -581,42 +581,42 @@ export default function TestsPage() {
 
       {/* Tests Tab */}
       {activeTab === 'tests' && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               {isSuperAdmin && (
                 <Link
                   href="/admin/tests/archived"
-                  className="rounded-lg bg-gray-500 px-4 py-2 text-white transition-colors hover:bg-gray-600"
+                  className="rounded-lg bg-gray-500 px-3 py-1.5 text-sm text-white transition-colors hover:bg-gray-600"
                 >
-                  <Archive className="mr-2 inline h-4 w-4" />
+                  <Archive className="mr-1.5 inline h-4 w-4" />
                   View Archived
                 </Link>
               )}
               <Link
                 href="/admin/tests/new"
-                className="rounded-lg bg-brand-500 px-4 py-2 text-white transition-colors hover:bg-brand-600"
+                className="rounded-lg bg-brand-500 px-3 py-1.5 text-sm text-white transition-colors hover:bg-brand-600"
               >
-                <Plus className="mr-2 inline h-4 w-4" />
+                <Plus className="mr-1.5 inline h-4 w-4" />
                 Create New Test
               </Link>
             </div>
           </div>
 
           {testsLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-brand-500"></div>
+            <div className="flex justify-center py-6">
+              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-brand-500"></div>
             </div>
           ) : tests.length === 0 ? (
-            <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
-              <Settings className="mx-auto h-12 w-12 text-gray-400" />
+            <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
+              <Settings className="mx-auto h-10 w-10 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">
                 No tests
               </h3>
               <p className="mt-1 text-sm text-gray-500">
                 Get started by creating your first test.
               </p>
-              <div className="mt-6">
+              <div className="mt-4">
                 <Link
                   href="/admin/tests/new"
                   className="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-500"
@@ -627,26 +627,26 @@ export default function TestsPage() {
               </div>
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {tests.map((test) => (
                 <div
                   key={test.id}
-                  className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+                  className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
                 >
-                  <div className="mb-4 flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900">
+                  <div className="mb-3 flex items-start justify-between">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="truncate text-base font-semibold text-gray-900">
                         {test.title}
                       </h3>
                       {test.description && (
-                        <p className="mt-1 text-sm text-gray-600">
+                        <p className="mt-1 line-clamp-2 text-xs text-gray-600">
                           {test.description}
                         </p>
                       )}
                     </div>
 
                     {/* Three-dots menu */}
-                    <div className="relative">
+                    <div className="relative ml-2">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -654,22 +654,22 @@ export default function TestsPage() {
                             openDropdown === test.id ? null : test.id
                           );
                         }}
-                        className="rounded-md p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                        className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
                       >
-                        <MoreVertical className="h-5 w-5" />
+                        <MoreVertical className="h-4 w-4" />
                       </button>
 
                       {openDropdown === test.id && (
-                        <div className="absolute right-0 top-10 z-10 w-48 rounded-md border border-gray-200 bg-white py-1 shadow-lg">
+                        <div className="absolute right-0 top-8 z-10 w-44 rounded-md border border-gray-200 bg-white py-1 shadow-lg">
                           <Link
                             href={`/admin/tests/${test.id}`}
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="flex items-center px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
                             onClick={(e) => {
                               e.stopPropagation();
                               setOpenDropdown(null);
                             }}
                           >
-                            <Edit className="mr-3 h-4 w-4" />
+                            <Edit className="mr-2 h-3.5 w-3.5" />
                             Edit Test
                           </Link>
 
@@ -700,9 +700,9 @@ export default function TestsPage() {
                                 alert('Failed to create preview link');
                               }
                             }}
-                            className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="flex w-full items-center px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
                           >
-                            <Eye className="mr-3 h-4 w-4" />
+                            <Eye className="mr-2 h-3.5 w-3.5" />
                             Preview Test
                           </button>
 
@@ -714,9 +714,9 @@ export default function TestsPage() {
                                 title: test.title,
                               });
                             }}
-                            className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            className="flex w-full items-center px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
                           >
-                            <Bell className="mr-3 h-4 w-4" />
+                            <Bell className="mr-2 h-3.5 w-3.5" />
                             Email Notifications
                           </button>
 
@@ -730,9 +730,9 @@ export default function TestsPage() {
                                   setOpenDropdown(null);
                                 }}
                                 disabled={archivingTestId === test.id}
-                                className="flex w-full items-center px-4 py-2 text-sm text-yellow-700 hover:bg-yellow-50 disabled:opacity-50"
+                                className="flex w-full items-center px-3 py-1.5 text-sm text-yellow-700 hover:bg-yellow-50 disabled:opacity-50"
                               >
-                                <Archive className="mr-3 h-4 w-4" />
+                                <Archive className="mr-2 h-3.5 w-3.5" />
                                 {archivingTestId === test.id
                                   ? 'Archiving...'
                                   : 'Archive Test'}
@@ -745,9 +745,9 @@ export default function TestsPage() {
                                   setOpenDropdown(null);
                                 }}
                                 disabled={deletingTestId === test.id}
-                                className="flex w-full items-center px-4 py-2 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
+                                className="flex w-full items-center px-3 py-1.5 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
                               >
-                                <Trash2 className="mr-3 h-4 w-4" />
+                                <Trash2 className="mr-2 h-3.5 w-3.5" />
                                 {deletingTestId === test.id
                                   ? 'Deleting...'
                                   : 'Delete Test'}
@@ -759,27 +759,29 @@ export default function TestsPage() {
                     </div>
                   </div>
 
-                  <div className="mb-4 space-y-1 text-sm text-gray-600">
+                  <div className="mb-3 grid grid-cols-2 gap-2 text-xs text-gray-600">
                     <div className="flex items-center justify-between">
                       <span>Questions:</span>
-                      <span className="font-medium">{test.questionsCount}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Invitations:</span>
-                      <span className="font-medium">
-                        {test.invitationsCount}
+                      <span className="font-medium text-gray-900">
+                        {test.questionsCount}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
+                      <span>Invitations:</span>
+                      <span className="font-medium text-gray-900">
+                        {test.invitationsCount}
+                      </span>
+                    </div>
+                    <div className="col-span-2 flex items-center justify-between">
                       <span>Created:</span>
-                      <span className="font-medium">
+                      <span className="font-medium text-gray-900">
                         {new Date(test.createdAt).toLocaleDateString()}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>Click ⋮ for options</span>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500">Click ⋮ for options</span>
                     <Link
                       href={`/admin/tests/${test.id}`}
                       className="inline-flex items-center font-medium text-blue-600 hover:text-blue-800"
@@ -796,21 +798,21 @@ export default function TestsPage() {
 
       {/* Invitations Tab */}
       {activeTab === 'invitations' && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Send Invitation Form */}
-          <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <h2 className="mb-4 text-lg font-medium text-gray-900">
+          <div className="rounded-lg border border-gray-200 bg-white p-4">
+            <h2 className="mb-3 text-base font-medium text-gray-900">
               Send Invitation
             </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-xs font-medium text-gray-700">
                   Test
                 </label>
                 <select
                   value={selectedTestId}
                   onChange={(e) => setSelectedTestId(e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
                 >
                   <option value="">Select a test</option>
                   {tests.map((test) => (
@@ -821,7 +823,7 @@ export default function TestsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-xs font-medium text-gray-700">
                   Email
                 </label>
                 <input
@@ -829,11 +831,11 @@ export default function TestsPage() {
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   placeholder="candidate@example.com"
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-xs font-medium text-gray-700">
                   Custom Message (Optional)
                 </label>
                 <input
@@ -841,27 +843,27 @@ export default function TestsPage() {
                   value={customMessage}
                   onChange={(e) => setCustomMessage(e.target.value)}
                   placeholder="Additional message..."
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
                 />
               </div>
-              <div className="flex items-end space-x-2">
+              <div className="flex items-end space-x-1.5">
                 <button
                   onClick={sendInvitationEmail}
                   disabled={!newEmail || !selectedTestId || sendingInvite}
-                  className="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+                  className="rounded-md bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50"
                 >
                   {sendingInvite ? 'Sending...' : 'Send'}
                 </button>
                 <button
                   onClick={() => setShowBulkForm(!showBulkForm)}
-                  className="rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
+                  className="rounded-md bg-gray-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700"
                 >
                   Bulk
                 </button>
                 <button
                   onClick={generatePublicTestLink}
                   disabled={!selectedTestId || generatingPublicLink}
-                  className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                  className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
                 >
                   {generatingPublicLink ? 'Creating...' : 'Public Link'}
                 </button>
@@ -869,16 +871,16 @@ export default function TestsPage() {
             </div>
 
             {showBulkForm && (
-              <div className="mt-4 border-t pt-4">
-                <label className="block text-sm font-medium text-gray-700">
+              <div className="mt-3 border-t pt-3">
+                <label className="block text-xs font-medium text-gray-700">
                   Bulk Email Addresses
                 </label>
                 <textarea
                   value={bulkEmails}
                   onChange={(e) => setBulkEmails(e.target.value)}
                   placeholder="Enter email addresses (one per line or comma-separated)"
-                  rows={4}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
+                  rows={3}
+                  className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
                 />
                 <div className="mt-2 flex space-x-2">
                   <button
@@ -886,13 +888,13 @@ export default function TestsPage() {
                     disabled={
                       !bulkEmails.trim() || !selectedTestId || sendingBulk
                     }
-                    className="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+                    className="rounded-md bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50"
                   >
                     {sendingBulk ? 'Sending...' : 'Send Bulk Invitations'}
                   </button>
                   <button
                     onClick={() => setShowBulkForm(false)}
-                    className="rounded-md bg-gray-600 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700"
+                    className="rounded-md bg-gray-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700"
                   >
                     Cancel
                   </button>
@@ -902,10 +904,10 @@ export default function TestsPage() {
           </div>
 
           {/* Filters */}
-          <div className="rounded-lg border border-gray-200 bg-white p-4">
-            <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-lg border border-gray-200 bg-white p-3">
+            <div className="grid gap-3 sm:grid-cols-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-xs font-medium text-gray-700">
                   Search
                 </label>
                 <input
@@ -913,11 +915,11 @@ export default function TestsPage() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search emails or tests..."
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-xs font-medium text-gray-700">
                   Status
                 </label>
                 <select
@@ -925,7 +927,7 @@ export default function TestsPage() {
                   onChange={(e) =>
                     setStatusFilter(e.target.value as FilterStatus)
                   }
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
                 >
                   <option value="ALL">All Statuses</option>
                   <option value="PENDING">Pending</option>
@@ -941,8 +943,8 @@ export default function TestsPage() {
 
           {/* Invitations List */}
           {invitationsLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-brand-500"></div>
+            <div className="flex justify-center py-6">
+              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-brand-500"></div>
             </div>
           ) : (
             <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
@@ -950,19 +952,19 @@ export default function TestsPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                         Candidate
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                         Test
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                         Status
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                         Score
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                         Actions
                       </th>
                     </tr>
@@ -970,41 +972,41 @@ export default function TestsPage() {
                   <tbody className="divide-y divide-gray-200 bg-white">
                     {filteredInvitations.map((invitation) => (
                       <tr key={invitation.id}>
-                        <td className="whitespace-nowrap px-6 py-4">
+                        <td className="whitespace-nowrap px-3 py-2">
                           <div>
                             <div className="text-sm font-medium text-gray-900">
                               {invitation.candidateName || invitation.email}
                             </div>
                             {invitation.candidateName && (
-                              <div className="text-sm text-gray-500">
+                              <div className="text-xs text-gray-500">
                                 {invitation.email}
                               </div>
                             )}
                           </div>
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4">
+                        <td className="whitespace-nowrap px-3 py-2">
                           <div className="text-sm text-gray-900">
                             {invitation.test.title}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-xs text-gray-500">
                             {invitation.type === 'public'
                               ? 'Public Link'
                               : 'Invitation'}
                           </div>
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4">
+                        <td className="whitespace-nowrap px-3 py-2">
                           <span
-                            className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${getStatusColor(invitation.status)}`}
+                            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${getStatusColor(invitation.status)}`}
                           >
                             {invitation.status}
                           </span>
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                        <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-900">
                           {invitation.testAttempt?.rawScore !== undefined
                             ? `${invitation.testAttempt.rawScore}%`
                             : '-'}
                         </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium">
+                        <td className="whitespace-nowrap px-3 py-2 text-sm font-medium">
                           {invitation.testAttempt?.id && (
                             <Link
                               href={`/admin/analytics/analysis/${invitation.testAttempt.id}`}
@@ -1026,24 +1028,24 @@ export default function TestsPage() {
 
       {/* Public Links Tab */}
       {activeTab === 'publicLinks' && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Error Message */}
           {publicLinksError && (
-            <div className="rounded-md bg-red-50 p-4">
+            <div className="rounded-md bg-red-50 p-3">
               <div className="text-sm text-red-700">{publicLinksError}</div>
             </div>
           )}
 
           {/* Public Links List */}
           {publicLinksLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-brand-500"></div>
+            <div className="flex justify-center py-6">
+              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-brand-500"></div>
             </div>
           ) : (
             <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
               {publicLinks.length === 0 ? (
-                <div className="py-12 text-center">
-                  <ExternalLink className="mx-auto h-12 w-12 text-gray-400" />
+                <div className="py-8 text-center">
+                  <ExternalLink className="mx-auto h-10 w-10 text-gray-400" />
                   <h3 className="mt-2 text-sm font-medium text-gray-900">
                     No public links
                   </h3>
@@ -1051,10 +1053,10 @@ export default function TestsPage() {
                     Get started by creating a new public test link from the
                     invitations tab.
                   </p>
-                  <div className="mt-6">
+                  <div className="mt-4">
                     <button
                       onClick={() => setActiveTab('invitations')}
-                      className="inline-flex items-center rounded-md border border-transparent bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700"
+                      className="inline-flex items-center rounded-md border border-transparent bg-brand-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-brand-700"
                     >
                       Create Public Link
                     </button>
@@ -1066,21 +1068,21 @@ export default function TestsPage() {
                     const publicUrl = `${window.location.origin}/public-test/${link.linkToken}`;
 
                     return (
-                      <li key={link.id} className="px-6 py-4">
+                      <li key={link.id} className="px-4 py-3">
                         <div className="flex items-center justify-between">
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center space-x-3">
                               <div className="flex-1">
                                 <div className="flex items-center space-x-2">
-                                  <h3 className="truncate text-lg font-medium text-gray-900">
+                                  <h3 className="truncate text-base font-medium text-gray-900">
                                     {link.title}
                                   </h3>
                                   {getStatusBadge(link)}
                                 </div>
-                                <p className="mt-1 text-sm text-gray-500">
+                                <p className="mt-0.5 text-sm text-gray-600">
                                   Test: {link.test.title}
                                 </p>
-                                <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
+                                <div className="mt-1.5 flex items-center space-x-3 text-xs text-gray-500">
                                   <span>
                                     Used: {link.usedCount}
                                     {link.maxUses ? ` / ${link.maxUses}` : ''}
@@ -1103,13 +1105,13 @@ export default function TestsPage() {
                                     type="text"
                                     value={publicUrl}
                                     readOnly
-                                    className="flex-1 rounded border border-gray-300 bg-gray-50 px-3 py-1 font-mono text-sm"
+                                    className="flex-1 rounded border border-gray-300 bg-gray-50 px-2 py-1 font-mono text-xs"
                                   />
                                   <button
                                     onClick={() => copyToClipboard(publicUrl)}
-                                    className="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                                    className="inline-flex items-center rounded border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
                                   >
-                                    <Copy className="mr-1 h-4 w-4" />
+                                    <Copy className="mr-1 h-3 w-3" />
                                     Copy
                                   </button>
                                 </div>
@@ -1117,10 +1119,10 @@ export default function TestsPage() {
                             </div>
                           </div>
 
-                          <div className="ml-4 flex items-center space-x-2">
+                          <div className="ml-3 flex items-center space-x-1.5">
                             <Link
                               href={`/admin/analytics/analysis?publicLinkId=${link.id}`}
-                              className="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+                              className="inline-flex items-center rounded border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
                             >
                               📊 View Attempts
                             </Link>
@@ -1129,7 +1131,7 @@ export default function TestsPage() {
                               onClick={() =>
                                 toggleLinkStatus(link.id, link.isActive)
                               }
-                              className={`inline-flex items-center rounded border px-3 py-1 text-sm font-medium shadow-sm ${
+                              className={`inline-flex items-center rounded border px-2 py-1 text-xs font-medium shadow-sm ${
                                 link.isActive
                                   ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
                                   : 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'
@@ -1140,9 +1142,9 @@ export default function TestsPage() {
 
                             <button
                               onClick={() => deletePublicLink(link.id)}
-                              className="inline-flex items-center rounded border border-red-300 bg-red-50 px-3 py-1 text-sm font-medium text-red-700 shadow-sm hover:bg-red-100"
+                              className="inline-flex items-center rounded border border-red-300 bg-red-50 px-2 py-1 text-xs font-medium text-red-700 shadow-sm hover:bg-red-100"
                             >
-                              <Trash2 className="mr-1 h-4 w-4" />
+                              <Trash2 className="mr-1 h-3 w-3" />
                               Delete
                             </button>
                           </div>
