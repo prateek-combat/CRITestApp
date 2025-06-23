@@ -197,7 +197,7 @@ class ImprovedRiskCalculator:
             violation_rate = count / max(total_questions, 1)
             
             question_multiplier = 1.0
-            
+
             # Apply question-based multiplier for critical events
             if criticality in ['CRITICAL', 'HIGH']:
                 # These events are particularly concerning relative to question count
