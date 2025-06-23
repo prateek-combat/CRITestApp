@@ -412,11 +412,14 @@ export default function TestAttemptPage() {
 
                           {/* Option Content */}
                           <div className="flex-1">
-                            <div className="leading-relaxed">
-                              <MarkdownRenderer
-                                content={option}
-                                className="markdown-answer-option"
-                              />
+                            <div
+                              className={`leading-relaxed ${
+                                isSelected
+                                  ? 'text-blue-100'
+                                  : 'text-gray-300 group-hover:text-white'
+                              }`}
+                            >
+                              <MarkdownRenderer content={option} />
                             </div>
                           </div>
 
