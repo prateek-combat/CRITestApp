@@ -96,13 +96,15 @@ export default function TestTakingPage() {
     setSubmissionStep('Preparing submission...');
 
     try {
-      // Step 1: Stop recording and camera
-      setSubmissionStep('Stopping camera and cleaning up...');
+      // PRIORITY FIX: Stop camera immediately, then handle submission
+      // Step 1: Stop recording and camera IMMEDIATELY (non-blocking)
+      setSubmissionStep('Stopping camera...');
       if (isRecording && recordingSession) {
+        // This now stops camera immediately and uploads in background
         await stopRecording();
       }
 
-      // Step 2: Prepare answers
+      // Step 2: Prepare answers (quick operation)
       setSubmissionStep('Finalizing your answers...');
       const finalAnswersPayload = userAnswers.reduce(
         (acc, ans) => {
@@ -134,8 +136,8 @@ export default function TestTakingPage() {
       setSubmissionStep('Processing results...');
       localStorage.removeItem(`test-progress-${attemptId}`);
 
-      // Small delay to show the final step
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Minimal delay - camera is already stopped
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       router.push(`/test/results/${attemptId}`);
     } catch (e) {
@@ -333,46 +335,92 @@ export default function TestTakingPage() {
 
   // Show submission screen when submitting
   if (isSubmitting) {
+    // Dynamic progress based on current step
+    const getProgressWidth = () => {
+      switch (submissionStep) {
+        case 'Preparing submission...':
+          return '20%';
+        case 'Stopping camera...':
+          return '40%';
+        case 'Finalizing your answers...':
+          return '60%';
+        case 'Submitting your test...':
+          return '80%';
+        case 'Processing results...':
+          return '95%';
+        default:
+          return '20%';
+      }
+    };
+
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4">
         <div className="max-w-md rounded-lg bg-white p-8 text-center shadow-md">
           <div className="mb-6">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
-              <svg
-                className="h-8 w-8 animate-spin text-blue-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
+              {submissionStep === 'Stopping camera...' ? (
+                // Camera icon when stopping camera
+                <svg
+                  className="h-8 w-8 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 3l18 18"
+                  />
+                </svg>
+              ) : (
+                // Spinning icon for other steps
+                <svg
+                  className="h-8 w-8 animate-spin text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+              )}
             </div>
             <h1 className="mb-2 text-2xl font-bold text-gray-800">
               Completing Your Test
             </h1>
             <p className="mb-4 text-gray-600">
-              Please wait while we process your submission...
+              {submissionStep === 'Stopping camera...'
+                ? 'Camera stopped - processing your submission...'
+                : 'Please wait while we process your submission...'}
             </p>
             <div className="text-sm font-medium text-blue-600">
               {submissionStep}
             </div>
           </div>
 
-          {/* Progress bar */}
+          {/* Dynamic progress bar */}
           <div className="mb-4 h-2 w-full rounded-full bg-gray-200">
             <div
-              className="h-2 animate-pulse rounded-full bg-blue-600"
-              style={{ width: '75%' }}
+              className="h-2 rounded-full bg-blue-600 transition-all duration-300 ease-out"
+              style={{ width: getProgressWidth() }}
             ></div>
           </div>
 
           <p className="text-xs text-gray-500">
-            Do not close this window or navigate away
+            {submissionStep === 'Stopping camera...'
+              ? 'Camera access released'
+              : 'Do not close this window or navigate away'}
           </p>
         </div>
       </div>

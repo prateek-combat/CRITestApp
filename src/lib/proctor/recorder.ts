@@ -44,13 +44,18 @@ export function useProctoring(attemptId: string) {
   const stop = useCallback(async () => {
     if (session) {
       try {
-        await stopAndUpload(session, attemptId);
+        // PRIORITY FIX: Stop camera immediately, upload in background
+        // Step 1: Immediately stop camera and recording
         destroyRecording(session);
         setSession(null);
         setIsRecording(false);
+
+        // Step 2: Upload frames in background (non-blocking)
+        // Don't await this - let it happen in background
+        uploadFramesInBackground(session, attemptId);
       } catch (error) {
         proctorLogger.error(
-          'Failed to stop and upload proctoring session',
+          'Failed to stop proctoring session',
           { attemptId },
           error as Error
         );
@@ -386,29 +391,133 @@ export async function stopAndUpload(
   }
 }
 
+// PRIORITY FIX: Non-blocking background frame upload
+export function uploadFramesInBackground(
+  session: RecordingSession,
+  attemptId: string
+): void {
+  // Create a copy of frames to avoid memory issues after session is destroyed
+  const framesToUpload = [...session.capturedFrames];
+
+  if (framesToUpload.length === 0) {
+    proctorLogger.warn('No frames captured to upload', {
+      operation: 'background_upload_frames',
+      attemptId,
+    });
+    return;
+  }
+
+  // Upload in background without blocking
+  (async () => {
+    try {
+      const batchSize = 10;
+      const totalBatches = Math.ceil(framesToUpload.length / batchSize);
+
+      proctorLogger.info('Starting background frame upload', {
+        operation: 'background_upload_start',
+        attemptId,
+        totalFrames: framesToUpload.length,
+        totalBatches,
+      });
+
+      for (let i = 0; i < totalBatches; i++) {
+        const batchFrames = framesToUpload.slice(
+          i * batchSize,
+          (i + 1) * batchSize
+        );
+
+        const formData = new FormData();
+        formData.append('attemptId', attemptId);
+        formData.append('batchIndex', i.toString());
+        formData.append('totalBatches', totalBatches.toString());
+
+        batchFrames.forEach((frame, index) => {
+          const globalFrameIndex = i * batchSize + index;
+          formData.append(
+            `frame_${globalFrameIndex}`,
+            frame,
+            `frame_${globalFrameIndex}.jpg`
+          );
+        });
+
+        const response = await fetch('/api/proctor/upload-frames', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `Failed to upload batch ${i + 1}: ${response.statusText}`
+          );
+        }
+
+        proctorLogger.info(
+          `Background upload batch ${i + 1}/${totalBatches} completed`,
+          {
+            operation: 'background_upload_batch',
+            attemptId,
+            batchIndex: i + 1,
+            totalBatches,
+          }
+        );
+      }
+
+      proctorLogger.info('Background frame upload completed successfully', {
+        operation: 'background_upload_complete',
+        attemptId,
+        totalFrames: framesToUpload.length,
+      });
+    } catch (error) {
+      proctorLogger.error(
+        'Background frame upload failed',
+        {
+          operation: 'background_upload_frames',
+          attemptId,
+          totalFrames: framesToUpload.length,
+        },
+        error as Error
+      );
+      // Don't throw - this is background operation
+    }
+  })();
+}
+
 export function destroyRecording(session: RecordingSession): void {
   try {
-    // Stop recording flag
+    // PRIORITY FIX: Stop camera immediately and aggressively
+    // Step 1: Stop recording flag first
     session.isRecording = false;
 
-    // Clear the frame capture interval
+    // Step 2: Clear the frame capture interval immediately
     if (session.intervalId) {
       clearInterval(session.intervalId);
     }
 
-    // Stop all tracks in the media stream
+    // Step 3: Stop all tracks in the media stream IMMEDIATELY
     if (session.stream) {
       const tracks = session.stream.getTracks();
 
-      tracks.forEach((track, index) => {
+      tracks.forEach((track) => {
         if (track.readyState === 'live') {
           track.stop();
         }
       });
+
+      // Additional cleanup - remove all tracks from stream
+      tracks.forEach((track) => {
+        session.stream.removeTrack(track);
+      });
     }
 
-    // Clear captured frames from memory
-    session.capturedFrames.length = 0;
+    // Step 4: Clear captured frames from memory (but keep copy for background upload)
+    // Don't clear here since background upload needs them
+    // session.capturedFrames.length = 0;
+
+    proctorLogger.info('Recording session destroyed immediately', {
+      operation: 'destroy_recording_immediate',
+      streamWasActive: session.stream?.active || false,
+      capturedFramesCount: session.capturedFrames.length,
+    });
   } catch (error) {
     proctorLogger.error(
       'Failed to destroy recording session',
