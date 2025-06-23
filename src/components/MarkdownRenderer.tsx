@@ -34,7 +34,6 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         </code>
       );
     },
-    pre: ({ node, ...props }: any) => <div {...props} />,
   };
 
   return (

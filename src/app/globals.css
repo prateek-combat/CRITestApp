@@ -6,6 +6,7 @@
 /* Custom Markdown Renderer Styles                 */
 /* =============================================== */
 .rendered-markdown-content {
+  font-size: 0.9rem;
   line-height: 1.7;
   color: inherit;
   font-weight: 400;
@@ -78,6 +79,7 @@
   overflow: hidden !important;
   background-color: #f8f9fa !important;
   border: 1px solid #e5e7eb;
+  white-space: pre;
 }
 
 .rendered-markdown-content pre > div {
