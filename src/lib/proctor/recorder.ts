@@ -29,7 +29,9 @@ export function useProctoring(attemptId: string) {
         { attemptId },
         error as Error
       );
-      // Optionally, set an error state to show in the UI
+      // Set recording to false and don't throw - allow test to continue without recording
+      setIsRecording(false);
+      setSession(null);
     }
   }, [attemptId]);
 
@@ -100,9 +102,26 @@ export async function startRecording(): Promise<RecordingSession> {
     video.muted = true;
     video.playsInline = true;
 
+    // Small delay to ensure stream is fully ready
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     // Wait for video to be ready before starting capture
     await new Promise<void>((resolve, reject) => {
-      video.onloadedmetadata = () => resolve();
+      video.onloadedmetadata = () => {
+        // Additional check to ensure video dimensions are available
+        if (video.videoWidth > 0 && video.videoHeight > 0) {
+          resolve();
+        } else {
+          // Wait a bit more for dimensions to be available
+          setTimeout(() => {
+            if (video.videoWidth > 0 && video.videoHeight > 0) {
+              resolve();
+            } else {
+              reject(new Error('Video dimensions not available'));
+            }
+          }, 500);
+        }
+      };
       video.onerror = (error) => {
         proctorLogger.error(
           'Video error during metadata load',
@@ -117,10 +136,10 @@ export async function startRecording(): Promise<RecordingSession> {
         );
         reject(new Error('Video failed to load metadata'));
       };
-      // Add timeout to prevent hanging
+      // Add timeout to prevent hanging - increased timeout for slower systems
       setTimeout(() => {
         reject(new Error('Video metadata load timeout'));
-      }, 10000);
+      }, 15000);
     });
 
     await video.play();
