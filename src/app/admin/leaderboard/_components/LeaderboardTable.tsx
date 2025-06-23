@@ -76,21 +76,44 @@ const SortButton = ({
   const isActive = currentSort === column;
   const nextOrder = isActive && currentOrder === 'asc' ? 'desc' : 'asc';
 
+  // Map column names to display labels
+  const getColumnLabel = (col: string): string => {
+    const labels: Record<string, string> = {
+      rank: 'Rank',
+      candidateName: 'Name',
+      composite: 'Score',
+      percentile: 'Percentile',
+      scoreLogical: 'Logical',
+      scoreVerbal: 'Verbal',
+      scoreNumerical: 'Numerical',
+      scoreAttention: 'Attention',
+      scoreOther: 'Other',
+      completedAt: 'Date',
+    };
+    return labels[col] || col.charAt(0).toUpperCase() + col.slice(1);
+  };
+
   return (
     <button
       onClick={() => onSort(column, nextOrder)}
-      className="flex items-center space-x-1 transition-colors hover:text-blue-600"
+      className="group -mx-2 -my-1 flex items-center space-x-1 rounded-md px-2 py-1 transition-all duration-200 hover:bg-blue-50 hover:text-blue-600"
+      title={`Sort by ${getColumnLabel(column)} (${isActive ? (currentOrder === 'asc' ? 'ascending' : 'descending') : 'click to sort'})`}
     >
-      <span>{column.charAt(0).toUpperCase() + column.slice(1)}</span>
-      {isActive ? (
-        currentOrder === 'asc' ? (
-          <ChevronUp className="h-4 w-4" />
+      <span className="font-medium">{getColumnLabel(column)}</span>
+      <div className="flex flex-col">
+        {isActive ? (
+          currentOrder === 'asc' ? (
+            <ChevronUp className="h-4 w-4 text-blue-600" />
+          ) : (
+            <ChevronDown className="h-4 w-4 text-blue-600" />
+          )
         ) : (
-          <ChevronDown className="h-4 w-4" />
-        )
-      ) : (
-        <ChevronUp className="h-4 w-4 opacity-30" />
-      )}
+          <div className="flex flex-col opacity-30 transition-opacity group-hover:opacity-60">
+            <ChevronUp className="-mb-1 h-3 w-3" />
+            <ChevronDown className="h-3 w-3" />
+          </div>
+        )}
+      </div>
     </button>
   );
 };
@@ -182,20 +205,53 @@ export default function LeaderboardTable({
                   onSort={onSort}
                 />
               </th>
-              <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Logical
+              <th className="px-3 py-2 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                <SortButton
+                  column="percentile"
+                  currentSort={data.filters.sortBy}
+                  currentOrder={data.filters.sortOrder}
+                  onSort={onSort}
+                />
               </th>
               <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Verbal
+                <SortButton
+                  column="scoreLogical"
+                  currentSort={data.filters.sortBy}
+                  currentOrder={data.filters.sortOrder}
+                  onSort={onSort}
+                />
               </th>
               <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Numerical
+                <SortButton
+                  column="scoreVerbal"
+                  currentSort={data.filters.sortBy}
+                  currentOrder={data.filters.sortOrder}
+                  onSort={onSort}
+                />
               </th>
               <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Attention
+                <SortButton
+                  column="scoreNumerical"
+                  currentSort={data.filters.sortBy}
+                  currentOrder={data.filters.sortOrder}
+                  onSort={onSort}
+                />
               </th>
               <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Other
+                <SortButton
+                  column="scoreAttention"
+                  currentSort={data.filters.sortBy}
+                  currentOrder={data.filters.sortOrder}
+                  onSort={onSort}
+                />
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <SortButton
+                  column="scoreOther"
+                  currentSort={data.filters.sortBy}
+                  currentOrder={data.filters.sortOrder}
+                  onSort={onSort}
+                />
               </th>
               <th className="px-3 py-2 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
                 <SortButton
@@ -234,12 +290,6 @@ export default function LeaderboardTable({
                     <div className="text-xs text-gray-500">
                       {candidate.candidateEmail}
                     </div>
-                    <div className="text-xs text-gray-400">
-                      {candidate.percentile !== null &&
-                      candidate.percentile !== undefined
-                        ? `${candidate.percentile.toFixed(1)}th percentile`
-                        : 'N/A'}
-                    </div>
                   </div>
                 </td>
 
@@ -251,6 +301,16 @@ export default function LeaderboardTable({
                       : 'N/A'}
                   </div>
                   <div className="text-xs text-gray-500">Score</div>
+                </td>
+
+                <td className="whitespace-nowrap px-3 py-2 text-center">
+                  <div className="text-sm font-bold text-gray-900">
+                    {candidate.percentile !== null &&
+                    candidate.percentile !== undefined
+                      ? `${candidate.percentile.toFixed(1)}th`
+                      : 'N/A'}
+                  </div>
+                  <div className="text-xs text-gray-500">Percentile</div>
                 </td>
 
                 <td className="whitespace-nowrap px-3 py-2">

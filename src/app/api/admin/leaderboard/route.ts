@@ -76,11 +76,24 @@ export async function GET(request: NextRequest) {
       [sortBy === 'composite' ? 'rawScore' : sortBy]: sortOrder,
     };
 
+    // For calculated fields, we'll sort after fetching data
+    const isCalculatedField = [
+      'scoreLogical',
+      'scoreVerbal',
+      'scoreNumerical',
+      'scoreAttention',
+      'scoreOther',
+      'rank',
+    ].includes(sortBy);
+
+    // Use default sorting for database fields, or no sorting for calculated fields
+    const dbOrderBy = isCalculatedField ? { rawScore: 'desc' } : orderBy;
+
     // Fetch both regular and public attempts
     const [regularAttempts, publicAttempts] = await Promise.all([
       prisma.testAttempt.findMany({
         where: regularWhere,
-        orderBy,
+        orderBy: dbOrderBy,
         select: {
           id: true,
           invitationId: true,
@@ -100,7 +113,7 @@ export async function GET(request: NextRequest) {
       }),
       prisma.publicTestAttempt.findMany({
         where: publicWhere,
-        orderBy,
+        orderBy: dbOrderBy,
         select: {
           id: true,
           candidateName: true,
@@ -139,28 +152,8 @@ export async function GET(request: NextRequest) {
       })),
     ];
 
-    // Sort combined results
-    allAttempts.sort((a, b) => {
-      const aValue =
-        sortBy === 'composite' ? a.rawScore || 0 : a[sortBy as keyof typeof a];
-      const bValue =
-        sortBy === 'composite' ? b.rawScore || 0 : b[sortBy as keyof typeof b];
-
-      if (sortOrder === 'desc') {
-        return (bValue as number) - (aValue as number);
-      } else {
-        return (aValue as number) - (bValue as number);
-      }
-    });
-
-    // Apply pagination
-    const total = allAttempts.length;
-    const paginatedAttempts = allAttempts.slice(
-      (page - 1) * pageSize,
-      page * pageSize
-    );
-
-    const leaderboardData = paginatedAttempts.map((attempt, index) => {
+    // Calculate scores for all attempts first
+    const processedAttempts = allAttempts.map((attempt, index) => {
       const categoryScores: Record<
         string,
         { correct: number; total: number; percentage: number }
@@ -185,6 +178,93 @@ export async function GET(request: NextRequest) {
       });
 
       return {
+        ...attempt,
+        scoreLogical: categoryScores['LOGICAL']?.percentage || 0,
+        scoreVerbal: categoryScores['VERBAL']?.percentage || 0,
+        scoreNumerical: categoryScores['NUMERICAL']?.percentage || 0,
+        scoreAttention: categoryScores['ATTENTION_TO_DETAIL']?.percentage || 0,
+        scoreOther: categoryScores['OTHER']?.percentage || 0,
+        composite: attempt.rawScore || 0,
+        percentile: attempt.percentile || 0,
+      };
+    });
+
+    // Sort processed results by the requested field
+    processedAttempts.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortBy) {
+        case 'rank':
+          // For rank, sort by composite score (descending = rank 1 is highest score)
+          aValue = a.composite;
+          bValue = b.composite;
+          // Reverse the sort order for rank (higher score = lower rank number)
+          return sortOrder === 'asc' ? bValue - aValue : aValue - bValue;
+        case 'composite':
+          aValue = a.composite;
+          bValue = b.composite;
+          break;
+        case 'scoreLogical':
+          aValue = a.scoreLogical;
+          bValue = b.scoreLogical;
+          break;
+        case 'scoreVerbal':
+          aValue = a.scoreVerbal;
+          bValue = b.scoreVerbal;
+          break;
+        case 'scoreNumerical':
+          aValue = a.scoreNumerical;
+          bValue = b.scoreNumerical;
+          break;
+        case 'scoreAttention':
+          aValue = a.scoreAttention;
+          bValue = b.scoreAttention;
+          break;
+        case 'scoreOther':
+          aValue = a.scoreOther;
+          bValue = b.scoreOther;
+          break;
+        case 'percentile':
+          aValue = a.percentile;
+          bValue = b.percentile;
+          break;
+        case 'candidateName':
+          aValue = a.candidateName?.toLowerCase() || '';
+          bValue = b.candidateName?.toLowerCase() || '';
+          break;
+        case 'completedAt':
+          aValue = new Date(a.completedAt || 0).getTime();
+          bValue = new Date(b.completedAt || 0).getTime();
+          break;
+        default:
+          aValue = a[sortBy as keyof typeof a] || 0;
+          bValue = b[sortBy as keyof typeof b] || 0;
+      }
+
+      // Handle string vs number comparison (skip for rank since it's handled above)
+      if (sortBy === 'rank') {
+        return 0; // Already handled above
+      } else if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortOrder === 'desc'
+          ? bValue.localeCompare(aValue)
+          : aValue.localeCompare(bValue);
+      } else {
+        const numA = Number(aValue) || 0;
+        const numB = Number(bValue) || 0;
+        return sortOrder === 'desc' ? numB - numA : numA - numB;
+      }
+    });
+
+    // Apply pagination
+    const total = processedAttempts.length;
+    const paginatedAttempts = processedAttempts.slice(
+      (page - 1) * pageSize,
+      page * pageSize
+    );
+
+    const leaderboardData = paginatedAttempts.map((attempt, index) => {
+      return {
         attemptId: attempt.id,
         invitationId: attempt.invitationId,
         candidateName: attempt.candidateName || 'Unknown',
@@ -197,13 +277,13 @@ export async function GET(request: NextRequest) {
                   1000
               )
             : 0,
-        scoreLogical: categoryScores['LOGICAL']?.percentage || 0,
-        scoreVerbal: categoryScores['VERBAL']?.percentage || 0,
-        scoreNumerical: categoryScores['NUMERICAL']?.percentage || 0,
-        scoreAttention: categoryScores['ATTENTION_TO_DETAIL']?.percentage || 0,
-        scoreOther: categoryScores['OTHER']?.percentage || 0,
-        composite: attempt.rawScore || 0,
-        percentile: attempt.percentile || 0,
+        scoreLogical: attempt.scoreLogical,
+        scoreVerbal: attempt.scoreVerbal,
+        scoreNumerical: attempt.scoreNumerical,
+        scoreAttention: attempt.scoreAttention,
+        scoreOther: attempt.scoreOther,
+        composite: attempt.composite,
+        percentile: attempt.percentile,
         rank: index + 1 + (page - 1) * pageSize,
         type: attempt.type, // Add type to distinguish regular vs public
       };
