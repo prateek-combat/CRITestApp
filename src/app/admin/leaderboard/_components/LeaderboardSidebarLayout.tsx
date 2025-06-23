@@ -79,45 +79,15 @@ export default function LeaderboardSidebarLayout({
   // Use useSearchParams to get current URL search params
   const urlSearchParams = useSearchParams();
 
-  // Memoize searchParams to prevent infinite re-renders
-  const searchParams = useMemo(
-    () => ({
-      testId:
-        urlSearchParams.get('testId') || searchParamsProp.testId || undefined,
-      page: urlSearchParams.get('page') || searchParamsProp.page || undefined,
-      pageSize:
-        urlSearchParams.get('pageSize') ||
-        searchParamsProp.pageSize ||
-        undefined,
-      dateFrom:
-        urlSearchParams.get('dateFrom') ||
-        searchParamsProp.dateFrom ||
-        undefined,
-      dateTo:
-        urlSearchParams.get('dateTo') || searchParamsProp.dateTo || undefined,
-      invitationId:
-        urlSearchParams.get('invitationId') ||
-        searchParamsProp.invitationId ||
-        undefined,
-      search:
-        urlSearchParams.get('search') || searchParamsProp.search || undefined,
-      sortBy:
-        urlSearchParams.get('sortBy') || searchParamsProp.sortBy || undefined,
-      sortOrder:
-        urlSearchParams.get('sortOrder') ||
-        searchParamsProp.sortOrder ||
-        undefined,
-    }),
-    [urlSearchParams, searchParamsProp]
-  );
-
   const [tests, setTests] = useState<Test[]>([]);
   const [selectedTestId, setSelectedTestId] = useState<string>('');
   const [data, setData] = useState<LeaderboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingTests, setIsLoadingTests] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [localSearch, setLocalSearch] = useState(searchParams.search || '');
+  const [localSearch, setLocalSearch] = useState(
+    urlSearchParams.get('search') || searchParamsProp.search || ''
+  );
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const router = useRouter();
 
@@ -131,8 +101,10 @@ export default function LeaderboardSidebarLayout({
         setTests(testsData);
 
         // Set default selected test to the latest test or from searchParams
-        if (searchParams.testId) {
-          setSelectedTestId(searchParams.testId);
+        const testIdFromParams =
+          urlSearchParams.get('testId') || searchParamsProp.testId;
+        if (testIdFromParams) {
+          setSelectedTestId(testIdFromParams);
         } else if (testsData.length > 0) {
           // Sort by createdAt and select the latest
           const sortedTests = testsData.sort(
@@ -147,8 +119,7 @@ export default function LeaderboardSidebarLayout({
     } finally {
       setIsLoadingTests(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams.testId]);
+  }, [urlSearchParams.get('testId'), searchParamsProp.testId]);
 
   // Fetch leaderboard data
   const fetchLeaderboardData = useCallback(async () => {
@@ -162,8 +133,21 @@ export default function LeaderboardSidebarLayout({
       // Always include the selected test ID
       params.set('testId', selectedTestId);
 
-      // Add other search params
-      Object.entries(searchParams).forEach(([key, value]) => {
+      // Add other search params using individual values instead of the object
+      const currentSearchParams = {
+        page: urlSearchParams.get('page') || searchParamsProp.page,
+        pageSize: urlSearchParams.get('pageSize') || searchParamsProp.pageSize,
+        dateFrom: urlSearchParams.get('dateFrom') || searchParamsProp.dateFrom,
+        dateTo: urlSearchParams.get('dateTo') || searchParamsProp.dateTo,
+        invitationId:
+          urlSearchParams.get('invitationId') || searchParamsProp.invitationId,
+        search: urlSearchParams.get('search') || searchParamsProp.search,
+        sortBy: urlSearchParams.get('sortBy') || searchParamsProp.sortBy,
+        sortOrder:
+          urlSearchParams.get('sortOrder') || searchParamsProp.sortOrder,
+      };
+
+      Object.entries(currentSearchParams).forEach(([key, value]) => {
         if (value && key !== 'testId') {
           params.set(key, value);
         }
@@ -181,7 +165,25 @@ export default function LeaderboardSidebarLayout({
     } finally {
       setIsLoading(false);
     }
-  }, [selectedTestId, searchParams]);
+  }, [
+    selectedTestId,
+    urlSearchParams.get('page'),
+    urlSearchParams.get('pageSize'),
+    urlSearchParams.get('dateFrom'),
+    urlSearchParams.get('dateTo'),
+    urlSearchParams.get('invitationId'),
+    urlSearchParams.get('search'),
+    urlSearchParams.get('sortBy'),
+    urlSearchParams.get('sortOrder'),
+    searchParamsProp.page,
+    searchParamsProp.pageSize,
+    searchParamsProp.dateFrom,
+    searchParamsProp.dateTo,
+    searchParamsProp.invitationId,
+    searchParamsProp.search,
+    searchParamsProp.sortBy,
+    searchParamsProp.sortOrder,
+  ]);
 
   useEffect(() => {
     fetchTests();
@@ -200,7 +202,18 @@ export default function LeaderboardSidebarLayout({
     params.set('testId', testId);
 
     // Keep other existing params except page (reset to 1)
-    Object.entries(searchParams).forEach(([key, value]) => {
+    const currentParams = {
+      pageSize: urlSearchParams.get('pageSize') || searchParamsProp.pageSize,
+      dateFrom: urlSearchParams.get('dateFrom') || searchParamsProp.dateFrom,
+      dateTo: urlSearchParams.get('dateTo') || searchParamsProp.dateTo,
+      invitationId:
+        urlSearchParams.get('invitationId') || searchParamsProp.invitationId,
+      search: urlSearchParams.get('search') || searchParamsProp.search,
+      sortBy: urlSearchParams.get('sortBy') || searchParamsProp.sortBy,
+      sortOrder: urlSearchParams.get('sortOrder') || searchParamsProp.sortOrder,
+    };
+
+    Object.entries(currentParams).forEach(([key, value]) => {
       if (value && key !== 'testId' && key !== 'page') {
         params.set(key, value);
       }
@@ -221,7 +234,19 @@ export default function LeaderboardSidebarLayout({
     }
 
     // Merge current search params with new filters
-    Object.entries({ ...searchParams, ...newFilters }).forEach(
+    const currentParams = {
+      page: urlSearchParams.get('page') || searchParamsProp.page,
+      pageSize: urlSearchParams.get('pageSize') || searchParamsProp.pageSize,
+      dateFrom: urlSearchParams.get('dateFrom') || searchParamsProp.dateFrom,
+      dateTo: urlSearchParams.get('dateTo') || searchParamsProp.dateTo,
+      invitationId:
+        urlSearchParams.get('invitationId') || searchParamsProp.invitationId,
+      search: urlSearchParams.get('search') || searchParamsProp.search,
+      sortBy: urlSearchParams.get('sortBy') || searchParamsProp.sortBy,
+      sortOrder: urlSearchParams.get('sortOrder') || searchParamsProp.sortOrder,
+    };
+
+    Object.entries({ ...currentParams, ...newFilters }).forEach(
       ([key, value]) => {
         if (value && value !== '' && key !== 'testId') {
           params.set(key, value);
@@ -257,10 +282,14 @@ export default function LeaderboardSidebarLayout({
   };
 
   const hasActiveFilters =
-    searchParams.search ||
-    searchParams.dateFrom ||
-    searchParams.dateTo ||
-    searchParams.invitationId;
+    urlSearchParams.get('search') ||
+    searchParamsProp.search ||
+    urlSearchParams.get('dateFrom') ||
+    searchParamsProp.dateFrom ||
+    urlSearchParams.get('dateTo') ||
+    searchParamsProp.dateTo ||
+    urlSearchParams.get('invitationId') ||
+    searchParamsProp.invitationId;
 
   const selectedTest = tests.find((test) => test.id === selectedTestId);
 
@@ -408,7 +437,11 @@ export default function LeaderboardSidebarLayout({
                       <input
                         type="date"
                         id="dateFrom"
-                        value={searchParams.dateFrom || ''}
+                        value={
+                          urlSearchParams.get('dateFrom') ||
+                          searchParamsProp.dateFrom ||
+                          ''
+                        }
                         onChange={(e) =>
                           handleFilterChange({
                             dateFrom: e.target.value || undefined,
@@ -430,7 +463,11 @@ export default function LeaderboardSidebarLayout({
                       <input
                         type="date"
                         id="dateTo"
-                        value={searchParams.dateTo || ''}
+                        value={
+                          urlSearchParams.get('dateTo') ||
+                          searchParamsProp.dateTo ||
+                          ''
+                        }
                         onChange={(e) =>
                           handleFilterChange({
                             dateTo: e.target.value || undefined,
