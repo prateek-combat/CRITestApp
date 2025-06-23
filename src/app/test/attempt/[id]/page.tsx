@@ -458,20 +458,10 @@ export default function TestTakingPage({
 
                         {/* Option Content */}
                         <div className="min-w-0 flex-1">
-                          <div
-                            className={`font-medium leading-relaxed transition-colors ${
-                              isSelected
-                                ? 'text-blue-900'
-                                : 'text-gray-800 group-hover:text-gray-900'
-                            }`}
-                          >
+                          <div className="font-medium leading-relaxed transition-colors">
                             <MarkdownRenderer
                               content={option}
-                              className={`${
-                                isSelected
-                                  ? 'text-blue-900'
-                                  : 'text-gray-800 group-hover:text-gray-900'
-                              }`}
+                              className="markdown-answer-option"
                             />
                           </div>
                         </div>

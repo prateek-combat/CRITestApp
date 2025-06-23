@@ -682,4 +682,55 @@
   font-weight: 600 !important;
 }
 
+/* Markdown rendering in answer options */
+.markdown-answer-option .prose {
+  color: inherit !important;
+}
+
+.markdown-answer-option .prose * {
+  color: inherit !important;
+}
+
+.markdown-answer-option .prose pre {
+  background-color: #f6f8fa !important;
+  border: 1px solid #e1e4e8 !important;
+  border-radius: 6px !important;
+  padding: 12px !important;
+  margin: 8px 0 !important;
+  font-size: 0.875rem !important;
+  overflow-x: auto !important;
+}
+
+.markdown-answer-option .prose code {
+  background-color: #f6f8fa !important;
+  border: 1px solid #e1e4e8 !important;
+  border-radius: 3px !important;
+  padding: 2px 4px !important;
+  font-size: 0.875rem !important;
+  font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace !important;
+}
+
+.markdown-answer-option .prose table {
+  border-collapse: collapse !important;
+  margin: 8px 0 !important;
+  width: 100% !important;
+  font-size: 0.875rem !important;
+}
+
+.markdown-answer-option .prose table th,
+.markdown-answer-option .prose table td {
+  border: 1px solid #d0d7de !important;
+  padding: 6px 8px !important;
+  text-align: left !important;
+}
+
+.markdown-answer-option .prose table th {
+  background-color: #f6f8fa !important;
+  font-weight: 600 !important;
+}
+
+.markdown-answer-option .prose strong {
+  font-weight: 600 !important;
+}
+
 /* VS Code style scrollbar */
