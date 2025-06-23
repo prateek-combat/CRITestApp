@@ -1,9 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { ArrowLeft, ArrowRight, Clock, Eye, AlertCircle } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Clock,
+  Eye,
+  AlertCircle,
+  X,
+} from 'lucide-react';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 
 interface Question {
@@ -23,13 +30,22 @@ interface Test {
   questions: Question[];
 }
 
+interface PreviewData {
+  test: Test;
+  isPreview: boolean;
+  previewUser: {
+    name: string;
+    email: string;
+  };
+}
+
 export default function TestPreviewPage() {
   const { data: session } = useSession();
   const router = useRouter();
-  const params = useParams();
-  const testId = params.id as string;
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token');
 
-  const [test, setTest] = useState<Test | null>(null);
+  const [previewData, setPreviewData] = useState<PreviewData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -40,34 +56,41 @@ export default function TestPreviewPage() {
     {}
   );
 
-  // Fetch test data
-  const fetchTest = useCallback(async () => {
+  // Fetch preview data
+  const fetchPreviewData = useCallback(async () => {
+    if (!token) {
+      setError('No preview token provided');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-      const response = await fetch(`/api/tests/${testId}`);
+      const response = await fetch(`/api/admin/preview?token=${token}`);
       if (!response.ok) {
-        throw new Error('Failed to fetch test');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to load preview');
       }
       const data = await response.json();
-      setTest(data);
-      if (data.questions.length > 0) {
-        setTimeLeft(data.questions[0].timerSeconds || 30);
+      setPreviewData(data);
+      if (data.test.questions.length > 0) {
+        setTimeLeft(data.test.questions[0].timerSeconds || 30);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load test');
+      setError(err instanceof Error ? err.message : 'Failed to load preview');
     } finally {
       setLoading(false);
     }
-  }, [testId]);
+  }, [token]);
 
   useEffect(() => {
-    fetchTest();
-  }, [fetchTest]);
+    fetchPreviewData();
+  }, [fetchPreviewData]);
 
   // Timer effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (isTimerRunning && timeLeft > 0) {
+    if (isTimerRunning && timeLeft > 0 && previewData?.test) {
       interval = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
@@ -80,18 +103,18 @@ export default function TestPreviewPage() {
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isTimerRunning, timeLeft]);
+  }, [isTimerRunning, timeLeft, previewData]);
 
   const handleAnswerSelect = (answerIndex: number) => {
     setSelectedAnswer(answerIndex);
   };
 
   const handleNextQuestion = () => {
-    if (!test) return;
+    if (!previewData?.test) return;
 
     // Save the answer if one was selected
     if (selectedAnswer !== null) {
-      const currentQuestion = test.questions[currentQuestionIndex];
+      const currentQuestion = previewData.test.questions[currentQuestionIndex];
       setPreviewAnswers((prev) => ({
         ...prev,
         [currentQuestion.id]: selectedAnswer,
@@ -99,22 +122,26 @@ export default function TestPreviewPage() {
     }
 
     // Move to next question
-    if (currentQuestionIndex < test.questions.length - 1) {
+    if (currentQuestionIndex < previewData.test.questions.length - 1) {
       const nextIndex = currentQuestionIndex + 1;
       setCurrentQuestionIndex(nextIndex);
-      setSelectedAnswer(previewAnswers[test.questions[nextIndex].id] ?? null);
-      setTimeLeft(test.questions[nextIndex].timerSeconds || 30);
+      setSelectedAnswer(
+        previewAnswers[previewData.test.questions[nextIndex].id] ?? null
+      );
+      setTimeLeft(previewData.test.questions[nextIndex].timerSeconds || 30);
       setIsTimerRunning(false);
     }
   };
 
   const handlePreviousQuestion = () => {
-    if (!test || currentQuestionIndex <= 0) return;
+    if (!previewData?.test || currentQuestionIndex <= 0) return;
 
     const prevIndex = currentQuestionIndex - 1;
     setCurrentQuestionIndex(prevIndex);
-    setSelectedAnswer(previewAnswers[test.questions[prevIndex].id] ?? null);
-    setTimeLeft(test.questions[prevIndex].timerSeconds || 30);
+    setSelectedAnswer(
+      previewAnswers[previewData.test.questions[prevIndex].id] ?? null
+    );
+    setTimeLeft(previewData.test.questions[prevIndex].timerSeconds || 30);
     setIsTimerRunning(false);
   };
 
@@ -127,8 +154,10 @@ export default function TestPreviewPage() {
   };
 
   const resetTimer = () => {
-    if (test && test.questions[currentQuestionIndex]) {
-      setTimeLeft(test.questions[currentQuestionIndex].timerSeconds || 30);
+    if (previewData?.test && previewData.test.questions[currentQuestionIndex]) {
+      setTimeLeft(
+        previewData.test.questions[currentQuestionIndex].timerSeconds || 30
+      );
       setIsTimerRunning(false);
     }
   };
@@ -156,21 +185,25 @@ export default function TestPreviewPage() {
         <div className="text-center">
           <div className="mb-4 text-6xl text-red-500">⚠️</div>
           <h2 className="mb-2 text-xl font-semibold text-gray-900">
-            Error Loading Test
+            Preview Error
           </h2>
           <p className="mb-4 text-gray-600">{error}</p>
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push('/admin/tests')}
             className="rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
           >
-            Go Back
+            Back to Tests
           </button>
         </div>
       </div>
     );
   }
 
-  if (!test || test.questions.length === 0) {
+  if (
+    !previewData ||
+    !previewData.test ||
+    previewData.test.questions.length === 0
+  ) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -182,22 +215,23 @@ export default function TestPreviewPage() {
             This test doesn't have any questions yet.
           </p>
           <button
-            onClick={() => router.back()}
+            onClick={() => router.push('/admin/tests')}
             className="rounded-lg bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
           >
-            Go Back
+            Back to Tests
           </button>
         </div>
       </div>
     );
   }
 
-  const currentQuestion = test.questions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / test.questions.length) * 100;
+  const currentQuestion = previewData.test.questions[currentQuestionIndex];
+  const progress =
+    ((currentQuestionIndex + 1) / previewData.test.questions.length) * 100;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Header */}
+      {/* Header - VS Code Style like the real test */}
       <div className="sticky top-0 z-10 border-b border-gray-700 bg-gray-900">
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
@@ -211,10 +245,11 @@ export default function TestPreviewPage() {
               <div className="flex items-center space-x-3">
                 <Eye className="h-6 w-6 text-blue-400" />
                 <h1 className="text-lg font-semibold text-white">
-                  {test.title} (Preview Mode)
+                  {previewData.test.title}
                 </h1>
                 <span className="rounded bg-blue-600 px-2 py-1 font-mono text-xs text-white">
-                  Q{currentQuestionIndex + 1}/{test.questions.length}
+                  Q{currentQuestionIndex + 1}/
+                  {previewData.test.questions.length}
                 </span>
               </div>
             </div>
@@ -240,9 +275,10 @@ export default function TestPreviewPage() {
                 </button>
               </div>
               <button
-                onClick={() => router.back()}
-                className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
+                onClick={() => router.push('/admin/tests')}
+                className="flex items-center rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
               >
+                <X className="mr-1 h-4 w-4" />
                 Exit Preview
               </button>
             </div>
@@ -266,15 +302,16 @@ export default function TestPreviewPage() {
           <AlertCircle className="h-5 w-5 text-yellow-400" />
           <div className="ml-3">
             <p className="text-sm text-yellow-700">
-              <strong>Preview Mode:</strong> You are viewing this test as it
-              appears to candidates. No data will be saved and this won't affect
-              any statistics.
+              <strong>Preview Mode:</strong> You are viewing this test exactly
+              as candidates see it. No data will be saved and this won't affect
+              any statistics. Previewing as:{' '}
+              <strong>{previewData.previewUser.name}</strong>
             </p>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* Main Content - Exactly like the real test interface */}
       <div className="flex-1 px-6 py-8">
         <div className="mx-auto max-w-4xl">
           <div className="rounded-lg bg-white p-8 shadow-lg">
@@ -352,13 +389,15 @@ export default function TestPreviewPage() {
               </button>
 
               <div className="text-sm text-gray-500">
-                {Object.keys(previewAnswers).length} of {test.questions.length}{' '}
-                answered
+                {Object.keys(previewAnswers).length} of{' '}
+                {previewData.test.questions.length} answered
               </div>
 
               <button
                 onClick={handleNextQuestion}
-                disabled={currentQuestionIndex === test.questions.length - 1}
+                disabled={
+                  currentQuestionIndex === previewData.test.questions.length - 1
+                }
                 className="flex items-center rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:opacity-50 disabled:hover:bg-blue-500"
               >
                 Next

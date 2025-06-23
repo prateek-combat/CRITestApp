@@ -673,17 +673,38 @@ export default function TestsPage() {
                             Edit Test
                           </Link>
 
-                          <Link
-                            href={`/admin/tests/preview/${test.id}`}
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={(e) => {
+                          <button
+                            onClick={async (e) => {
                               e.stopPropagation();
                               setOpenDropdown(null);
+
+                              try {
+                                const response = await fetch(
+                                  `/api/admin/tests/${test.id}/preview`,
+                                  {
+                                    method: 'POST',
+                                  }
+                                );
+
+                                if (response.ok) {
+                                  const data = await response.json();
+                                  window.open(data.previewUrl, '_blank');
+                                } else {
+                                  const error = await response.json();
+                                  alert(
+                                    `Failed to create preview: ${error.error}`
+                                  );
+                                }
+                              } catch (error) {
+                                console.error('Error creating preview:', error);
+                                alert('Failed to create preview link');
+                              }
                             }}
+                            className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           >
                             <Eye className="mr-3 h-4 w-4" />
                             Preview Test
-                          </Link>
+                          </button>
 
                           <button
                             onClick={(e) => {
