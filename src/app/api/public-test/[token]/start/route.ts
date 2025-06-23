@@ -80,17 +80,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     });
 
     if (existingAttempt) {
-      // If test is in progress, return the existing attempt
+      // For public links, we always start fresh - archive any existing attempts
       if (existingAttempt.status === 'IN_PROGRESS') {
-        return NextResponse.json({
-          attemptId: existingAttempt.id,
-          message: 'Continuing existing test attempt',
+        await prisma.publicTestAttempt.update({
+          where: { id: existingAttempt.id },
+          data: {
+            status: 'ARCHIVED',
+            completedAt: new Date(),
+          },
         });
-      } else {
-        return NextResponse.json(
-          { error: 'You have already completed this test' },
-          { status: 409 }
-        );
+      } else if (existingAttempt.status === 'COMPLETED') {
+        // Allow retaking completed tests on public links
+        await prisma.publicTestAttempt.update({
+          where: { id: existingAttempt.id },
+          data: { status: 'ARCHIVED' },
+        });
       }
     }
 

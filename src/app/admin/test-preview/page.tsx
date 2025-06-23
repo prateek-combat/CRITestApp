@@ -212,7 +212,7 @@ export default function TestPreviewPage() {
             No Questions Found
           </h2>
           <p className="mb-4 text-gray-600">
-            This test doesn't have any questions yet.
+            This test doesn&apos;t have any questions yet.
           </p>
           <button
             onClick={() => router.push('/admin/tests')}
@@ -303,8 +303,8 @@ export default function TestPreviewPage() {
           <div className="ml-3">
             <p className="text-sm text-yellow-700">
               <strong>Preview Mode:</strong> You are viewing this test exactly
-              as candidates see it. No data will be saved and this won't affect
-              any statistics. Previewing as:{' '}
+              as candidates see it. No data will be saved and this won&apos;t
+              affect any statistics. Previewing as:{' '}
               <strong>{previewData.previewUser.name}</strong>
             </p>
           </div>

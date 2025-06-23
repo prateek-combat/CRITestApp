@@ -61,12 +61,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     });
 
     if (existingAttempt) {
-      // Check if the attempt can be resumed
-      const canResume = existingAttempt.status === 'IN_PROGRESS';
-
+      // For public links, we always allow fresh starts
+      // Previous attempts will be archived when starting a new test
       return NextResponse.json({
         hasExistingAttempt: true,
-        canResume,
+        canStart: true,
         attempt: {
           id: existingAttempt.id,
           status: existingAttempt.status,
@@ -74,9 +73,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           completedAt: existingAttempt.completedAt,
           candidateName: existingAttempt.candidateName,
         },
-        message: canResume
-          ? 'You have an in-progress test. You can resume from where you left off.'
-          : 'You have already completed this test.',
+        message:
+          existingAttempt.status === 'COMPLETED'
+            ? 'You have previously completed this test. You can take it again.'
+            : 'You have a previous attempt. Starting a fresh attempt.',
       });
     }
 
@@ -93,63 +93,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     console.error('Error checking email for public test:', error);
     return NextResponse.json(
       { error: 'Failed to check email status' },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * Get existing attempt for resume (GET method)
- */
-export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { linkToken } = await params;
-    const url = new URL(request.url);
-    const email = url.searchParams.get('email');
-
-    if (!email) {
-      return NextResponse.json(
-        { error: 'Email parameter is required' },
-        { status: 400 }
-      );
-    }
-
-    // Find the public test link
-    const publicLink = await prisma.publicTestLink.findUnique({
-      where: { linkToken },
-    });
-
-    if (!publicLink) {
-      return NextResponse.json(
-        { error: 'Public test link not found' },
-        { status: 404 }
-      );
-    }
-
-    // Find existing attempt
-    const existingAttempt = await prisma.publicTestAttempt.findFirst({
-      where: {
-        publicLinkId: publicLink.id,
-        candidateEmail: email.trim().toLowerCase(),
-        status: 'IN_PROGRESS',
-      },
-    });
-
-    if (existingAttempt) {
-      return NextResponse.json({
-        attemptId: existingAttempt.id,
-        canResume: true,
-      });
-    }
-
-    return NextResponse.json({
-      canResume: false,
-      message: 'No in-progress attempt found',
-    });
-  } catch (error) {
-    console.error('Error getting resume attempt:', error);
-    return NextResponse.json(
-      { error: 'Failed to get resume attempt' },
       { status: 500 }
     );
   }
