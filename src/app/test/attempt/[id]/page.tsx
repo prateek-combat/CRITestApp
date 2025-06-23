@@ -86,6 +86,69 @@ export default function TestTakingPage() {
     setTestReady(true);
   };
 
+  // Define handleNextQuestion early to avoid dependency issues
+  const handleNextQuestion = useCallback(() => {
+    if (!data) return;
+    const isLastQuestion =
+      currentQuestionIndex === data.test.questions.length - 1;
+    if (isLastQuestion) {
+      // We'll define handleSubmitTest later, so we'll use a ref or move this logic
+      if (!data) return;
+      if (isRecording) {
+        stopRecording();
+      }
+
+      const finalAnswersPayload = userAnswers.reduce(
+        (acc, ans) => {
+          if (ans.questionId && ans.selectedAnswerIndex !== null) {
+            acc[ans.questionId] = { answerIndex: ans.selectedAnswerIndex };
+          }
+          return acc;
+        },
+        {} as Record<string, { answerIndex: number | null }>
+      );
+
+      const submitTest = async () => {
+        try {
+          const res = await fetch(apiEndpoint, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              answers: finalAnswersPayload,
+              status: 'COMPLETED',
+            }),
+          });
+
+          if (!res.ok) {
+            const errorBody = await res.json();
+            throw new Error(errorBody.error || 'Failed to submit test');
+          }
+
+          localStorage.removeItem(`test-progress-${attemptId}`);
+          router.push(`/test/results/${attemptId}`);
+        } catch (e) {
+          console.error(e);
+          alert(
+            'An error occurred while submitting your test. Please try again.'
+          );
+        }
+      };
+
+      submitTest();
+    } else {
+      setCurrentQuestionIndex((prev) => prev + 1);
+    }
+  }, [
+    currentQuestionIndex,
+    data,
+    userAnswers,
+    apiEndpoint,
+    attemptId,
+    router,
+    isRecording,
+    stopRecording,
+  ]);
+
   // Hydrate state from localStorage and initial data
   useEffect(() => {
     if (data) {
@@ -148,16 +211,16 @@ export default function TestTakingPage() {
     }
   }, [currentQuestionIndex, userAnswers, attemptId, hasHydrated, data?.status]);
 
-  // Set timer for the current question
+  // Set timer for the current question - only after test is ready
   useEffect(() => {
-    if (data?.test?.questions[currentQuestionIndex]) {
+    if (testReady && data?.test?.questions[currentQuestionIndex]) {
       setTimeLeft(data.test.questions[currentQuestionIndex].timerSeconds);
     }
-  }, [currentQuestionIndex, data]);
+  }, [currentQuestionIndex, data, testReady]);
 
-  // Countdown timer effect
+  // Countdown timer effect - only when test is ready
   useEffect(() => {
-    if (timeLeft === null) return;
+    if (!testReady || timeLeft === null) return;
 
     if (timeLeft <= 0) {
       handleNextQuestion();
@@ -167,7 +230,7 @@ export default function TestTakingPage() {
       setTimeLeft((prevTime) => (prevTime !== null ? prevTime - 1 : null));
     }, 1000);
     return () => clearInterval(timerId);
-  }, [timeLeft]);
+  }, [timeLeft, testReady, handleNextQuestion]);
 
   // Start/Stop proctoring
   useEffect(() => {
@@ -191,65 +254,6 @@ export default function TestTakingPage() {
       )
     );
   };
-
-  const handleSubmitTest = useCallback(async () => {
-    if (!data) return;
-    if (isRecording) {
-      await stopRecording();
-    }
-
-    const finalAnswersPayload = userAnswers.reduce(
-      (acc, ans) => {
-        if (ans.questionId && ans.selectedAnswerIndex !== null) {
-          acc[ans.questionId] = { answerIndex: ans.selectedAnswerIndex };
-        }
-        return acc;
-      },
-      {} as Record<string, { answerIndex: number | null }>
-    );
-
-    try {
-      // Use the same API endpoint as determined earlier
-      const res = await fetch(apiEndpoint, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          answers: finalAnswersPayload,
-          status: 'COMPLETED',
-        }),
-      });
-
-      if (!res.ok) {
-        const errorBody = await res.json();
-        throw new Error(errorBody.error || 'Failed to submit test');
-      }
-
-      localStorage.removeItem(`test-progress-${attemptId}`);
-      router.push(`/test/results/${attemptId}`);
-    } catch (e) {
-      console.error(e);
-      alert('An error occurred while submitting your test. Please try again.');
-    }
-  }, [
-    data,
-    userAnswers,
-    attemptId,
-    apiEndpoint,
-    router,
-    stopRecording,
-    isRecording,
-  ]);
-
-  const handleNextQuestion = useCallback(() => {
-    if (!data) return;
-    const isLastQuestion =
-      currentQuestionIndex === data.test.questions.length - 1;
-    if (isLastQuestion) {
-      handleSubmitTest();
-    } else {
-      setCurrentQuestionIndex((prev) => prev + 1);
-    }
-  }, [currentQuestionIndex, data, handleSubmitTest]);
 
   if (!systemCheckComplete) {
     return (
