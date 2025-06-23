@@ -1869,9 +1869,12 @@ export default function TestEditPage({
                             >
                               <span>
                                 {String.fromCharCode(65 + optionIndex)}.{' '}
-                                <span
-                                  dangerouslySetInnerHTML={{ __html: option }}
-                                />
+                                <span>
+                                  <MarkdownRenderer
+                                    content={option}
+                                    className="inline"
+                                  />
+                                </span>
                               </span>
                               {question.answerWeights && (
                                 <span className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-400">
@@ -1905,9 +1908,12 @@ export default function TestEditPage({
                               }`}
                             >
                               {String.fromCharCode(65 + optionIndex)}.{' '}
-                              <span
-                                dangerouslySetInnerHTML={{ __html: option }}
-                              />
+                              <span>
+                                <MarkdownRenderer
+                                  content={option}
+                                  className="inline"
+                                />
+                              </span>
                               {optionIndex === question.correctAnswerIndex &&
                                 ' ✓ (Correct)'}
                             </li>

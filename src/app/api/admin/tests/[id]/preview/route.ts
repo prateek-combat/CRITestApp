@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { randomBytes } from 'crypto';
-import { previewTokens } from '../../../preview/route';
+import { createPreviewToken } from '@/lib/preview-tokens';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const expiresAt = Date.now() + 60 * 60 * 1000; // 1 hour from now
 
     // Store token in memory
-    previewTokens.set(previewToken, {
+    createPreviewToken(previewToken, {
       testId: testId,
       userId: user.id,
       expiresAt: expiresAt,

@@ -412,14 +412,22 @@ export default function TestAttemptPage() {
 
                           {/* Option Content */}
                           <div className="flex-1">
-                            <span
+                            <div
                               className={`${
                                 isSelected
                                   ? 'text-blue-100'
                                   : 'text-gray-300 group-hover:text-white'
                               } leading-relaxed`}
-                              dangerouslySetInnerHTML={{ __html: option }}
-                            />
+                            >
+                              <MarkdownRenderer
+                                content={option}
+                                className={`${
+                                  isSelected
+                                    ? 'text-blue-100'
+                                    : 'text-gray-300 group-hover:text-white'
+                                }`}
+                              />
+                            </div>
                           </div>
 
                           {/* Selection Indicator */}
