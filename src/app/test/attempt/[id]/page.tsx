@@ -71,6 +71,8 @@ export default function TestTakingPage() {
   const [systemCheckResults, setSystemCheckResults] =
     useState<CompatibilityResult | null>(null);
   const [testReady, setTestReady] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionStep, setSubmissionStep] = useState<string>('');
 
   useLiveFlags(attemptId);
 
@@ -86,18 +88,22 @@ export default function TestTakingPage() {
     setTestReady(true);
   };
 
-  // Define handleNextQuestion early to avoid dependency issues
-  const handleNextQuestion = useCallback(() => {
-    if (!data) return;
-    const isLastQuestion =
-      currentQuestionIndex === data.test.questions.length - 1;
-    if (isLastQuestion) {
-      // We'll define handleSubmitTest later, so we'll use a ref or move this logic
-      if (!data) return;
-      if (isRecording) {
-        stopRecording();
+  // Separate submit test function with proper cleanup flow
+  const handleSubmitTest = useCallback(async () => {
+    if (!data || isSubmitting) return;
+
+    setIsSubmitting(true);
+    setSubmissionStep('Preparing submission...');
+
+    try {
+      // Step 1: Stop recording and camera
+      setSubmissionStep('Stopping camera and cleaning up...');
+      if (isRecording && recordingSession) {
+        await stopRecording();
       }
 
+      // Step 2: Prepare answers
+      setSubmissionStep('Finalizing your answers...');
       const finalAnswersPayload = userAnswers.reduce(
         (acc, ans) => {
           if (ans.questionId && ans.selectedAnswerIndex !== null) {
@@ -108,46 +114,59 @@ export default function TestTakingPage() {
         {} as Record<string, { answerIndex: number | null }>
       );
 
-      const submitTest = async () => {
-        try {
-          const res = await fetch(apiEndpoint, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              answers: finalAnswersPayload,
-              status: 'COMPLETED',
-            }),
-          });
+      // Step 3: Submit to server
+      setSubmissionStep('Submitting your test...');
+      const res = await fetch(apiEndpoint, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          answers: finalAnswersPayload,
+          status: 'COMPLETED',
+        }),
+      });
 
-          if (!res.ok) {
-            const errorBody = await res.json();
-            throw new Error(errorBody.error || 'Failed to submit test');
-          }
+      if (!res.ok) {
+        const errorBody = await res.json();
+        throw new Error(errorBody.error || 'Failed to submit test');
+      }
 
-          localStorage.removeItem(`test-progress-${attemptId}`);
-          router.push(`/test/results/${attemptId}`);
-        } catch (e) {
-          console.error(e);
-          alert(
-            'An error occurred while submitting your test. Please try again.'
-          );
-        }
-      };
+      // Step 4: Cleanup and redirect
+      setSubmissionStep('Processing results...');
+      localStorage.removeItem(`test-progress-${attemptId}`);
 
-      submitTest();
-    } else {
-      setCurrentQuestionIndex((prev) => prev + 1);
+      // Small delay to show the final step
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      router.push(`/test/results/${attemptId}`);
+    } catch (e) {
+      console.error(e);
+      setIsSubmitting(false);
+      setSubmissionStep('');
+      alert('An error occurred while submitting your test. Please try again.');
     }
   }, [
-    currentQuestionIndex,
     data,
+    isSubmitting,
+    isRecording,
+    recordingSession,
+    stopRecording,
     userAnswers,
     apiEndpoint,
     attemptId,
     router,
-    isRecording,
-    stopRecording,
   ]);
+
+  // Define handleNextQuestion after handleSubmitTest
+  const handleNextQuestion = useCallback(() => {
+    if (!data) return;
+    const isLastQuestion =
+      currentQuestionIndex === data.test.questions.length - 1;
+    if (isLastQuestion) {
+      handleSubmitTest();
+    } else {
+      setCurrentQuestionIndex((prev) => prev + 1);
+    }
+  }, [currentQuestionIndex, data, handleSubmitTest]);
 
   // Hydrate state from localStorage and initial data
   useEffect(() => {
@@ -303,6 +322,54 @@ export default function TestTakingPage() {
           <Button onClick={handleStartTest} className="w-full">
             Start Test
           </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show submission screen when submitting
+  if (isSubmitting) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4">
+        <div className="max-w-md rounded-lg bg-white p-8 text-center shadow-md">
+          <div className="mb-6">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
+              <svg
+                className="h-8 w-8 animate-spin text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+            </div>
+            <h1 className="mb-2 text-2xl font-bold text-gray-800">
+              Completing Your Test
+            </h1>
+            <p className="mb-4 text-gray-600">
+              Please wait while we process your submission...
+            </p>
+            <div className="text-sm font-medium text-blue-600">
+              {submissionStep}
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="mb-4 h-2 w-full rounded-full bg-gray-200">
+            <div
+              className="h-2 animate-pulse rounded-full bg-blue-600"
+              style={{ width: '75%' }}
+            ></div>
+          </div>
+
+          <p className="text-xs text-gray-500">
+            Do not close this window or navigate away
+          </p>
         </div>
       </div>
     );
