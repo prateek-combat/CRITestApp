@@ -38,36 +38,49 @@ export async function GET(request: NextRequest) {
     const dateTo = searchParams.get('dateTo');
     const invitationId = searchParams.get('invitationId');
 
-    const where: any = {
-      testId,
+    // Build where clauses for both regular and public attempts
+    const baseWhere: any = {
       status: 'COMPLETED',
     };
 
     if (search) {
-      where.OR = [
+      baseWhere.OR = [
         { candidateEmail: { contains: search, mode: 'insensitive' } },
         { candidateName: { contains: search, mode: 'insensitive' } },
       ];
     }
-    if (invitationId) {
-      where.invitationId = invitationId;
-    }
     if (dateFrom || dateTo) {
-      where.completedAt = {};
-      if (dateFrom) where.completedAt.gte = new Date(dateFrom);
-      if (dateTo) where.completedAt.lte = new Date(dateTo);
+      baseWhere.completedAt = {};
+      if (dateFrom) baseWhere.completedAt.gte = new Date(dateFrom);
+      if (dateTo) baseWhere.completedAt.lte = new Date(dateTo);
     }
+
+    // Regular test attempts where clause
+    const regularWhere = {
+      ...baseWhere,
+      testId,
+    };
+    if (invitationId) {
+      regularWhere.invitationId = invitationId;
+    }
+
+    // Public test attempts where clause (need to join through publicLink)
+    const publicWhere = {
+      ...baseWhere,
+      publicLink: {
+        testId,
+      },
+    };
 
     const orderBy: any = {
       [sortBy === 'composite' ? 'rawScore' : sortBy]: sortOrder,
     };
 
-    const [attemptsWithScores, total] = await Promise.all([
+    // Fetch both regular and public attempts
+    const [regularAttempts, publicAttempts] = await Promise.all([
       prisma.testAttempt.findMany({
-        where,
+        where: regularWhere,
         orderBy,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
         select: {
           id: true,
           invitationId: true,
@@ -85,10 +98,69 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
-      prisma.testAttempt.count({ where }),
+      prisma.publicTestAttempt.findMany({
+        where: publicWhere,
+        orderBy,
+        select: {
+          id: true,
+          candidateName: true,
+          candidateEmail: true,
+          completedAt: true,
+          startedAt: true,
+          rawScore: true,
+          percentile: true,
+          publicLink: {
+            select: {
+              title: true,
+            },
+          },
+          submittedAnswers: {
+            select: {
+              isCorrect: true,
+              question: { select: { category: true } },
+            },
+          },
+        },
+      }),
     ]);
 
-    const leaderboardData = attemptsWithScores.map((attempt, index) => {
+    // Combine and normalize the data
+    const allAttempts = [
+      ...regularAttempts.map((attempt) => ({
+        ...attempt,
+        type: 'regular' as const,
+        submittedAnswers: attempt.submittedAnswers,
+      })),
+      ...publicAttempts.map((attempt) => ({
+        ...attempt,
+        type: 'public' as const,
+        invitationId: null, // Public attempts don't have invitations
+        submittedAnswers: attempt.submittedAnswers,
+      })),
+    ];
+
+    // Sort combined results
+    allAttempts.sort((a, b) => {
+      const aValue =
+        sortBy === 'composite' ? a.rawScore || 0 : a[sortBy as keyof typeof a];
+      const bValue =
+        sortBy === 'composite' ? b.rawScore || 0 : b[sortBy as keyof typeof b];
+
+      if (sortOrder === 'desc') {
+        return (bValue as number) - (aValue as number);
+      } else {
+        return (aValue as number) - (bValue as number);
+      }
+    });
+
+    // Apply pagination
+    const total = allAttempts.length;
+    const paginatedAttempts = allAttempts.slice(
+      (page - 1) * pageSize,
+      page * pageSize
+    );
+
+    const leaderboardData = paginatedAttempts.map((attempt, index) => {
       const categoryScores: Record<
         string,
         { correct: number; total: number; percentage: number }
@@ -133,19 +205,31 @@ export async function GET(request: NextRequest) {
         composite: attempt.rawScore || 0,
         percentile: attempt.percentile || 0,
         rank: index + 1 + (page - 1) * pageSize,
+        type: attempt.type, // Add type to distinguish regular vs public
       };
     });
 
-    const allScoresForStats = await prisma.testAttempt.findMany({
-      where: { testId, status: 'COMPLETED' },
-      select: { rawScore: true, completedAt: true },
-    });
+    // Get stats from both tables
+    const [regularStats, publicStats] = await Promise.all([
+      prisma.testAttempt.findMany({
+        where: { testId, status: 'COMPLETED' },
+        select: { rawScore: true, completedAt: true },
+      }),
+      prisma.publicTestAttempt.findMany({
+        where: {
+          status: 'COMPLETED',
+          publicLink: { testId },
+        },
+        select: { rawScore: true, completedAt: true },
+      }),
+    ]);
 
-    const validScores = allScoresForStats
+    const allStatsAttempts = [...regularStats, ...publicStats];
+    const validScores = allStatsAttempts
       .map((a) => a.rawScore)
       .filter((s) => s !== null) as number[];
 
-    const thisMonthCount = allScoresForStats.filter(
+    const thisMonthCount = allStatsAttempts.filter(
       (a) => a.completedAt && a.completedAt.getMonth() === new Date().getMonth()
     ).length;
 
@@ -172,7 +256,10 @@ export async function GET(request: NextRequest) {
         totalCandidates: total,
         avgScore:
           validScores.length > 0
-            ? validScores.reduce((a, b) => a + b, 0) / validScores.length
+            ? Math.round(
+                (validScores.reduce((a, b) => a + b, 0) / validScores.length) *
+                  10
+              ) / 10
             : 0,
         topScore: validScores.length > 0 ? Math.max(...validScores) : 0,
         thisMonth: thisMonthCount,
