@@ -49,34 +49,38 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
 
   const processedContent = preprocessContent(content);
 
-  const CodeBlock = {
+  const components = {
     code({ node, inline, className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || '');
       const language = match ? match[1] : 'text';
 
-      // For code blocks, make them much more compact
+      // For fenced code blocks (not inline)
       if (!inline) {
         return (
-          <code
-            className={className}
-            {...props}
-            style={{
-              backgroundColor: '#f3f4f6',
-              color: '#1f2937',
-              borderRadius: '0.375rem',
-              padding: '0.25rem 0.5rem',
-              fontFamily:
-                'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+          <SyntaxHighlighter
+            style={vs}
+            language={language}
+            PreTag="div"
+            customStyle={{
+              margin: '1rem 0',
+              borderRadius: '0.5rem',
               fontSize: '0.875rem',
-              border: '1px solid #e5e7eb',
-              display: 'inline-block',
-              lineHeight: '1.4',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
+              lineHeight: '1.5',
+              padding: '1rem',
+              backgroundColor: '#f8f9fa',
+              border: '1px solid #e9ecef',
+              overflow: 'auto',
+              maxWidth: '100%',
+            }}
+            codeTagProps={{
+              style: {
+                fontFamily:
+                  'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+              },
             }}
           >
             {String(children).replace(/\n$/, '')}
-          </code>
+          </SyntaxHighlighter>
         );
       }
 
@@ -100,11 +104,65 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
         </code>
       );
     },
+
+    // Handle pre elements (code block containers)
+    pre({ children }: any) {
+      return <div style={{ margin: 0 }}>{children}</div>;
+    },
+
+    // Handle tables
+    table({ children }: any) {
+      return (
+        <div style={{ overflowX: 'auto', margin: '1rem 0' }}>
+          <table
+            style={{
+              borderCollapse: 'collapse',
+              width: '100%',
+              border: '1px solid #e5e7eb',
+              borderRadius: '0.375rem',
+            }}
+          >
+            {children}
+          </table>
+        </div>
+      );
+    },
+
+    // Handle table headers
+    th({ children }: any) {
+      return (
+        <th
+          style={{
+            border: '1px solid #e5e7eb',
+            padding: '0.5rem',
+            backgroundColor: '#f9fafb',
+            fontWeight: 'bold',
+            textAlign: 'left',
+          }}
+        >
+          {children}
+        </th>
+      );
+    },
+
+    // Handle table cells
+    td({ children }: any) {
+      return (
+        <td
+          style={{
+            border: '1px solid #e5e7eb',
+            padding: '0.5rem',
+          }}
+        >
+          {children}
+        </td>
+      );
+    },
   };
 
   return (
     <div className={`prose max-w-none ${className}`}>
-      <ReactMarkdown components={CodeBlock} remarkPlugins={[remarkGfm]}>
+      <ReactMarkdown components={components} remarkPlugins={[remarkGfm]}>
         {processedContent}
       </ReactMarkdown>
     </div>
