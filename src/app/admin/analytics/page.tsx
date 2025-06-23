@@ -19,12 +19,7 @@ const toNumber = (value: any) => {
   return isNaN(num) ? 0 : num;
 };
 
-// Utility function to safely calculate percentage
-const safePercentage = (value: number, total: number): number => {
-  if (total === 0 || isNaN(value) || isNaN(total)) return 0;
-  const percentage = (value / total) * 100;
-  return isNaN(percentage) ? 0 : Math.round(percentage * 10) / 10;
-};
+import { safePercentage } from '@/lib/validation-utils';
 
 interface TestAttemptData {
   id: string;

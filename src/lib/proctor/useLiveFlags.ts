@@ -225,7 +225,7 @@ export function useLiveFlags(attemptId: string) {
 
       sendEvent('PROCTORING_ENDED');
     };
-  }, [attemptId]);
+  }, [attemptId, sendEvent]);
 
   // Return current buffer for debugging
   return eventBuffer.current;
