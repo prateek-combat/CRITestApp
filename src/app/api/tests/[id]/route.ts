@@ -38,6 +38,23 @@ interface RouteParams {
 export async function GET(request: Request, { params }: RouteParams) {
   const { id } = await params;
   try {
+    // Check authentication for admin access
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions - Admin access required' },
+        { status: 403 }
+      );
+    }
+
     const test = await prisma.test.findUnique({
       where: { id },
       include: {

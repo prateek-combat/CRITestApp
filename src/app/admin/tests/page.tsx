@@ -17,6 +17,7 @@ import {
   MoreVertical,
   Edit,
   Bell,
+  Eye,
 } from 'lucide-react';
 
 interface Test {
@@ -670,6 +671,18 @@ export default function TestsPage() {
                           >
                             <Edit className="mr-3 h-4 w-4" />
                             Edit Test
+                          </Link>
+
+                          <Link
+                            href={`/admin/tests/preview/${test.id}`}
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenDropdown(null);
+                            }}
+                          >
+                            <Eye className="mr-3 h-4 w-4" />
+                            Preview Test
                           </Link>
 
                           <button
