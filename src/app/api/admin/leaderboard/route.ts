@@ -152,6 +152,11 @@ export async function GET(request: NextRequest) {
       })),
     ];
 
+    // Get total questions for the test to calculate percentages
+    const totalTestQuestions = await prisma.question.count({
+      where: { testId },
+    });
+
     // Calculate scores for all attempts first
     const processedAttempts = allAttempts.map((attempt, index) => {
       const categoryScores: Record<
@@ -166,6 +171,7 @@ export async function GET(request: NextRequest) {
           categoryScores[category] = { correct: 0, total: 0, percentage: 0 };
         }
         categoryScores[category].total++;
+
         if (answer.isCorrect) {
           categoryScores[category].correct++;
         }
@@ -177,6 +183,12 @@ export async function GET(request: NextRequest) {
           score.total > 0 ? (score.correct / score.total) * 100 : 0;
       });
 
+      // Convert composite score to percentage using rawScore and total test questions
+      const compositePercentage =
+        totalTestQuestions > 0 && attempt.rawScore !== null
+          ? (attempt.rawScore / totalTestQuestions) * 100
+          : 0;
+
       return {
         ...attempt,
         scoreLogical: categoryScores['LOGICAL']?.percentage || 0,
@@ -184,9 +196,33 @@ export async function GET(request: NextRequest) {
         scoreNumerical: categoryScores['NUMERICAL']?.percentage || 0,
         scoreAttention: categoryScores['ATTENTION_TO_DETAIL']?.percentage || 0,
         scoreOther: categoryScores['OTHER']?.percentage || 0,
-        composite: attempt.rawScore || 0,
-        percentile: attempt.percentile || 0,
+        composite: compositePercentage,
+        percentile: 0, // Will be calculated after we have all scores
       };
+    });
+
+    // Calculate percentiles based on composite scores
+    // Sort by composite score to determine rankings
+    const sortedByScore = [...processedAttempts].sort(
+      (a, b) => b.composite - a.composite
+    );
+
+    // Calculate percentile for each attempt
+    processedAttempts.forEach((attempt) => {
+      // Find how many candidates scored lower than this candidate
+      const candidatesWithLowerScores = processedAttempts.filter(
+        (other) => other.composite < attempt.composite
+      ).length;
+
+      // Percentile = (number of candidates with lower scores / total candidates) * 100
+      const percentile =
+        processedAttempts.length > 1
+          ? Math.round(
+              (candidatesWithLowerScores / (processedAttempts.length - 1)) * 100
+            )
+          : 100; // If only one candidate, they're at 100th percentile
+
+      attempt.percentile = percentile;
     });
 
     // Sort processed results by the requested field
@@ -313,6 +349,23 @@ export async function GET(request: NextRequest) {
       (a) => a.completedAt && a.completedAt.getMonth() === new Date().getMonth()
     ).length;
 
+    // Convert raw scores to percentages for stats using the already fetched totalTestQuestions
+    const avgScorePercentage =
+      validScores.length > 0 && totalTestQuestions > 0
+        ? Math.round(
+            (validScores.reduce((a, b) => a + b, 0) /
+              validScores.length /
+              totalTestQuestions) *
+              1000
+          ) / 10 // Round to 1 decimal place
+        : 0;
+
+    const topScorePercentage =
+      validScores.length > 0 && totalTestQuestions > 0
+        ? Math.round((Math.max(...validScores) / totalTestQuestions) * 1000) /
+          10
+        : 0;
+
     return NextResponse.json({
       rows: leaderboardData,
       pagination: {
@@ -334,14 +387,8 @@ export async function GET(request: NextRequest) {
       },
       stats: {
         totalCandidates: total,
-        avgScore:
-          validScores.length > 0
-            ? Math.round(
-                (validScores.reduce((a, b) => a + b, 0) / validScores.length) *
-                  10
-              ) / 10
-            : 0,
-        topScore: validScores.length > 0 ? Math.max(...validScores) : 0,
+        avgScore: avgScorePercentage,
+        topScore: topScorePercentage,
         thisMonth: thisMonthCount,
       },
     });
