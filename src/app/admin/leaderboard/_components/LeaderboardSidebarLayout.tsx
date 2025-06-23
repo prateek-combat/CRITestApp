@@ -181,17 +181,7 @@ export default function LeaderboardSidebarLayout({
     } finally {
       setIsLoading(false);
     }
-  }, [
-    selectedTestId,
-    searchParams.search,
-    searchParams.page,
-    searchParams.pageSize,
-    searchParams.dateFrom,
-    searchParams.dateTo,
-    searchParams.invitationId,
-    searchParams.sortBy,
-    searchParams.sortOrder,
-  ]);
+  }, [selectedTestId, searchParams]);
 
   useEffect(() => {
     fetchTests();
