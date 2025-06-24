@@ -318,10 +318,10 @@ export default function TestPreviewPage() {
             {/* Question */}
             <div className="mb-8">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                   Question {currentQuestionIndex + 1}
                 </h2>
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-600">
+                <span className="rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-600 dark:bg-gray-700 dark:text-gray-300">
                   {currentQuestion.category}
                 </span>
               </div>
@@ -329,7 +329,7 @@ export default function TestPreviewPage() {
               <div className="prose max-w-none">
                 <MarkdownRenderer
                   content={currentQuestion.promptText}
-                  className="text-gray-900"
+                  className="text-gray-900 dark:text-gray-100"
                 />
               </div>
 
@@ -352,8 +352,8 @@ export default function TestPreviewPage() {
                   onClick={() => handleAnswerSelect(index)}
                   className={`w-full rounded-lg border-2 p-4 text-left transition-all ${
                     selectedAnswer === index
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-700'
                   }`}
                 >
                   <div className="flex items-center">
@@ -361,15 +361,15 @@ export default function TestPreviewPage() {
                       className={`mr-3 flex h-6 w-6 items-center justify-center rounded-full border-2 ${
                         selectedAnswer === index
                           ? 'border-blue-500 bg-blue-500 text-white'
-                          : 'border-gray-300'
+                          : 'border-gray-300 dark:border-gray-500'
                       }`}
                     >
                       {selectedAnswer === index && '✓'}
                     </div>
-                    <div className="text-gray-900">
+                    <div className="text-gray-900 dark:text-gray-100">
                       <MarkdownRenderer
                         content={option}
-                        className="text-gray-900"
+                        className="text-gray-900 dark:text-gray-100"
                       />
                     </div>
                   </div>
@@ -388,7 +388,7 @@ export default function TestPreviewPage() {
                 Previous
               </button>
 
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
                 {Object.keys(previewAnswers).length} of{' '}
                 {previewData.test.questions.length} answered
               </div>

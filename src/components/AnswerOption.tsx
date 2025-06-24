@@ -26,12 +26,12 @@ const AnswerOption: React.FC<AnswerOptionProps> = ({
       role="radio"
       aria-checked={isSelected}
       onClick={onSelect}
-      className={`group relative w-full overflow-hidden rounded-lg border-2 bg-white p-3 text-left transition-all duration-300 hover:scale-[1.01] hover:shadow-md ${
+      className={`group relative w-full overflow-hidden rounded-lg border-2 bg-white p-3 text-left transition-all duration-300 hover:scale-[1.01] hover:shadow-md dark:bg-gray-800 ${
         isSelected
           ? isPersonality
-            ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-blue-100 shadow-lg ring-2 ring-blue-200'
-            : 'border-green-500 bg-gradient-to-r from-green-50 to-green-100 shadow-lg ring-2 ring-green-200'
-          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+            ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-blue-100 shadow-lg ring-2 ring-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 dark:ring-blue-600'
+            : 'border-green-500 bg-gradient-to-r from-green-50 to-green-100 shadow-lg ring-2 ring-green-200 dark:from-green-900/30 dark:to-green-800/30 dark:ring-green-600'
+          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-700'
       } ${className || ''}`}
     >
       {/* Background gradient overlay for selected state */}
@@ -45,47 +45,63 @@ const AnswerOption: React.FC<AnswerOptionProps> = ({
         />
       )}
 
-      <div className="relative flex items-start gap-3">
-        {/* Enhanced letter badge */}
+      {/* Content container */}
+      <div className="relative z-10 flex items-start space-x-3">
+        {/* Option letter indicator */}
         <div
-          className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold transition-all duration-300 ${
+          className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border-2 font-semibold transition-all ${
             isSelected
               ? isPersonality
-                ? 'border-blue-500 bg-blue-500 text-white shadow-lg'
-                : 'border-green-500 bg-green-500 text-white shadow-lg'
-              : 'border-gray-300 bg-white text-gray-600 group-hover:border-gray-400 group-hover:bg-gray-100'
+                ? 'border-blue-500 bg-blue-500 text-white'
+                : 'border-green-500 bg-green-500 text-white'
+              : 'border-gray-300 bg-white text-gray-600 group-hover:border-gray-400 dark:border-gray-500 dark:bg-gray-700 dark:text-gray-300 dark:group-hover:border-gray-400'
           }`}
         >
           {optionLetter}
         </div>
 
-        {/* Option content with enhanced typography */}
-        <div className="min-w-0 flex-1">
+        {/* Option content */}
+        <div className="flex-grow">
           <div
-            className={`text-sm leading-snug transition-colors duration-300 ${
+            className={`transition-colors ${
               isSelected
                 ? isPersonality
-                  ? 'font-medium text-blue-900'
-                  : 'font-medium text-green-900'
-                : 'text-gray-800 group-hover:text-gray-900'
+                  ? 'text-blue-900 dark:text-blue-100'
+                  : 'text-green-900 dark:text-green-100'
+                : 'text-gray-800 group-hover:text-gray-900 dark:text-gray-200 dark:group-hover:text-gray-100'
             }`}
           >
-            <MarkdownRenderer content={option} />
+            <MarkdownRenderer
+              content={option}
+              className={`leading-relaxed ${
+                isSelected
+                  ? isPersonality
+                    ? 'text-blue-900 dark:text-blue-100'
+                    : 'text-green-900 dark:text-green-100'
+                  : 'text-gray-800 dark:text-gray-200'
+              }`}
+            />
           </div>
         </div>
 
         {/* Selection indicator */}
         {isSelected && (
           <div
-            className={`flex-shrink-0 transition-all duration-300 ${
-              isPersonality ? 'text-blue-500' : 'text-green-500'
-            }`}
+            className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full ${
+              isPersonality ? 'bg-blue-500' : 'bg-green-500'
+            } text-white`}
           >
-            <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                clipRule="evenodd"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M5 13l4 4L19 7"
               />
             </svg>
           </div>

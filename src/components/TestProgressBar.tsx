@@ -54,29 +54,35 @@ export default function TestProgressBar({
 
       {/* Quick Stats */}
       <div className="grid grid-cols-3 gap-4 text-center">
-        <div className="rounded-lg bg-green-50 p-3">
-          <div className="text-lg font-bold text-green-700">
+        <div className="rounded-lg bg-green-50 p-3 dark:bg-green-900/30">
+          <div className="text-lg font-bold text-green-700 dark:text-green-300">
             {answeredQuestions.size}
           </div>
-          <div className="text-xs text-green-600">Answered</div>
+          <div className="text-xs text-green-600 dark:text-green-400">
+            Answered
+          </div>
         </div>
-        <div className="rounded-lg bg-gray-50 p-3">
-          <div className="text-lg font-bold text-gray-700">
+        <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
+          <div className="text-lg font-bold text-gray-700 dark:text-gray-300">
             {remainingQuestions}
           </div>
-          <div className="text-xs text-gray-600">Remaining</div>
+          <div className="text-xs text-gray-600 dark:text-gray-400">
+            Remaining
+          </div>
         </div>
-        <div className="rounded-lg bg-primary-50 p-3">
-          <div className="text-lg font-bold text-primary-700">
+        <div className="rounded-lg bg-primary-50 p-3 dark:bg-primary-900/30">
+          <div className="text-lg font-bold text-primary-700 dark:text-primary-300">
             {bookmarkedCount}
           </div>
-          <div className="text-xs text-primary-600">Bookmarked</div>
+          <div className="text-xs text-primary-600 dark:text-primary-400">
+            Bookmarked
+          </div>
         </div>
       </div>
 
       {/* Question Grid Overview */}
       <div className="space-y-2">
-        <h4 className="text-sm font-medium text-primary-900">
+        <h4 className="text-sm font-medium text-primary-900 dark:text-primary-100">
           Question Overview
         </h4>
         <div className="sm:grid-cols-15 md:grid-cols-20 grid grid-cols-10 gap-1">
@@ -95,16 +101,16 @@ export default function TestProgressBar({
                 disabled={!onQuestionSelect}
                 className={`relative h-6 w-6 rounded border-2 text-xs font-medium transition-all duration-200 ${
                   isCurrent
-                    ? 'border-primary-500 bg-primary-100 ring-2 ring-primary-300 ring-offset-1'
+                    ? 'border-primary-500 bg-primary-100 ring-2 ring-primary-300 ring-offset-1 dark:bg-primary-900/50 dark:ring-primary-600'
                     : onQuestionSelect
-                      ? 'border-gray-200 hover:border-gray-300'
-                      : 'border-gray-200'
+                      ? 'border-gray-200 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500'
+                      : 'border-gray-200 dark:border-gray-600'
                 } ${
                   isAnswered
-                    ? 'bg-green-100 text-green-700'
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
                     : onQuestionSelect
-                      ? 'bg-white text-gray-500 hover:bg-gray-50'
-                      : 'bg-gray-100 text-gray-400'
+                      ? 'bg-white text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
+                      : 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500'
                 } ${!onQuestionSelect ? 'cursor-not-allowed' : ''}`}
                 title={
                   !onQuestionSelect
@@ -150,20 +156,20 @@ export default function TestProgressBar({
       </div>
 
       {/* Time and Status */}
-      <div className="rounded-lg bg-gray-50 p-3">
+      <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-600">
+          <span className="text-gray-600 dark:text-gray-400">
             Current: Question {currentQuestionIndex + 1}
           </span>
           <div
             className={`rounded px-2 py-1 text-xs font-medium ${
               completionPercentage < 25
-                ? 'bg-red-100 text-red-700'
+                ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                 : completionPercentage < 50
-                  ? 'bg-yellow-100 text-yellow-700'
+                  ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300'
                   : completionPercentage < 75
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-green-100 text-green-700'
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                    : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
             }`}
           >
             {completionPercentage < 25
