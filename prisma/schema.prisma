@@ -21,6 +21,25 @@ model User {
   tests                  Test[]
   archivedTests          Test[]                  @relation("ArchivedTests")
   categoryWeightProfiles CategoryWeightProfile[]
+  positions              Position[]
+}
+
+model Position {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  code        String   @unique
+  description String?
+  department  String?
+  level       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+  tests       Test[]
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  @@index([isActive, department])
+  @@index([code])
 }
 
 model Test {
@@ -38,15 +57,18 @@ model Test {
   emailNotificationsEnabled Boolean        @default(true)
   notificationEmails      String[]         @default(["prateek@combatrobotics.in", "gaurav@combatrobotics.in"])
   includeAnalytics        Boolean          @default(true)
+  positionId              String?          // NULLABLE for backward compatibility
   invitations             Invitation[]
   publicTestLinks         PublicTestLink[]
   questions               Question[]
   createdBy               User             @relation(fields: [createdById], references: [id])
   archivedBy              User?            @relation("ArchivedTests", fields: [archivedById], references: [id])
+  position                Position?        @relation(fields: [positionId], references: [id])
   testAttempts            TestAttempt[]
 
   @@index([isArchived, createdAt])
   @@index([createdById])
+  @@index([positionId, isArchived])
 }
 
 model PersonalityDimension {
