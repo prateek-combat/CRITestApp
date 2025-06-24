@@ -516,22 +516,20 @@ export default function TestTakingPage() {
                         onClick={() => handleAnswerSelect(index)}
                         className={`flex w-full items-center rounded-lg border-2 p-3 text-left transition-all duration-150 ${
                           isSelected
-                            ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500 dark:bg-blue-900/30'
-                            : 'border-gray-300 bg-white hover:border-blue-400 dark:border-gray-600 dark:bg-gray-800 dark:hover:border-blue-500'
+                            ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500'
+                            : 'border-gray-300 bg-white hover:border-blue-400'
                         }`}
                       >
                         <span
                           className={`mr-4 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full font-bold ${
                             isSelected
                               ? 'bg-blue-500 text-white'
-                              : 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-300'
+                              : 'bg-gray-200 text-gray-600'
                           }`}
                         >
                           {String.fromCharCode(65 + index)}
                         </span>
-                        <span className="text-sm text-gray-800 dark:text-gray-200">
-                          {option}
-                        </span>
+                        <span className="text-sm text-gray-800">{option}</span>
                       </button>
                     );
                   }

@@ -43,14 +43,14 @@ export default function BookmarkedQuestionsReview({
   if (bookmarkedQuestions.length === 0) {
     return (
       <div
-        className={`rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-600 dark:bg-gray-800 ${className}`}
+        className={`rounded-lg border border-gray-200 bg-white p-6 ${className}`}
       >
         <div className="text-center">
-          <Bookmark className="mx-auto mb-4 h-12 w-12 text-gray-400 dark:text-gray-500" />
-          <h3 className="mb-2 text-lg font-medium text-gray-900 dark:text-gray-100">
+          <Bookmark className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+          <h3 className="mb-2 text-lg font-medium text-gray-900">
             No Bookmarked Questions
           </h3>
-          <p className="mb-4 text-gray-500 dark:text-gray-400">
+          <p className="mb-4 text-gray-500">
             You haven&apos;t bookmarked any questions for review yet.
           </p>
           <button
@@ -168,13 +168,13 @@ export default function BookmarkedQuestionsReview({
               {/* Question Header */}
               <div>
                 <div className="mb-3 flex items-center justify-between">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                  <h3 className="text-lg font-medium text-gray-900">
                     Question{' '}
                     {questions.findIndex((q) => q.id === selectedQuestion.id) +
                       1}
                   </h3>
                   <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center space-x-1 text-sm text-gray-500">
                       <Clock className="h-4 w-4" />
                       <span>{selectedQuestion.timerSeconds}s</span>
                     </div>
@@ -202,9 +202,7 @@ export default function BookmarkedQuestionsReview({
 
               {/* Answer Options */}
               <div className="space-y-3">
-                <h4 className="font-medium text-gray-900 dark:text-gray-100">
-                  Answer Options:
-                </h4>
+                <h4 className="font-medium text-gray-900">Answer Options:</h4>
                 {selectedQuestion.answerOptions.map((option, index) => {
                   const isSelected =
                     answers[selectedQuestion.id]?.answerIndex === index;
@@ -215,8 +213,8 @@ export default function BookmarkedQuestionsReview({
                       onClick={() => onAnswerChange(selectedQuestion.id, index)}
                       className={`w-full rounded-lg border-2 p-4 text-left transition-colors ${
                         isSelected
-                          ? 'border-primary-500 bg-primary-50 text-primary-900 dark:bg-primary-900/30 dark:text-primary-100'
-                          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:border-gray-500 dark:hover:bg-gray-700'
+                          ? 'border-primary-500 bg-primary-50 text-primary-900'
+                          : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
                       }`}
                     >
                       <div className="flex items-start space-x-3">
@@ -233,16 +231,16 @@ export default function BookmarkedQuestionsReview({
                         </div>
                         <div className="flex-grow">
                           <span
-                            className={`font-medium ${isSelected ? 'text-primary-900 dark:text-primary-100' : 'text-gray-700 dark:text-gray-300'}`}
+                            className={`font-medium ${isSelected ? 'text-primary-900' : 'text-gray-700'}`}
                           >
                             Option {String.fromCharCode(65 + index)}
                           </span>
                           <div
-                            className={`mt-1 ${isSelected ? 'text-primary-800 dark:text-primary-200' : 'text-gray-600 dark:text-gray-400'}`}
+                            className={`mt-1 ${isSelected ? 'text-primary-800' : 'text-gray-600'}`}
                           >
                             <MarkdownRenderer
                               content={option}
-                              className={`${isSelected ? 'text-primary-800 dark:text-primary-200' : 'text-gray-600 dark:text-gray-400'}`}
+                              className={`${isSelected ? 'text-primary-800' : 'text-gray-600'}`}
                             />
                           </div>
                         </div>
@@ -283,7 +281,7 @@ export default function BookmarkedQuestionsReview({
 
       {/* Footer */}
       <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 p-4">
-        <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className="text-sm text-gray-600">
           {bookmarkedQuestions.filter((q) => answers[q.id]).length} of{' '}
           {bookmarkedQuestions.length} answered
         </div>
