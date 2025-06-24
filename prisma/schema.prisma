@@ -8,18 +8,19 @@ datasource db {
 }
 
 model User {
-  id              String           @id @default(uuid())
-  email           String           @unique
-  passwordHash    String
-  firstName       String?
-  lastName        String?
-  role            UserRole         @default(ADMIN)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  invitations     Invitation[]
-  publicTestLinks PublicTestLink[]
-  tests           Test[]
-  archivedTests   Test[]           @relation("ArchivedTests")
+  id                     String                  @id @default(uuid())
+  email                  String                  @unique
+  passwordHash           String
+  firstName              String?
+  lastName               String?
+  role                   UserRole                @default(ADMIN)
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  invitations            Invitation[]
+  publicTestLinks        PublicTestLink[]
+  tests                  Test[]
+  archivedTests          Test[]                  @relation("ArchivedTests")
+  categoryWeightProfiles CategoryWeightProfile[]
 }
 
 model Test {
@@ -111,7 +112,7 @@ model TestAttempt {
   riskScoreBreakdown  Json?
   categorySubScores   Json?
   tabSwitches         Int               @default(0)
-  proctoringEnabled   Boolean           @default(false)
+  proctoringEnabled   Boolean           @default(true)
   videoRecordingUrl   String?
   audioRecordingUrl   String?
   proctoringEvents    Json?
@@ -207,7 +208,7 @@ model PublicTestAttempt {
   riskScoreBreakdown  Json?
   categorySubScores   Json?
   tabSwitches         Int                     @default(0)
-  proctoringEnabled   Boolean                 @default(false)
+  proctoringEnabled   Boolean                 @default(true)
   videoRecordingUrl   String?
   audioRecordingUrl   String?
   proctoringEvents    Json?
@@ -275,6 +276,22 @@ model UploadedFile {
   fileType  String   // 'QUESTION_IMAGE', 'RECORDING', etc.
   uploadedAt DateTime @default(now())
   uploadedBy String?  // User ID who uploaded (optional for anonymous)
+}
+
+model CategoryWeightProfile {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  weights     Json     // Stores CategoryWeights as JSON
+  isDefault   Boolean  @default(false)
+  isSystem    Boolean  @default(false) // System profiles cannot be deleted
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String?
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+
+  @@index([isDefault])
+  @@index([isSystem])
 }
 
 enum UserRole {

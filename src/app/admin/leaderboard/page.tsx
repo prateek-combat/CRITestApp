@@ -48,7 +48,8 @@ export default function LeaderboardPage() {
             🏆 Candidate Leaderboard
           </h1>
           <p className="mt-1 text-sm text-gray-600">
-            View and compare candidate performance rankings by test
+            View and compare candidate performance with configurable scoring
+            weights
           </p>
         </div>
 

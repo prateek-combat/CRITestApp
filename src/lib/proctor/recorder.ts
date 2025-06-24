@@ -25,19 +25,21 @@ export function useProctoring(attemptId: string) {
       }
       proctorLogger.info('Proctoring started successfully', { attemptId });
     } catch (error) {
-      proctorLogger.warn(
-        'Proctoring failed to start - continuing test without recording',
+      proctorLogger.error(
+        'Proctoring failed to start - test cannot continue without permissions',
         {
           attemptId,
           error: error instanceof Error ? error.message : 'Unknown error',
         }
       );
-      // Set recording to false and don't throw - allow test to continue without recording
+      // Set recording to false and throw error - test requires proctoring
       setIsRecording(false);
       setSession(null);
 
-      // Don't show error to user - just log it and continue
-      // The test should work fine without proctoring
+      // Show error to user - proctoring is now mandatory
+      throw new Error(
+        'Camera and microphone access is required for this test. Please grant permissions and refresh the page.'
+      );
     }
   }, [attemptId]);
 

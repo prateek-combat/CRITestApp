@@ -1,6 +1,12 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
+import { CategoryWeightService } from '@/lib/categoryWeightService';
+import {
+  calculateWeightedComposite,
+  calculateUnweightedComposite,
+  CategoryWeights,
+} from '@/types/categories';
 
 export const revalidate = 0; // Disable caching for this route
 
@@ -37,6 +43,10 @@ export async function GET(request: NextRequest) {
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
     const invitationId = searchParams.get('invitationId');
+
+    // NEW: Weight profile parameter for configurable scoring
+    const weightProfileId = searchParams.get('weightProfile');
+    const customWeightsParam = searchParams.get('customWeights');
 
     // Build where clauses for both regular and public attempts
     const baseWhere: any = {
@@ -157,6 +167,85 @@ export async function GET(request: NextRequest) {
       where: { testId },
     });
 
+    // NEW: Get weight profile for configurable scoring
+    let weightProfile = null;
+    let weights: CategoryWeights = {
+      LOGICAL: 20,
+      VERBAL: 20,
+      NUMERICAL: 20,
+      ATTENTION_TO_DETAIL: 20,
+      OTHER: 20,
+    }; // Default equal weights
+
+    try {
+      // Check for custom weights first
+      if (customWeightsParam) {
+        try {
+          const customWeights = JSON.parse(customWeightsParam);
+          // Validate the custom weights structure
+          if (
+            customWeights &&
+            typeof customWeights === 'object' &&
+            typeof customWeights.LOGICAL === 'number' &&
+            typeof customWeights.VERBAL === 'number' &&
+            typeof customWeights.NUMERICAL === 'number' &&
+            typeof customWeights.ATTENTION_TO_DETAIL === 'number' &&
+            typeof customWeights.OTHER === 'number'
+          ) {
+            weights = customWeights;
+            weightProfile = {
+              id: 'custom',
+              name: 'Custom Weights',
+              description: 'Custom weight configuration',
+              weights: customWeights,
+            };
+          }
+        } catch (parseError) {
+          console.warn('Error parsing custom weights:', parseError);
+          // Fall back to profile or default weights
+        }
+      }
+
+      // If no custom weights or parsing failed, try weight profile
+      if (!customWeightsParam || weightProfile?.id !== 'custom') {
+        if (weightProfileId) {
+          weightProfile =
+            await CategoryWeightService.getProfileById(weightProfileId);
+          if (weightProfile) {
+            weights = weightProfile.weights;
+          }
+        } else {
+          // Use default profile if no specific profile requested
+          const defaultProfile =
+            await CategoryWeightService.getDefaultProfile();
+          if (defaultProfile) {
+            weightProfile = defaultProfile;
+            weights = defaultProfile.weights;
+          }
+        }
+      }
+    } catch (error) {
+      console.warn(
+        'Error fetching weight profile, using default weights:',
+        error
+      );
+      // Continue with default weights
+    }
+
+    // Get total questions per category for the test (to handle skipped questions correctly)
+    const categoryQuestionCounts = await prisma.question.groupBy({
+      by: ['category'],
+      where: { testId },
+      _count: { id: true },
+    });
+
+    const totalQuestionsByCategory: Record<string, number> = {};
+    categoryQuestionCounts.forEach((item) => {
+      if (item.category) {
+        totalQuestionsByCategory[item.category] = item._count.id;
+      }
+    });
+
     // Calculate scores for all attempts first
     const processedAttempts = allAttempts.map((attempt, index) => {
       const categoryScores: Record<
@@ -164,30 +253,50 @@ export async function GET(request: NextRequest) {
         { correct: number; total: number; percentage: number }
       > = {};
 
+      // Initialize all categories with total questions from test
+      Object.entries(totalQuestionsByCategory).forEach(([category, total]) => {
+        categoryScores[category] = { correct: 0, total, percentage: 0 };
+      });
+
+      // Count correct answers for each category
       for (const answer of attempt.submittedAnswers) {
         const category = answer.question.category;
-        if (!category) continue;
-        if (!categoryScores[category]) {
-          categoryScores[category] = { correct: 0, total: 0, percentage: 0 };
-        }
-        categoryScores[category].total++;
+        if (!category || !categoryScores[category]) continue;
 
         if (answer.isCorrect) {
           categoryScores[category].correct++;
         }
       }
 
+      // Calculate percentages based on total questions in test (not just answered)
       Object.keys(categoryScores).forEach((category) => {
         const score = categoryScores[category];
         score.percentage =
           score.total > 0 ? (score.correct / score.total) * 100 : 0;
       });
 
-      // Convert composite score to percentage using rawScore and total test questions
-      const compositePercentage =
-        totalTestQuestions > 0 && attempt.rawScore !== null
-          ? (attempt.rawScore / totalTestQuestions) * 100
-          : 0;
+      // NEW: Calculate consistent category-based scores
+      const categoryScoresForWeighting: Record<
+        string,
+        { correct: number; total: number }
+      > = {};
+      Object.entries(categoryScores).forEach(([category, score]) => {
+        categoryScoresForWeighting[category] = {
+          correct: score.correct,
+          total: score.total,
+        };
+      });
+
+      // Calculate weighted composite score using configurable weights
+      const weightedComposite = calculateWeightedComposite(
+        categoryScoresForWeighting,
+        weights
+      );
+
+      // Calculate unweighted composite using equal weights (for consistent comparison)
+      const unweightedComposite = calculateUnweightedComposite(
+        categoryScoresForWeighting
+      );
 
       return {
         ...attempt,
@@ -196,7 +305,8 @@ export async function GET(request: NextRequest) {
         scoreNumerical: categoryScores['NUMERICAL']?.percentage || 0,
         scoreAttention: categoryScores['ATTENTION_TO_DETAIL']?.percentage || 0,
         scoreOther: categoryScores['OTHER']?.percentage || 0,
-        composite: compositePercentage,
+        composite: weightedComposite, // Use weighted composite score
+        compositeUnweighted: unweightedComposite, // Use consistent category-based unweighted score
         percentile: 0, // Will be calculated after we have all scores
       };
     });
@@ -319,6 +429,7 @@ export async function GET(request: NextRequest) {
         scoreAttention: attempt.scoreAttention,
         scoreOther: attempt.scoreOther,
         composite: attempt.composite,
+        compositeUnweighted: attempt.compositeUnweighted, // NEW: Include unweighted score for comparison
         percentile: attempt.percentile,
         rank: index + 1 + (page - 1) * pageSize,
         type: attempt.type, // Add type to distinguish regular vs public
@@ -384,7 +495,16 @@ export async function GET(request: NextRequest) {
         search,
         sortBy,
         sortOrder,
+        weightProfile: weightProfileId,
       },
+      weightProfile: weightProfile
+        ? {
+            id: weightProfile.id,
+            name: weightProfile.name,
+            description: weightProfile.description,
+            weights: weightProfile.weights,
+          }
+        : null,
       stats: {
         totalCandidates: total,
         avgScore: avgScorePercentage,
