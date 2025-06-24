@@ -885,8 +885,50 @@ export default function TestsPage() {
         </div>
       )}
 
-      {/* Invitations Tab */}
+      {/* Redirect message for invitations */}
       {activeTab === 'invitations' && (
+        <div className="page-transition-slide-up space-y-4">
+          <div className="micro-lift rounded-lg border border-blue-200 bg-blue-50 p-6 text-center">
+            <h2 className="mb-3 text-lg font-medium text-blue-900">
+              Invitations Moved to Job Profiles
+            </h2>
+            <p className="mb-4 text-blue-700">
+              Invitation and public link functionality has been moved to the Job
+              Profiles page for better organization around job positions.
+            </p>
+            <a
+              href="/admin/job-profiles"
+              className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Go to Job Profiles →
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* Redirect message for public links */}
+      {activeTab === 'publicLinks' && (
+        <div className="page-transition-circle space-y-4">
+          <div className="micro-bounce rounded-lg border border-green-200 bg-green-50 p-6 text-center">
+            <h2 className="mb-3 text-lg font-medium text-green-900">
+              Public Links Moved to Job Profiles
+            </h2>
+            <p className="mb-4 text-green-700">
+              Public link functionality has been moved to the Job Profiles page
+              where you can create comprehensive assessments for job positions.
+            </p>
+            <a
+              href="/admin/job-profiles"
+              className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+            >
+              Go to Job Profiles →
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* Legacy invitation content - keeping for reference but hiding */}
+      {false && activeTab === 'invitations' && (
         <div className="page-transition-slide-up space-y-4">
           {/* Send Invitation Form */}
           <div className="micro-lift rounded-lg border border-gray-200 bg-white p-4">

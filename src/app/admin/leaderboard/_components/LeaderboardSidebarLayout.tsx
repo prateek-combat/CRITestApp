@@ -41,6 +41,28 @@ interface Test {
   };
 }
 
+interface JobProfile {
+  id: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  positions: Position[];
+  tests: Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    questionsCount: number;
+    isArchived: boolean;
+    weight: number;
+  }>;
+  _count: {
+    invitations: number;
+    completedInvitations: number;
+  };
+}
+
 interface WeightProfile {
   id: string;
   name: string;
@@ -120,7 +142,12 @@ export default function LeaderboardSidebarLayout({
 
   const [positions, setPositions] = useState<Position[]>([]);
   const [tests, setTests] = useState<Test[]>([]);
+  const [jobProfiles, setJobProfiles] = useState<JobProfile[]>([]);
   const [selectedPositionId, setSelectedPositionId] = useState<string>('');
+  const [selectedJobProfileId, setSelectedJobProfileId] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'position' | 'jobProfile'>(
+    'position'
+  );
   const [data, setData] = useState<LeaderboardData | null>(null);
   const [availableProfiles, setAvailableProfiles] = useState<WeightProfile[]>(
     []
@@ -141,6 +168,9 @@ export default function LeaderboardSidebarLayout({
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const router = useRouter();
+
+  // NEW: State for right sidebar visibility
+  const [isWeightsSidebarOpen, setIsWeightsSidebarOpen] = useState(true);
 
   // Fetch weight profiles
   const fetchProfiles = useCallback(async () => {
@@ -198,11 +228,26 @@ export default function LeaderboardSidebarLayout({
     }
   }, []);
 
+  // Fetch job profiles
+  const fetchJobProfiles = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/job-profiles');
+      if (response.ok) {
+        const jobProfilesData = await response.json();
+        setJobProfiles(jobProfilesData);
+      }
+    } catch (error) {
+      console.error('Error fetching job profiles:', error);
+    }
+  }, []);
+
   // Fetch leaderboard data
   const fetchLeaderboardData = useCallback(
-    async (positionId?: string) => {
+    async (positionId?: string, jobProfileId?: string) => {
       const targetPositionId = positionId || selectedPositionId;
-      if (!targetPositionId) return;
+      const targetJobProfileId = jobProfileId || selectedJobProfileId;
+
+      if (!targetPositionId && !targetJobProfileId) return;
 
       setIsLoading(true);
       setError(null);
@@ -210,12 +255,16 @@ export default function LeaderboardSidebarLayout({
       try {
         const params = new URLSearchParams();
 
-        // Always set positionId
-        params.set('positionId', targetPositionId);
+        // Set either positionId or jobProfileId based on view mode
+        if (viewMode === 'jobProfile' && targetJobProfileId) {
+          params.set('jobProfileId', targetJobProfileId);
+        } else if (targetPositionId) {
+          params.set('positionId', targetPositionId);
+        }
 
         // Add other search params
         urlSearchParams.forEach((value, key) => {
-          if (key !== 'positionId' && value) {
+          if (key !== 'positionId' && key !== 'jobProfileId' && value) {
             params.set(key, value);
           }
         });
@@ -237,14 +286,15 @@ export default function LeaderboardSidebarLayout({
         setIsLoading(false);
       }
     },
-    [selectedPositionId, urlSearchParams]
+    [selectedPositionId, selectedJobProfileId, viewMode, urlSearchParams]
   );
 
   // Initialize data fetch
   useEffect(() => {
     fetchPositions();
     fetchProfiles();
-  }, [fetchPositions, fetchProfiles]);
+    fetchJobProfiles();
+  }, [fetchPositions, fetchProfiles, fetchJobProfiles]);
 
   // Handle position selection from URL params
   useEffect(() => {
@@ -261,12 +311,19 @@ export default function LeaderboardSidebarLayout({
     }
   }, [urlSearchParams, positions, selectedPositionId]);
 
-  // Fetch data when position changes
+  // Fetch data when position or job profile changes
   useEffect(() => {
-    if (selectedPositionId) {
-      fetchLeaderboardData(selectedPositionId);
+    if (viewMode === 'position' && selectedPositionId) {
+      fetchLeaderboardData(selectedPositionId, undefined);
+    } else if (viewMode === 'jobProfile' && selectedJobProfileId) {
+      fetchLeaderboardData(undefined, selectedJobProfileId);
     }
-  }, [selectedPositionId, fetchLeaderboardData]);
+  }, [
+    selectedPositionId,
+    selectedJobProfileId,
+    viewMode,
+    fetchLeaderboardData,
+  ]);
 
   // Filter positions based on search and department
   const filteredPositions = useMemo(() => {
@@ -298,11 +355,33 @@ export default function LeaderboardSidebarLayout({
 
   const handlePositionSelect = (positionId: string) => {
     setSelectedPositionId(positionId);
+    setViewMode('position');
 
     // Update URL
     const params = new URLSearchParams(urlSearchParams.toString());
     params.set('positionId', positionId);
+    params.delete('jobProfileId');
     router.push(`/admin/leaderboard?${params.toString()}`);
+  };
+
+  const handleJobProfileSelect = (jobProfileId: string) => {
+    setSelectedJobProfileId(jobProfileId);
+    setViewMode('jobProfile');
+
+    // Update URL
+    const params = new URLSearchParams(urlSearchParams.toString());
+    params.set('jobProfileId', jobProfileId);
+    params.delete('positionId');
+    router.push(`/admin/leaderboard?${params.toString()}`);
+  };
+
+  const handleViewModeChange = (mode: 'position' | 'jobProfile') => {
+    setViewMode(mode);
+    if (mode === 'position' && selectedPositionId) {
+      handlePositionSelect(selectedPositionId);
+    } else if (mode === 'jobProfile' && selectedJobProfileId) {
+      handleJobProfileSelect(selectedJobProfileId);
+    }
   };
 
   const handleFilterChange = (
@@ -603,16 +682,42 @@ export default function LeaderboardSidebarLayout({
         </div>
 
         {/* Right Sidebar - Weight Profile Selector */}
-        <div className="w-80 flex-shrink-0">
+        <aside
+          className={`flex-shrink-0 transition-all duration-300 ${
+            isWeightsSidebarOpen ? 'w-80' : 'w-16'
+          }`}
+        >
           {selectedPosition && (
-            <WeightProfileSelector
-              availableProfiles={availableProfiles}
-              currentProfile={data?.weightProfile || null}
-              onProfileChange={handleWeightProfileChange}
-              onCustomWeightsChange={handleCustomWeightsChange}
-            />
+            <div className="flex h-full flex-col rounded-lg border border-gray-200 bg-white shadow-sm">
+              <div className="flex items-center justify-between border-b border-gray-200 p-3">
+                {isWeightsSidebarOpen && (
+                  <h2 className="text-sm font-semibold text-gray-900">
+                    Category Weights
+                  </h2>
+                )}
+                <button
+                  onClick={() => setIsWeightsSidebarOpen(!isWeightsSidebarOpen)}
+                  className="text-gray-500 hover:text-gray-800"
+                  title={isWeightsSidebarOpen ? 'Collapse' : 'Expand'}
+                >
+                  <Filter className="h-5 w-5" />
+                </button>
+              </div>
+              <div
+                className={`flex-1 overflow-auto p-3 ${
+                  !isWeightsSidebarOpen && 'hidden'
+                }`}
+              >
+                <WeightProfileSelector
+                  availableProfiles={availableProfiles}
+                  currentProfile={data?.weightProfile || null}
+                  onProfileChange={handleWeightProfileChange}
+                  onCustomWeightsChange={handleCustomWeightsChange}
+                />
+              </div>
+            </div>
           )}
-        </div>
+        </aside>
       </div>
 
       {/* Compare Drawer */}

@@ -19,6 +19,7 @@ import {
   User,
   Menu,
   X,
+  Building2,
 } from 'lucide-react';
 
 export default function AdminLayout({
@@ -94,7 +95,8 @@ export default function AdminLayout({
 
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'Tests & Invitations', href: '/admin/tests', icon: FileText },
+    { name: 'Tests', href: '/admin/tests', icon: FileText },
+    { name: 'Job Profiles', href: '/admin/job-profiles', icon: Building2 },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Leaderboard', href: '/admin/leaderboard', icon: Trophy },
     { name: 'Users', href: '/admin/users', icon: Users },
