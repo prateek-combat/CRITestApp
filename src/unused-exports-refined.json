@@ -1,0 +1,335 @@
+{
+  "summary": {
+    "totalExports": 373,
+    "usedExports": 74,
+    "internallyUsedExports": 84,
+    "unusedExports": 65
+  },
+  "unusedExports": [
+    {
+      "name": "revalidate",
+      "file": "app/api/admin/leaderboard/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "revalidate",
+      "file": "app/api/admin/positions/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "revalidate",
+      "file": "app/api/admin/positions/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "debugAuth",
+      "file": "app/api/debug-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "debugLogin",
+      "file": "app/api/debug-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "debugNextAuth",
+      "file": "app/api/debug-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "debugClient",
+      "file": "app/api/debug-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "debugServer",
+      "file": "app/api/debug-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "debugError",
+      "file": "app/api/debug-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "metadata",
+      "file": "app/layout.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "ListSkeleton",
+      "file": "components/LoadingSkeleton.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "FormSkeleton",
+      "file": "components/LoadingSkeleton.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "PageSkeleton",
+      "file": "components/LoadingSkeleton.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "NavigationSkeleton",
+      "file": "components/LoadingSkeleton.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "FilterSkeleton",
+      "file": "components/LoadingSkeleton.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "Dropdown",
+      "file": "components/ui/dropdown/Dropdown.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "DropdownItem",
+      "file": "components/ui/dropdown/DropdownItem.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "requireSuperAdminAuth",
+      "file": "lib/auth-middleware.ts",
+      "isDefault": false
+    },
+    {
+      "name": "getCurrentSession",
+      "file": "lib/auth-middleware.ts",
+      "isDefault": false
+    },
+    {
+      "name": "hasRole",
+      "file": "lib/auth-middleware.ts",
+      "isDefault": false
+    },
+    {
+      "name": "isAdmin",
+      "file": "lib/auth-middleware.ts",
+      "isDefault": false
+    },
+    {
+      "name": "getAuthConfig",
+      "file": "lib/auth.ts",
+      "isDefault": false
+    },
+    {
+      "name": "categoryWeightService",
+      "file": "lib/categoryWeightService.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DEFAULT_PORT",
+      "file": "lib/constants.ts",
+      "isDefault": false
+    },
+    {
+      "name": "TEST_DATABASE_URL",
+      "file": "lib/constants.ts",
+      "isDefault": false
+    },
+    {
+      "name": "EMAIL_FROM",
+      "file": "lib/constants.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DEFAULT_QUESTION_TIMER",
+      "file": "lib/constants.ts",
+      "isDefault": false
+    },
+    {
+      "name": "MAX_FILE_UPLOAD_SIZE",
+      "file": "lib/constants.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DEFAULT_PAGE_SIZE",
+      "file": "lib/constants.ts",
+      "isDefault": false
+    },
+    {
+      "name": "MAX_PAGE_SIZE",
+      "file": "lib/constants.ts",
+      "isDefault": false
+    },
+    {
+      "name": "SESSION_TIMEOUT",
+      "file": "lib/constants.ts",
+      "isDefault": false
+    },
+    {
+      "name": "API_RATE_LIMIT",
+      "file": "lib/constants.ts",
+      "isDefault": false
+    },
+    {
+      "name": "invitationEmailTemplate",
+      "file": "lib/email-templates.ts",
+      "isDefault": false
+    },
+    {
+      "name": "testCompletionAdminTemplate",
+      "file": "lib/email-templates.ts",
+      "isDefault": false
+    },
+    {
+      "name": "testCompletionCandidateTemplate",
+      "file": "lib/email-templates.ts",
+      "isDefault": false
+    },
+    {
+      "name": "reminderEmailTemplate",
+      "file": "lib/email-templates.ts",
+      "isDefault": false
+    },
+    {
+      "name": "genericEmailTemplate",
+      "file": "lib/email-templates.ts",
+      "isDefault": false
+    },
+    {
+      "name": "testEmailConfiguration",
+      "file": "lib/email.ts",
+      "isDefault": false
+    },
+    {
+      "name": "getEmailServiceInfo",
+      "file": "lib/email.ts",
+      "isDefault": false
+    },
+    {
+      "name": "testLogger",
+      "file": "lib/logger.ts",
+      "isDefault": false
+    },
+    {
+      "name": "loggedApiHandler",
+      "file": "lib/logging-middleware.ts",
+      "isDefault": false
+    },
+    {
+      "name": "withDbLogging",
+      "file": "lib/logging-middleware.ts",
+      "isDefault": false
+    },
+    {
+      "name": "stopProctoringGlobally",
+      "file": "lib/proctor/useLiveFlags.ts",
+      "isDefault": false
+    },
+    {
+      "name": "getClientIdentifier",
+      "file": "lib/rate-limit.ts",
+      "isDefault": false
+    },
+    {
+      "name": "getRateLimitRule",
+      "file": "lib/rate-limit.ts",
+      "isDefault": false
+    },
+    {
+      "name": "checkRateLimit",
+      "file": "lib/rate-limit.ts",
+      "isDefault": false
+    },
+    {
+      "name": "createRateLimitResponse",
+      "file": "lib/rate-limit.ts",
+      "isDefault": false
+    },
+    {
+      "name": "RiskCalculator",
+      "file": "lib/risk-calculator.ts",
+      "isDefault": false
+    },
+    {
+      "name": "calculateObjectiveTestScore",
+      "file": "lib/scoring/scoringEngine.ts",
+      "isDefault": false
+    },
+    {
+      "name": "parseMultipleEmails",
+      "file": "lib/validation-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "validateRequiredFields",
+      "file": "lib/validation-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "sanitizeText",
+      "file": "lib/validation-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "validateUrl",
+      "file": "lib/validation-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "safePercentage",
+      "file": "lib/validation-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "formatDuration",
+      "file": "lib/validation-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "debounce",
+      "file": "lib/validation-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "generateRandomString",
+      "file": "lib/validation-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "config",
+      "file": "middleware.ts",
+      "isDefault": false
+    },
+    {
+      "name": "getCategoryDisplayName",
+      "file": "types/categories.ts",
+      "isDefault": false
+    },
+    {
+      "name": "ALL_CATEGORIES",
+      "file": "types/categories.ts",
+      "isDefault": false
+    },
+    {
+      "name": "isCoreCategory",
+      "file": "types/categories.ts",
+      "isDefault": false
+    },
+    {
+      "name": "getDefaultWeights",
+      "file": "types/categories.ts",
+      "isDefault": false
+    },
+    {
+      "name": "isCommonCategory",
+      "file": "types/categories.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DEFAULT_CATEGORIES_LEGACY",
+      "file": "types/categories.ts",
+      "isDefault": false
+    },
+    {
+      "name": "generatePDFReport",
+      "file": "utils/pdfReportGenerator.ts",
+      "isDefault": false
+    }
+  ]
+}
