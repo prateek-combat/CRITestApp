@@ -22,9 +22,16 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const testId = searchParams.get('testId');
-    if (!testId) {
+    const positionId = searchParams.get('positionId');
+    const positionIds = searchParams
+      .get('positionIds')
+      ?.split(',')
+      .filter(Boolean);
+
+    // Support both single test and position-based filtering
+    if (!testId && !positionId && !positionIds) {
       return NextResponse.json(
-        { error: 'testId is required' },
+        { error: 'testId, positionId, or positionIds is required' },
         { status: 400 }
       );
     }
@@ -65,10 +72,28 @@ export async function GET(request: NextRequest) {
       if (dateTo) baseWhere.completedAt.lte = new Date(dateTo);
     }
 
+    // Build test filtering conditions
+    let testFilterCondition: any = {};
+
+    if (testId) {
+      // Single test filter
+      testFilterCondition = { testId };
+    } else if (positionId) {
+      // Single position filter
+      testFilterCondition = {
+        test: { positionId },
+      };
+    } else if (positionIds && positionIds.length > 0) {
+      // Multiple positions filter
+      testFilterCondition = {
+        test: { positionId: { in: positionIds } },
+      };
+    }
+
     // Regular test attempts where clause
     const regularWhere = {
       ...baseWhere,
-      testId,
+      ...(testId ? { testId } : { test: testFilterCondition.test }),
     };
     if (invitationId) {
       regularWhere.invitationId = invitationId;
@@ -77,9 +102,7 @@ export async function GET(request: NextRequest) {
     // Public test attempts where clause (need to join through publicLink)
     const publicWhere = {
       ...baseWhere,
-      publicLink: {
-        testId,
-      },
+      publicLink: testId ? { testId } : { test: testFilterCondition.test },
     };
 
     const orderBy: any = {
@@ -162,10 +185,18 @@ export async function GET(request: NextRequest) {
       })),
     ];
 
-    // Get total questions for the test to calculate percentages
-    const totalTestQuestions = await prisma.question.count({
-      where: { testId },
-    });
+    // Get total questions for the test(s) to calculate percentages
+    const totalTestQuestions = testId
+      ? await prisma.question.count({ where: { testId } })
+      : await prisma.question.count({
+          where: {
+            test: positionId
+              ? { positionId }
+              : positionIds && positionIds.length > 0
+                ? { positionId: { in: positionIds } }
+                : undefined,
+          },
+        });
 
     // NEW: Get weight profile for configurable scoring
     let weightProfile = null;

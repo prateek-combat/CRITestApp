@@ -16,11 +16,11 @@ model User {
   role                   UserRole                @default(ADMIN)
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
+  categoryWeightProfiles CategoryWeightProfile[]
   invitations            Invitation[]
   publicTestLinks        PublicTestLink[]
-  tests                  Test[]
   archivedTests          Test[]                  @relation("ArchivedTests")
-  categoryWeightProfiles CategoryWeightProfile[]
+  tests                  Test[]
   positions              Position[]
 }
 
@@ -43,32 +43,32 @@ model Position {
 }
 
 model Test {
-  id                      String           @id @default(uuid())
-  title                   String
-  description             String?
-  lockOrder               Boolean          @default(false)
-  createdAt               DateTime         @default(now())
-  updatedAt               DateTime         @updatedAt
-  createdById             String
-  allowReview             Boolean          @default(true)
-  isArchived              Boolean          @default(false)
-  archivedAt              DateTime?
-  archivedById            String?
-  emailNotificationsEnabled Boolean        @default(true)
-  notificationEmails      String[]         @default(["prateek@combatrobotics.in", "gaurav@combatrobotics.in"])
-  includeAnalytics        Boolean          @default(true)
-  positionId              String?          // NULLABLE for backward compatibility
-  invitations             Invitation[]
-  publicTestLinks         PublicTestLink[]
-  questions               Question[]
-  createdBy               User             @relation(fields: [createdById], references: [id])
-  archivedBy              User?            @relation("ArchivedTests", fields: [archivedById], references: [id])
-  position                Position?        @relation(fields: [positionId], references: [id])
-  testAttempts            TestAttempt[]
+  id                        String           @id @default(uuid())
+  title                     String
+  description               String?
+  lockOrder                 Boolean          @default(false)
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+  createdById               String
+  positionId                String?
+  allowReview               Boolean          @default(true)
+  isArchived                Boolean          @default(false)
+  archivedAt                DateTime?
+  archivedById              String?
+  emailNotificationsEnabled Boolean          @default(true)
+  notificationEmails        String[]         @default(["prateek@combatrobotics.in", "gaurav@combatrobotics.in"])
+  includeAnalytics          Boolean          @default(true)
+  invitations               Invitation[]
+  publicTestLinks           PublicTestLink[]
+  questions                 Question[]
+  archivedBy                User?            @relation("ArchivedTests", fields: [archivedById], references: [id])
+  createdBy                 User             @relation(fields: [createdById], references: [id])
+  position                  Position?        @relation(fields: [positionId], references: [id])
+  testAttempts              TestAttempt[]
 
   @@index([isArchived, createdAt])
   @@index([createdById])
-  @@index([positionId, isArchived])
+  @@index([positionId])
 }
 
 model PersonalityDimension {
@@ -121,40 +121,40 @@ model Invitation {
 }
 
 model TestAttempt {
-  id                  String            @id @default(uuid())
-  candidateName       String?
-  candidateEmail      String?
-  ipAddress           String?
-  startedAt           DateTime          @default(now())
-  completedAt         DateTime?
-  status              TestAttemptStatus @default(IN_PROGRESS)
-  rawScore            Int?
-  percentile          Float?
-  riskScore           Float?
-  riskScoreBreakdown  Json?
-  categorySubScores   Json?
-  tabSwitches         Int               @default(0)
-  proctoringEnabled   Boolean           @default(true)
-  videoRecordingUrl   String?
-  audioRecordingUrl   String?
-  proctoringEvents    Json?
-  faceCapturesUrls    String[]          @default([])
-  screenRecordingUrl  String?
-  proctoringStartedAt DateTime?
-  proctoringEndedAt   DateTime?
-  permissionsGranted  Boolean           @default(false)
-  currentQuestionIndex Int?             @default(0)
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-  invitationId        String            @unique
-  testId              String
-  personalityProfile  Json?
-  personalityScores   Json?
-  proctorAssets       ProctorAsset[]
-  proctorEvents       ProctorEvent[]
-  submittedAnswers    SubmittedAnswer[]
-  invitation          Invitation        @relation(fields: [invitationId], references: [id], onDelete: Cascade)
-  test                Test              @relation(fields: [testId], references: [id], onDelete: Cascade)
+  id                   String            @id @default(uuid())
+  candidateName        String?
+  candidateEmail       String?
+  ipAddress            String?
+  startedAt            DateTime          @default(now())
+  completedAt          DateTime?
+  status               TestAttemptStatus @default(IN_PROGRESS)
+  rawScore             Int?
+  percentile           Float?
+  categorySubScores    Json?
+  tabSwitches          Int               @default(0)
+  proctoringEnabled    Boolean           @default(true)
+  videoRecordingUrl    String?
+  audioRecordingUrl    String?
+  proctoringEvents     Json?
+  faceCapturesUrls     String[]          @default([])
+  screenRecordingUrl   String?
+  proctoringStartedAt  DateTime?
+  proctoringEndedAt    DateTime?
+  permissionsGranted   Boolean           @default(false)
+  riskScore            Float?
+  currentQuestionIndex Int?              @default(0)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  invitationId         String            @unique
+  testId               String
+  personalityProfile   Json?
+  personalityScores    Json?
+  riskScoreBreakdown   Json?
+  proctorAssets        ProctorAsset[]
+  proctorEvents        ProctorEvent[]
+  submittedAnswers     SubmittedAnswer[]
+  invitation           Invitation        @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  test                 Test              @relation(fields: [testId], references: [id], onDelete: Cascade)
 
   @@index([status, completedAt])
   @@index([testId, status])
@@ -216,38 +216,38 @@ model PublicTestLink {
 }
 
 model PublicTestAttempt {
-  id                  String                  @id @default(uuid())
-  publicLinkId        String
-  candidateName       String
-  candidateEmail      String
-  ipAddress           String?
-  startedAt           DateTime                @default(now())
-  completedAt         DateTime?
-  status              TestAttemptStatus       @default(IN_PROGRESS)
-  rawScore            Int?
-  percentile          Float?
-  riskScore           Float?
-  riskScoreBreakdown  Json?
-  categorySubScores   Json?
-  tabSwitches         Int                     @default(0)
-  proctoringEnabled   Boolean                 @default(true)
-  videoRecordingUrl   String?
-  audioRecordingUrl   String?
-  proctoringEvents    Json?
-  faceCapturesUrls    String[]                @default([])
-  screenRecordingUrl  String?
-  proctoringStartedAt DateTime?
-  proctoringEndedAt   DateTime?
-  permissionsGranted  Boolean                 @default(false)
+  id                   String                  @id @default(uuid())
+  publicLinkId         String
+  candidateName        String
+  candidateEmail       String
+  ipAddress            String?
+  startedAt            DateTime                @default(now())
+  completedAt          DateTime?
+  status               TestAttemptStatus       @default(IN_PROGRESS)
+  rawScore             Int?
+  percentile           Float?
+  categorySubScores    Json?
+  tabSwitches          Int                     @default(0)
+  proctoringEnabled    Boolean                 @default(true)
+  videoRecordingUrl    String?
+  audioRecordingUrl    String?
+  proctoringEvents     Json?
+  faceCapturesUrls     String[]                @default([])
+  screenRecordingUrl   String?
+  proctoringStartedAt  DateTime?
+  proctoringEndedAt    DateTime?
+  permissionsGranted   Boolean                 @default(false)
+  riskScore            Float?
   currentQuestionIndex Int?                    @default(0)
-  createdAt           DateTime                @default(now())
-  updatedAt           DateTime                @updatedAt
-  personalityProfile  Json?
-  personalityScores   Json?
-  publicProctorAssets PublicProctorAsset[]
-  publicProctorEvents PublicProctorEvent[]
-  submittedAnswers    PublicSubmittedAnswer[]
-  publicLink          PublicTestLink          @relation(fields: [publicLinkId], references: [id], onDelete: Cascade)
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  personalityProfile   Json?
+  personalityScores    Json?
+  riskScoreBreakdown   Json?
+  publicProctorAssets  PublicProctorAsset[]
+  publicProctorEvents  PublicProctorEvent[]
+  submittedAnswers     PublicSubmittedAnswer[]
+  publicLink           PublicTestLink          @relation(fields: [publicLinkId], references: [id], onDelete: Cascade)
 
   @@index([status, completedAt])
   @@index([publicLinkId, status])
@@ -278,35 +278,35 @@ model PublicProctorEvent {
 }
 
 model PublicProctorAsset {
-  id          String            @id @default(cuid())
-  attemptId   String
-  kind        String
-  fileName    String
-  mimeType    String
-  fileSize    Int
-  data        Bytes
-  ts          DateTime          @default(now())
-  attempt     PublicTestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-}
-
-model UploadedFile {
-  id        String   @id @default(cuid())
+  id        String            @id @default(cuid())
+  attemptId String
+  kind      String
   fileName  String
   mimeType  String
   fileSize  Int
   data      Bytes
-  fileType  String   // 'QUESTION_IMAGE', 'RECORDING', etc.
+  ts        DateTime          @default(now())
+  attempt   PublicTestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+}
+
+model UploadedFile {
+  id         String   @id @default(cuid())
+  fileName   String
+  mimeType   String
+  fileSize   Int
+  data       Bytes
+  fileType   String
   uploadedAt DateTime @default(now())
-  uploadedBy String?  // User ID who uploaded (optional for anonymous)
+  uploadedBy String?
 }
 
 model CategoryWeightProfile {
   id          String   @id @default(uuid())
   name        String   @unique
   description String?
-  weights     Json     // Stores CategoryWeights as JSON
+  weights     Json
   isDefault   Boolean  @default(false)
-  isSystem    Boolean  @default(false) // System profiles cannot be deleted
+  isSystem    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   createdById String?
