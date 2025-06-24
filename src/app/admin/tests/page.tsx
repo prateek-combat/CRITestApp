@@ -119,6 +119,9 @@ export default function TestsPage() {
   const [publicLinksError, setPublicLinksError] = useState<string | null>(null);
 
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [processingInvitation, setProcessingInvitation] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     fetchTests();
@@ -518,6 +521,92 @@ export default function TestsPage() {
     setSelectedTestForEmail(test);
     setEmailSettingsOpen(true);
     setOpenDropdown(null);
+  };
+
+  const revokeInvitation = async (invitationId: string) => {
+    if (
+      !confirm(
+        '⚠️ Are you sure you want to revoke this invitation?\n\nThe candidate will no longer be able to access the test using this invitation.'
+      )
+    ) {
+      return;
+    }
+
+    setProcessingInvitation(invitationId);
+    try {
+      const response = await fetch(`/api/invitations/${invitationId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'CANCELLED',
+        }),
+      });
+
+      if (response.ok) {
+        alert('✅ Invitation revoked successfully');
+        fetchInvitations();
+      } else {
+        const error = await response.json();
+        alert(
+          `❌ Error revoking invitation: ${error.message || 'Unknown error'}`
+        );
+      }
+    } catch (error) {
+      console.error('Error revoking invitation:', error);
+      alert('❌ Network error occurred while revoking invitation');
+    } finally {
+      setProcessingInvitation(null);
+    }
+  };
+
+  const deleteInvitation = async (invitationId: string) => {
+    if (
+      !confirm(
+        '⚠️ PERMANENT DELETION WARNING ⚠️\n\nThis will PERMANENTLY delete this invitation from the database.\n\nThis action CANNOT be undone!\n\nAre you absolutely sure you want to delete this invitation?'
+      )
+    ) {
+      return;
+    }
+
+    setProcessingInvitation(invitationId);
+    try {
+      const response = await fetch(`/api/invitations/${invitationId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        alert('✅ Invitation deleted successfully');
+        fetchInvitations();
+      } else {
+        const error = await response.json();
+        if (response.status === 409) {
+          alert(
+            `❌ Cannot delete invitation: ${error.message}\n\nTip: You can revoke the invitation instead to prevent further access.`
+          );
+        } else {
+          alert(
+            `❌ Error deleting invitation: ${error.message || 'Unknown error'}`
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting invitation:', error);
+      alert('❌ Network error occurred while deleting invitation');
+    } finally {
+      setProcessingInvitation(null);
+    }
+  };
+
+  const canRevokeInvitation = (invitation: Invitation) => {
+    return (
+      invitation.status !== 'COMPLETED' && invitation.status !== 'CANCELLED'
+    );
+  };
+
+  const canDeleteInvitation = (invitation: Invitation) => {
+    return !invitation.testAttempt?.id;
   };
 
   return (
@@ -1024,14 +1113,42 @@ export default function TestsPage() {
                             : '-'}
                         </td>
                         <td className="whitespace-nowrap px-3 py-2 text-sm font-medium">
-                          {invitation.testAttempt?.id && (
-                            <Link
-                              href={`/admin/analytics/analysis/${invitation.testAttempt.id}`}
-                              className="text-brand-600 hover:text-brand-900"
-                            >
-                              View Analysis
-                            </Link>
-                          )}
+                          <div className="flex items-center space-x-2">
+                            {invitation.testAttempt?.id && (
+                              <Link
+                                href={`/admin/analytics/analysis/${invitation.testAttempt.id}`}
+                                className="text-brand-600 hover:text-brand-900"
+                              >
+                                View Analysis
+                              </Link>
+                            )}
+                            {canRevokeInvitation(invitation) && (
+                              <button
+                                onClick={() => revokeInvitation(invitation.id)}
+                                disabled={
+                                  processingInvitation === invitation.id
+                                }
+                                className="text-orange-600 hover:text-orange-900 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {processingInvitation === invitation.id
+                                  ? 'Revoking...'
+                                  : 'Revoke'}
+                              </button>
+                            )}
+                            {canDeleteInvitation(invitation) && (
+                              <button
+                                onClick={() => deleteInvitation(invitation.id)}
+                                disabled={
+                                  processingInvitation === invitation.id
+                                }
+                                className="text-red-600 hover:text-red-900 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {processingInvitation === invitation.id
+                                  ? 'Deleting...'
+                                  : 'Delete'}
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
