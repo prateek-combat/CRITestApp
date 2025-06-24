@@ -1,1153 +1,701 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
+  Users,
+  TrendingUp,
+  Clock,
+  Target,
+  Building2,
+  TestTube,
+  Calendar,
+  Award,
+  BarChart3,
   PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
-import Link from 'next/link';
+  Search,
+  Filter,
+  RefreshCw,
+} from 'lucide-react';
 
-// Utility function to safely convert to number and handle NaN
-const toNumber = (value: any) => {
-  const num = Number(value);
-  return isNaN(num) ? 0 : num;
-};
-
-import { safePercentage } from '@/lib/validation-utils';
-
-interface TestAttemptData {
+interface Position {
   id: string;
-  testId: string;
-  testTitle?: string;
-  testName?: string;
-  candidateName: string | null;
-  candidateEmail: string | null;
-  completedAt: string | null;
-  startedAt: string | null;
-  effectiveCompletedAt: string | null; // New field: completedAt || startedAt
-  status: string;
-  rawScore: number | null;
-  totalQuestions: number;
-  durationSeconds: number | null;
-  categoryScores: Record<string, { correct: number; total: number }>;
-  isPublicAttempt: boolean;
+  name: string;
+  code: string;
+  description: string | null;
+  department: string | null;
+  level: string | null;
+  isActive: boolean;
+  testCount: number;
+  activeTestCount: number;
 }
 
-interface TestAnalytics {
-  testId: string;
-  testTitle: string;
+interface PositionAnalytics {
+  position: Position;
   totalAttempts: number;
   completedAttempts: number;
-  difficultyLevel: 'Easy' | 'Medium' | 'Hard';
-  difficultyScore: number; // Average score used to determine difficulty
   averageScore: number;
-  averageDuration: number;
-  highestScore: number;
-  lowestScore: number;
-  lastAttemptDate: string | null;
-  scoreDistribution: { range: string; count: number }[];
-  recentTrend: 'up' | 'down' | 'stable';
+  topScore: number;
+  averageTimeMinutes: number;
+  recentAttempts: number; // Last 30 days
+  scoreDistribution: {
+    range: string;
+    count: number;
+    percentage: number;
+  }[];
+  categoryAverages: {
+    logical: number;
+    verbal: number;
+    numerical: number;
+    attention: number;
+    other: number;
+  };
+  monthlyTrends: {
+    month: string;
+    attempts: number;
+    averageScore: number;
+  }[];
+  topPerformers: {
+    candidateName: string;
+    candidateEmail: string;
+    score: number;
+    completedAt: string;
+    attemptId: string;
+  }[];
 }
 
-const AnalyticsPage = () => {
+interface OverallStats {
+  totalPositions: number;
+  totalCandidates: number;
+  totalAttempts: number;
+  averageScore: number;
+  completionRate: number;
+  thisMonthAttempts: number;
+  lastMonthAttempts: number;
+  growthRate: number;
+}
+
+export default function PositionAnalyticsPage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
 
-  const [analyticsData, setAnalyticsData] = useState<any[]>([]);
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [selectedPositionId, setSelectedPositionId] = useState<string>('');
+  const [analytics, setAnalytics] = useState<PositionAnalytics | null>(null);
+  const [overallStats, setOverallStats] = useState<OverallStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [timeRange, setTimeRange] = useState<string>('all');
-  const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<
-    'attempts' | 'completion' | 'score' | 'recent'
-  >('recent');
-
-  // New state for tabs and test attempts management
-  const [activeTab, setActiveTab] = useState<'overview' | 'attempts'>(
-    'overview'
-  );
   const [searchTerm, setSearchTerm] = useState('');
-  const [attemptSortBy, setAttemptSortBy] = useState<
-    'date' | 'name' | 'test' | 'score'
-  >('date');
-  const [attemptSortOrder, setAttemptSortOrder] = useState<'asc' | 'desc'>(
-    'desc'
-  );
-  const [selectedAttemptId, setSelectedAttemptId] = useState<string | null>(
-    null
-  );
-  const [deletingAttemptId, setDeletingAttemptId] = useState<string | null>(
-    null
-  );
-  const [selectedTestFilter, setSelectedTestFilter] = useState<string>('all');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
 
-  const fetchAnalytics = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  // Auth check
+  useEffect(() => {
+    if (status === 'loading') return;
+    if (
+      !session?.user ||
+      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
+    ) {
+      router.push('/login');
+      return;
+    }
+  }, [session, status, router]);
+
+  // Fetch positions
+  const fetchPositions = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/analytics/test-attempts');
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: Failed to fetch analytics`);
-      }
+      const response = await fetch(
+        '/api/admin/positions?includeTestCount=true'
+      );
+      if (!response.ok) throw new Error('Failed to fetch positions');
       const data = await response.json();
 
-      if (Array.isArray(data)) {
-        setAnalyticsData(data);
-      } else {
-        throw new Error('Invalid data format received from server');
+      // Only show active positions with tests
+      const activePositionsWithTests = data.filter(
+        (p: Position) => p.isActive && p.activeTestCount > 0
+      );
+      setPositions(activePositionsWithTests);
+
+      // Select first position by default
+      if (activePositionsWithTests.length > 0 && !selectedPositionId) {
+        setSelectedPositionId(activePositionsWithTests[0].id);
       }
-    } catch (e: any) {
-      console.error(e);
-      setError(e.message || 'An unknown error occurred');
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Failed to fetch positions'
+      );
+    }
+  }, [selectedPositionId]);
+
+  // Fetch overall statistics
+  const fetchOverallStats = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/analytics/overview');
+      if (!response.ok) throw new Error('Failed to fetch overall statistics');
+      const data = await response.json();
+      setOverallStats(data);
+    } catch (err) {
+      console.error('Failed to fetch overall stats:', err);
     }
   }, []);
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, [fetchAnalytics]);
+  // Fetch position analytics
+  const fetchPositionAnalytics = useCallback(async () => {
+    if (!selectedPositionId) return;
 
-  // Delete test attempt function
-  const deleteTestAttempt = useCallback(
-    async (attemptId: string, isPublic: boolean) => {
-      if (
-        !confirm(
-          'Are you sure you want to delete this test attempt? This action cannot be undone.'
-        )
-      ) {
-        return;
-      }
+    setLoadingAnalytics(true);
+    setError(null);
 
-      setDeletingAttemptId(attemptId);
-      try {
-        const endpoint = isPublic
-          ? `/api/admin/test-attempts/${attemptId}?type=public`
-          : `/api/admin/test-attempts/${attemptId}`;
-        const response = await fetch(endpoint, {
-          method: 'DELETE',
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to delete test attempt');
-        }
-
-        // Refresh data
-        await fetchAnalytics();
-        setSelectedAttemptId(null);
-      } catch (error) {
-        console.error('Error deleting test attempt:', error);
-        alert('Failed to delete test attempt. Please try again.');
-      } finally {
-        setDeletingAttemptId(null);
-      }
-    },
-    [fetchAnalytics]
-  );
-
-  // Filter data by time range
-  const filteredAttempts = useMemo(() => {
-    if (timeRange === 'all' || !timeRange) {
-      return analyticsData;
-    }
-
-    const days = parseInt(timeRange);
-    if (isNaN(days)) {
-      return analyticsData;
-    }
-
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - days);
-
-    return analyticsData.filter((attempt) => {
-      // Use effectiveCompletedAt (which is completedAt || startedAt from API)
-      const dateToCheck =
-        attempt.effectiveCompletedAt ||
-        attempt.completedAt ||
-        attempt.startedAt;
-      if (!dateToCheck) {
-        return false;
-      }
-      const attemptDate = new Date(dateToCheck);
-      return attemptDate >= cutoffDate;
-    });
-  }, [analyticsData, timeRange]);
-
-  // Filtered and sorted test attempts for the attempts tab
-  const processedAttempts = useMemo(() => {
-    let filtered = filteredAttempts;
-
-    // Apply search filter
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (attempt) =>
-          attempt.candidateName?.toLowerCase().includes(search) ||
-          attempt.candidateEmail?.toLowerCase().includes(search) ||
-          attempt.testTitle?.toLowerCase().includes(search) ||
-          attempt.testName?.toLowerCase().includes(search)
+    try {
+      const response = await fetch(
+        `/api/admin/analytics/position/${selectedPositionId}`
       );
-    }
-
-    // Apply test filter
-    if (selectedTestFilter !== 'all') {
-      filtered = filtered.filter(
-        (attempt) => attempt.testId === selectedTestFilter
+      if (!response.ok) throw new Error('Failed to fetch position analytics');
+      const data = await response.json();
+      setAnalytics(data);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to fetch position analytics'
       );
+    } finally {
+      setLoadingAnalytics(false);
     }
+  }, [selectedPositionId]);
 
-    // Apply sorting
-    return filtered.sort((a, b) => {
-      let aVal, bVal;
-
-      switch (attemptSortBy) {
-        case 'name':
-          aVal = (a.candidateName || '').toLowerCase();
-          bVal = (b.candidateName || '').toLowerCase();
-          break;
-        case 'test':
-          aVal = (a.testTitle || a.testName || '').toLowerCase();
-          bVal = (b.testTitle || b.testName || '').toLowerCase();
-          break;
-        case 'score':
-          aVal = toNumber(a.rawScore);
-          bVal = toNumber(b.rawScore);
-          break;
-        case 'date':
-        default:
-          aVal = new Date(
-            a.effectiveCompletedAt || a.completedAt || a.startedAt || 0
-          ).getTime();
-          bVal = new Date(
-            b.effectiveCompletedAt || b.completedAt || b.startedAt || 0
-          ).getTime();
-          break;
-      }
-
-      if (attemptSortOrder === 'asc') {
-        return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-      } else {
-        return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
-      }
-    });
-  }, [
-    filteredAttempts,
-    searchTerm,
-    selectedTestFilter,
-    attemptSortBy,
-    attemptSortOrder,
-  ]);
-
-  // Get unique tests for the filter dropdown
-  const uniqueTests = useMemo(() => {
-    const testMap = new Map<string, string>();
-    filteredAttempts.forEach((attempt) => {
-      if (!testMap.has(attempt.testId)) {
-        testMap.set(
-          attempt.testId,
-          attempt.testTitle || attempt.testName || 'Unknown Test'
-        );
-      }
-    });
-    return Array.from(testMap.entries()).map(([id, title]) => ({ id, title }));
-  }, [filteredAttempts]);
-
-  // Calculate test-specific analytics
-  const testAnalytics = useMemo((): TestAnalytics[] => {
-    // Debug: Show attempts by test
-    const attemptsByTest = filteredAttempts.reduce(
-      (acc, attempt) => {
-        const testName = attempt.testTitle || attempt.testName || 'Unknown';
-        acc[testName] = (acc[testName] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
-
-    const testMap = new Map<string, TestAnalytics>();
-
-    filteredAttempts.forEach((attempt) => {
-      const testId = attempt.testId;
-      const testTitle = attempt.testTitle || attempt.testName || 'Unknown Test';
-
-      if (!testMap.has(testId)) {
-        testMap.set(testId, {
-          testId,
-          testTitle,
-          totalAttempts: 0,
-          completedAttempts: 0,
-          difficultyLevel: 'Medium' as const,
-          difficultyScore: 0,
-          averageScore: 0,
-          averageDuration: 0,
-          highestScore: 0,
-          lowestScore: 100,
-          lastAttemptDate: null,
-          scoreDistribution: [
-            { range: '0-20%', count: 0 },
-            { range: '21-40%', count: 0 },
-            { range: '41-60%', count: 0 },
-            { range: '61-80%', count: 0 },
-            { range: '81-100%', count: 0 },
-          ],
-          recentTrend: 'stable' as const,
-        });
-      }
-
-      const testStats = testMap.get(testId)!;
-      testStats.totalAttempts++;
-
-      if (attempt.status === 'COMPLETED') {
-        testStats.completedAttempts++;
-
-        const score = toNumber(attempt.rawScore);
-        const total = toNumber(attempt.totalQuestions);
-        const percentage = total > 0 ? safePercentage(score, total) : 0;
-
-        testStats.averageScore =
-          (testStats.averageScore * (testStats.completedAttempts - 1) +
-            percentage) /
-          testStats.completedAttempts;
-        testStats.highestScore = Math.max(testStats.highestScore, percentage);
-        testStats.lowestScore = Math.min(testStats.lowestScore, percentage);
-
-        // Duration calculation
-        const duration = toNumber(attempt.durationSeconds) / 60; // Convert to minutes
-        if (duration > 0) {
-          testStats.averageDuration =
-            (testStats.averageDuration * (testStats.completedAttempts - 1) +
-              duration) /
-            testStats.completedAttempts;
-        }
-
-        // Score distribution
-        const rangeIndex = Math.min(Math.floor(percentage / 20), 4);
-        testStats.scoreDistribution[rangeIndex].count++;
-      }
-
-      // Update last attempt date using effectiveCompletedAt
-      const effectiveDate =
-        attempt.effectiveCompletedAt ||
-        attempt.completedAt ||
-        attempt.startedAt;
-      if (effectiveDate) {
-        const attemptDate = new Date(effectiveDate).toISOString();
-        if (
-          !testStats.lastAttemptDate ||
-          attemptDate > testStats.lastAttemptDate
-        ) {
-          testStats.lastAttemptDate = attemptDate;
-        }
-      }
-    });
-
-    // Calculate difficulty levels and trends
-    testMap.forEach((testStats) => {
-      // Set difficulty score (same as average score for completed attempts)
-      testStats.difficultyScore = testStats.averageScore;
-
-      // Determine difficulty level based on average score
-      if (testStats.completedAttempts > 0) {
-        if (testStats.averageScore >= 75) {
-          testStats.difficultyLevel = 'Easy';
-        } else if (testStats.averageScore >= 50) {
-          testStats.difficultyLevel = 'Medium';
-        } else {
-          testStats.difficultyLevel = 'Hard';
-        }
-      } else {
-        testStats.difficultyLevel = 'Medium'; // Default for tests with no completed attempts
-      }
-
-      // Reset lowest score if no completed attempts
-      if (testStats.completedAttempts === 0) {
-        testStats.lowestScore = 0;
-      }
-    });
-
-    const result = Array.from(testMap.values());
-
-    return result.sort((a, b) => {
-      switch (sortBy) {
-        case 'attempts':
-          return b.totalAttempts - a.totalAttempts;
-        case 'completion':
-          return a.difficultyScore - b.difficultyScore; // Sort by difficulty: Hard -> Easy
-        case 'score':
-          return b.averageScore - a.averageScore;
-        case 'recent':
-        default:
-          if (!a.lastAttemptDate && !b.lastAttemptDate) return 0;
-          if (!a.lastAttemptDate) return 1;
-          if (!b.lastAttemptDate) return -1;
-          return (
-            new Date(b.lastAttemptDate).getTime() -
-            new Date(a.lastAttemptDate).getTime()
-          );
-      }
-    });
-  }, [filteredAttempts, sortBy]);
-
-  // Auto-select the latest test when page loads
+  // Initial data fetch
   useEffect(() => {
-    if (
-      testAnalytics.length > 0 &&
-      !selectedTestId &&
-      activeTab === 'overview'
-    ) {
-      setSelectedTestId(testAnalytics[0].testId);
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([fetchPositions(), fetchOverallStats()]);
+      setLoading(false);
+    };
+
+    if (session?.user) {
+      loadData();
     }
-  }, [testAnalytics, selectedTestId, activeTab]);
+  }, [session, fetchPositions, fetchOverallStats]);
 
-  // Get selected test details
-  const selectedTest = useMemo(() => {
-    if (!selectedTestId) return null;
-    return testAnalytics.find((t) => t.testId === selectedTestId) || null;
-  }, [selectedTestId, testAnalytics]);
+  // Fetch analytics when position changes
+  useEffect(() => {
+    if (selectedPositionId) {
+      fetchPositionAnalytics();
+    }
+  }, [selectedPositionId, fetchPositionAnalytics]);
 
-  // Get selected attempt details
-  const selectedAttempt = useMemo(() => {
-    if (!selectedAttemptId) return null;
-    return processedAttempts.find((a) => a.id === selectedAttemptId) || null;
-  }, [selectedAttemptId, processedAttempts]);
+  // Filter positions
+  const filteredPositions = positions.filter((position) => {
+    const matchesSearch =
+      position.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      position.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (position.description &&
+        position.description.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  if (loading) {
+    const matchesDepartment =
+      departmentFilter === 'all' || position.department === departmentFilter;
+
+    return matchesSearch && matchesDepartment;
+  });
+
+  const departments = [
+    ...new Set(positions.map((p) => p.department).filter(Boolean)),
+  ];
+  const selectedPosition = positions.find((p) => p.id === selectedPositionId);
+
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+  };
+
+  const formatDuration = (minutes: number) => {
+    if (minutes < 60) return `${Math.round(minutes)}m`;
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+    return `${hours}h ${mins}m`;
+  };
+
+  if (status === 'loading' || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
-          <p className="mt-2 text-sm text-gray-600">Loading analytics...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="mb-4 text-4xl text-red-500">⚠️</div>
-          <h2 className="mb-2 text-lg font-semibold text-gray-900">
-            Error Loading Analytics
-          </h2>
-          <p className="mb-4 text-sm text-gray-600">{error}</p>
-          <button
-            onClick={fetchAnalytics}
-            className="rounded-lg bg-blue-500 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-600"
-          >
-            Try Again
-          </button>
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-brand-500 border-t-transparent"></div>
+          <p className="mt-3 text-sm text-gray-600">Loading analytics...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="mx-auto max-w-7xl">
-        {/* Header */}
-        <div className="mb-4">
-          <h1 className="mb-1 text-xl font-bold text-gray-900">
-            📊 Test Analytics
+    <div className="min-h-screen bg-gray-50 py-3">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Header - Compact */}
+        <div className="mb-3">
+          <h1 className="text-xl font-bold text-gray-900">
+            Position Analytics
           </h1>
-          <p className="text-sm text-gray-600">
-            Performance insights and test attempt management
+          <p className="mt-1 text-xs text-gray-600">
+            View detailed analytics and insights by job position
           </p>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="mb-4">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
-              <button
-                onClick={() => setActiveTab('overview')}
-                className={`whitespace-nowrap border-b-2 px-1 py-2 text-sm font-medium ${
-                  activeTab === 'overview'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                }`}
-              >
-                📈 Test Overview
-              </button>
-              <button
-                onClick={() => setActiveTab('attempts')}
-                className={`whitespace-nowrap border-b-2 px-1 py-2 text-sm font-medium ${
-                  activeTab === 'attempts'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                }`}
-              >
-                👥 Test Attempts ({processedAttempts.length})
-              </button>
-            </nav>
-          </div>
-        </div>
-
-        {/* Controls */}
-        <div className="mb-4 rounded-lg bg-white p-3 shadow-sm">
-          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            {/* Time Range Filter */}
-            <div className="flex items-center gap-3">
-              <label className="text-xs font-medium text-gray-700">
-                📅 Time Range:
-              </label>
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value)}
-                className="rounded border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="7">Last 7 days</option>
-                <option value="30">Last 30 days</option>
-                <option value="90">Last 90 days</option>
-                <option value="all">All time</option>
-              </select>
+        {/* Overall Stats Cards - Compact */}
+        {overallStats && (
+          <div className="mb-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+              <div className="flex items-center">
+                <div className="flex-1">
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Total Positions
+                  </p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {formatNumber(overallStats.totalPositions)}
+                  </p>
+                </div>
+                <div className="rounded-full bg-brand-100 p-2">
+                  <Target className="h-4 w-4 text-brand-600" />
+                </div>
+              </div>
             </div>
 
-            {/* Tab-specific controls */}
-            {activeTab === 'overview' ? (
-              <div className="flex items-center gap-3">
-                <label className="text-xs font-medium text-gray-700">
-                  🔄 Sort by:
-                </label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="rounded border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="recent">Recent Activity</option>
-                  <option value="attempts">Total Attempts</option>
-                  <option value="completion">Difficulty Level</option>
-                  <option value="score">Average Score</option>
-                </select>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <select
-                  value={selectedTestFilter}
-                  onChange={(e) => setSelectedTestFilter(e.target.value)}
-                  className="rounded border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="all">All Tests ({uniqueTests.length})</option>
-                  {uniqueTests.map((test) => (
-                    <option key={test.id} value={test.id}>
-                      {test.title}
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="text"
-                  placeholder="Search by name, email, or test..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="rounded border border-gray-300 px-3 py-1 text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
-                <select
-                  value={attemptSortBy}
-                  onChange={(e) => setAttemptSortBy(e.target.value as any)}
-                  className="rounded border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="date">Date</option>
-                  <option value="name">Name</option>
-                  <option value="test">Test</option>
-                  <option value="score">Score</option>
-                </select>
-                <button
-                  onClick={() =>
-                    setAttemptSortOrder(
-                      attemptSortOrder === 'asc' ? 'desc' : 'asc'
-                    )
-                  }
-                  className="rounded border border-gray-300 px-2 py-1 text-xs hover:bg-gray-50"
-                >
-                  {attemptSortOrder === 'asc' ? '↑' : '↓'}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Tab Content */}
-        {activeTab === 'overview' ? (
-          // Test Analytics Grid - existing content
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {/* Test List */}
-            <div className="lg:col-span-2">
-              <div className="rounded-lg bg-white shadow-sm">
-                <div className="border-b border-gray-200 px-4 py-3">
-                  <h2 className="text-base font-semibold text-gray-900">
-                    Test Performance Overview ({testAnalytics.length} tests)
-                  </h2>
+            <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+              <div className="flex items-center">
+                <div className="flex-1">
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Total Candidates
+                  </p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {formatNumber(overallStats.totalCandidates)}
+                  </p>
                 </div>
-                <div className="divide-y divide-gray-200">
-                  {testAnalytics.length === 0 ? (
-                    <div className="p-6 text-center text-sm text-gray-500">
-                      No test data available for the selected time range
-                    </div>
-                  ) : (
-                    testAnalytics.map((test) => (
-                      <div
-                        key={test.testId}
-                        className={`cursor-pointer p-4 transition-colors hover:bg-gray-50 ${
-                          selectedTestId === test.testId
-                            ? 'border-l-4 border-blue-500 bg-blue-50'
-                            : ''
+                <div className="rounded-full bg-brand-100 p-2">
+                  <Users className="h-4 w-4 text-brand-600" />
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+              <div className="flex items-center">
+                <div className="flex-1">
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Average Score
+                  </p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {overallStats.averageScore.toFixed(1)}%
+                  </p>
+                </div>
+                <div className="rounded-full bg-secondary-100 p-2">
+                  <Award className="h-4 w-4 text-secondary-600" />
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+              <div className="flex items-center">
+                <div className="flex-1">
+                  <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                    Growth Rate
+                  </p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {overallStats.growthRate > 0 ? '+' : ''}
+                    {overallStats.growthRate.toFixed(1)}%
+                  </p>
+                  <p className="text-xs text-gray-500">vs last month</p>
+                </div>
+                <div
+                  className={`rounded-full p-2 ${
+                    overallStats.growthRate >= 0 ? 'bg-brand-100' : 'bg-red-100'
+                  }`}
+                >
+                  <TrendingUp
+                    className={`h-4 w-4 ${
+                      overallStats.growthRate >= 0
+                        ? 'text-brand-600'
+                        : 'text-red-600'
+                    }`}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="grid gap-3 lg:grid-cols-4">
+          {/* Position Selector Sidebar - Left Side */}
+          <div className="lg:col-span-1">
+            <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+              <div className="border-b border-gray-200 p-3">
+                <h2 className="text-base font-semibold text-gray-900">
+                  Select Position
+                </h2>
+                <p className="text-xs text-gray-600">
+                  Choose a position to view analytics
+                </p>
+              </div>
+
+              {/* Search and Filters - Compact */}
+              <div className="space-y-2 border-b border-gray-200 p-2">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search positions..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full rounded-md border border-gray-300 py-1.5 pl-7 pr-3 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <Filter className="h-3 w-3 text-gray-400" />
+                  <select
+                    value={departmentFilter}
+                    onChange={(e) => setDepartmentFilter(e.target.value)}
+                    className="flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  >
+                    <option value="all">All Departments</option>
+                    {departments.map((dept) => (
+                      <option key={dept || 'unknown'} value={dept || ''}>
+                        {dept}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Positions List - Compact */}
+              <div className="max-h-80 overflow-y-auto">
+                {filteredPositions.length === 0 ? (
+                  <div className="p-3 text-center">
+                    <Target className="mx-auto h-6 w-6 text-gray-400" />
+                    <p className="mt-1 text-xs text-gray-500">
+                      {searchTerm || departmentFilter !== 'all'
+                        ? 'No positions match your filters'
+                        : 'No active positions with tests found'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1 p-1.5">
+                    {filteredPositions.map((position) => (
+                      <button
+                        key={position.id}
+                        onClick={() => setSelectedPositionId(position.id)}
+                        className={`w-full rounded-lg border p-2 text-left transition-colors ${
+                          selectedPositionId === position.id
+                            ? 'border-brand-500 bg-brand-50 text-brand-900'
+                            : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50'
                         }`}
-                        onClick={() =>
-                          setSelectedTestId(
-                            test.testId === selectedTestId ? null : test.testId
-                          )
-                        }
                       >
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-start justify-between">
                           <div className="min-w-0 flex-1">
-                            <h3 className="truncate text-sm font-medium text-gray-900">
-                              {test.testTitle}
+                            <h3 className="truncate text-sm font-medium">
+                              {position.name}
                             </h3>
-                            <div className="mt-1 flex items-center gap-4 text-xs text-gray-500">
-                              <span>📝 {test.totalAttempts} attempts</span>
-                              <span>
-                                {test.difficultyLevel === 'Easy'
-                                  ? '🟢 Easy'
-                                  : test.difficultyLevel === 'Medium'
-                                    ? '🟡 Medium'
-                                    : '🔴 Hard'}
-                              </span>
-                              <span>
-                                📊 {test.averageScore.toFixed(1)}% avg score
-                              </span>
-                              {test.averageDuration > 0 && (
-                                <span>
-                                  ⏱️ {test.averageDuration.toFixed(1)}m avg time
-                                </span>
-                              )}
+                            <p className="font-mono text-xs text-gray-500">
+                              {position.code}
+                            </p>
+                            {position.description && (
+                              <p className="mt-1 line-clamp-2 text-xs text-gray-600">
+                                {position.description}
+                              </p>
+                            )}
+                          </div>
+                          <div className="ml-2 flex-shrink-0">
+                            <div className="text-right">
+                              <div className="text-xs font-medium text-brand-600">
+                                {position.activeTestCount}
+                              </div>
+                              <div className="text-xs text-gray-500">tests</div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {/* Performance indicator */}
-                            <div
-                              className={`h-2 w-2 rounded-full ${
-                                test.averageScore >= 80
-                                  ? 'bg-green-500'
-                                  : test.averageScore >= 60
-                                    ? 'bg-yellow-500'
-                                    : 'bg-red-500'
-                              }`}
-                            ></div>
-                            <span className="text-xs text-gray-400">
-                              {test.lastAttemptDate
-                                ? new Date(
-                                    test.lastAttemptDate
-                                  ).toLocaleDateString()
-                                : 'No attempts'}
-                            </span>
-                          </div>
                         </div>
 
-                        {/* Quick stats bar */}
-                        <div className="mt-2 flex gap-1">
-                          <div className="h-1 flex-1 rounded-full bg-gray-200">
-                            <div
-                              className={`h-1 rounded-full ${
-                                test.difficultyLevel === 'Easy'
-                                  ? 'bg-green-500'
-                                  : test.difficultyLevel === 'Medium'
-                                    ? 'bg-yellow-500'
-                                    : 'bg-red-500'
-                              }`}
-                              style={{ width: `${test.averageScore}%` }}
-                            ></div>
-                          </div>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {position.department && (
+                            <span className="inline-flex items-center rounded-md bg-brand-50 px-1.5 py-0.5 text-xs font-medium text-brand-700">
+                              <Building2 className="mr-1 h-2.5 w-2.5" />
+                              {position.department}
+                            </span>
+                          )}
+                          {position.level && (
+                            <span className="inline-flex items-center rounded-md bg-secondary-50 px-1.5 py-0.5 text-xs font-medium text-secondary-700">
+                              <Target className="mr-1 h-2.5 w-2.5" />
+                              {position.level}
+                            </span>
+                          )}
                         </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
+          </div>
 
-            {/* Test Details Panel */}
-            <div className="lg:col-span-1">
-              {selectedTest ? (
-                <div className="rounded-lg bg-white shadow-sm">
-                  <div className="border-b border-gray-200 px-4 py-3">
-                    <h3 className="text-sm font-semibold text-gray-900">
-                      {selectedTest.testTitle}
-                    </h3>
-                    <p className="text-xs text-gray-500">Detailed Analysis</p>
+          {/* Analytics Content - Middle and Right */}
+          <div className="lg:col-span-3">
+            {!selectedPosition ? (
+              <div className="flex h-80 items-center justify-center rounded-lg border border-gray-200 bg-white">
+                <div className="text-center">
+                  <BarChart3 className="mx-auto h-10 w-10 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">
+                    Select a Position
+                  </h3>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Choose a position from the sidebar to view detailed
+                    analytics
+                  </p>
+                </div>
+              </div>
+            ) : loadingAnalytics ? (
+              <div className="flex h-80 items-center justify-center rounded-lg border border-gray-200 bg-white">
+                <div className="text-center">
+                  <div className="mx-auto h-6 w-6 animate-spin rounded-full border-4 border-brand-500 border-t-transparent"></div>
+                  <p className="mt-3 text-sm text-gray-600">
+                    Loading analytics...
+                  </p>
+                </div>
+              </div>
+            ) : error ? (
+              <div className="flex h-80 items-center justify-center rounded-lg border border-gray-200 bg-white">
+                <div className="text-center">
+                  <div className="text-red-500">
+                    <BarChart3 className="mx-auto h-10 w-10" />
                   </div>
-                  <div className="space-y-4 p-4">
-                    {/* Key Metrics */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded bg-blue-50 p-2 text-center">
-                        <div className="text-lg font-bold text-blue-600">
-                          {selectedTest.totalAttempts}
-                        </div>
-                        <div className="text-xs text-gray-600">
-                          Total Attempts
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">
+                    Error Loading Analytics
+                  </h3>
+                  <p className="mt-1 text-xs text-gray-500">{error}</p>
+                  <button
+                    onClick={fetchPositionAnalytics}
+                    className="mt-3 rounded-md bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              </div>
+            ) : analytics ? (
+              <div className="space-y-3">
+                {/* Position Header - Compact */}
+                <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-base font-semibold text-gray-900">
+                        {selectedPosition.name} Analytics
+                      </h2>
+                      <p className="text-xs text-gray-600">
+                        {selectedPosition.code} • {selectedPosition.department}
+                      </p>
+                    </div>
+                    <button
+                      onClick={fetchPositionAnalytics}
+                      className="rounded-md bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
+                      title="Refresh analytics"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 lg:grid-cols-3">
+                  {/* Left Side - Key Metrics and Score Distribution */}
+                  <div className="space-y-3 lg:col-span-2">
+                    {/* Key Metrics - Compact */}
+                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                      <div className="rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+                        <div className="flex items-center">
+                          <div className="flex-1">
+                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                              Total Attempts
+                            </p>
+                            <p className="text-base font-bold text-gray-900">
+                              {formatNumber(analytics.totalAttempts)}
+                            </p>
+                          </div>
+                          <div className="rounded-full bg-brand-100 p-1.5">
+                            <TestTube className="h-3 w-3 text-brand-600" />
+                          </div>
                         </div>
                       </div>
-                      <div
-                        className={`rounded p-2 text-center ${
-                          selectedTest.difficultyLevel === 'Easy'
-                            ? 'bg-green-50'
-                            : selectedTest.difficultyLevel === 'Medium'
-                              ? 'bg-yellow-50'
-                              : 'bg-red-50'
-                        }`}
-                      >
-                        <div
-                          className={`text-lg font-bold ${
-                            selectedTest.difficultyLevel === 'Easy'
-                              ? 'text-green-600'
-                              : selectedTest.difficultyLevel === 'Medium'
-                                ? 'text-yellow-600'
-                                : 'text-red-600'
-                          }`}
-                        >
-                          {selectedTest.difficultyLevel === 'Easy'
-                            ? '🟢'
-                            : selectedTest.difficultyLevel === 'Medium'
-                              ? '🟡'
-                              : '🔴'}{' '}
-                          {selectedTest.difficultyLevel}
+
+                      <div className="rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+                        <div className="flex items-center">
+                          <div className="flex-1">
+                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                              Average Score
+                            </p>
+                            <p className="text-base font-bold text-gray-900">
+                              {analytics.averageScore.toFixed(1)}%
+                            </p>
+                          </div>
+                          <div className="rounded-full bg-secondary-100 p-1.5">
+                            <Award className="h-3 w-3 text-secondary-600" />
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-600">Difficulty</div>
                       </div>
-                      <div className="rounded bg-purple-50 p-2 text-center">
-                        <div className="text-lg font-bold text-purple-600">
-                          {selectedTest.averageScore.toFixed(1)}%
+
+                      <div className="rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+                        <div className="flex items-center">
+                          <div className="flex-1">
+                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                              Top Score
+                            </p>
+                            <p className="text-base font-bold text-gray-900">
+                              {analytics.topScore.toFixed(1)}%
+                            </p>
+                          </div>
+                          <div className="rounded-full bg-brand-100 p-1.5">
+                            <Target className="h-3 w-3 text-brand-600" />
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-600">Avg Score</div>
                       </div>
-                      <div className="rounded bg-orange-50 p-2 text-center">
-                        <div className="text-lg font-bold text-orange-600">
-                          {selectedTest.averageDuration.toFixed(1)}m
+
+                      <div className="rounded-lg border border-gray-200 bg-white p-2 shadow-sm">
+                        <div className="flex items-center">
+                          <div className="flex-1">
+                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                              Avg Time
+                            </p>
+                            <p className="text-base font-bold text-gray-900">
+                              {formatDuration(analytics.averageTimeMinutes)}
+                            </p>
+                          </div>
+                          <div className="rounded-full bg-secondary-100 p-1.5">
+                            <Clock className="h-3 w-3 text-secondary-600" />
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-600">Avg Time</div>
                       </div>
                     </div>
 
-                    {/* Score Distribution */}
-                    <div>
-                      <h4 className="mb-2 text-sm font-medium text-gray-900">
+                    {/* Score Distribution - Compact */}
+                    <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+                      <h3 className="mb-2 text-sm font-semibold text-gray-900">
                         Score Distribution
-                      </h4>
-                      <div className="space-y-1">
-                        {selectedTest.scoreDistribution.map((range, index) => (
-                          <div
-                            key={range.range}
-                            className="flex items-center justify-between text-xs"
-                          >
-                            <span className="text-gray-600">{range.range}</span>
-                            <div className="flex items-center gap-2">
-                              <div className="h-1 w-16 rounded-full bg-gray-200">
+                      </h3>
+                      <div className="space-y-1.5">
+                        {analytics.scoreDistribution.map((range, index) => (
+                          <div key={index} className="flex items-center">
+                            <div className="w-12 text-xs font-medium text-gray-700">
+                              {range.range}
+                            </div>
+                            <div className="mx-2 flex-1">
+                              <div className="h-2 rounded-full bg-gray-200">
                                 <div
-                                  className="h-1 rounded-full bg-blue-500"
-                                  style={{
-                                    width: `${selectedTest.completedAttempts > 0 ? (range.count / selectedTest.completedAttempts) * 100 : 0}%`,
-                                  }}
-                                ></div>
+                                  className="h-2 rounded-full bg-brand-500 transition-all duration-300"
+                                  style={{ width: `${range.percentage}%` }}
+                                />
                               </div>
-                              <span className="w-6 text-right">
-                                {range.count}
-                              </span>
+                            </div>
+                            <div className="w-14 text-right text-xs text-gray-600">
+                              {range.count} ({range.percentage.toFixed(1)}%)
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    {/* Performance Range */}
-                    <div>
-                      <h4 className="mb-2 text-sm font-medium text-gray-900">
-                        Score Range
-                      </h4>
-                      <div className="flex justify-between text-xs">
-                        <div className="text-center">
-                          <div className="font-bold text-red-600">
-                            {selectedTest.lowestScore.toFixed(1)}%
-                          </div>
-                          <div className="text-gray-500">Lowest</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-bold text-green-600">
-                            {selectedTest.highestScore.toFixed(1)}%
-                          </div>
-                          <div className="text-gray-500">Highest</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="border-t border-gray-200 pt-2">
-                      <Link
-                        href={`/admin/leaderboard?testId=${selectedTest.testId}`}
-                        className="inline-flex w-full items-center justify-center rounded border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-                      >
-                        View Leaderboard
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-lg bg-white p-6 shadow-sm">
-                  <div className="text-center text-sm text-gray-500">
-                    Click on a test to see detailed analysis
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : (
-          // Test Attempts List - new content
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {/* Attempts List */}
-            <div className="lg:col-span-2">
-              <div className="rounded-lg bg-white shadow-sm">
-                <div className="border-b border-gray-200 px-4 py-3">
-                  <h2 className="text-base font-semibold text-gray-900">
-                    Test Attempts ({processedAttempts.length})
-                    {selectedTestFilter !== 'all' && (
-                      <span className="ml-2 text-sm font-normal text-blue-600">
-                        •{' '}
-                        {
-                          uniqueTests.find((t) => t.id === selectedTestFilter)
-                            ?.title
-                        }
-                      </span>
-                    )}
-                  </h2>
-                  {selectedTestFilter !== 'all' &&
-                    processedAttempts.length > 0 && (
-                      <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
-                        <span>
-                          ✅{' '}
-                          {
-                            processedAttempts.filter(
-                              (a) => a.status === 'COMPLETED'
-                            ).length
-                          }{' '}
-                          completed
-                        </span>
-                        <span>
-                          🔄{' '}
-                          {
-                            processedAttempts.filter(
-                              (a) => a.status === 'IN_PROGRESS'
-                            ).length
-                          }{' '}
-                          in progress
-                        </span>
-                        <span>
-                          📊{' '}
-                          {processedAttempts.filter(
-                            (a) => a.status === 'COMPLETED'
-                          ).length > 0
-                            ? (
-                                processedAttempts
-                                  .filter((a) => a.status === 'COMPLETED')
-                                  .reduce(
-                                    (sum, a) =>
-                                      sum +
-                                      safePercentage(
-                                        toNumber(a.rawScore),
-                                        toNumber(a.totalQuestions)
-                                      ),
-                                    0
-                                  ) /
-                                processedAttempts.filter(
-                                  (a) => a.status === 'COMPLETED'
-                                ).length
-                              ).toFixed(1)
-                            : '0'}
-                          % avg score
-                        </span>
-                      </div>
-                    )}
-                </div>
-                <div className="divide-y divide-gray-200">
-                  {processedAttempts.length === 0 ? (
-                    <div className="p-6 text-center text-sm text-gray-500">
-                      No test attempts found for the selected criteria
-                    </div>
-                  ) : (
-                    processedAttempts.map((attempt) => (
-                      <div
-                        key={attempt.id}
-                        className={`cursor-pointer p-3 transition-colors hover:bg-gray-50 ${
-                          selectedAttemptId === attempt.id
-                            ? 'border-l-4 border-blue-500 bg-blue-50'
-                            : ''
-                        }`}
-                        onClick={() =>
-                          setSelectedAttemptId(
-                            attempt.id === selectedAttemptId ? null : attempt.id
-                          )
-                        }
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-sm font-medium text-gray-900">
-                                {attempt.candidateName || 'Anonymous'}
-                              </h3>
-                              <span
-                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                                  attempt.status === 'COMPLETED'
-                                    ? 'bg-green-100 text-green-800'
-                                    : attempt.status === 'IN_PROGRESS'
-                                      ? 'bg-yellow-100 text-yellow-800'
-                                      : 'bg-red-100 text-red-800'
-                                }`}
-                              >
-                                {attempt.status}
-                              </span>
-                              {attempt.isPublicAttempt && (
-                                <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
-                                  Public
-                                </span>
-                              )}
-                            </div>
-                            <div className="mt-1 text-xs text-gray-500">
-                              {attempt.candidateEmail}
-                            </div>
-                            <div className="mt-1 flex items-center gap-4 text-xs text-gray-500">
-                              <span>
-                                📝 {attempt.testTitle || attempt.testName}
-                              </span>
-                              {attempt.status === 'COMPLETED' && (
-                                <span>
-                                  📊{' '}
-                                  {safePercentage(
-                                    toNumber(attempt.rawScore),
-                                    toNumber(attempt.totalQuestions)
-                                  ).toFixed(1)}
-                                  %
-                                </span>
-                              )}
-                              <span>
-                                📅{' '}
-                                {new Date(
-                                  attempt.effectiveCompletedAt ||
-                                    attempt.completedAt ||
-                                    attempt.startedAt ||
-                                    ''
-                                ).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteTestAttempt(
-                                  attempt.id,
-                                  attempt.isPublicAttempt
-                                );
-                              }}
-                              disabled={deletingAttemptId === attempt.id}
-                              className="text-red-600 hover:text-red-800 disabled:opacity-50"
-                              title="Delete attempt"
+                    {/* Top Performers - Compact */}
+                    {analytics.topPerformers.length > 0 && (
+                      <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+                        <h3 className="mb-2 text-sm font-semibold text-gray-900">
+                          Top Performers
+                        </h3>
+                        <div className="space-y-1.5">
+                          {analytics.topPerformers.map((performer, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between rounded-lg bg-gray-50 p-1.5"
                             >
-                              {deletingAttemptId === attempt.id ? '⏳' : '🗑️'}
-                            </button>
-                          </div>
+                              <div className="flex items-center">
+                                <div
+                                  className={`flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold ${
+                                    index === 0
+                                      ? 'bg-secondary-100 text-secondary-800'
+                                      : index === 1
+                                        ? 'bg-gray-100 text-gray-800'
+                                        : index === 2
+                                          ? 'bg-secondary-100 text-secondary-700'
+                                          : 'bg-brand-100 text-brand-800'
+                                  }`}
+                                >
+                                  {index + 1}
+                                </div>
+                                <div className="ml-2">
+                                  <div className="text-xs font-medium text-gray-900">
+                                    {performer.candidateName || 'Anonymous'}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {performer.candidateEmail}
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-xs font-bold text-gray-900">
+                                  {performer.score.toFixed(1)}%
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {new Date(
+                                    performer.completedAt
+                                  ).toLocaleDateString()}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
-                    ))
-                  )}
+                    )}
+                  </div>
+
+                  {/* Right Side - Category Performance */}
+                  <div className="lg:col-span-1">
+                    <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+                      <h3 className="mb-3 text-sm font-semibold text-gray-900">
+                        Category Performance
+                      </h3>
+                      <div className="space-y-3">
+                        {Object.entries(analytics.categoryAverages).map(
+                          ([category, score]) => (
+                            <div key={category} className="text-center">
+                              <div className="text-lg font-bold text-gray-900">
+                                {score.toFixed(1)}%
+                              </div>
+                              <div className="text-xs font-medium capitalize text-gray-600">
+                                {category === 'attention'
+                                  ? 'Attention to Detail'
+                                  : category}
+                              </div>
+                              <div className="mt-1 h-2 rounded-full bg-gray-200">
+                                <div
+                                  className="h-2 rounded-full bg-brand-500 transition-all duration-300"
+                                  style={{ width: `${score}%` }}
+                                />
+                              </div>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Attempt Details Panel */}
-            <div className="lg:col-span-1">
-              {selectedAttempt ? (
-                <div className="rounded-lg bg-white shadow-sm">
-                  <div className="border-b border-gray-200 px-4 py-3">
-                    <h3 className="text-sm font-semibold text-gray-900">
-                      {selectedAttempt.candidateName || 'Anonymous'}
-                    </h3>
-                    <p className="text-xs text-gray-500">Attempt Details</p>
-                  </div>
-                  <div className="space-y-3 p-4">
-                    {/* Basic Info */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-gray-600">Email:</span>
-                        <span className="font-medium">
-                          {selectedAttempt.candidateEmail || 'N/A'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-gray-600">Test:</span>
-                        <span className="font-medium">
-                          {selectedAttempt.testTitle ||
-                            selectedAttempt.testName}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-gray-600">Status:</span>
-                        <span
-                          className={`font-medium ${
-                            selectedAttempt.status === 'COMPLETED'
-                              ? 'text-green-600'
-                              : selectedAttempt.status === 'IN_PROGRESS'
-                                ? 'text-yellow-600'
-                                : 'text-red-600'
-                          }`}
-                        >
-                          {selectedAttempt.status}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-gray-600">Type:</span>
-                        <span className="font-medium">
-                          {selectedAttempt.isPublicAttempt
-                            ? 'Public'
-                            : 'Invited'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Performance Metrics */}
-                    {selectedAttempt.status === 'COMPLETED' && (
-                      <div className="border-t border-gray-200 pt-3">
-                        <h4 className="mb-2 text-xs font-medium text-gray-900">
-                          Performance
-                        </h4>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="rounded bg-blue-50 p-2 text-center">
-                            <div className="text-sm font-bold text-blue-600">
-                              {toNumber(selectedAttempt.rawScore)}/
-                              {toNumber(selectedAttempt.totalQuestions)}
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              Raw Score
-                            </div>
-                          </div>
-                          <div className="rounded bg-green-50 p-2 text-center">
-                            <div className="text-sm font-bold text-green-600">
-                              {safePercentage(
-                                toNumber(selectedAttempt.rawScore),
-                                toNumber(selectedAttempt.totalQuestions)
-                              ).toFixed(1)}
-                              %
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              Percentage
-                            </div>
-                          </div>
-                        </div>
-                        {selectedAttempt.durationSeconds && (
-                          <div className="mt-2 rounded bg-purple-50 p-2 text-center">
-                            <div className="text-sm font-bold text-purple-600">
-                              {Math.round(
-                                toNumber(selectedAttempt.durationSeconds) / 60
-                              )}
-                              m
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              Duration
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Timestamps */}
-                    <div className="border-t border-gray-200 pt-3">
-                      <h4 className="mb-2 text-xs font-medium text-gray-900">
-                        Timeline
-                      </h4>
-                      <div className="space-y-1 text-xs">
-                        {selectedAttempt.startedAt && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Started:</span>
-                            <span>
-                              {new Date(
-                                selectedAttempt.startedAt
-                              ).toLocaleString()}
-                            </span>
-                          </div>
-                        )}
-                        {selectedAttempt.completedAt && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Completed:</span>
-                            <span>
-                              {new Date(
-                                selectedAttempt.completedAt
-                              ).toLocaleString()}
-                            </span>
-                          </div>
-                        )}
-                        {!selectedAttempt.completedAt &&
-                          selectedAttempt.startedAt && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-600">
-                                Effective Date:
-                              </span>
-                              <span>
-                                {new Date(
-                                  selectedAttempt.startedAt
-                                ).toLocaleString()}{' '}
-                                (Started)
-                              </span>
-                            </div>
-                          )}
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="border-t border-gray-200 pt-3">
-                      <div className="space-y-2">
-                        <Link
-                          href={`/admin/analytics/analysis/${selectedAttempt.id}`}
-                          className="inline-flex w-full items-center justify-center rounded border border-blue-300 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700 hover:bg-blue-100"
-                        >
-                          📊 View Analysis
-                        </Link>
-                        <button
-                          onClick={() =>
-                            deleteTestAttempt(
-                              selectedAttempt.id,
-                              selectedAttempt.isPublicAttempt
-                            )
-                          }
-                          disabled={deletingAttemptId === selectedAttempt.id}
-                          className="inline-flex w-full items-center justify-center rounded border border-red-300 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
-                        >
-                          {deletingAttemptId === selectedAttempt.id
-                            ? '⏳ Deleting...'
-                            : '🗑️ Delete Attempt'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+            ) : (
+              <div className="flex h-80 items-center justify-center rounded-lg border border-gray-200 bg-white">
+                <div className="text-center">
+                  <PieChart className="mx-auto h-10 w-10 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">
+                    No Data Available
+                  </h3>
+                  <p className="mt-1 text-xs text-gray-500">
+                    No test attempts found for this position yet.
+                  </p>
                 </div>
-              ) : (
-                <div className="rounded-lg bg-white p-6 shadow-sm">
-                  <div className="text-center text-sm text-gray-500">
-                    Click on an attempt to see details
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
-};
-
-export default AnalyticsPage;
+}

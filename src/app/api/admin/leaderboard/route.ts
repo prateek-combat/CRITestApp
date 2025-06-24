@@ -264,14 +264,36 @@ export async function GET(request: NextRequest) {
     }
 
     // Get total questions per category for the test (to handle skipped questions correctly)
-    const categoryQuestionCounts = await prisma.question.groupBy({
-      by: ['category'],
-      where: { testId },
-      _count: { id: true },
-    });
+    let categoryQuestionCounts: any;
+
+    if (testId) {
+      // Single test filter
+      categoryQuestionCounts = await prisma.question.groupBy({
+        by: ['category'],
+        where: { testId },
+        _count: { id: true },
+      });
+    } else if (positionId) {
+      // Single position filter
+      categoryQuestionCounts = await prisma.question.groupBy({
+        by: ['category'],
+        where: { test: { positionId } },
+        _count: { id: true },
+      });
+    } else if (positionIds && positionIds.length > 0) {
+      // Multiple positions filter
+      categoryQuestionCounts = await prisma.question.groupBy({
+        by: ['category'],
+        where: { test: { positionId: { in: positionIds } } },
+        _count: { id: true },
+      });
+    } else {
+      // Fallback
+      categoryQuestionCounts = [];
+    }
 
     const totalQuestionsByCategory: Record<string, number> = {};
-    categoryQuestionCounts.forEach((item) => {
+    categoryQuestionCounts.forEach((item: any) => {
       if (item.category) {
         totalQuestionsByCategory[item.category] = item._count.id;
       }
@@ -468,16 +490,29 @@ export async function GET(request: NextRequest) {
     });
 
     // Get stats from both tables
+    let regularStatsWhere: any = { status: 'COMPLETED' };
+    let publicStatsWhere: any = { status: 'COMPLETED' };
+
+    if (testId) {
+      regularStatsWhere.testId = testId;
+      publicStatsWhere.publicLink = { testId };
+    } else if (positionId) {
+      regularStatsWhere.test = { positionId };
+      publicStatsWhere.publicLink = { test: { positionId } };
+    } else if (positionIds && positionIds.length > 0) {
+      regularStatsWhere.test = { positionId: { in: positionIds } };
+      publicStatsWhere.publicLink = {
+        test: { positionId: { in: positionIds } },
+      };
+    }
+
     const [regularStats, publicStats] = await Promise.all([
       prisma.testAttempt.findMany({
-        where: { testId, status: 'COMPLETED' },
+        where: regularStatsWhere,
         select: { rawScore: true, completedAt: true },
       }),
       prisma.publicTestAttempt.findMany({
-        where: {
-          status: 'COMPLETED',
-          publicLink: { testId },
-        },
+        where: publicStatsWhere,
         select: { rawScore: true, completedAt: true },
       }),
     ]);

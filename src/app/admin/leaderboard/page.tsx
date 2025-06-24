@@ -28,8 +28,8 @@ export default function LeaderboardPage() {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-brand-500 border-t-transparent"></div>
+          <p className="mt-3 text-sm text-gray-600">Loading...</p>
         </div>
       </div>
     );
@@ -40,14 +40,14 @@ export default function LeaderboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="p-4">
-        {/* Header */}
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">
+    <div className="min-h-screen bg-gray-50">
+      <div className="p-3">
+        {/* Header - Compact */}
+        <div className="mb-3">
+          <h1 className="text-xl font-bold text-gray-900">
             🏆 Candidate Leaderboard
           </h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <p className="mt-1 text-xs text-gray-600">
             View and compare candidate performance with configurable scoring
             weights
           </p>
@@ -55,8 +55,8 @@ export default function LeaderboardPage() {
 
         <Suspense
           fallback={
-            <div className="flex items-center justify-center py-8">
-              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-blue-500"></div>
+            <div className="flex items-center justify-center py-6">
+              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-brand-500"></div>
               <p className="ml-3 text-sm text-gray-600">
                 Loading leaderboard...
               </p>
