@@ -12,8 +12,23 @@ import {
   TrendingUp,
   Search,
   Filter,
+  Building2,
+  Target,
+  TestTube,
 } from 'lucide-react';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
+
+interface Position {
+  id: string;
+  name: string;
+  code: string;
+  description: string | null;
+  department: string | null;
+  level: string | null;
+  isActive: boolean;
+  testCount: number;
+  activeTestCount: number;
+}
 
 interface Test {
   id: string;
@@ -78,6 +93,7 @@ interface LeaderboardData {
     dateTo?: string;
     invitationId?: string;
     testId?: string;
+    positionId?: string;
     search?: string;
     sortBy: string;
     sortOrder: string;
@@ -102,8 +118,9 @@ export default function LeaderboardSidebarLayout({
   // Use useSearchParams to get current URL search params
   const urlSearchParams = useSearchParams();
 
+  const [positions, setPositions] = useState<Position[]>([]);
   const [tests, setTests] = useState<Test[]>([]);
-  const [selectedTestId, setSelectedTestId] = useState<string>('');
+  const [selectedPositionId, setSelectedPositionId] = useState<string>('');
   const [data, setData] = useState<LeaderboardData | null>(null);
   const [availableProfiles, setAvailableProfiles] = useState<WeightProfile[]>(
     []
@@ -116,12 +133,13 @@ export default function LeaderboardSidebarLayout({
     OTHER: number;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingTests, setIsLoadingTests] = useState(true);
+  const [isLoadingPositions, setIsLoadingPositions] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [localSearch, setLocalSearch] = useState(
     urlSearchParams.get('search') || searchParamsProp.search || ''
   );
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [departmentFilter, setDepartmentFilter] = useState('all');
   const router = useRouter();
 
   // Fetch weight profiles
@@ -145,203 +163,173 @@ export default function LeaderboardSidebarLayout({
     }
   }, []);
 
-  // Fetch tests for sidebar
+  // Fetch positions for sidebar
+  const fetchPositions = useCallback(async () => {
+    setIsLoadingPositions(true);
+    try {
+      const response = await fetch(
+        '/api/admin/positions?includeTestCount=true'
+      );
+      if (response.ok) {
+        const positionsData = await response.json();
+        // Only show active positions with tests
+        const activePositionsWithTests = positionsData.filter(
+          (p: Position) => p.isActive && p.activeTestCount > 0
+        );
+        setPositions(activePositionsWithTests);
+      }
+    } catch (error) {
+      console.error('Error fetching positions:', error);
+    } finally {
+      setIsLoadingPositions(false);
+    }
+  }, []); // Remove dependencies that change on every render
+
+  // Fetch tests (for reference)
   const fetchTests = useCallback(async () => {
-    setIsLoadingTests(true);
     try {
       const response = await fetch('/api/tests');
       if (response.ok) {
         const testsData = await response.json();
         setTests(testsData);
-
-        // Set default selected test to the latest test or from searchParams
-        const testIdFromParams =
-          urlSearchParams.get('testId') || searchParamsProp.testId;
-        if (testIdFromParams) {
-          setSelectedTestId(testIdFromParams);
-        } else if (testsData.length > 0) {
-          // Sort by createdAt and select the latest
-          const sortedTests = testsData.sort(
-            (a: Test, b: Test) =>
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
-          setSelectedTestId(sortedTests[0].id);
-        }
       }
     } catch (error) {
       console.error('Error fetching tests:', error);
-    } finally {
-      setIsLoadingTests(false);
     }
-  }, [urlSearchParams.get('testId'), searchParamsProp.testId]);
+  }, []);
 
   // Fetch leaderboard data
-  const fetchLeaderboardData = useCallback(async () => {
-    if (!selectedTestId) return;
+  const fetchLeaderboardData = useCallback(
+    async (positionId?: string) => {
+      const targetPositionId = positionId || selectedPositionId;
+      if (!targetPositionId) return;
 
-    setIsLoading(true);
-    setError(null);
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      const params = new URLSearchParams();
-      // Always include the selected test ID
-      params.set('testId', selectedTestId);
+      try {
+        const params = new URLSearchParams();
 
-      // Add other search params using individual values instead of the object
-      const currentSearchParams = {
-        page: urlSearchParams.get('page') || searchParamsProp.page,
-        pageSize:
-          urlSearchParams.get('pageSize') ||
-          searchParamsProp.pageSize ||
-          '1000', // Default to large pageSize for scrolling
-        dateFrom: urlSearchParams.get('dateFrom') || searchParamsProp.dateFrom,
-        dateTo: urlSearchParams.get('dateTo') || searchParamsProp.dateTo,
-        invitationId:
-          urlSearchParams.get('invitationId') || searchParamsProp.invitationId,
-        search: urlSearchParams.get('search') || searchParamsProp.search,
-        sortBy: urlSearchParams.get('sortBy') || searchParamsProp.sortBy,
-        sortOrder:
-          urlSearchParams.get('sortOrder') || searchParamsProp.sortOrder,
-        weightProfile:
-          urlSearchParams.get('weightProfile') ||
-          searchParamsProp.weightProfile,
-      };
+        // Always set positionId
+        params.set('positionId', targetPositionId);
 
-      // Add custom weights if available
-      if (customWeights) {
-        params.set('customWeights', JSON.stringify(customWeights));
-      }
+        // Add other search params
+        urlSearchParams.forEach((value, key) => {
+          if (key !== 'positionId' && value) {
+            params.set(key, value);
+          }
+        });
 
-      Object.entries(currentSearchParams).forEach(([key, value]) => {
-        if (value && key !== 'testId') {
-          params.set(key, value);
+        // Override pagination to get all results
+        params.set('pageSize', '1000');
+        params.delete('page');
+
+        const response = await fetch(`/api/admin/leaderboard?${params}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch leaderboard data');
         }
-      });
 
-      const response = await fetch(`/api/admin/leaderboard?${params}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch leaderboard data');
+        const result = await response.json();
+        setData(result);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+      } finally {
+        setIsLoading(false);
       }
+    },
+    [selectedPositionId, urlSearchParams]
+  );
 
-      const result = await response.json();
-      setData(result);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [
-    selectedTestId,
-    customWeights, // Add customWeights to dependencies
-    urlSearchParams.get('page'),
-    urlSearchParams.get('pageSize'),
-    urlSearchParams.get('dateFrom'),
-    urlSearchParams.get('dateTo'),
-    urlSearchParams.get('invitationId'),
-    urlSearchParams.get('search'),
-    urlSearchParams.get('sortBy'),
-    urlSearchParams.get('sortOrder'),
-    urlSearchParams.get('weightProfile'),
-    searchParamsProp.page,
-    searchParamsProp.pageSize,
-    searchParamsProp.dateFrom,
-    searchParamsProp.dateTo,
-    searchParamsProp.invitationId,
-    searchParamsProp.search,
-    searchParamsProp.sortBy,
-    searchParamsProp.sortOrder,
-    searchParamsProp.weightProfile,
-  ]);
-
+  // Initialize data fetch
   useEffect(() => {
-    fetchTests();
+    fetchPositions();
     fetchProfiles();
-  }, [fetchTests, fetchProfiles]);
+  }, [fetchPositions, fetchProfiles]);
 
+  // Handle position selection from URL params
   useEffect(() => {
-    if (selectedTestId) {
-      fetchLeaderboardData();
+    const positionIdFromUrl = urlSearchParams.get('positionId');
+    if (positionIdFromUrl && positionIdFromUrl !== selectedPositionId) {
+      setSelectedPositionId(positionIdFromUrl);
+    } else if (
+      !positionIdFromUrl &&
+      positions.length > 0 &&
+      !selectedPositionId
+    ) {
+      // Auto-select first position if none selected
+      setSelectedPositionId(positions[0].id);
     }
-  }, [selectedTestId, fetchLeaderboardData]);
+  }, [urlSearchParams, positions, selectedPositionId]);
 
-  const handleTestSelect = (testId: string) => {
-    setSelectedTestId(testId);
-    // Update URL with new testId
-    const params = new URLSearchParams();
-    params.set('testId', testId);
+  // Fetch data when position changes
+  useEffect(() => {
+    if (selectedPositionId) {
+      fetchLeaderboardData(selectedPositionId);
+    }
+  }, [selectedPositionId, fetchLeaderboardData]);
 
-    // Keep other existing params except page (reset to 1)
-    const currentParams = {
-      pageSize:
-        urlSearchParams.get('pageSize') || searchParamsProp.pageSize || '1000',
-      dateFrom: urlSearchParams.get('dateFrom') || searchParamsProp.dateFrom,
-      dateTo: urlSearchParams.get('dateTo') || searchParamsProp.dateTo,
-      invitationId:
-        urlSearchParams.get('invitationId') || searchParamsProp.invitationId,
-      search: urlSearchParams.get('search') || searchParamsProp.search,
-      sortBy: urlSearchParams.get('sortBy') || searchParamsProp.sortBy,
-      sortOrder: urlSearchParams.get('sortOrder') || searchParamsProp.sortOrder,
-    };
+  // Filter positions based on search and department
+  const filteredPositions = useMemo(() => {
+    return positions.filter((position) => {
+      const matchesSearch =
+        position.name.toLowerCase().includes(localSearch.toLowerCase()) ||
+        position.code.toLowerCase().includes(localSearch.toLowerCase()) ||
+        (position.description &&
+          position.description
+            .toLowerCase()
+            .includes(localSearch.toLowerCase()));
 
-    Object.entries(currentParams).forEach(([key, value]) => {
-      if (value && key !== 'testId' && key !== 'page') {
-        params.set(key, value);
-      }
+      const matchesDepartment =
+        departmentFilter === 'all' || position.department === departmentFilter;
+
+      return matchesSearch && matchesDepartment;
     });
-    params.set('page', '1');
+  }, [positions, localSearch, departmentFilter]);
 
+  // Get unique departments
+  const departments = useMemo(() => {
+    return [...new Set(positions.map((p) => p.department).filter(Boolean))];
+  }, [positions]);
+
+  // Get selected position
+  const selectedPosition = useMemo(() => {
+    return positions.find((p) => p.id === selectedPositionId);
+  }, [positions, selectedPositionId]);
+
+  const handlePositionSelect = (positionId: string) => {
+    setSelectedPositionId(positionId);
+
+    // Update URL
+    const params = new URLSearchParams(urlSearchParams.toString());
+    params.set('positionId', positionId);
     router.push(`/admin/leaderboard?${params.toString()}`);
   };
 
   const handleFilterChange = (
     newFilters: Record<string, string | undefined>
   ) => {
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(urlSearchParams.toString());
 
-    // Always preserve the selected test
-    if (selectedTestId) {
-      params.set('testId', selectedTestId);
-    }
-
-    // Merge current search params with new filters
-    const currentParams = {
-      page: urlSearchParams.get('page') || searchParamsProp.page,
-      pageSize:
-        urlSearchParams.get('pageSize') || searchParamsProp.pageSize || '1000',
-      dateFrom: urlSearchParams.get('dateFrom') || searchParamsProp.dateFrom,
-      dateTo: urlSearchParams.get('dateTo') || searchParamsProp.dateTo,
-      invitationId:
-        urlSearchParams.get('invitationId') || searchParamsProp.invitationId,
-      search: urlSearchParams.get('search') || searchParamsProp.search,
-      sortBy: urlSearchParams.get('sortBy') || searchParamsProp.sortBy,
-      sortOrder: urlSearchParams.get('sortOrder') || searchParamsProp.sortOrder,
-    };
-
-    Object.entries({ ...currentParams, ...newFilters }).forEach(
-      ([key, value]) => {
-        if (value && value !== '' && key !== 'testId') {
-          params.set(key, value);
-        }
+    Object.entries(newFilters).forEach(([key, value]) => {
+      if (value && value !== '') {
+        params.set(key, value);
+      } else {
+        params.delete(key);
       }
-    );
+    });
 
     router.push(`/admin/leaderboard?${params.toString()}`);
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    handleFilterChange({ search: localSearch || undefined, page: '1' });
+    handleFilterChange({ search: localSearch });
   };
 
   const clearAllFilters = () => {
     setLocalSearch('');
-    handleFilterChange({
-      search: undefined,
-      dateFrom: undefined,
-      dateTo: undefined,
-      invitationId: undefined,
-      page: '1',
-    });
+    setDepartmentFilter('all');
+    handleFilterChange({ search: undefined });
   };
 
   const handlePageChange = (page: number) => {
@@ -349,14 +337,12 @@ export default function LeaderboardSidebarLayout({
   };
 
   const handleSort = (sortBy: string, sortOrder: 'asc' | 'desc') => {
-    handleFilterChange({ sortBy, sortOrder, page: '1' });
+    handleFilterChange({ sortBy, sortOrder });
   };
 
   const handleWeightProfileChange = (profileId: string | null) => {
-    setCustomWeights(null); // Clear custom weights when selecting a profile
     handleFilterChange({
       weightProfile: profileId || undefined,
-      page: '1', // Reset to first page when changing weight profile
     });
   };
 
@@ -368,311 +354,269 @@ export default function LeaderboardSidebarLayout({
     OTHER: number;
   }) => {
     setCustomWeights(weights);
-    // The fetchLeaderboardData will automatically re-run due to customWeights dependency
+
+    // Convert weights to URL params
+    const weightParams: Record<string, string> = {};
+    Object.entries(weights).forEach(([key, value]) => {
+      weightParams[`weight_${key}`] = value.toString();
+    });
+
+    handleFilterChange(weightParams);
   };
 
-  const hasActiveFilters =
-    urlSearchParams.get('search') ||
-    searchParamsProp.search ||
-    urlSearchParams.get('dateFrom') ||
-    searchParamsProp.dateFrom ||
-    urlSearchParams.get('dateTo') ||
-    searchParamsProp.dateTo ||
-    urlSearchParams.get('invitationId') ||
-    searchParamsProp.invitationId;
-
-  const selectedTest = tests.find((test) => test.id === selectedTestId);
-
-  if (isLoadingTests) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
-        <p className="ml-3 text-gray-600">Loading tests...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex min-h-screen gap-2">
-      {/* Sidebar */}
-      <div className="sticky top-0 w-52 flex-shrink-0 self-start overflow-hidden rounded-md bg-white shadow">
-        <div className="border-b border-gray-200 p-2">
-          <h2 className="text-sm font-semibold text-gray-900">Tests</h2>
-          <p className="mt-1 text-xs text-gray-500">Select a test</p>
-        </div>
+    <div className="flex h-[calc(100vh-8rem)] gap-3">
+      {/* Left Sidebar - Position Selector */}
+      <div className="w-80 flex-shrink-0">
+        <div className="flex h-full flex-col rounded-lg border border-gray-200 bg-white shadow-sm">
+          {/* Header */}
+          <div className="border-b border-gray-200 p-3">
+            <h2 className="text-base font-semibold text-gray-900">
+              Select Position
+            </h2>
+            <p className="text-xs text-gray-600">
+              Select a position to view candidate rankings
+            </p>
+          </div>
 
-        <div className="max-h-[calc(100vh-180px)] overflow-y-auto">
-          {tests.length === 0 ? (
-            <div className="p-4 text-center text-gray-500">
-              <Trophy className="mx-auto mb-2 h-8 w-8 text-gray-300" />
-              <p className="text-sm">No tests available</p>
+          {/* Search and Filters - Compact */}
+          <div className="space-y-2 border-b border-gray-200 p-2">
+            <form onSubmit={handleSearchSubmit}>
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search positions..."
+                  value={localSearch}
+                  onChange={(e) => setLocalSearch(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 py-1.5 pl-7 pr-3 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                />
+              </div>
+            </form>
+
+            <div className="flex items-center gap-1">
+              <Filter className="h-3 w-3 text-gray-400" />
+              <select
+                value={departmentFilter}
+                onChange={(e) => setDepartmentFilter(e.target.value)}
+                className="flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              >
+                <option value="all">All Departments</option>
+                {departments.map((dept) => (
+                  <option key={dept || 'unknown'} value={dept || ''}>
+                    {dept}
+                  </option>
+                ))}
+              </select>
             </div>
-          ) : (
-            <div className="space-y-1 p-1">
-              {tests.map((test) => (
-                <button
-                  key={test.id}
-                  onClick={() => handleTestSelect(test.id)}
-                  className={`w-full rounded-md border p-2 text-left transition-all ${
-                    selectedTestId === test.id
-                      ? 'border-blue-200 bg-blue-50 text-blue-900'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="truncate text-xs font-medium">
-                        {test.title}
-                      </h3>
-                      {test.description && (
-                        <p className="mt-0.5 line-clamp-1 text-xs text-gray-500">
-                          {test.description.length > 40
-                            ? `${test.description.substring(0, 40)}...`
-                            : test.description}
+
+            {(localSearch || departmentFilter !== 'all') && (
+              <button
+                onClick={clearAllFilters}
+                className="text-xs text-brand-600 hover:text-brand-800"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+
+          {/* Positions List - Compact */}
+          <div className="flex-1 overflow-y-auto">
+            {isLoadingPositions ? (
+              <div className="flex items-center justify-center py-6">
+                <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-brand-500"></div>
+              </div>
+            ) : filteredPositions.length === 0 ? (
+              <div className="p-3 text-center">
+                <Users className="mx-auto h-6 w-6 text-gray-400" />
+                <p className="mt-1 text-xs text-gray-500">
+                  {localSearch || departmentFilter !== 'all'
+                    ? 'No positions match your filters'
+                    : 'No active positions with tests found'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-1 p-1.5">
+                {filteredPositions.map((position) => (
+                  <button
+                    key={position.id}
+                    onClick={() => handlePositionSelect(position.id)}
+                    className={`w-full rounded-lg border p-2 text-left transition-colors ${
+                      selectedPositionId === position.id
+                        ? 'border-brand-500 bg-brand-50 text-brand-900'
+                        : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate text-sm font-medium">
+                          {position.name}
+                        </h3>
+                        <p className="font-mono text-xs text-gray-500">
+                          {position.code}
                         </p>
-                      )}
-                      <div className="mt-1 flex items-center text-xs text-gray-400">
-                        <Calendar className="mr-1 h-3 w-3" />
-                        {new Date(test.createdAt).toLocaleDateString()}
+                        {position.description && (
+                          <p className="mt-1 line-clamp-2 text-xs text-gray-600">
+                            {position.description}
+                          </p>
+                        )}
+                      </div>
+                      <div className="ml-2 flex-shrink-0">
+                        <div className="text-right">
+                          <div className="text-xs font-medium text-brand-600">
+                            {position.activeTestCount}
+                          </div>
+                          <div className="text-xs text-gray-500">tests</div>
+                        </div>
                       </div>
                     </div>
-                    {selectedTestId === test.id && (
-                      <div className="ml-1 flex-shrink-0">
-                        <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
-                      </div>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {position.department && (
+                        <span className="inline-flex items-center rounded-md bg-brand-50 px-1.5 py-0.5 text-xs font-medium text-brand-700">
+                          <Building2 className="mr-1 h-2.5 w-2.5" />
+                          {position.department}
+                        </span>
+                      )}
+                      {position.level && (
+                        <span className="inline-flex items-center rounded-md bg-secondary-50 px-1.5 py-0.5 text-xs font-medium text-secondary-700">
+                          <Target className="mr-1 h-2.5 w-2.5" />
+                          {position.level}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="flex min-w-0 flex-1 gap-2">
-        {/* Center Content */}
-        <div className="min-w-0 flex-1 space-y-2">
-          {selectedTest && (
-            <div className="rounded-md bg-white p-3 shadow">
-              <div className="mb-2 flex items-center justify-between">
-                <div className="min-w-0 flex-1">
-                  <h2 className="truncate text-base font-semibold text-gray-900">
-                    {selectedTest.title}
-                  </h2>
-                </div>
-
-                {data?.stats && (
-                  <div className="flex items-center space-x-3 text-xs">
-                    <div className="flex items-center text-gray-600">
-                      <Users className="mr-1 h-3 w-3" />
-                      <span className="font-medium">
-                        {data.stats.totalCandidates}
-                      </span>
-                      <span className="ml-1">candidates</span>
-                    </div>
-                    <div className="flex items-center text-gray-600">
-                      <TrendingUp className="mr-1 h-3 w-3" />
-                      <span className="font-medium">
-                        {data.stats.avgScore}%
-                      </span>
-                      <span className="ml-1">avg</span>
-                    </div>
-                    <div className="flex items-center text-gray-600">
-                      <Trophy className="mr-1 h-3 w-3" />
-                      <span className="font-medium">
-                        {data.stats.topScore}%
-                      </span>
-                      <span className="ml-1">top</span>
-                    </div>
+      <div className="flex flex-1 gap-3">
+        {/* Center - Leaderboard Table */}
+        <div className="flex flex-1 flex-col">
+          {/* Header - Compact */}
+          <div className="mb-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div>
+                {selectedPosition ? (
+                  <div>
+                    <h1 className="text-base font-semibold text-gray-900">
+                      {selectedPosition.name} Leaderboard
+                    </h1>
+                    <p className="text-xs text-gray-600">
+                      Rankings for {selectedPosition.name} (
+                      {selectedPosition.code}) position
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <h1 className="text-base font-semibold text-gray-900">
+                      Position Leaderboard
+                    </h1>
+                    <p className="text-xs text-gray-600">
+                      Select a position to view candidate rankings
+                    </p>
                   </div>
                 )}
               </div>
 
-              {/* Search and Filters */}
-              <div className="space-y-2">
-                <form onSubmit={handleSearchSubmit} className="flex gap-2">
-                  <div className="relative flex-1">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2">
-                      <Search className="h-3 w-3 text-gray-400" />
+              {selectedPosition && data && (
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-brand-600">
+                      {data.stats.totalCandidates || 0}
                     </div>
-                    <input
-                      type="text"
-                      placeholder="Search by candidate name or email..."
-                      value={localSearch}
-                      onChange={(e) => setLocalSearch(e.target.value)}
-                      className="block w-full rounded-md border border-gray-300 bg-white py-1.5 pl-7 pr-2 text-xs placeholder-gray-500 focus:border-blue-500 focus:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
+                    <div className="text-xs text-gray-500">candidates</div>
                   </div>
-                  <button
-                    type="submit"
-                    className="rounded-md bg-blue-600 px-2 py-1.5 text-xs font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                  >
-                    Search
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                    className="flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-                  >
-                    <Filter className="h-3 w-3" />
-                    Filters
-                  </button>
-                </form>
-
-                {/* Advanced Filters */}
-                {showAdvancedFilters && (
-                  <div className="space-y-3 border-t border-gray-200 pt-3">
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      {/* Date From */}
-                      <div>
-                        <label
-                          htmlFor="dateFrom"
-                          className="mb-1 block text-sm font-medium text-gray-700"
-                        >
-                          Completed From
-                        </label>
-                        <input
-                          type="date"
-                          id="dateFrom"
-                          value={
-                            urlSearchParams.get('dateFrom') ||
-                            searchParamsProp.dateFrom ||
-                            ''
-                          }
-                          onChange={(e) =>
-                            handleFilterChange({
-                              dateFrom: e.target.value || undefined,
-                              page: '1',
-                            })
-                          }
-                          className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                      </div>
-
-                      {/* Date To */}
-                      <div>
-                        <label
-                          htmlFor="dateTo"
-                          className="mb-1 block text-sm font-medium text-gray-700"
-                        >
-                          Completed To
-                        </label>
-                        <input
-                          type="date"
-                          id="dateTo"
-                          value={
-                            urlSearchParams.get('dateTo') ||
-                            searchParamsProp.dateTo ||
-                            ''
-                          }
-                          onChange={(e) =>
-                            handleFilterChange({
-                              dateTo: e.target.value || undefined,
-                              page: '1',
-                            })
-                          }
-                          className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                      </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-secondary-600">
+                      {data.stats.avgScore?.toFixed(1) || '0.0'}
                     </div>
-
-                    {/* Filter Actions */}
-                    <div className="flex items-center justify-between pt-2">
-                      <div className="text-sm text-gray-500">
-                        {hasActiveFilters ? (
-                          <span>Active filters applied</span>
-                        ) : (
-                          <span>No filters applied</span>
-                        )}
-                      </div>
-                      {hasActiveFilters && (
-                        <button
-                          onClick={clearAllFilters}
-                          className="text-sm text-blue-600 underline hover:text-blue-700"
-                        >
-                          Clear all filters
-                        </button>
-                      )}
-                    </div>
+                    <div className="text-xs text-gray-500">avg score</div>
                   </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Leaderboard Table */}
-          {isLoading ? (
-            <div className="rounded-lg bg-white p-4 shadow">
-              <TableSkeleton rows={10} columns={8} />
-            </div>
-          ) : error ? (
-            <div className="rounded-md border-l-4 border-red-500 bg-red-100 p-4 text-red-700">
-              <div className="flex">
-                <div className="py-1">
-                  <svg
-                    className="mr-3 h-6 w-6 text-red-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
                 </div>
-                <div>
-                  <p className="font-bold">Error Loading Leaderboard</p>
-                  <p className="text-sm">{error}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+            {!selectedPosition ? (
+              <div className="flex h-full items-center justify-center">
+                <div className="text-center">
+                  <Trophy className="mx-auto h-10 w-10 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">
+                    Select a Position
+                  </h3>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Choose a position from the sidebar to view the leaderboard
+                  </p>
+                </div>
+              </div>
+            ) : isLoading ? (
+              <div className="p-4">
+                <TableSkeleton />
+              </div>
+            ) : error ? (
+              <div className="flex h-full items-center justify-center">
+                <div className="text-center">
+                  <div className="text-red-500">
+                    <TrendingUp className="mx-auto h-10 w-10" />
+                  </div>
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">
+                    Error Loading Data
+                  </h3>
+                  <p className="mt-1 text-xs text-gray-500">{error}</p>
                   <button
-                    onClick={fetchLeaderboardData}
-                    className="mt-2 text-sm underline hover:no-underline"
+                    onClick={() => fetchLeaderboardData()}
+                    className="mt-3 rounded-md bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
                   >
-                    Try again
+                    Try Again
                   </button>
                 </div>
               </div>
-            </div>
-          ) : !data ? (
-            <div className="rounded-lg bg-white py-8 text-center shadow">
-              <Trophy className="mx-auto mb-4 h-12 w-12 text-gray-300" />
-              <p className="text-gray-500">No leaderboard data available</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="overflow-x-auto rounded-lg bg-white shadow">
+            ) : !data || data.rows.length === 0 ? (
+              <div className="flex h-full items-center justify-center">
+                <div className="text-center">
+                  <Users className="mx-auto h-10 w-10 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">
+                    No Candidates Found
+                  </h3>
+                  <p className="mt-1 text-xs text-gray-500">
+                    No test attempts found for this position yet.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="h-full overflow-auto">
                 <LeaderboardTable
                   data={data}
-                  onPageChange={handlePageChange}
                   onSort={handleSort}
-                  showWeightedScores={true}
+                  onPageChange={handlePageChange}
                 />
               </div>
-              {/* Results Summary */}
-              <div className="text-center text-sm text-gray-500">
-                Showing all {data.rows.length} candidates • Scroll to see more
-                results
-              </div>
-            </div>
-          )}
-
-          <CompareDrawer />
+            )}
+          </div>
         </div>
 
         {/* Right Sidebar - Weight Profile Selector */}
-        <div className="sticky top-0 max-h-screen w-64 flex-shrink-0 self-start overflow-y-auto">
-          <WeightProfileSelector
-            availableProfiles={availableProfiles}
-            currentProfile={customWeights ? null : data?.weightProfile || null}
-            onProfileChange={handleWeightProfileChange}
-            onCustomWeightsChange={handleCustomWeightsChange}
-            onProfilesChange={fetchProfiles}
-          />
+        <div className="w-80 flex-shrink-0">
+          {selectedPosition && (
+            <WeightProfileSelector
+              availableProfiles={availableProfiles}
+              currentProfile={data?.weightProfile || null}
+              onProfileChange={handleWeightProfileChange}
+              onCustomWeightsChange={handleCustomWeightsChange}
+            />
+          )}
         </div>
       </div>
+
+      {/* Compare Drawer */}
+      <CompareDrawer />
     </div>
   );
 }
