@@ -96,15 +96,19 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: {
-        completedAt: 'desc',
-      },
+      orderBy: [
+        {
+          completedAt: {
+            sort: 'desc',
+            nulls: 'last',
+          },
+        },
+        {
+          startedAt: 'desc',
+        },
+      ],
       take: 50,
     });
-    console.log(
-      `[API /admin/analytics/test-attempts] Found ${testAttempts.length} standard attempts.`
-    );
-
     const publicTestAttempts = await prisma.publicTestAttempt.findMany({
       where: {
         status: {
@@ -124,9 +128,17 @@ export async function GET(request: NextRequest) {
           },
         },
       },
-      orderBy: {
-        completedAt: 'desc',
-      },
+      orderBy: [
+        {
+          completedAt: {
+            sort: 'desc',
+            nulls: 'last',
+          },
+        },
+        {
+          startedAt: 'desc',
+        },
+      ],
       take: 50,
     });
 
@@ -143,6 +155,17 @@ export async function GET(request: NextRequest) {
           totalQuestions: attempt.test.questions.length,
           riskScore: attempt.riskScore,
           completedAt: attempt.completedAt,
+          startedAt: attempt.startedAt,
+          durationSeconds:
+            attempt.completedAt && attempt.startedAt
+              ? Math.floor(
+                  (new Date(attempt.completedAt).getTime() -
+                    new Date(attempt.startedAt).getTime()) /
+                    1000
+                )
+              : null,
+          // Use completedAt if available, otherwise use startedAt as fallback
+          effectiveCompletedAt: attempt.completedAt || attempt.startedAt,
           type: 'Standard',
           testId: attempt.testId,
           proctoring: attempt.proctoringEnabled,
@@ -159,6 +182,17 @@ export async function GET(request: NextRequest) {
           totalQuestions: attempt.publicLink.test.questions.length,
           riskScore: attempt.riskScore,
           completedAt: attempt.completedAt,
+          startedAt: attempt.startedAt,
+          durationSeconds:
+            attempt.completedAt && attempt.startedAt
+              ? Math.floor(
+                  (new Date(attempt.completedAt).getTime() -
+                    new Date(attempt.startedAt).getTime()) /
+                    1000
+                )
+              : null,
+          // Use completedAt if available, otherwise use startedAt as fallback
+          effectiveCompletedAt: attempt.completedAt || attempt.startedAt,
           type: 'Public Link',
           testId: attempt.publicLink.testId,
           proctoring: attempt.proctoringEnabled,
@@ -168,6 +202,15 @@ export async function GET(request: NextRequest) {
     apiCache.set(cacheKey, combinedData, 180);
     console.log(
       '[API /admin/analytics/test-attempts] Successfully processed data. Sending response.'
+    );
+    console.log(
+      '[API /admin/analytics/test-attempts] Sample data with effectiveCompletedAt:',
+      combinedData.slice(0, 3).map((d) => ({
+        id: d.id,
+        completedAt: d.completedAt,
+        startedAt: d.startedAt,
+        effectiveCompletedAt: d.effectiveCompletedAt,
+      }))
     );
     return NextResponse.json(combinedData);
   } catch (error) {

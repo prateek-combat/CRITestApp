@@ -195,8 +195,31 @@ export function calculateWeightedComposite(
     }
   });
 
-  // Normalize by actual valid weights (in case some categories have no questions)
-  return totalValidWeight > 0 ? (weightedSum * 100) / totalValidWeight : 0;
+  // If we have valid weights, the weightedSum is already the correct weighted average
+  // Only normalize if some categories were missing (totalValidWeight < 100)
+  if (totalValidWeight === 0) return 0;
+  if (totalValidWeight === 100) return weightedSum;
+
+  // Only normalize if some categories had no questions
+  return weightedSum * (100 / totalValidWeight);
+}
+
+/**
+ * Calculate unweighted composite score using equal weights across categories
+ * This ensures consistency with weighted calculation when weights are equal
+ */
+export function calculateUnweightedComposite(
+  categoryScores: Record<string, { correct: number; total: number }>
+): number {
+  const equalWeights: CategoryWeights = {
+    LOGICAL: 20,
+    VERBAL: 20,
+    NUMERICAL: 20,
+    ATTENTION_TO_DETAIL: 20,
+    OTHER: 20,
+  };
+
+  return calculateWeightedComposite(categoryScores, equalWeights);
 }
 
 // ==================== END NEW SECTION ====================

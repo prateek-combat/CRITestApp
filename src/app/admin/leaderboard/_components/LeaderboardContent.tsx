@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import LeaderboardTable from './LeaderboardTable';
 import LeaderboardFilters from './LeaderboardFilters';
 import CompareDrawer from './CompareDrawer';
+import WeightProfileSelector from './WeightProfileSelector';
+import TestComponent from './TestComponent';
 
 interface CandidateScore {
   attemptId: string;
@@ -19,9 +21,23 @@ interface CandidateScore {
   scoreAttention: number;
   scoreOther: number;
   composite: number;
+  compositeUnweighted: number;
   percentile: number;
   rank: number;
   isPublicAttempt?: boolean;
+}
+
+interface WeightProfile {
+  id: string;
+  name: string;
+  description: string;
+  weights: {
+    LOGICAL: number;
+    VERBAL: number;
+    NUMERICAL: number;
+    ATTENTION_TO_DETAIL: number;
+    OTHER: number;
+  };
 }
 
 interface LeaderboardData {
@@ -42,7 +58,9 @@ interface LeaderboardData {
     search?: string;
     sortBy: string;
     sortOrder: string;
+    weightProfile?: string;
   };
+  weightProfile?: WeightProfile | null;
   stats: {
     totalCandidates: number;
     avgScore: number;
@@ -61,7 +79,30 @@ export default function LeaderboardContent({
   const [data, setData] = useState<LeaderboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [availableProfiles, setAvailableProfiles] = useState<WeightProfile[]>(
+    []
+  );
   const router = useRouter();
+
+  const fetchProfiles = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/category-weights');
+      if (response.ok) {
+        const result = await response.json();
+        // Extract the data array from the response
+        const profiles = result.success ? result.data : [];
+        setAvailableProfiles(profiles);
+      } else {
+        console.error(
+          'Failed to fetch profiles:',
+          response.status,
+          response.statusText
+        );
+      }
+    } catch (err) {
+      console.error('Failed to fetch weight profiles:', err);
+    }
+  }, []);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -72,6 +113,10 @@ export default function LeaderboardContent({
       Object.entries(searchParams).forEach(([key, value]) => {
         if (value) params.set(key, value);
       });
+
+      // Override pagination to get all results
+      params.set('pageSize', '1000'); // Large number to get all results
+      params.delete('page'); // Remove page parameter
 
       const response = await fetch(`/api/admin/leaderboard?${params}`);
       if (!response.ok) {
@@ -89,14 +134,14 @@ export default function LeaderboardContent({
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    fetchProfiles();
+  }, [fetchData, fetchProfiles]);
 
   const handleFilterChange = (
     newFilters: Record<string, string | undefined>
   ) => {
     const params = new URLSearchParams();
 
-    // Merge current search params with new filters
     Object.entries({ ...searchParams, ...newFilters }).forEach(
       ([key, value]) => {
         if (value && value !== '') {
@@ -108,12 +153,14 @@ export default function LeaderboardContent({
     router.push(`/admin/leaderboard?${params.toString()}`);
   };
 
-  const handlePageChange = (page: number) => {
-    handleFilterChange({ page: page.toString() });
+  const handleWeightProfileChange = (profileId: string | null) => {
+    handleFilterChange({
+      weightProfile: profileId || undefined,
+    });
   };
 
   const handleSort = (sortBy: string, sortOrder: 'asc' | 'desc') => {
-    handleFilterChange({ sortBy, sortOrder, page: '1' }); // Reset to first page
+    handleFilterChange({ sortBy, sortOrder });
   };
 
   if (isLoading) {
@@ -169,6 +216,14 @@ export default function LeaderboardContent({
 
   return (
     <div className="space-y-6">
+      <TestComponent />
+      <WeightProfileSelector
+        availableProfiles={availableProfiles}
+        currentProfile={data.weightProfile}
+        onProfileChange={handleWeightProfileChange}
+        onProfilesChange={fetchProfiles}
+      />
+
       <LeaderboardFilters
         filters={data.filters}
         onFilterChange={handleFilterChange}
@@ -177,8 +232,8 @@ export default function LeaderboardContent({
 
       <LeaderboardTable
         data={data}
-        onPageChange={handlePageChange}
         onSort={handleSort}
+        showWeightedScores={true}
       />
 
       <CompareDrawer />
