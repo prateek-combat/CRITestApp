@@ -124,12 +124,12 @@ describe('API Integration Tests', () => {
         candidateEmail: 'jane@example.com',
         status: 'IN_PROGRESS',
         tabSwitches: 0,
-        proctoringEnabled: true,
+        proctoringEnabled: false,
       };
 
       expect(attemptData.status).toBe('IN_PROGRESS');
       expect(attemptData.tabSwitches).toBe(0);
-      expect(attemptData.proctoringEnabled).toBe(true);
+      expect(attemptData.proctoringEnabled).toBe(false);
     });
 
     it('should handle test completion', async () => {

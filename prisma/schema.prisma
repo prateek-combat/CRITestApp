@@ -111,7 +111,7 @@ model TestAttempt {
   riskScoreBreakdown  Json?
   categorySubScores   Json?
   tabSwitches         Int               @default(0)
-  proctoringEnabled   Boolean           @default(true)
+  proctoringEnabled   Boolean           @default(false)
   videoRecordingUrl   String?
   audioRecordingUrl   String?
   proctoringEvents    Json?
@@ -207,7 +207,7 @@ model PublicTestAttempt {
   riskScoreBreakdown  Json?
   categorySubScores   Json?
   tabSwitches         Int                     @default(0)
-  proctoringEnabled   Boolean                 @default(true)
+  proctoringEnabled   Boolean                 @default(false)
   videoRecordingUrl   String?
   audioRecordingUrl   String?
   proctoringEvents    Json?
