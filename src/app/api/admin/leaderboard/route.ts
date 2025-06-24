@@ -27,11 +27,14 @@ export async function GET(request: NextRequest) {
       .get('positionIds')
       ?.split(',')
       .filter(Boolean);
+    const jobProfileId = searchParams.get('jobProfileId');
 
-    // Support both single test and position-based filtering
-    if (!testId && !positionId && !positionIds) {
+    // Support single test, position-based, and job profile-based filtering
+    if (!testId && !positionId && !positionIds && !jobProfileId) {
       return NextResponse.json(
-        { error: 'testId, positionId, or positionIds is required' },
+        {
+          error: 'testId, positionId, positionIds, or jobProfileId is required',
+        },
         { status: 400 }
       );
     }
@@ -74,10 +77,50 @@ export async function GET(request: NextRequest) {
 
     // Build test filtering conditions
     let testFilterCondition: any = {};
+    let jobProfile: any = null;
+    let testWeights: any = {};
 
     if (testId) {
       // Single test filter
       testFilterCondition = { testId };
+    } else if (jobProfileId) {
+      // Job profile filter - get the job profile and its test weights
+      try {
+        jobProfile = await prisma.jobProfile.findUnique({
+          where: { id: jobProfileId },
+          include: {
+            testWeights: {
+              include: {
+                test: true,
+              },
+            },
+            positions: true,
+          },
+        });
+
+        if (!jobProfile) {
+          return NextResponse.json(
+            { error: 'Job profile not found' },
+            { status: 404 }
+          );
+        }
+
+        // Extract test IDs and weights from job profile
+        const testIds = jobProfile.testWeights.map((tw: any) => tw.testId);
+        testWeights = Object.fromEntries(
+          jobProfile.testWeights.map((tw: any) => [tw.testId, tw.weight])
+        );
+
+        testFilterCondition = {
+          testId: { in: testIds },
+        };
+      } catch (error) {
+        console.error('Error fetching job profile:', error);
+        return NextResponse.json(
+          { error: 'Failed to fetch job profile' },
+          { status: 500 }
+        );
+      }
     } else if (positionId) {
       // Single position filter
       testFilterCondition = {
@@ -93,7 +136,9 @@ export async function GET(request: NextRequest) {
     // Regular test attempts where clause
     const regularWhere = {
       ...baseWhere,
-      ...(testId ? { testId } : { test: testFilterCondition.test }),
+      ...(testId || jobProfileId
+        ? testFilterCondition
+        : { test: testFilterCondition.test }),
     };
     if (invitationId) {
       regularWhere.invitationId = invitationId;
@@ -102,7 +147,10 @@ export async function GET(request: NextRequest) {
     // Public test attempts where clause (need to join through publicLink)
     const publicWhere = {
       ...baseWhere,
-      publicLink: testId ? { testId } : { test: testFilterCondition.test },
+      publicLink:
+        testId || jobProfileId
+          ? testFilterCondition
+          : { test: testFilterCondition.test },
     };
 
     const orderBy: any = {
@@ -209,8 +257,27 @@ export async function GET(request: NextRequest) {
     }; // Default equal weights
 
     try {
-      // Check for custom weights first
-      if (customWeightsParam) {
+      // Read individual weight parameters from the URL as a priority
+      const individualWeights: Partial<CategoryWeights> = {};
+      searchParams.forEach((value, key) => {
+        if (key.startsWith('weight_')) {
+          const category = key.replace('weight_', '').toUpperCase();
+          const weight = parseInt(value, 10);
+          if (!isNaN(weight)) {
+            individualWeights[category as keyof CategoryWeights] = weight;
+          }
+        }
+      });
+
+      if (Object.keys(individualWeights).length > 0) {
+        weights = { ...weights, ...individualWeights };
+        weightProfile = {
+          id: 'custom-individual',
+          name: 'Custom URL Weights',
+          description: 'Weights provided via URL parameters',
+          weights: weights,
+        };
+      } else if (customWeightsParam) {
         try {
           const customWeights = JSON.parse(customWeightsParam);
           // Validate the custom weights structure
@@ -235,24 +302,18 @@ export async function GET(request: NextRequest) {
           console.warn('Error parsing custom weights:', parseError);
           // Fall back to profile or default weights
         }
-      }
-
-      // If no custom weights or parsing failed, try weight profile
-      if (!customWeightsParam || weightProfile?.id !== 'custom') {
-        if (weightProfileId) {
-          weightProfile =
-            await CategoryWeightService.getProfileById(weightProfileId);
-          if (weightProfile) {
-            weights = weightProfile.weights;
-          }
-        } else {
-          // Use default profile if no specific profile requested
-          const defaultProfile =
-            await CategoryWeightService.getDefaultProfile();
-          if (defaultProfile) {
-            weightProfile = defaultProfile;
-            weights = defaultProfile.weights;
-          }
+      } else if (weightProfileId) {
+        weightProfile =
+          await CategoryWeightService.getProfileById(weightProfileId);
+        if (weightProfile) {
+          weights = weightProfile.weights;
+        }
+      } else {
+        // Use default profile if no specific profile requested
+        const defaultProfile = await CategoryWeightService.getDefaultProfile();
+        if (defaultProfile) {
+          weightProfile = defaultProfile;
+          weights = defaultProfile.weights;
         }
       }
     } catch (error) {
@@ -351,6 +412,29 @@ export async function GET(request: NextRequest) {
         categoryScoresForWeighting
       );
 
+      // NEW: Calculate job profile composite score if we're in job profile mode
+      let jobProfileComposite = weightedComposite; // Default to category-based score
+
+      if (jobProfile && Object.keys(testWeights).length > 0) {
+        // For job profile scoring, we need to get the test-specific score
+        // and weight it according to the job profile test weights
+        const testId =
+          attempt.type === 'regular'
+            ? (attempt as any).testId // Get testId from regular attempt
+            : (attempt as any).publicLink?.testId; // Get testId from public attempt
+
+        if (testId && testWeights[testId]) {
+          // Use the raw score for this specific test, weighted by job profile weight
+          const testScore = attempt.rawScore || 0;
+          const testWeight = testWeights[testId];
+
+          // For job profile mode, we'll calculate a weighted average across all tests
+          // This will be done at the candidate level, not individual test level
+          // For now, use the individual test score with its weight
+          jobProfileComposite = testScore * testWeight;
+        }
+      }
+
       return {
         ...attempt,
         scoreLogical: categoryScores['LOGICAL']?.percentage || 0,
@@ -358,9 +442,14 @@ export async function GET(request: NextRequest) {
         scoreNumerical: categoryScores['NUMERICAL']?.percentage || 0,
         scoreAttention: categoryScores['ATTENTION_TO_DETAIL']?.percentage || 0,
         scoreOther: categoryScores['OTHER']?.percentage || 0,
-        composite: weightedComposite, // Use weighted composite score
+        composite: jobProfile ? jobProfileComposite : weightedComposite, // Use job profile composite if available
         compositeUnweighted: unweightedComposite, // Use consistent category-based unweighted score
         percentile: 0, // Will be calculated after we have all scores
+        testWeight:
+          jobProfile && Object.keys(testWeights).length > 0
+            ? testWeights[(attempt as any).testId] || 1
+            : 1,
+        jobProfileName: jobProfile?.name || null,
       };
     });
 
@@ -486,6 +575,8 @@ export async function GET(request: NextRequest) {
         percentile: attempt.percentile,
         rank: index + 1 + (page - 1) * pageSize,
         type: attempt.type, // Add type to distinguish regular vs public
+        testWeight: (attempt as any).testWeight || 1,
+        jobProfileName: (attempt as any).jobProfileName || null,
       };
     });
 

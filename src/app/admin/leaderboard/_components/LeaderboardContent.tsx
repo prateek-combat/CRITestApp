@@ -6,7 +6,6 @@ import LeaderboardTable from './LeaderboardTable';
 import LeaderboardFilters from './LeaderboardFilters';
 import CompareDrawer from './CompareDrawer';
 import WeightProfileSelector from './WeightProfileSelector';
-import TestComponent from './TestComponent';
 
 interface CandidateScore {
   attemptId: string;
@@ -38,6 +37,23 @@ interface WeightProfile {
     ATTENTION_TO_DETAIL: number;
     OTHER: number;
   };
+  isDefault: boolean;
+  isSystem: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  createdById: string | null;
+}
+
+interface JobProfile {
+  id: string;
+  name: string;
+  testWeights: Array<{
+    test: {
+      id: string;
+      title: string;
+    };
+    weight: number;
+  }>;
 }
 
 interface LeaderboardData {
@@ -55,6 +71,7 @@ interface LeaderboardData {
     dateTo?: string;
     invitationId?: string;
     testId?: string;
+    jobProfileId?: string;
     search?: string;
     sortBy: string;
     sortOrder: string;
@@ -216,10 +233,9 @@ export default function LeaderboardContent({
 
   return (
     <div className="space-y-6">
-      <TestComponent />
       <WeightProfileSelector
         availableProfiles={availableProfiles}
-        currentProfile={data.weightProfile}
+        currentProfile={data.weightProfile || null}
         onProfileChange={handleWeightProfileChange}
         onProfilesChange={fetchProfiles}
       />

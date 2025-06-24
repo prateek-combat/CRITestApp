@@ -22,24 +22,79 @@ model User {
   archivedTests          Test[]                  @relation("ArchivedTests")
   tests                  Test[]
   positions              Position[]
+  jobProfiles            JobProfile[]
+  jobProfileInvitations  JobProfileInvitation[]
 }
 
 model Position {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  code        String   @unique
+  id          String       @id @default(uuid())
+  name        String       @unique
+  code        String       @unique
   description String?
   department  String?
   level       String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   createdById String
   tests       Test[]
-  createdBy   User     @relation(fields: [createdById], references: [id])
+  testsMany   Test[]       @relation("TestPositions")
+  jobProfiles JobProfile[]
+  createdBy   User         @relation(fields: [createdById], references: [id])
 
   @@index([isActive, department])
   @@index([code])
+}
+
+model JobProfile {
+  id          String        @id @default(uuid())
+  name        String        @unique
+  description String?
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  createdById String
+  positions   Position[]
+  testWeights TestWeight[]
+  invitations JobProfileInvitation[]
+  createdBy   User          @relation(fields: [createdById], references: [id])
+
+  @@index([isActive])
+  @@index([createdById])
+}
+
+model TestWeight {
+  id           String     @id @default(uuid())
+  jobProfileId String
+  testId       String
+  weight       Float      @default(1.0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  jobProfile   JobProfile @relation(fields: [jobProfileId], references: [id], onDelete: Cascade)
+  test         Test       @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@unique([jobProfileId, testId])
+  @@index([jobProfileId])
+  @@index([testId])
+}
+
+model JobProfileInvitation {
+  id             String           @id @default(uuid())
+  jobProfileId   String
+  candidateEmail String
+  candidateName  String?
+  status         InvitationStatus @default(PENDING)
+  expiresAt      DateTime
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  createdById    String
+  testAttempts   TestAttempt[]    @relation("JobProfileTestAttempts")
+  jobProfile     JobProfile       @relation(fields: [jobProfileId], references: [id], onDelete: Cascade)
+  createdBy      User             @relation(fields: [createdById], references: [id])
+
+  @@index([jobProfileId])
+  @@index([candidateEmail])
+  @@index([status])
 }
 
 model Test {
@@ -61,9 +116,11 @@ model Test {
   invitations               Invitation[]
   publicTestLinks           PublicTestLink[]
   questions                 Question[]
+  testWeights               TestWeight[]
   archivedBy                User?            @relation("ArchivedTests", fields: [archivedById], references: [id])
   createdBy                 User             @relation(fields: [createdById], references: [id])
   position                  Position?        @relation(fields: [positionId], references: [id])
+  positions                 Position[]       @relation("TestPositions")
   testAttempts              TestAttempt[]
 
   @@index([isArchived, createdAt])
@@ -121,45 +178,48 @@ model Invitation {
 }
 
 model TestAttempt {
-  id                   String            @id @default(uuid())
-  candidateName        String?
-  candidateEmail       String?
-  ipAddress            String?
-  startedAt            DateTime          @default(now())
-  completedAt          DateTime?
-  status               TestAttemptStatus @default(IN_PROGRESS)
-  rawScore             Int?
-  percentile           Float?
-  categorySubScores    Json?
-  tabSwitches          Int               @default(0)
-  proctoringEnabled    Boolean           @default(true)
-  videoRecordingUrl    String?
-  audioRecordingUrl    String?
-  proctoringEvents     Json?
-  faceCapturesUrls     String[]          @default([])
-  screenRecordingUrl   String?
-  proctoringStartedAt  DateTime?
-  proctoringEndedAt    DateTime?
-  permissionsGranted   Boolean           @default(false)
-  riskScore            Float?
-  currentQuestionIndex Int?              @default(0)
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
-  invitationId         String            @unique
-  testId               String
-  personalityProfile   Json?
-  personalityScores    Json?
-  riskScoreBreakdown   Json?
-  proctorAssets        ProctorAsset[]
-  proctorEvents        ProctorEvent[]
-  submittedAnswers     SubmittedAnswer[]
-  invitation           Invitation        @relation(fields: [invitationId], references: [id], onDelete: Cascade)
-  test                 Test              @relation(fields: [testId], references: [id], onDelete: Cascade)
+  id                     String                @id @default(uuid())
+  candidateName          String?
+  candidateEmail         String?
+  ipAddress              String?
+  startedAt              DateTime              @default(now())
+  completedAt            DateTime?
+  status                 TestAttemptStatus     @default(IN_PROGRESS)
+  rawScore               Int?
+  percentile             Float?
+  categorySubScores      Json?
+  tabSwitches            Int                   @default(0)
+  proctoringEnabled      Boolean               @default(true)
+  videoRecordingUrl      String?
+  audioRecordingUrl      String?
+  proctoringEvents       Json?
+  faceCapturesUrls       String[]              @default([])
+  screenRecordingUrl     String?
+  proctoringStartedAt    DateTime?
+  proctoringEndedAt      DateTime?
+  permissionsGranted     Boolean               @default(false)
+  riskScore              Float?
+  currentQuestionIndex   Int?                  @default(0)
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  invitationId           String                @unique
+  testId                 String
+  jobProfileInvitationId String?
+  personalityProfile     Json?
+  personalityScores      Json?
+  riskScoreBreakdown     Json?
+  proctorAssets          ProctorAsset[]
+  proctorEvents          ProctorEvent[]
+  submittedAnswers       SubmittedAnswer[]
+  invitation             Invitation            @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+  test                   Test                  @relation(fields: [testId], references: [id], onDelete: Cascade)
+  jobProfileInvitation   JobProfileInvitation? @relation("JobProfileTestAttempts", fields: [jobProfileInvitationId], references: [id])
 
   @@index([status, completedAt])
   @@index([testId, status])
   @@index([invitationId])
   @@index([candidateEmail])
+  @@index([jobProfileInvitationId])
 }
 
 model SubmittedAnswer {
