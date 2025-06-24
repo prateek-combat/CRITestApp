@@ -719,12 +719,6 @@ body {
   font-weight: 400;
 }
 
-@media (prefers-color-scheme: dark) {
-  .rendered-markdown-content {
-    color: rgb(229 231 235); /* gray-200 */
-  }
-}
-
 .rendered-markdown-content > *:first-child {
   margin-top: 0;
 }
@@ -778,26 +772,12 @@ body {
   font-style: italic;
 }
 
-@media (prefers-color-scheme: dark) {
-  .rendered-markdown-content blockquote {
-    border-left-color: #6b7280;
-    color: #d1d5db;
-  }
-}
-
 .rendered-markdown-content :not(pre) > code {
   background-color: rgba(0, 0, 0, 0.05);
   border-radius: 4px;
   padding: 0.2em 0.4em;
   font-size: 0.875em;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
-}
-
-@media (prefers-color-scheme: dark) {
-  .rendered-markdown-content :not(pre) > code {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #e5e7eb;
-  }
 }
 
 .rendered-markdown-content pre {
@@ -807,13 +787,6 @@ body {
   background-color: #f8f9fa !important;
   border: 1px solid #e5e7eb;
   white-space: pre;
-}
-
-@media (prefers-color-scheme: dark) {
-  .rendered-markdown-content pre {
-    background-color: #1f2937 !important;
-    border-color: #4b5563;
-  }
 }
 
 .rendered-markdown-content pre > div {
@@ -842,26 +815,6 @@ body {
 .rendered-markdown-content th {
   background-color: #f9fafb;
   font-weight: 600;
-}
-
-@media (prefers-color-scheme: dark) {
-  .rendered-markdown-content th {
-    background-color: #374151;
-    color: #f3f4f6;
-  }
-  
-  .rendered-markdown-content td {
-    color: #d1d5db;
-  }
-  
-  .rendered-markdown-content table {
-    border-color: #4b5563;
-  }
-  
-  .rendered-markdown-content th,
-  .rendered-markdown-content td {
-    border-color: #4b5563;
-  }
 }
 /* End Custom Markdown Renderer Styles */
 
