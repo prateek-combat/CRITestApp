@@ -208,7 +208,7 @@ export async function POST(request: Request) {
           candidateName: invitation.candidateName,
           startedAt: new Date(),
           status: 'IN_PROGRESS',
-          proctoringEnabled: proctoringEnabled ?? true,
+          proctoringEnabled: proctoringEnabled ?? false,
           proctoringStartedAt: proctoringEnabled ? new Date() : null,
           proctoringEvents: proctoringEvents
             ? JSON.stringify(proctoringEvents)

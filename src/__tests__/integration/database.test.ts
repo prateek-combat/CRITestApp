@@ -166,12 +166,12 @@ describe('Database Integration Tests', () => {
         status: 'IN_PROGRESS',
         startedAt: new Date(),
         tabSwitches: 0,
-        proctoringEnabled: true,
+        proctoringEnabled: false,
       };
 
       expect(mockAttempt.status).toBe('IN_PROGRESS');
       expect(mockAttempt.tabSwitches).toBe(0);
-      expect(mockAttempt.proctoringEnabled).toBe(true);
+      expect(mockAttempt.proctoringEnabled).toBe(false);
     });
 
     it('should complete test attempt', async () => {
