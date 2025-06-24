@@ -17,6 +17,8 @@ import {
   Settings,
   ChevronDown,
   User,
+  Menu,
+  X,
 } from 'lucide-react';
 
 export default function AdminLayout({
@@ -28,6 +30,7 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,6 +65,11 @@ export default function AdminLayout({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   // Show loading spinner while checking authentication
   if (status === 'loading') {
@@ -102,7 +110,7 @@ export default function AdminLayout({
             <div className="flex items-center">
               <Link
                 href="/admin/dashboard"
-                className="flex items-center space-x-3"
+                className="flex items-center space-x-3 transition-opacity hover:opacity-80"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-600">
                   <Zap className="h-5 w-5 text-white" />
@@ -126,7 +134,7 @@ export default function AdminLayout({
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`flex items-center space-x-2 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    className={`flex items-center space-x-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
                       isActive
                         ? 'bg-blue-100 text-blue-900'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
@@ -145,11 +153,23 @@ export default function AdminLayout({
 
             {/* User Menu */}
             <div className="flex items-center space-x-4">
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-500 md:hidden"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Menu className="h-5 w-5" />
+                )}
+              </button>
+
               {session?.user && (
                 <div className="relative" ref={userMenuRef}>
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center space-x-3 rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-gray-900"
+                    className="flex items-center space-x-3 rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900"
                   >
                     <div className="text-right">
                       <p className="text-sm font-medium text-gray-900">
@@ -162,19 +182,21 @@ export default function AdminLayout({
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 shadow-sm">
                       <User className="h-4 w-4 text-white" />
                     </div>
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown
+                      className={`h-4 w-4 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`}
+                    />
                   </button>
 
                   {/* Dropdown Menu */}
                   {isUserMenuOpen && (
-                    <div className="absolute right-0 z-50 mt-2 w-48 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+                    <div className="animate-scale-in absolute right-0 z-50 mt-2 w-48 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
                       <div className="py-1">
                         <button
                           onClick={() => {
                             setIsUserMenuOpen(false);
                             // TODO: Add settings functionality later
                           }}
-                          className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="flex w-full items-center px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100"
                         >
                           <Settings className="mr-3 h-4 w-4" />
                           Settings
@@ -184,7 +206,7 @@ export default function AdminLayout({
                             setIsUserMenuOpen(false);
                             signOut({ callbackUrl: '/login' });
                           }}
-                          className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          className="flex w-full items-center px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100"
                         >
                           <LogOut className="mr-3 h-4 w-4" />
                           Logout
@@ -199,36 +221,39 @@ export default function AdminLayout({
         </div>
 
         {/* Mobile Navigation */}
-        <div className="border-t border-gray-200 md:hidden">
-          <div className="space-y-1 px-2 pb-3 pt-2">
-            {navigation.map((item) => {
-              const isActive =
-                pathname === item.href || pathname.startsWith(item.href + '/');
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center space-x-3 rounded-md px-3 py-2 text-base font-medium ${
-                    isActive
-                      ? 'bg-blue-100 text-blue-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <item.icon
-                    className={`h-5 w-5 ${
-                      isActive ? 'text-blue-500' : 'text-gray-400'
+        {isMobileMenuOpen && (
+          <div className="animate-gentle-fade border-t border-gray-200 md:hidden">
+            <div className="space-y-1 px-2 pb-3 pt-2">
+              {navigation.map((item) => {
+                const isActive =
+                  pathname === item.href ||
+                  pathname.startsWith(item.href + '/');
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    className={`flex items-center space-x-3 rounded-md px-3 py-2 text-base font-medium transition-all duration-200 ${
+                      isActive
+                        ? 'bg-blue-100 text-blue-900'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     }`}
-                  />
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
+                  >
+                    <item.icon
+                      className={`h-5 w-5 ${
+                        isActive ? 'text-blue-500' : 'text-gray-400'
+                      }`}
+                    />
+                    <span>{item.name}</span>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </nav>
 
       {/* Main content */}
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <main className="page-transition mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {children}
       </main>
     </div>

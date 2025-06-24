@@ -521,7 +521,7 @@ export default function TestsPage() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="page-transition-curtain space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -539,7 +539,7 @@ export default function TestsPage() {
         <nav className="-mb-px flex space-x-6">
           <button
             onClick={() => setActiveTab('tests')}
-            className={`border-b-2 px-1 py-2 text-sm font-medium ${
+            className={`micro-lift border-b-2 px-1 py-2 text-sm font-medium transition-all duration-200 ${
               activeTab === 'tests'
                 ? 'border-brand-500 text-brand-600'
                 : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
@@ -552,7 +552,7 @@ export default function TestsPage() {
           </button>
           <button
             onClick={() => setActiveTab('invitations')}
-            className={`border-b-2 px-1 py-2 text-sm font-medium ${
+            className={`micro-scale border-b-2 px-1 py-2 text-sm font-medium transition-all duration-200 ${
               activeTab === 'invitations'
                 ? 'border-brand-500 text-brand-600'
                 : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
@@ -565,7 +565,7 @@ export default function TestsPage() {
           </button>
           <button
             onClick={() => setActiveTab('publicLinks')}
-            className={`border-b-2 px-1 py-2 text-sm font-medium ${
+            className={`micro-bounce border-b-2 px-1 py-2 text-sm font-medium transition-all duration-200 ${
               activeTab === 'publicLinks'
                 ? 'border-brand-500 text-brand-600'
                 : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
@@ -581,13 +581,13 @@ export default function TestsPage() {
 
       {/* Tests Tab */}
       {activeTab === 'tests' && (
-        <div className="space-y-4">
+        <div className="page-transition-staggered space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex gap-2">
-              {isSuperAdmin && (
+              {session?.user?.role === 'SUPER_ADMIN' && (
                 <Link
                   href="/admin/tests/archived"
-                  className="rounded-lg bg-gray-500 px-3 py-1.5 text-sm text-white transition-colors hover:bg-gray-600"
+                  className="micro-lift rounded-lg bg-gray-500 px-3 py-1.5 text-sm text-white transition-all duration-200 hover:bg-gray-600 hover:shadow-md"
                 >
                   <Archive className="mr-1.5 inline h-4 w-4" />
                   View Archived
@@ -595,7 +595,7 @@ export default function TestsPage() {
               )}
               <Link
                 href="/admin/tests/new"
-                className="rounded-lg bg-brand-500 px-3 py-1.5 text-sm text-white transition-colors hover:bg-brand-600"
+                className="micro-bounce rounded-lg bg-brand-500 px-3 py-1.5 text-sm text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-600 hover:shadow-md"
               >
                 <Plus className="mr-1.5 inline h-4 w-4" />
                 Create New Test
@@ -619,7 +619,7 @@ export default function TestsPage() {
               <div className="mt-4">
                 <Link
                   href="/admin/tests/new"
-                  className="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-500"
+                  className="micro-scale inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-500 hover:shadow-md"
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Create Test
@@ -628,10 +628,10 @@ export default function TestsPage() {
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {tests.map((test) => (
+              {tests.map((test, index) => (
                 <div
                   key={test.id}
-                  className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                  className="card-hover micro-lift rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all duration-300 hover:shadow-md"
                 >
                   <div className="mb-3 flex items-start justify-between">
                     <div className="min-w-0 flex-1">
@@ -654,7 +654,7 @@ export default function TestsPage() {
                             openDropdown === test.id ? null : test.id
                           );
                         }}
-                        className="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                        className="micro-bounce rounded-md p-1.5 text-gray-400 transition-all duration-200 hover:bg-gray-100 hover:text-gray-600"
                       >
                         <MoreVertical className="h-4 w-4" />
                       </button>
@@ -663,7 +663,7 @@ export default function TestsPage() {
                         <div className="absolute right-0 top-8 z-10 w-44 rounded-md border border-gray-200 bg-white py-1 shadow-lg">
                           <Link
                             href={`/admin/tests/${test.id}`}
-                            className="flex items-center px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+                            className="micro-lift flex items-center px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-100"
                             onClick={(e) => {
                               e.stopPropagation();
                               setOpenDropdown(null);
@@ -700,7 +700,7 @@ export default function TestsPage() {
                                 alert('Failed to create preview link');
                               }
                             }}
-                            className="flex w-full items-center px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+                            className="micro-scale flex w-full items-center px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-100"
                           >
                             <Eye className="mr-2 h-3.5 w-3.5" />
                             Preview Test
@@ -714,13 +714,13 @@ export default function TestsPage() {
                                 title: test.title,
                               });
                             }}
-                            className="flex w-full items-center px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+                            className="micro-rotate flex w-full items-center px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-100"
                           >
                             <Bell className="mr-2 h-3.5 w-3.5" />
                             Email Notifications
                           </button>
 
-                          {isSuperAdmin && (
+                          {session?.user?.role === 'SUPER_ADMIN' && (
                             <>
                               <div className="my-1 border-t border-gray-100"></div>
                               <button
@@ -798,9 +798,9 @@ export default function TestsPage() {
 
       {/* Invitations Tab */}
       {activeTab === 'invitations' && (
-        <div className="space-y-4">
+        <div className="page-transition-slide-up space-y-4">
           {/* Send Invitation Form */}
-          <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <div className="micro-lift rounded-lg border border-gray-200 bg-white p-4">
             <h2 className="mb-3 text-base font-medium text-gray-900">
               Send Invitation
             </h2>
@@ -904,7 +904,7 @@ export default function TestsPage() {
           </div>
 
           {/* Filters */}
-          <div className="rounded-lg border border-gray-200 bg-white p-3">
+          <div className="micro-scale rounded-lg border border-gray-200 bg-white p-3">
             <div className="grid gap-3 sm:grid-cols-3">
               <div>
                 <label className="block text-xs font-medium text-gray-700">
@@ -938,6 +938,23 @@ export default function TestsPage() {
                   <option value="CANCELLED">Cancelled</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700">
+                  Test
+                </label>
+                <select
+                  value={selectedTestId}
+                  onChange={(e) => setSelectedTestId(e.target.value)}
+                  className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
+                >
+                  <option value="">All Tests</option>
+                  {tests.map((test) => (
+                    <option key={test.id} value={test.id}>
+                      {test.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
@@ -947,7 +964,7 @@ export default function TestsPage() {
               <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-brand-500"></div>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+            <div className="micro-lift overflow-hidden rounded-lg border border-gray-200 bg-white">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
@@ -1028,7 +1045,7 @@ export default function TestsPage() {
 
       {/* Public Links Tab */}
       {activeTab === 'publicLinks' && (
-        <div className="space-y-4">
+        <div className="page-transition-circle space-y-4">
           {/* Error Message */}
           {publicLinksError && (
             <div className="rounded-md bg-red-50 p-3">
@@ -1042,7 +1059,7 @@ export default function TestsPage() {
               <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-brand-500"></div>
             </div>
           ) : (
-            <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
+            <div className="micro-bounce overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
               {publicLinks.length === 0 ? (
                 <div className="py-8 text-center">
                   <ExternalLink className="mx-auto h-10 w-10 text-gray-400" />
