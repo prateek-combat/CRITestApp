@@ -9,6 +9,7 @@
  * Usage: node scripts/initialize-weight-profiles.js
  */
 
+require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();

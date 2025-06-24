@@ -97,7 +97,6 @@ export default function AdminLayout({
     { name: 'Tests & Invitations', href: '/admin/tests', icon: FileText },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Leaderboard', href: '/admin/leaderboard', icon: Trophy },
-    { name: 'Weight Profiles', href: '/admin/weight-profiles', icon: Settings },
     { name: 'Users', href: '/admin/users', icon: Users },
   ];
 

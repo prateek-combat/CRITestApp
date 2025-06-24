@@ -73,6 +73,7 @@ export default function TestTakingPage() {
   const [testReady, setTestReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionStep, setSubmissionStep] = useState<string>('');
+  const [proctoringError, setProctoringError] = useState<string | null>(null);
 
   useLiveFlags(attemptId);
 
@@ -84,8 +85,45 @@ export default function TestTakingPage() {
     setSystemCheckResults(results);
   };
 
-  const handleStartTest = () => {
-    setTestReady(true);
+  const handleStartTest = async () => {
+    // Check if camera and microphone permissions are granted
+    const cameraGranted = systemCheckResults?.camera.status === 'pass';
+    const microphoneGranted = systemCheckResults?.microphone.status === 'pass';
+    const permissionsGranted = cameraGranted && microphoneGranted;
+
+    if (!permissionsGranted) {
+      alert(
+        'Camera and microphone access is required to start the test. Please grant permissions and try again.'
+      );
+      return;
+    }
+
+    try {
+      // Update permission status in database using the correct endpoint
+      const permissionsEndpoint = isPublicTest
+        ? `/api/public-test-attempts/${attemptId}/permissions`
+        : `/api/test-attempts/${attemptId}/permissions`;
+
+      const response = await fetch(permissionsEndpoint, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          permissionsGranted: true,
+          proctoringEnabled: true,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update permissions');
+      }
+
+      setTestReady(true);
+    } catch (error) {
+      console.error('Error updating permissions:', error);
+      alert('Failed to initialize proctoring. Please try again.');
+    }
   };
 
   // Separate submit test function with proper cleanup flow
@@ -256,7 +294,11 @@ export default function TestTakingPage() {
   // Start/Stop proctoring - only after test is ready
   useEffect(() => {
     if (testReady && attemptId && !isRecording) {
-      startRecording();
+      startRecording().catch((error) => {
+        console.error('Failed to start proctoring:', error);
+        setProctoringError(error.message || 'Failed to start proctoring');
+        setTestReady(false); // Prevent test from continuing
+      });
     }
   }, [testReady, attemptId, isRecording, startRecording]);
 
@@ -297,37 +339,69 @@ export default function TestTakingPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 p-4">
         <div className="max-w-md rounded-lg bg-white p-8 text-center shadow-md">
-          <div className="mb-6">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-              <svg
-                className="h-8 w-8 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+          {proctoringError ? (
+            // Show proctoring error
+            <div className="mb-6">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+                <svg
+                  className="h-8 w-8 text-red-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </div>
+              <h1 className="mb-2 text-2xl font-bold text-red-800">
+                Proctoring Failed
+              </h1>
+              <p className="mb-4 text-red-600">{proctoringError}</p>
+              <Button
+                onClick={() => window.location.reload()}
+                className="w-full bg-red-600 hover:bg-red-700"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
+                Refresh Page & Try Again
+              </Button>
             </div>
-            <h1 className="mb-2 text-2xl font-bold text-gray-800">
-              System Check Complete
-            </h1>
-            <p className="text-gray-600">
-              {systemCheckResults &&
-              Object.values(systemCheckResults).every(
-                (result) => result.status === 'pass'
-              )
-                ? 'All systems are ready. You can now start your test.'
-                : 'System check completed with some warnings. You can still proceed with the test.'}
-            </p>
-          </div>
-          <Button onClick={handleStartTest} className="w-full">
-            Start Test
-          </Button>
+          ) : (
+            // Show normal system check complete
+            <div className="mb-6">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                <svg
+                  className="h-8 w-8 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+              <h1 className="mb-2 text-2xl font-bold text-gray-800">
+                System Check Complete
+              </h1>
+              <p className="text-gray-600">
+                {systemCheckResults &&
+                Object.values(systemCheckResults).every(
+                  (result) => result.status === 'pass'
+                )
+                  ? 'All systems are ready. You can now start your test.'
+                  : 'System check completed with some warnings. You can still proceed with the test.'}
+              </p>
+              <Button onClick={handleStartTest} className="mt-4 w-full">
+                Start Test
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );

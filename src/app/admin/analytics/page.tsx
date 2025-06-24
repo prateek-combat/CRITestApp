@@ -35,6 +35,7 @@ interface TestAttemptData {
   candidateEmail: string | null;
   completedAt: string | null;
   startedAt: string | null;
+  effectiveCompletedAt: string | null; // New field: completedAt || startedAt
   status: string;
   rawScore: number | null;
   totalQuestions: number;
@@ -48,7 +49,8 @@ interface TestAnalytics {
   testTitle: string;
   totalAttempts: number;
   completedAttempts: number;
-  completionRate: number;
+  difficultyLevel: 'Easy' | 'Medium' | 'Hard';
+  difficultyScore: number; // Average score used to determine difficulty
   averageScore: number;
   averageDuration: number;
   highestScore: number;
@@ -64,7 +66,7 @@ const AnalyticsPage = () => {
   const [analyticsData, setAnalyticsData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [timeRange, setTimeRange] = useState<string>('30');
+  const [timeRange, setTimeRange] = useState<string>('all');
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<
     'attempts' | 'completion' | 'score' | 'recent'
@@ -155,18 +157,29 @@ const AnalyticsPage = () => {
 
   // Filter data by time range
   const filteredAttempts = useMemo(() => {
-    if (timeRange === 'all' || !timeRange) return analyticsData;
+    if (timeRange === 'all' || !timeRange) {
+      return analyticsData;
+    }
 
     const days = parseInt(timeRange);
-    if (isNaN(days)) return analyticsData;
+    if (isNaN(days)) {
+      return analyticsData;
+    }
 
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
 
     return analyticsData.filter((attempt) => {
-      if (!attempt.completedAt) return false;
-      const completedDate = new Date(attempt.completedAt);
-      return completedDate >= cutoffDate;
+      // Use effectiveCompletedAt (which is completedAt || startedAt from API)
+      const dateToCheck =
+        attempt.effectiveCompletedAt ||
+        attempt.completedAt ||
+        attempt.startedAt;
+      if (!dateToCheck) {
+        return false;
+      }
+      const attemptDate = new Date(dateToCheck);
+      return attemptDate >= cutoffDate;
     });
   }, [analyticsData, timeRange]);
 
@@ -212,8 +225,12 @@ const AnalyticsPage = () => {
           break;
         case 'date':
         default:
-          aVal = new Date(a.completedAt || a.startedAt || 0).getTime();
-          bVal = new Date(b.completedAt || b.startedAt || 0).getTime();
+          aVal = new Date(
+            a.effectiveCompletedAt || a.completedAt || a.startedAt || 0
+          ).getTime();
+          bVal = new Date(
+            b.effectiveCompletedAt || b.completedAt || b.startedAt || 0
+          ).getTime();
           break;
       }
 
@@ -247,6 +264,16 @@ const AnalyticsPage = () => {
 
   // Calculate test-specific analytics
   const testAnalytics = useMemo((): TestAnalytics[] => {
+    // Debug: Show attempts by test
+    const attemptsByTest = filteredAttempts.reduce(
+      (acc, attempt) => {
+        const testName = attempt.testTitle || attempt.testName || 'Unknown';
+        acc[testName] = (acc[testName] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
     const testMap = new Map<string, TestAnalytics>();
 
     filteredAttempts.forEach((attempt) => {
@@ -259,7 +286,8 @@ const AnalyticsPage = () => {
           testTitle,
           totalAttempts: 0,
           completedAttempts: 0,
-          completionRate: 0,
+          difficultyLevel: 'Medium' as const,
+          difficultyScore: 0,
           averageScore: 0,
           averageDuration: 0,
           highestScore: 0,
@@ -307,9 +335,13 @@ const AnalyticsPage = () => {
         testStats.scoreDistribution[rangeIndex].count++;
       }
 
-      // Update last attempt date
-      if (attempt.completedAt) {
-        const attemptDate = new Date(attempt.completedAt).toISOString();
+      // Update last attempt date using effectiveCompletedAt
+      const effectiveDate =
+        attempt.effectiveCompletedAt ||
+        attempt.completedAt ||
+        attempt.startedAt;
+      if (effectiveDate) {
+        const attemptDate = new Date(effectiveDate).toISOString();
         if (
           !testStats.lastAttemptDate ||
           attemptDate > testStats.lastAttemptDate
@@ -319,12 +351,23 @@ const AnalyticsPage = () => {
       }
     });
 
-    // Calculate completion rates and trends
+    // Calculate difficulty levels and trends
     testMap.forEach((testStats) => {
-      testStats.completionRate =
-        testStats.totalAttempts > 0
-          ? safePercentage(testStats.completedAttempts, testStats.totalAttempts)
-          : 0;
+      // Set difficulty score (same as average score for completed attempts)
+      testStats.difficultyScore = testStats.averageScore;
+
+      // Determine difficulty level based on average score
+      if (testStats.completedAttempts > 0) {
+        if (testStats.averageScore >= 75) {
+          testStats.difficultyLevel = 'Easy';
+        } else if (testStats.averageScore >= 50) {
+          testStats.difficultyLevel = 'Medium';
+        } else {
+          testStats.difficultyLevel = 'Hard';
+        }
+      } else {
+        testStats.difficultyLevel = 'Medium'; // Default for tests with no completed attempts
+      }
 
       // Reset lowest score if no completed attempts
       if (testStats.completedAttempts === 0) {
@@ -332,12 +375,14 @@ const AnalyticsPage = () => {
       }
     });
 
-    return Array.from(testMap.values()).sort((a, b) => {
+    const result = Array.from(testMap.values());
+
+    return result.sort((a, b) => {
       switch (sortBy) {
         case 'attempts':
           return b.totalAttempts - a.totalAttempts;
         case 'completion':
-          return b.completionRate - a.completionRate;
+          return a.difficultyScore - b.difficultyScore; // Sort by difficulty: Hard -> Easy
         case 'score':
           return b.averageScore - a.averageScore;
         case 'recent':
@@ -481,7 +526,7 @@ const AnalyticsPage = () => {
                 >
                   <option value="recent">Recent Activity</option>
                   <option value="attempts">Total Attempts</option>
-                  <option value="completion">Completion Rate</option>
+                  <option value="completion">Difficulty Level</option>
                   <option value="score">Average Score</option>
                 </select>
               </div>
@@ -571,7 +616,11 @@ const AnalyticsPage = () => {
                             <div className="mt-1 flex items-center gap-4 text-xs text-gray-500">
                               <span>📝 {test.totalAttempts} attempts</span>
                               <span>
-                                ✅ {test.completionRate.toFixed(1)}% completion
+                                {test.difficultyLevel === 'Easy'
+                                  ? '🟢 Easy'
+                                  : test.difficultyLevel === 'Medium'
+                                    ? '🟡 Medium'
+                                    : '🔴 Hard'}
                               </span>
                               <span>
                                 📊 {test.averageScore.toFixed(1)}% avg score
@@ -608,8 +657,14 @@ const AnalyticsPage = () => {
                         <div className="mt-2 flex gap-1">
                           <div className="h-1 flex-1 rounded-full bg-gray-200">
                             <div
-                              className="h-1 rounded-full bg-blue-500"
-                              style={{ width: `${test.completionRate}%` }}
+                              className={`h-1 rounded-full ${
+                                test.difficultyLevel === 'Easy'
+                                  ? 'bg-green-500'
+                                  : test.difficultyLevel === 'Medium'
+                                    ? 'bg-yellow-500'
+                                    : 'bg-red-500'
+                              }`}
+                              style={{ width: `${test.averageScore}%` }}
                             ></div>
                           </div>
                         </div>
@@ -641,11 +696,32 @@ const AnalyticsPage = () => {
                           Total Attempts
                         </div>
                       </div>
-                      <div className="rounded bg-green-50 p-2 text-center">
-                        <div className="text-lg font-bold text-green-600">
-                          {selectedTest.completionRate.toFixed(1)}%
+                      <div
+                        className={`rounded p-2 text-center ${
+                          selectedTest.difficultyLevel === 'Easy'
+                            ? 'bg-green-50'
+                            : selectedTest.difficultyLevel === 'Medium'
+                              ? 'bg-yellow-50'
+                              : 'bg-red-50'
+                        }`}
+                      >
+                        <div
+                          className={`text-lg font-bold ${
+                            selectedTest.difficultyLevel === 'Easy'
+                              ? 'text-green-600'
+                              : selectedTest.difficultyLevel === 'Medium'
+                                ? 'text-yellow-600'
+                                : 'text-red-600'
+                          }`}
+                        >
+                          {selectedTest.difficultyLevel === 'Easy'
+                            ? '🟢'
+                            : selectedTest.difficultyLevel === 'Medium'
+                              ? '🟡'
+                              : '🔴'}{' '}
+                          {selectedTest.difficultyLevel}
                         </div>
-                        <div className="text-xs text-gray-600">Completion</div>
+                        <div className="text-xs text-gray-600">Difficulty</div>
                       </div>
                       <div className="rounded bg-purple-50 p-2 text-center">
                         <div className="text-lg font-bold text-purple-600">
@@ -862,7 +938,10 @@ const AnalyticsPage = () => {
                               <span>
                                 📅{' '}
                                 {new Date(
-                                  attempt.completedAt || attempt.startedAt || ''
+                                  attempt.effectiveCompletedAt ||
+                                    attempt.completedAt ||
+                                    attempt.startedAt ||
+                                    ''
                                 ).toLocaleDateString()}
                               </span>
                             </div>
@@ -1012,6 +1091,20 @@ const AnalyticsPage = () => {
                             </span>
                           </div>
                         )}
+                        {!selectedAttempt.completedAt &&
+                          selectedAttempt.startedAt && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">
+                                Effective Date:
+                              </span>
+                              <span>
+                                {new Date(
+                                  selectedAttempt.startedAt
+                                ).toLocaleString()}{' '}
+                                (Started)
+                              </span>
+                            </div>
+                          )}
                       </div>
                     </div>
 
