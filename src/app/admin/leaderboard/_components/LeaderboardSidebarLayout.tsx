@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import LeaderboardTable from './LeaderboardTable';
 import CompareDrawer from './CompareDrawer';
+import WeightProfileSelector from './WeightProfileSelector';
 import {
   Calendar,
   Users,
@@ -25,6 +26,24 @@ interface Test {
   };
 }
 
+interface WeightProfile {
+  id: string;
+  name: string;
+  description: string;
+  weights: {
+    LOGICAL: number;
+    VERBAL: number;
+    NUMERICAL: number;
+    ATTENTION_TO_DETAIL: number;
+    OTHER: number;
+  };
+  isDefault: boolean;
+  isSystem: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  createdById: string | null;
+}
+
 interface CandidateScore {
   attemptId: string;
   invitationId: string | null;
@@ -38,8 +57,10 @@ interface CandidateScore {
   scoreAttention: number;
   scoreOther: number;
   composite: number;
+  compositeUnweighted: number;
   percentile: number;
   rank: number;
+  isPublicAttempt?: boolean;
 }
 
 interface LeaderboardData {
@@ -60,7 +81,9 @@ interface LeaderboardData {
     search?: string;
     sortBy: string;
     sortOrder: string;
+    weightProfile?: string;
   };
+  weightProfile?: WeightProfile | null;
   stats: {
     totalCandidates: number;
     avgScore: number;
@@ -82,6 +105,16 @@ export default function LeaderboardSidebarLayout({
   const [tests, setTests] = useState<Test[]>([]);
   const [selectedTestId, setSelectedTestId] = useState<string>('');
   const [data, setData] = useState<LeaderboardData | null>(null);
+  const [availableProfiles, setAvailableProfiles] = useState<WeightProfile[]>(
+    []
+  );
+  const [customWeights, setCustomWeights] = useState<{
+    LOGICAL: number;
+    VERBAL: number;
+    NUMERICAL: number;
+    ATTENTION_TO_DETAIL: number;
+    OTHER: number;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingTests, setIsLoadingTests] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +123,27 @@ export default function LeaderboardSidebarLayout({
   );
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const router = useRouter();
+
+  // Fetch weight profiles
+  const fetchProfiles = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/category-weights');
+      if (response.ok) {
+        const result = await response.json();
+        // Extract the data array from the response
+        const profiles = result.success ? result.data : [];
+        setAvailableProfiles(profiles);
+      } else {
+        console.error(
+          'Failed to fetch profiles:',
+          response.status,
+          response.statusText
+        );
+      }
+    } catch (err) {
+      console.error('Failed to fetch weight profiles:', err);
+    }
+  }, []);
 
   // Fetch tests for sidebar
   const fetchTests = useCallback(async () => {
@@ -136,7 +190,10 @@ export default function LeaderboardSidebarLayout({
       // Add other search params using individual values instead of the object
       const currentSearchParams = {
         page: urlSearchParams.get('page') || searchParamsProp.page,
-        pageSize: urlSearchParams.get('pageSize') || searchParamsProp.pageSize,
+        pageSize:
+          urlSearchParams.get('pageSize') ||
+          searchParamsProp.pageSize ||
+          '1000', // Default to large pageSize for scrolling
         dateFrom: urlSearchParams.get('dateFrom') || searchParamsProp.dateFrom,
         dateTo: urlSearchParams.get('dateTo') || searchParamsProp.dateTo,
         invitationId:
@@ -145,7 +202,15 @@ export default function LeaderboardSidebarLayout({
         sortBy: urlSearchParams.get('sortBy') || searchParamsProp.sortBy,
         sortOrder:
           urlSearchParams.get('sortOrder') || searchParamsProp.sortOrder,
+        weightProfile:
+          urlSearchParams.get('weightProfile') ||
+          searchParamsProp.weightProfile,
       };
+
+      // Add custom weights if available
+      if (customWeights) {
+        params.set('customWeights', JSON.stringify(customWeights));
+      }
 
       Object.entries(currentSearchParams).forEach(([key, value]) => {
         if (value && key !== 'testId') {
@@ -167,6 +232,7 @@ export default function LeaderboardSidebarLayout({
     }
   }, [
     selectedTestId,
+    customWeights, // Add customWeights to dependencies
     urlSearchParams.get('page'),
     urlSearchParams.get('pageSize'),
     urlSearchParams.get('dateFrom'),
@@ -175,6 +241,7 @@ export default function LeaderboardSidebarLayout({
     urlSearchParams.get('search'),
     urlSearchParams.get('sortBy'),
     urlSearchParams.get('sortOrder'),
+    urlSearchParams.get('weightProfile'),
     searchParamsProp.page,
     searchParamsProp.pageSize,
     searchParamsProp.dateFrom,
@@ -183,11 +250,13 @@ export default function LeaderboardSidebarLayout({
     searchParamsProp.search,
     searchParamsProp.sortBy,
     searchParamsProp.sortOrder,
+    searchParamsProp.weightProfile,
   ]);
 
   useEffect(() => {
     fetchTests();
-  }, [fetchTests]);
+    fetchProfiles();
+  }, [fetchTests, fetchProfiles]);
 
   useEffect(() => {
     if (selectedTestId) {
@@ -203,7 +272,8 @@ export default function LeaderboardSidebarLayout({
 
     // Keep other existing params except page (reset to 1)
     const currentParams = {
-      pageSize: urlSearchParams.get('pageSize') || searchParamsProp.pageSize,
+      pageSize:
+        urlSearchParams.get('pageSize') || searchParamsProp.pageSize || '1000',
       dateFrom: urlSearchParams.get('dateFrom') || searchParamsProp.dateFrom,
       dateTo: urlSearchParams.get('dateTo') || searchParamsProp.dateTo,
       invitationId:
@@ -236,7 +306,8 @@ export default function LeaderboardSidebarLayout({
     // Merge current search params with new filters
     const currentParams = {
       page: urlSearchParams.get('page') || searchParamsProp.page,
-      pageSize: urlSearchParams.get('pageSize') || searchParamsProp.pageSize,
+      pageSize:
+        urlSearchParams.get('pageSize') || searchParamsProp.pageSize || '1000',
       dateFrom: urlSearchParams.get('dateFrom') || searchParamsProp.dateFrom,
       dateTo: urlSearchParams.get('dateTo') || searchParamsProp.dateTo,
       invitationId:
@@ -281,6 +352,25 @@ export default function LeaderboardSidebarLayout({
     handleFilterChange({ sortBy, sortOrder, page: '1' });
   };
 
+  const handleWeightProfileChange = (profileId: string | null) => {
+    setCustomWeights(null); // Clear custom weights when selecting a profile
+    handleFilterChange({
+      weightProfile: profileId || undefined,
+      page: '1', // Reset to first page when changing weight profile
+    });
+  };
+
+  const handleCustomWeightsChange = (weights: {
+    LOGICAL: number;
+    VERBAL: number;
+    NUMERICAL: number;
+    ATTENTION_TO_DETAIL: number;
+    OTHER: number;
+  }) => {
+    setCustomWeights(weights);
+    // The fetchLeaderboardData will automatically re-run due to customWeights dependency
+  };
+
   const hasActiveFilters =
     urlSearchParams.get('search') ||
     searchParamsProp.search ||
@@ -303,29 +393,27 @@ export default function LeaderboardSidebarLayout({
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-200px)] gap-4">
+    <div className="flex min-h-screen gap-2">
       {/* Sidebar */}
-      <div className="sticky top-0 w-64 flex-shrink-0 self-start overflow-hidden rounded-lg bg-white shadow">
-        <div className="border-b border-gray-200 p-3">
-          <h2 className="text-base font-semibold text-gray-900">Tests</h2>
-          <p className="mt-1 text-xs text-gray-500">
-            Select a test to view its leaderboard
-          </p>
+      <div className="sticky top-0 w-52 flex-shrink-0 self-start overflow-hidden rounded-md bg-white shadow">
+        <div className="border-b border-gray-200 p-2">
+          <h2 className="text-sm font-semibold text-gray-900">Tests</h2>
+          <p className="mt-1 text-xs text-gray-500">Select a test</p>
         </div>
 
-        <div className="max-h-[calc(100vh-280px)] overflow-y-auto">
+        <div className="max-h-[calc(100vh-180px)] overflow-y-auto">
           {tests.length === 0 ? (
             <div className="p-4 text-center text-gray-500">
               <Trophy className="mx-auto mb-2 h-8 w-8 text-gray-300" />
               <p className="text-sm">No tests available</p>
             </div>
           ) : (
-            <div className="space-y-1 p-2">
+            <div className="space-y-1 p-1">
               {tests.map((test) => (
                 <button
                   key={test.id}
                   onClick={() => handleTestSelect(test.id)}
-                  className={`w-full rounded-md border p-2.5 text-left transition-all ${
+                  className={`w-full rounded-md border p-2 text-left transition-all ${
                     selectedTestId === test.id
                       ? 'border-blue-200 bg-blue-50 text-blue-900'
                       : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
@@ -333,23 +421,23 @@ export default function LeaderboardSidebarLayout({
                 >
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
-                      <h3 className="truncate text-sm font-medium">
+                      <h3 className="truncate text-xs font-medium">
                         {test.title}
                       </h3>
                       {test.description && (
-                        <p className="mt-1 line-clamp-1 text-xs text-gray-500">
-                          {test.description.length > 60
-                            ? `${test.description.substring(0, 60)}...`
+                        <p className="mt-0.5 line-clamp-1 text-xs text-gray-500">
+                          {test.description.length > 40
+                            ? `${test.description.substring(0, 40)}...`
                             : test.description}
                         </p>
                       )}
-                      <div className="mt-1.5 flex items-center text-xs text-gray-400">
+                      <div className="mt-1 flex items-center text-xs text-gray-400">
                         <Calendar className="mr-1 h-3 w-3" />
                         {new Date(test.createdAt).toLocaleDateString()}
                       </div>
                     </div>
                     {selectedTestId === test.id && (
-                      <div className="ml-2 flex-shrink-0">
+                      <div className="ml-1 flex-shrink-0">
                         <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
                       </div>
                     )}
@@ -361,203 +449,229 @@ export default function LeaderboardSidebarLayout({
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="min-w-0 flex-1 space-y-4">
-        {selectedTest && (
-          <div className="rounded-lg bg-white p-4 shadow">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="min-w-0 flex-1">
-                <h2 className="truncate text-lg font-semibold text-gray-900">
-                  {selectedTest.title}
-                </h2>
+      {/* Main Content Area */}
+      <div className="flex min-w-0 flex-1 gap-2">
+        {/* Center Content */}
+        <div className="min-w-0 flex-1 space-y-2">
+          {selectedTest && (
+            <div className="rounded-md bg-white p-3 shadow">
+              <div className="mb-2 flex items-center justify-between">
+                <div className="min-w-0 flex-1">
+                  <h2 className="truncate text-base font-semibold text-gray-900">
+                    {selectedTest.title}
+                  </h2>
+                </div>
+
+                {data?.stats && (
+                  <div className="flex items-center space-x-3 text-xs">
+                    <div className="flex items-center text-gray-600">
+                      <Users className="mr-1 h-3 w-3" />
+                      <span className="font-medium">
+                        {data.stats.totalCandidates}
+                      </span>
+                      <span className="ml-1">candidates</span>
+                    </div>
+                    <div className="flex items-center text-gray-600">
+                      <TrendingUp className="mr-1 h-3 w-3" />
+                      <span className="font-medium">
+                        {data.stats.avgScore}%
+                      </span>
+                      <span className="ml-1">avg</span>
+                    </div>
+                    <div className="flex items-center text-gray-600">
+                      <Trophy className="mr-1 h-3 w-3" />
+                      <span className="font-medium">
+                        {data.stats.topScore}%
+                      </span>
+                      <span className="ml-1">top</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {data?.stats && (
-                <div className="flex items-center space-x-4 text-sm">
-                  <div className="flex items-center text-gray-600">
-                    <Users className="mr-1 h-4 w-4" />
-                    <span className="font-medium">
-                      {data.stats.totalCandidates}
-                    </span>
-                    <span className="ml-1 hidden sm:inline">candidates</span>
+              {/* Search and Filters */}
+              <div className="space-y-2">
+                <form onSubmit={handleSearchSubmit} className="flex gap-2">
+                  <div className="relative flex-1">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2">
+                      <Search className="h-3 w-3 text-gray-400" />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search by candidate name or email..."
+                      value={localSearch}
+                      onChange={(e) => setLocalSearch(e.target.value)}
+                      className="block w-full rounded-md border border-gray-300 bg-white py-1.5 pl-7 pr-2 text-xs placeholder-gray-500 focus:border-blue-500 focus:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
                   </div>
-                  <div className="flex items-center text-gray-600">
-                    <TrendingUp className="mr-1 h-4 w-4" />
-                    <span className="font-medium">{data.stats.avgScore}%</span>
-                    <span className="ml-1 hidden sm:inline">avg</span>
-                  </div>
-                  <div className="flex items-center text-gray-600">
-                    <Trophy className="mr-1 h-4 w-4" />
-                    <span className="font-medium">{data.stats.topScore}%</span>
-                    <span className="ml-1 hidden sm:inline">top</span>
-                  </div>
-                </div>
-              )}
-            </div>
+                  <button
+                    type="submit"
+                    className="rounded-md bg-blue-600 px-2 py-1.5 text-xs font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
+                    Search
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                    className="flex items-center gap-1 rounded-md bg-gray-100 px-2 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                  >
+                    <Filter className="h-3 w-3" />
+                    Filters
+                  </button>
+                </form>
 
-            {/* Search and Filters */}
-            <div className="space-y-3">
-              <form onSubmit={handleSearchSubmit} className="flex gap-3">
-                <div className="relative flex-1">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <Search className="h-4 w-4 text-gray-400" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search by candidate name or email..."
-                    value={localSearch}
-                    onChange={(e) => setLocalSearch(e.target.value)}
-                    className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm placeholder-gray-500 focus:border-blue-500 focus:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
-                  Search
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                  className="flex items-center gap-2 rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-                >
-                  <Filter className="h-4 w-4" />
-                  Filters
-                </button>
-              </form>
+                {/* Advanced Filters */}
+                {showAdvancedFilters && (
+                  <div className="space-y-3 border-t border-gray-200 pt-3">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      {/* Date From */}
+                      <div>
+                        <label
+                          htmlFor="dateFrom"
+                          className="mb-1 block text-sm font-medium text-gray-700"
+                        >
+                          Completed From
+                        </label>
+                        <input
+                          type="date"
+                          id="dateFrom"
+                          value={
+                            urlSearchParams.get('dateFrom') ||
+                            searchParamsProp.dateFrom ||
+                            ''
+                          }
+                          onChange={(e) =>
+                            handleFilterChange({
+                              dateFrom: e.target.value || undefined,
+                              page: '1',
+                            })
+                          }
+                          className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
 
-              {/* Advanced Filters */}
-              {showAdvancedFilters && (
-                <div className="space-y-3 border-t border-gray-200 pt-3">
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {/* Date From */}
-                    <div>
-                      <label
-                        htmlFor="dateFrom"
-                        className="mb-1 block text-sm font-medium text-gray-700"
-                      >
-                        Completed From
-                      </label>
-                      <input
-                        type="date"
-                        id="dateFrom"
-                        value={
-                          urlSearchParams.get('dateFrom') ||
-                          searchParamsProp.dateFrom ||
-                          ''
-                        }
-                        onChange={(e) =>
-                          handleFilterChange({
-                            dateFrom: e.target.value || undefined,
-                            page: '1',
-                          })
-                        }
-                        className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      />
+                      {/* Date To */}
+                      <div>
+                        <label
+                          htmlFor="dateTo"
+                          className="mb-1 block text-sm font-medium text-gray-700"
+                        >
+                          Completed To
+                        </label>
+                        <input
+                          type="date"
+                          id="dateTo"
+                          value={
+                            urlSearchParams.get('dateTo') ||
+                            searchParamsProp.dateTo ||
+                            ''
+                          }
+                          onChange={(e) =>
+                            handleFilterChange({
+                              dateTo: e.target.value || undefined,
+                              page: '1',
+                            })
+                          }
+                          className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
                     </div>
 
-                    {/* Date To */}
-                    <div>
-                      <label
-                        htmlFor="dateTo"
-                        className="mb-1 block text-sm font-medium text-gray-700"
-                      >
-                        Completed To
-                      </label>
-                      <input
-                        type="date"
-                        id="dateTo"
-                        value={
-                          urlSearchParams.get('dateTo') ||
-                          searchParamsProp.dateTo ||
-                          ''
-                        }
-                        onChange={(e) =>
-                          handleFilterChange({
-                            dateTo: e.target.value || undefined,
-                            page: '1',
-                          })
-                        }
-                        className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Filter Actions */}
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="text-sm text-gray-500">
-                      {hasActiveFilters ? (
-                        <span>Active filters applied</span>
-                      ) : (
-                        <span>No filters applied</span>
+                    {/* Filter Actions */}
+                    <div className="flex items-center justify-between pt-2">
+                      <div className="text-sm text-gray-500">
+                        {hasActiveFilters ? (
+                          <span>Active filters applied</span>
+                        ) : (
+                          <span>No filters applied</span>
+                        )}
+                      </div>
+                      {hasActiveFilters && (
+                        <button
+                          onClick={clearAllFilters}
+                          className="text-sm text-blue-600 underline hover:text-blue-700"
+                        >
+                          Clear all filters
+                        </button>
                       )}
                     </div>
-                    {hasActiveFilters && (
-                      <button
-                        onClick={clearAllFilters}
-                        className="text-sm text-blue-600 underline hover:text-blue-700"
-                      >
-                        Clear all filters
-                      </button>
-                    )}
                   </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Leaderboard Table */}
+          {isLoading ? (
+            <div className="rounded-lg bg-white p-4 shadow">
+              <TableSkeleton rows={10} columns={8} />
+            </div>
+          ) : error ? (
+            <div className="rounded-md border-l-4 border-red-500 bg-red-100 p-4 text-red-700">
+              <div className="flex">
+                <div className="py-1">
+                  <svg
+                    className="mr-3 h-6 w-6 text-red-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
                 </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Leaderboard Table */}
-        {isLoading ? (
-          <div className="rounded-lg bg-white p-4 shadow">
-            <TableSkeleton rows={10} columns={8} />
-          </div>
-        ) : error ? (
-          <div className="rounded-md border-l-4 border-red-500 bg-red-100 p-4 text-red-700">
-            <div className="flex">
-              <div className="py-1">
-                <svg
-                  className="mr-3 h-6 w-6 text-red-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p className="font-bold">Error Loading Leaderboard</p>
-                <p className="text-sm">{error}</p>
-                <button
-                  onClick={fetchLeaderboardData}
-                  className="mt-2 text-sm underline hover:no-underline"
-                >
-                  Try again
-                </button>
+                <div>
+                  <p className="font-bold">Error Loading Leaderboard</p>
+                  <p className="text-sm">{error}</p>
+                  <button
+                    onClick={fetchLeaderboardData}
+                    className="mt-2 text-sm underline hover:no-underline"
+                  >
+                    Try again
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ) : !data ? (
-          <div className="rounded-lg bg-white py-8 text-center shadow">
-            <Trophy className="mx-auto mb-4 h-12 w-12 text-gray-300" />
-            <p className="text-gray-500">No leaderboard data available</p>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-lg bg-white shadow">
-            <LeaderboardTable
-              data={data}
-              onPageChange={handlePageChange}
-              onSort={handleSort}
-            />
-          </div>
-        )}
+          ) : !data ? (
+            <div className="rounded-lg bg-white py-8 text-center shadow">
+              <Trophy className="mx-auto mb-4 h-12 w-12 text-gray-300" />
+              <p className="text-gray-500">No leaderboard data available</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="overflow-x-auto rounded-lg bg-white shadow">
+                <LeaderboardTable
+                  data={data}
+                  onPageChange={handlePageChange}
+                  onSort={handleSort}
+                  showWeightedScores={true}
+                />
+              </div>
+              {/* Results Summary */}
+              <div className="text-center text-sm text-gray-500">
+                Showing all {data.rows.length} candidates • Scroll to see more
+                results
+              </div>
+            </div>
+          )}
 
-        <CompareDrawer />
+          <CompareDrawer />
+        </div>
+
+        {/* Right Sidebar - Weight Profile Selector */}
+        <div className="sticky top-0 max-h-screen w-64 flex-shrink-0 self-start overflow-y-auto">
+          <WeightProfileSelector
+            availableProfiles={availableProfiles}
+            currentProfile={customWeights ? null : data?.weightProfile || null}
+            onProfileChange={handleWeightProfileChange}
+            onCustomWeightsChange={handleCustomWeightsChange}
+            onProfilesChange={fetchProfiles}
+          />
+        </div>
       </div>
     </div>
   );
