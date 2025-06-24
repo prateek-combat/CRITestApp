@@ -1,0 +1,1389 @@
+{
+  "unusedExports": [
+    {
+      "name": "LeaderboardContent",
+      "file": "app/admin/leaderboard/_components/LeaderboardContent.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "RadarCompare",
+      "file": "app/admin/leaderboard/_components/RadarCompare.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/analytics/overview/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/analytics/personality/export/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "csvData",
+      "file": "app/api/admin/analytics/personality/export/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/analytics/personality/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/analytics/position/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/analytics/test-attempts/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/category-weights/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PUT",
+      "file": "app/api/admin/category-weights/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DELETE",
+      "file": "app/api/admin/category-weights/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/admin/category-weights/[id]/set-default/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/category-weights/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/admin/category-weights/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/compare/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/job-profiles/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PUT",
+      "file": "app/api/admin/job-profiles/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DELETE",
+      "file": "app/api/admin/job-profiles/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DELETE",
+      "file": "app/api/admin/job-profiles/invitations/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/job-profiles/invitations/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/admin/job-profiles/invitations/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/job-profiles/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/admin/job-profiles/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "revalidate",
+      "file": "app/api/admin/leaderboard/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/leaderboard/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/position-leaderboard/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "revalidate",
+      "file": "app/api/admin/positions/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/positions/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PUT",
+      "file": "app/api/admin/positions/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DELETE",
+      "file": "app/api/admin/positions/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "revalidate",
+      "file": "app/api/admin/positions/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/positions/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/admin/positions/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/preview/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/proctor/analysis/[attemptId]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/proctor/download/[assetId]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/proctor/events/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/proctor/stream/[assetId]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/admin/proctor/trigger-analysis/[attemptId]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PATCH",
+      "file": "app/api/admin/public-links/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DELETE",
+      "file": "app/api/admin/public-links/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/public-links/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/queue-status/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/test-analysis/[attemptId]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DELETE",
+      "file": "app/api/admin/test-attempts/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/admin/tests/[id]/preview/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PATCH",
+      "file": "app/api/admin/users/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DELETE",
+      "file": "app/api/admin/users/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/admin/users/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/admin/users/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/analytics/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/auth/setup/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/auth/setup/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/auth-debug/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/custom-login/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/debug/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DebugContext",
+      "file": "app/api/debug-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "debugLogger",
+      "file": "app/api/debug-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "debugAuth",
+      "file": "app/api/debug-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "debugLogin",
+      "file": "app/api/debug-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "debugNextAuth",
+      "file": "app/api/debug-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "debugClient",
+      "file": "app/api/debug-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "debugServer",
+      "file": "app/api/debug-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "debugError",
+      "file": "app/api/debug-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/files/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/health/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "HEAD",
+      "file": "app/api/health/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/images/upload/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/invitations/[id]/attempt/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/invitations/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PUT",
+      "file": "app/api/invitations/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DELETE",
+      "file": "app/api/invitations/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/invitations/combined/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/invitations/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/invitations/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/invitations/send-reminders/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/oauth-test/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/personality-dimensions/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PUT",
+      "file": "app/api/personality-dimensions/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DELETE",
+      "file": "app/api/personality-dimensions/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/personality-dimensions/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/personality-dimensions/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/proctor/event/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/proctor/upload/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/proctor/upload-frames/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/proctoring/log-activity/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/public-test/[token]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/public-test/[token]/start/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PATCH",
+      "file": "app/api/public-test-attempts/[id]/permissions/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PUT",
+      "file": "app/api/public-test-attempts/[id]/progress/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/public-test-attempts/[id]/progress/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/public-test-attempts/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PUT",
+      "file": "app/api/public-test-attempts/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/public-test-links/[linkToken]/check-email/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/public-test-links/admin/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PUT",
+      "file": "app/api/public-test-links/admin/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DELETE",
+      "file": "app/api/public-test-links/admin/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/public-test-links/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/public-test-links/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/questions/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PUT",
+      "file": "app/api/questions/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DELETE",
+      "file": "app/api/questions/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/questions/import/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/questions/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/questions/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/questions/template/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/recordings/[filename]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/recordings/database/[assetId]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/setup-admin/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PATCH",
+      "file": "app/api/test-attempts/[id]/permissions/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PUT",
+      "file": "app/api/test-attempts/[id]/progress/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/test-attempts/[id]/progress/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/test-attempts/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/test-attempts/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/test-attempts/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/test-email/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/test-email/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/test-login/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/tests/[id]/archive/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/tests/[id]/notifications/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PUT",
+      "file": "app/api/tests/[id]/notifications/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/tests/[id]/personality-analysis/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/tests/[id]/restore/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/tests/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PATCH",
+      "file": "app/api/tests/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DELETE",
+      "file": "app/api/tests/[id]/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/tests/archived/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/tests/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/tests/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "POST",
+      "file": "app/api/upload-recording/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "GET",
+      "file": "app/api/users/route.ts",
+      "isDefault": false
+    },
+    {
+      "name": "metadata",
+      "file": "app/layout.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "AnswerColumn",
+      "file": "components/AnswerColumn.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "BookmarkedQuestionsReview",
+      "file": "components/BookmarkedQuestionsReview.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "CheatingDetectionAI",
+      "file": "components/CheatingDetectionAI.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "CardSkeleton",
+      "file": "components/LoadingSkeleton.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "StatsSkeleton",
+      "file": "components/LoadingSkeleton.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "ChartSkeleton",
+      "file": "components/LoadingSkeleton.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "ListSkeleton",
+      "file": "components/LoadingSkeleton.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "FormSkeleton",
+      "file": "components/LoadingSkeleton.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "PageSkeleton",
+      "file": "components/LoadingSkeleton.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "NavigationSkeleton",
+      "file": "components/LoadingSkeleton.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "ButtonSkeleton",
+      "file": "components/LoadingSkeleton.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "FilterSkeleton",
+      "file": "components/LoadingSkeleton.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "Skeleton",
+      "file": "components/LoadingSkeleton.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "QuestionBookmark",
+      "file": "components/QuestionBookmark.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "QuestionCard",
+      "file": "components/QuestionCard.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "QuestionTimer",
+      "file": "components/QuestionTimer.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "ResumeTestNotification",
+      "file": "components/ResumeTestNotification.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "TestProgressBar",
+      "file": "components/TestProgressBar.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "VerticalTimer",
+      "file": "components/VerticalTimer.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "Alert",
+      "file": "components/ui/alert/Alert.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "Avatar",
+      "file": "components/ui/avatar/Avatar.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "AvatarText",
+      "file": "components/ui/avatar/AvatarText.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "Badge",
+      "file": "components/ui/badge/Badge.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "Dropdown",
+      "file": "components/ui/dropdown/Dropdown.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "DropdownItem",
+      "file": "components/ui/dropdown/DropdownItem.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "ResponsiveImage",
+      "file": "components/ui/images/ResponsiveImage.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "ThreeColumnImageGrid",
+      "file": "components/ui/images/ThreeColumnImageGrid.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "TwoColumnImageGrid",
+      "file": "components/ui/images/TwoColumnImageGrid.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "Modal",
+      "file": "components/ui/modal/index.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "Table",
+      "file": "components/ui/table/index.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "TableHeader",
+      "file": "components/ui/table/index.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "TableBody",
+      "file": "components/ui/table/index.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "TableRow",
+      "file": "components/ui/table/index.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "TableCell",
+      "file": "components/ui/table/index.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "TableEmptyState",
+      "file": "components/ui/table/index.tsx",
+      "isDefault": false
+    },
+    {
+      "name": "YouTubeEmbed",
+      "file": "components/ui/video/YouTubeEmbed.tsx",
+      "isDefault": true
+    },
+    {
+      "name": "AuthenticatedUser",
+      "file": "lib/auth-middleware.ts",
+      "isDefault": false
+    },
+    {
+      "name": "requireSuperAdminAuth",
+      "file": "lib/auth-middleware.ts",
+      "isDefault": false
+    },
+    {
+      "name": "getCurrentSession",
+      "file": "lib/auth-middleware.ts",
+      "isDefault": false
+    },
+    {
+      "name": "hasRole",
+      "file": "lib/auth-middleware.ts",
+      "isDefault": false
+    },
+    {
+      "name": "isAdmin",
+      "file": "lib/auth-middleware.ts",
+      "isDefault": false
+    },
+    {
+      "name": "getAuthConfig",
+      "file": "lib/auth.ts",
+      "isDefault": false
+    },
+    {
+      "name": "categoryWeightService",
+      "file": "lib/categoryWeightService.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DEFAULT_PORT",
+      "file": "lib/constants.ts",
+      "isDefault": false
+    },
+    {
+      "name": "TEST_DATABASE_URL",
+      "file": "lib/constants.ts",
+      "isDefault": false
+    },
+    {
+      "name": "EMAIL_FROM",
+      "file": "lib/constants.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DEFAULT_QUESTION_TIMER",
+      "file": "lib/constants.ts",
+      "isDefault": false
+    },
+    {
+      "name": "MAX_FILE_UPLOAD_SIZE",
+      "file": "lib/constants.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DEFAULT_PAGE_SIZE",
+      "file": "lib/constants.ts",
+      "isDefault": false
+    },
+    {
+      "name": "MAX_PAGE_SIZE",
+      "file": "lib/constants.ts",
+      "isDefault": false
+    },
+    {
+      "name": "SESSION_TIMEOUT",
+      "file": "lib/constants.ts",
+      "isDefault": false
+    },
+    {
+      "name": "API_RATE_LIMIT",
+      "file": "lib/constants.ts",
+      "isDefault": false
+    },
+    {
+      "name": "invitationEmailTemplate",
+      "file": "lib/email-templates.ts",
+      "isDefault": false
+    },
+    {
+      "name": "testCompletionAdminTemplate",
+      "file": "lib/email-templates.ts",
+      "isDefault": false
+    },
+    {
+      "name": "testCompletionCandidateTemplate",
+      "file": "lib/email-templates.ts",
+      "isDefault": false
+    },
+    {
+      "name": "reminderEmailTemplate",
+      "file": "lib/email-templates.ts",
+      "isDefault": false
+    },
+    {
+      "name": "genericEmailTemplate",
+      "file": "lib/email-templates.ts",
+      "isDefault": false
+    },
+    {
+      "name": "TestCompletionCandidateEmailData",
+      "file": "lib/email.ts",
+      "isDefault": false
+    },
+    {
+      "name": "testEmailConfiguration",
+      "file": "lib/email.ts",
+      "isDefault": false
+    },
+    {
+      "name": "getEmailServiceInfo",
+      "file": "lib/email.ts",
+      "isDefault": false
+    },
+    {
+      "name": "EnhancedEmailService",
+      "file": "lib/enhancedEmailService.ts",
+      "isDefault": false
+    },
+    {
+      "name": "RequiredEnvVars",
+      "file": "lib/env-validation.ts",
+      "isDefault": false
+    },
+    {
+      "name": "validateEnv",
+      "file": "lib/env-validation.ts",
+      "isDefault": false
+    },
+    {
+      "name": "LogLevel",
+      "file": "lib/logger.ts",
+      "isDefault": false
+    },
+    {
+      "name": "LogContext",
+      "file": "lib/logger.ts",
+      "isDefault": false
+    },
+    {
+      "name": "LoggerConfig",
+      "file": "lib/logger.ts",
+      "isDefault": false
+    },
+    {
+      "name": "testLogger",
+      "file": "lib/logger.ts",
+      "isDefault": false
+    },
+    {
+      "name": "ApiLogContext",
+      "file": "lib/logging-middleware.ts",
+      "isDefault": false
+    },
+    {
+      "name": "loggedApiHandler",
+      "file": "lib/logging-middleware.ts",
+      "isDefault": false
+    },
+    {
+      "name": "withDbLogging",
+      "file": "lib/logging-middleware.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PreviewTokenData",
+      "file": "lib/preview-tokens.ts",
+      "isDefault": false
+    },
+    {
+      "name": "RecordingSession",
+      "file": "lib/proctor/recorder.ts",
+      "isDefault": false
+    },
+    {
+      "name": "startRecording",
+      "file": "lib/proctor/recorder.ts",
+      "isDefault": false
+    },
+    {
+      "name": "stopAndUpload",
+      "file": "lib/proctor/recorder.ts",
+      "isDefault": false
+    },
+    {
+      "name": "uploadFramesInBackground",
+      "file": "lib/proctor/recorder.ts",
+      "isDefault": false
+    },
+    {
+      "name": "destroyRecording",
+      "file": "lib/proctor/recorder.ts",
+      "isDefault": false
+    },
+    {
+      "name": "forceStopAllCameraAccess",
+      "file": "lib/proctor/recorder.ts",
+      "isDefault": false
+    },
+    {
+      "name": "stopProctoringGlobally",
+      "file": "lib/proctor/useLiveFlags.ts",
+      "isDefault": false
+    },
+    {
+      "name": "ProctorAnalysisJobData",
+      "file": "lib/queue.ts",
+      "isDefault": false
+    },
+    {
+      "name": "enqueueProctorAnalysis",
+      "file": "lib/queue.ts",
+      "isDefault": false
+    },
+    {
+      "name": "closeQueue",
+      "file": "lib/queue.ts",
+      "isDefault": false
+    },
+    {
+      "name": "RateLimitRule",
+      "file": "lib/rate-limit.ts",
+      "isDefault": false
+    },
+    {
+      "name": "RateLimitInfo",
+      "file": "lib/rate-limit.ts",
+      "isDefault": false
+    },
+    {
+      "name": "getClientIdentifier",
+      "file": "lib/rate-limit.ts",
+      "isDefault": false
+    },
+    {
+      "name": "getRateLimitRule",
+      "file": "lib/rate-limit.ts",
+      "isDefault": false
+    },
+    {
+      "name": "checkRateLimit",
+      "file": "lib/rate-limit.ts",
+      "isDefault": false
+    },
+    {
+      "name": "createRateLimitResponse",
+      "file": "lib/rate-limit.ts",
+      "isDefault": false
+    },
+    {
+      "name": "ProctorEvent",
+      "file": "lib/risk-calculator.ts",
+      "isDefault": false
+    },
+    {
+      "name": "RiskAnalysis",
+      "file": "lib/risk-calculator.ts",
+      "isDefault": false
+    },
+    {
+      "name": "RiskCalculator",
+      "file": "lib/risk-calculator.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PersonalityScore",
+      "file": "lib/scoring/personalityScoring.ts",
+      "isDefault": false
+    },
+    {
+      "name": "validatePersonalityQuestions",
+      "file": "lib/scoring/personalityScoring.ts",
+      "isDefault": false
+    },
+    {
+      "name": "generatePersonalityProfileSummary",
+      "file": "lib/scoring/personalityScoring.ts",
+      "isDefault": false
+    },
+    {
+      "name": "TestType",
+      "file": "lib/scoring/scoringEngine.ts",
+      "isDefault": false
+    },
+    {
+      "name": "ObjectiveResult",
+      "file": "lib/scoring/scoringEngine.ts",
+      "isDefault": false
+    },
+    {
+      "name": "CombinedScoringResult",
+      "file": "lib/scoring/scoringEngine.ts",
+      "isDefault": false
+    },
+    {
+      "name": "ScoringResult",
+      "file": "lib/scoring/scoringEngine.ts",
+      "isDefault": false
+    },
+    {
+      "name": "EnhancedQuestion",
+      "file": "lib/scoring/scoringEngine.ts",
+      "isDefault": false
+    },
+    {
+      "name": "calculateObjectiveTestScore",
+      "file": "lib/scoring/scoringEngine.ts",
+      "isDefault": false
+    },
+    {
+      "name": "validateRequiredFields",
+      "file": "lib/validation-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "sanitizeText",
+      "file": "lib/validation-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "validateUrl",
+      "file": "lib/validation-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "safePercentage",
+      "file": "lib/validation-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "formatDuration",
+      "file": "lib/validation-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "debounce",
+      "file": "lib/validation-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "generateRandomString",
+      "file": "lib/validation-utils.ts",
+      "isDefault": false
+    },
+    {
+      "name": "config",
+      "file": "middleware.ts",
+      "isDefault": false
+    },
+    {
+      "name": "ReactComponent",
+      "file": "svg.d.ts",
+      "isDefault": false
+    },
+    {
+      "name": "src",
+      "file": "svg.d.ts",
+      "isDefault": true
+    },
+    {
+      "name": "getCategoryDisplayName",
+      "file": "types/categories.ts",
+      "isDefault": false
+    },
+    {
+      "name": "ALL_CATEGORIES",
+      "file": "types/categories.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DEFAULT_CATEGORIES",
+      "file": "types/categories.ts",
+      "isDefault": false
+    },
+    {
+      "name": "isCoreCategory",
+      "file": "types/categories.ts",
+      "isDefault": false
+    },
+    {
+      "name": "getDefaultWeights",
+      "file": "types/categories.ts",
+      "isDefault": false
+    },
+    {
+      "name": "COMMON_CATEGORIES",
+      "file": "types/categories.ts",
+      "isDefault": false
+    },
+    {
+      "name": "CommonCategory",
+      "file": "types/categories.ts",
+      "isDefault": false
+    },
+    {
+      "name": "isCommonCategory",
+      "file": "types/categories.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DEFAULT_CATEGORIES_LEGACY",
+      "file": "types/categories.ts",
+      "isDefault": false
+    },
+    {
+      "name": "QuestionCategoryLegacy",
+      "file": "types/categories.ts",
+      "isDefault": false
+    },
+    {
+      "name": "QuestionCategory",
+      "file": "types/categories.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PersonalityDimensionResponse",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PersonalityDimensionDetailResponse",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PersonalityQuestionSummary",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "CreatePersonalityDimensionRequest",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "UpdatePersonalityDimensionRequest",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PersonalityDimensionListResponse",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DeletePersonalityDimensionResponse",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "TestPersonalityAnalysisResponse",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "TestInfo",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DimensionCoverage",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PersonalityQuestionDetail",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "DimensionComparison",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "AnalysisStatistics",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "Recommendation",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "ValidationError",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "ApiErrorResponse",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "ApiResponse",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PersonalityDimensionsApiClient",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PersonalityDimensionFormData",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PersonalityDimensionFormErrors",
+      "file": "types/personality-api.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PersonalityDimension",
+      "file": "utils/pdfReportGenerator.ts",
+      "isDefault": false
+    },
+    {
+      "name": "TestAttemptData",
+      "file": "utils/pdfReportGenerator.ts",
+      "isDefault": false
+    },
+    {
+      "name": "PDFReportGenerator",
+      "file": "utils/pdfReportGenerator.ts",
+      "isDefault": false
+    },
+    {
+      "name": "generatePDFReport",
+      "file": "utils/pdfReportGenerator.ts",
+      "isDefault": false
+    }
+  ],
+  "summary": {
+    "totalExports": 373,
+    "unusedExports": 276,
+    "usedExports": 66
+  }
+}
