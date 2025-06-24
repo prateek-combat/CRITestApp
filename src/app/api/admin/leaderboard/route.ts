@@ -1,6 +1,11 @@
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
+import { CategoryWeightService } from '@/lib/categoryWeightService';
+import {
+  calculateWeightedComposite,
+  CategoryWeights,
+} from '@/types/categories';
 
 export const revalidate = 0; // Disable caching for this route
 
@@ -37,6 +42,9 @@ export async function GET(request: NextRequest) {
     const dateFrom = searchParams.get('dateFrom');
     const dateTo = searchParams.get('dateTo');
     const invitationId = searchParams.get('invitationId');
+
+    // NEW: Weight profile parameter for configurable scoring
+    const weightProfileId = searchParams.get('weightProfile');
 
     // Build where clauses for both regular and public attempts
     const baseWhere: any = {
@@ -157,6 +165,39 @@ export async function GET(request: NextRequest) {
       where: { testId },
     });
 
+    // NEW: Get weight profile for configurable scoring
+    let weightProfile = null;
+    let weights: CategoryWeights = {
+      LOGICAL: 20,
+      VERBAL: 20,
+      NUMERICAL: 20,
+      ATTENTION_TO_DETAIL: 20,
+      OTHER: 20,
+    }; // Default equal weights
+
+    try {
+      if (weightProfileId) {
+        weightProfile =
+          await CategoryWeightService.getProfileById(weightProfileId);
+        if (weightProfile) {
+          weights = weightProfile.weights;
+        }
+      } else {
+        // Use default profile if no specific profile requested
+        const defaultProfile = await CategoryWeightService.getDefaultProfile();
+        if (defaultProfile) {
+          weightProfile = defaultProfile;
+          weights = defaultProfile.weights;
+        }
+      }
+    } catch (error) {
+      console.warn(
+        'Error fetching weight profile, using default weights:',
+        error
+      );
+      // Continue with default weights
+    }
+
     // Calculate scores for all attempts first
     const processedAttempts = allAttempts.map((attempt, index) => {
       const categoryScores: Record<
@@ -189,6 +230,23 @@ export async function GET(request: NextRequest) {
           ? (attempt.rawScore / totalTestQuestions) * 100
           : 0;
 
+      // NEW: Calculate weighted composite score using configurable weights
+      const categoryScoresForWeighting: Record<
+        string,
+        { correct: number; total: number }
+      > = {};
+      Object.entries(categoryScores).forEach(([category, score]) => {
+        categoryScoresForWeighting[category] = {
+          correct: score.correct,
+          total: score.total,
+        };
+      });
+
+      const weightedComposite = calculateWeightedComposite(
+        categoryScoresForWeighting,
+        weights
+      );
+
       return {
         ...attempt,
         scoreLogical: categoryScores['LOGICAL']?.percentage || 0,
@@ -196,7 +254,8 @@ export async function GET(request: NextRequest) {
         scoreNumerical: categoryScores['NUMERICAL']?.percentage || 0,
         scoreAttention: categoryScores['ATTENTION_TO_DETAIL']?.percentage || 0,
         scoreOther: categoryScores['OTHER']?.percentage || 0,
-        composite: compositePercentage,
+        composite: weightedComposite, // NEW: Use weighted composite instead of simple average
+        compositeUnweighted: compositePercentage, // Keep original for comparison
         percentile: 0, // Will be calculated after we have all scores
       };
     });
@@ -319,6 +378,7 @@ export async function GET(request: NextRequest) {
         scoreAttention: attempt.scoreAttention,
         scoreOther: attempt.scoreOther,
         composite: attempt.composite,
+        compositeUnweighted: attempt.compositeUnweighted, // NEW: Include unweighted score for comparison
         percentile: attempt.percentile,
         rank: index + 1 + (page - 1) * pageSize,
         type: attempt.type, // Add type to distinguish regular vs public
@@ -384,7 +444,16 @@ export async function GET(request: NextRequest) {
         search,
         sortBy,
         sortOrder,
+        weightProfile: weightProfileId,
       },
+      weightProfile: weightProfile
+        ? {
+            id: weightProfile.id,
+            name: weightProfile.name,
+            description: weightProfile.description,
+            weights: weightProfile.weights,
+          }
+        : null,
       stats: {
         totalCandidates: total,
         avgScore: avgScorePercentage,
