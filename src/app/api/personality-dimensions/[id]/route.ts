@@ -62,7 +62,13 @@ export async function GET(
 
     const dimension = await prisma.personalityDimension.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        code: true,
+        createdAt: true,
+        updatedAt: true,
         _count: {
           select: {
             questions: true,
@@ -187,6 +193,9 @@ export async function PUT(
     // Check if dimension exists
     const existingDimension = await prisma.personalityDimension.findUnique({
       where: { id },
+      select: {
+        id: true,
+      },
     });
 
     if (!existingDimension) {
@@ -207,6 +216,11 @@ export async function PUT(
       const conflictingDimension = await prisma.personalityDimension.findFirst({
         where: {
           AND: [{ id: { not: id } }, { OR: conflictConditions }],
+        },
+        select: {
+          id: true,
+          name: true,
+          code: true,
         },
       });
 
@@ -233,7 +247,13 @@ export async function PUT(
         }),
         ...(code && { code: code.trim().toUpperCase() }),
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        code: true,
+        createdAt: true,
+        updatedAt: true,
         _count: {
           select: {
             questions: true,
@@ -303,7 +323,10 @@ export async function DELETE(
     // Check if dimension exists
     const existingDimension = await prisma.personalityDimension.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        code: true,
         _count: {
           select: {
             questions: true,

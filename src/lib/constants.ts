@@ -5,14 +5,6 @@
 
 // URL Configuration
 export const APP_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-export const DEFAULT_PORT = 3000;
-
-// Test Database Configuration (for testing only)
-export const TEST_DATABASE_URL = 'postgresql://test:test@localhost:5432/testdb';
-
-// Email Configuration
-export const EMAIL_FROM = process.env.SMTP_FROM || 'noreply@combatrobotics.in';
-export const EMAIL_COMPANY_NAME = 'Combat Robotics India';
 
 // Proctoring Configuration
 export const PROCTORING_RISK_THRESHOLDS = {
@@ -46,21 +38,4 @@ export const PROCTORING_RISK_WEIGHTS = {
   MULTIPLE_SPEAKERS_DETECTED: 8.0,
   POSSIBLE_SPEAKER_CHANGE: 1.0,
   BACKGROUND_NOISE: 0.5,
-} as const;
-
-// Test Configuration
-export const DEFAULT_QUESTION_TIMER = 60; // seconds
-export const MAX_FILE_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
-
-// Pagination
-export const DEFAULT_PAGE_SIZE = 10;
-export const MAX_PAGE_SIZE = 100;
-
-// Session Configuration
-export const SESSION_TIMEOUT = 24 * 60 * 60; // 24 hours in seconds
-
-// API Rate Limiting
-export const API_RATE_LIMIT = {
-  WINDOW_MS: 15 * 60 * 1000, // 15 minutes
-  MAX_REQUESTS: 100,
 } as const;

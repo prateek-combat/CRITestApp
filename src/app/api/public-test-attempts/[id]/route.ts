@@ -17,11 +17,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const publicAttempt = await prisma.publicTestAttempt.findUnique({
       where: { id: attemptId },
-      include: {
+      select: {
+        id: true,
+        status: true,
+        candidateName: true,
+        candidateEmail: true,
         publicLink: {
-          include: {
+          select: {
             test: {
-              include: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
                 questions: {
                   orderBy: { createdAt: 'asc' },
                 },
@@ -72,6 +79,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Verify the public test attempt exists
     const existingAttempt = await prisma.publicTestAttempt.findUnique({
       where: { id: attemptId },
+      select: {
+        id: true,
+        publicLinkId: true,
+        candidateEmail: true,
+        candidateName: true,
+        startedAt: true,
+      },
     });
 
     if (!existingAttempt) {
@@ -100,6 +114,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const updatedAttempt = await prisma.publicTestAttempt.update({
       where: { id: attemptId },
       data: updateData,
+      select: {
+        id: true,
+        status: true,
+      },
     });
 
     // Handle answers if provided (for completion)
@@ -107,9 +125,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       // Get test questions to validate and calculate score
       const publicLink = await prisma.publicTestLink.findUnique({
         where: { id: existingAttempt.publicLinkId },
-        include: {
+        select: {
           test: {
-            include: {
+            select: {
+              id: true,
               questions: true,
             },
           },

@@ -13,7 +13,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       where: {
         linkToken: token,
       },
-      include: {
+      select: {
+        id: true,
+        testId: true,
+        title: true,
+        description: true,
+        isActive: true,
+        expiresAt: true,
+        maxUses: true,
+        usedCount: true,
         test: {
           select: {
             id: true,
