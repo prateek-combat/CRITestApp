@@ -10,6 +10,21 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      spacing: {
+        xs: '0.125rem', // 2px
+        sm: '0.25rem', // 4px
+        md: '0.5rem', // 8px
+        lg: '0.75rem', // 12px
+        xl: '1rem', // 16px
+        '2xl': '1.5rem', // 24px
+        '3xl': '2rem', // 32px
+      },
+      fontSize: {
+        xxs: ['0.625rem', { lineHeight: '0.875rem' }], // 10px
+        xs: ['0.75rem', { lineHeight: '1rem' }], // 12px
+        sm: ['0.875rem', { lineHeight: '1.25rem' }], // 14px
+        base: ['1rem', { lineHeight: '1.5rem' }], // 16px
+      },
       colors: {
         // Military theme colors
         'military-green': '#4A5D23', // Dark olive green

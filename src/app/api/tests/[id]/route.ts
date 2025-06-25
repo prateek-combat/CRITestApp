@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { auth } from '@/lib/auth';
+import { apiCache } from '@/lib/cache';
 
 const prisma = new PrismaClient();
 
@@ -130,6 +131,9 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       data: dataToUpdate,
     });
 
+    // Clear the cache after update
+    apiCache.delete('tests:all');
+
     return NextResponse.json(updatedTest);
   } catch (error) {
     console.error(`[API /api/tests/${id} PATCH] Failed to update test:`, error);
@@ -213,6 +217,9 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     await prisma.test.delete({
       where: { id },
     });
+
+    // Clear the cache after deletion
+    apiCache.delete('tests:all');
 
     return NextResponse.json({
       message: 'Test permanently deleted successfully',
