@@ -132,10 +132,12 @@ interface LeaderboardData {
 
 interface LeaderboardSidebarLayoutProps {
   searchParams?: Record<string, string | undefined>;
+  userRole?: string;
 }
 
 export default function LeaderboardSidebarLayout({
   searchParams: searchParamsProp = {},
+  userRole,
 }: LeaderboardSidebarLayoutProps) {
   // Use useSearchParams to get current URL search params
   const urlSearchParams = useSearchParams();
@@ -675,6 +677,7 @@ export default function LeaderboardSidebarLayout({
                   data={data}
                   onSort={handleSort}
                   onPageChange={handlePageChange}
+                  userRole={userRole}
                 />
               </div>
             )}

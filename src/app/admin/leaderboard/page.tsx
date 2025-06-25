@@ -63,7 +63,7 @@ export default function LeaderboardPage() {
             </div>
           }
         >
-          <LeaderboardSidebarLayout />
+          <LeaderboardSidebarLayout userRole={session.user.role} />
         </Suspense>
       </div>
     </div>
