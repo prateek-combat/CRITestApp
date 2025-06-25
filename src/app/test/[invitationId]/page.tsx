@@ -2,12 +2,19 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { motion } from 'framer-motion';
 import {
   AlertTriangle,
   CheckCircle,
   ChevronRight,
   Loader2,
+  Shield,
+  Clock,
+  Monitor,
+  Info,
 } from 'lucide-react';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/button/Button';
 
 export default function TestStartPage() {
   const router = useRouter();
@@ -28,7 +35,6 @@ export default function TestStartPage() {
       setStatus('loading');
       try {
         if (isPublicAttempt) {
-          // This is a public attempt, the invitationId is the attemptId
           const res = await fetch(`/api/public-test-attempts/${invitationId}`);
           if (!res.ok) throw new Error('Public test link not found.');
           const data = await res.json();
@@ -37,7 +43,6 @@ export default function TestStartPage() {
           setCandidateEmail(data.candidateEmail);
           setStatus('ready');
         } else {
-          // This is a standard invitation
           const res = await fetch(`/api/invitations/${invitationId}`);
           if (!res.ok) throw new Error('Invitation not found.');
           const data = await res.json();
@@ -58,10 +63,8 @@ export default function TestStartPage() {
     setStatus('starting');
     try {
       if (isPublicAttempt) {
-        // For public tests, we already have an attemptId, so we just redirect
         router.push(`/test/attempt/${invitationId}?type=public`);
       } else {
-        // For invited tests, we need to create the attempt first
         const response = await fetch('/api/test-attempts', {
           method: 'POST',
           headers: {
@@ -81,73 +84,187 @@ export default function TestStartPage() {
     }
   };
 
+  const instructions = [
+    { icon: Monitor, text: 'Ensure stable internet connection' },
+    { icon: Clock, text: 'Timer starts when you begin' },
+    { icon: Shield, text: 'No external help allowed' },
+  ];
+
   const renderContent = () => {
     switch (status) {
       case 'loading':
         return (
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-            <p className="text-gray-600">Loading your test...</p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center gap-3"
+          >
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            >
+              <Loader2 className="h-8 w-8 text-military-green" />
+            </motion.div>
+            <p className="text-sm text-gray-600">Loading your test...</p>
+          </motion.div>
         );
+
       case 'error':
         return (
-          <div className="flex flex-col items-center gap-4 text-center">
-            <AlertTriangle className="h-12 w-12 text-red-500" />
-            <h2 className="text-xl font-semibold text-red-700">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center gap-3 text-center"
+          >
+            <div className="rounded-full bg-red-100 p-3">
+              <AlertTriangle className="h-8 w-8 text-red-500" />
+            </div>
+            <h2 className="text-lg font-semibold text-red-700">
               Something went wrong
             </h2>
-            <p className="text-gray-600">{error}</p>
-            <p className="text-sm text-gray-500">
-              Please try again or contact support if the issue persists.
-            </p>
-          </div>
+            <p className="text-sm text-gray-600">{error}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.reload()}
+              className="mt-2"
+            >
+              Try Again
+            </Button>
+          </motion.div>
         );
+
       case 'ready':
         return (
-          <>
-            <CheckCircle className="h-12 w-12 text-green-500" />
-            <h1 className="text-2xl font-bold text-gray-800">{testTitle}</h1>
-            <div className="text-center">
-              <p className="text-gray-600">
-                You are invited to take this test.
-              </p>
-              <p className="mt-2 font-medium text-gray-700">
-                {candidateName} ({candidateEmail})
-              </p>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="w-full space-y-4"
+          >
+            {/* Header */}
+            <div className="space-y-2 text-center">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', duration: 0.5 }}
+                className="mb-2 inline-flex rounded-full bg-gradient-to-br from-military-green/10 to-accent-orange/10 p-3"
+              >
+                <CheckCircle className="h-8 w-8 text-military-green" />
+              </motion.div>
+              <h1 className="text-2xl font-bold text-gray-900">{testTitle}</h1>
+              <div className="space-y-1">
+                <p className="text-sm text-gray-600">
+                  You are invited to take this test
+                </p>
+                <p className="font-medium text-gray-800">{candidateName}</p>
+                <p className="text-sm text-gray-500">{candidateEmail}</p>
+              </div>
             </div>
-            <div className="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
-              <p>
-                <strong>Instructions:</strong> Ensure you are in a quiet
-                environment with a stable internet connection. Once you start,
-                the timer will begin.
-              </p>
-            </div>
-            <button
-              onClick={handleStartTest}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition-transform hover:scale-105"
+
+            {/* Instructions Card */}
+            <Card variant="glass" className="p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <Info className="h-4 w-4 text-military-green" />
+                <h3 className="font-semibold text-gray-900">
+                  Before you begin
+                </h3>
+              </div>
+              <div className="space-y-2">
+                {instructions.map((instruction, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 * index }}
+                    className="flex items-center gap-3 text-sm"
+                  >
+                    <instruction.icon className="h-4 w-4 text-gray-400" />
+                    <span className="text-gray-700">{instruction.text}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </Card>
+
+            {/* Start Button */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
             >
-              Start Test <ChevronRight className="h-5 w-5" />
-            </button>
-          </>
+              <Button
+                onClick={handleStartTest}
+                size="lg"
+                variant="primary"
+                fullWidth
+                endIcon={<ChevronRight className="h-5 w-5" />}
+                className="shadow-lg"
+              >
+                Start Test
+              </Button>
+            </motion.div>
+          </motion.div>
         );
+
       case 'starting':
         return (
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-            <p className="text-gray-600">Starting your test...</p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex flex-col items-center gap-3"
+          >
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            >
+              <Loader2 className="h-8 w-8 text-military-green" />
+            </motion.div>
+            <p className="text-sm text-gray-600">Starting your test...</p>
+          </motion.div>
         );
     }
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white p-8 shadow-2xl">
-        <div className="flex flex-col items-center gap-6">
-          {renderContent()}
-        </div>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+      {/* Animated background elements */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <motion.div
+          className="absolute -right-40 -top-40 h-80 w-80 rounded-full bg-military-green/5 blur-3xl"
+          animate={{
+            x: [0, 30, 0],
+            y: [0, -30, 0],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+        <motion.div
+          className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-accent-orange/5 blur-3xl"
+          animate={{
+            x: [0, -30, 0],
+            y: [0, 30, 0],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
       </div>
+
+      {/* Main Content */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+        className="relative z-10 w-full max-w-md"
+      >
+        <Card variant="default" className="p-6 shadow-xl">
+          {renderContent()}
+        </Card>
+      </motion.div>
     </div>
   );
 }

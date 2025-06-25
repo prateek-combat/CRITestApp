@@ -3,9 +3,19 @@
 import { useState } from 'react';
 import { signIn, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
-
-// Debug utilities removed for production
+import { motion } from 'framer-motion';
+import {
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  Sparkles,
+  ArrowRight,
+  Loader2,
+} from 'lucide-react';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/button/Button';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -28,31 +38,24 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        const errorMsg = `Login failed: ${result.error}`;
-        setError(errorMsg);
+        setError(`Login failed: ${result.error}`);
       } else if (result?.ok) {
-        // Check if login was successful
         const session = await getSession();
-
         if (session) {
-          // Get the callback URL from the URL parameters or default to dashboard
           const urlParams = new URLSearchParams(window.location.search);
           const callbackUrl =
             urlParams.get('callbackUrl') || '/admin/dashboard';
-
-          // Use window.location for more reliable redirect
           window.location.href = callbackUrl;
         } else {
-          const errorMsg = 'Login succeeded but no session created';
-          setError(errorMsg);
+          setError('Login succeeded but no session created');
         }
       } else {
-        const errorMsg = 'Unexpected login result';
-        setError(errorMsg);
+        setError('Unexpected login result');
       }
     } catch (error) {
-      const errorMsg = `An error occurred during login: ${error instanceof Error ? error.message : 'Unknown error'}`;
-      setError(errorMsg);
+      setError(
+        `An error occurred during login: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     } finally {
       setIsLoading(false);
     }
@@ -71,21 +74,16 @@ export default function LoginPage() {
       if (result?.error) {
         setError('Google sign-in failed');
       } else if (result?.ok) {
-        // Check if login was successful
         const session = await getSession();
         if (session) {
-          // Get the callback URL from the URL parameters or default to dashboard
           const urlParams = new URLSearchParams(window.location.search);
           const callbackUrl =
             urlParams.get('callbackUrl') || '/admin/dashboard';
-
-          // Use window.location for more reliable redirect
           window.location.href = callbackUrl;
         }
       }
     } catch (error) {
-      const errorMsg = 'Failed to initiate Google sign-in';
-      setError(errorMsg);
+      setError('Failed to initiate Google sign-in');
     } finally {
       setIsLoading(false);
     }
@@ -106,14 +104,10 @@ export default function LoginPage() {
         setError('Local admin login failed');
       } else {
         const session = await getSession();
-
         if (session) {
-          // Get the callback URL from the URL parameters or default to dashboard
           const urlParams = new URLSearchParams(window.location.search);
           const callbackUrl =
             urlParams.get('callbackUrl') || '/admin/dashboard';
-
-          // Use window.location for more reliable redirect
           window.location.href = callbackUrl;
         }
       }
@@ -124,72 +118,100 @@ export default function LoginPage() {
     }
   };
 
-  const handleDirectTest = async () => {
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch('/api/test-login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          debugKey: 'debug-oauth-2024',
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setError(`Direct test successful: ${JSON.stringify(data, null, 2)}`);
-      } else {
-        setError(`Direct test failed: ${data.error || 'Unknown error'}`);
-      }
-    } catch (error) {
-      setError('Direct test request failed');
-    } finally {
-      setIsLoading(false);
-    }
+  const fadeInUp = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.5 },
   };
 
   return (
-    <div className="flex min-h-screen flex-col justify-center bg-gray-50 py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-brand-600">
-            <Lock className="h-6 w-6 text-white" />
-          </div>
-        </div>
-        <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-          Sign in to your account
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Access the test platform
-        </p>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100 p-4">
+      {/* Animated background elements */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <motion.div
+          className="absolute -right-40 -top-40 h-80 w-80 rounded-full bg-military-green/5 blur-3xl"
+          animate={{
+            x: [0, 30, 0],
+            y: [0, -30, 0],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+        <motion.div
+          className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-accent-orange/5 blur-3xl"
+          animate={{
+            x: [0, -30, 0],
+            y: [0, 30, 0],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white px-4 py-8 shadow sm:rounded-lg sm:px-10">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="relative z-10 w-full max-w-md"
+      >
+        {/* Logo and Title */}
+        <motion.div
+          variants={fadeInUp}
+          initial="initial"
+          animate="animate"
+          className="mb-6 text-center"
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', duration: 0.5 }}
+            className="mb-4 inline-flex rounded-2xl bg-gradient-to-br from-military-green to-primary-600 p-3 shadow-xl"
+          >
+            <Lock className="h-8 w-8 text-white" />
+          </motion.div>
+          <h2 className="text-2xl font-bold text-gray-900">Welcome back</h2>
+          <p className="mt-1 text-sm text-gray-600">
+            Sign in to access the platform
+          </p>
+        </motion.div>
+
+        {/* Login Card */}
+        <Card variant="default" className="p-6 shadow-xl">
           {error && (
-            <div className="mb-4 rounded-md bg-red-50 p-4">
-              <div className="text-sm text-red-700">{error}</div>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-4"
+            >
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                {error}
+              </div>
+            </motion.div>
           )}
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            {/* Email Input */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
+            >
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
+                className="mb-1 block text-sm font-medium text-gray-700"
               >
                 Email address
               </label>
-              <div className="relative mt-1">
+              <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Mail className="h-5 w-5 text-gray-400" />
+                  <Mail className="h-4 w-4 text-gray-400" />
                 </div>
                 <input
                   id="email"
@@ -199,22 +221,27 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full rounded-md border border-gray-300 py-2 pl-10 pr-3 text-sm placeholder-gray-500 focus:border-brand-500 focus:outline-none focus:ring-brand-500"
+                  className="block w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-sm transition-all focus:border-military-green focus:ring-2 focus:ring-military-green/50"
                   placeholder="Enter your email"
                 />
               </div>
-            </div>
+            </motion.div>
 
-            <div>
+            {/* Password Input */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
+                className="mb-1 block text-sm font-medium text-gray-700"
               >
                 Password
               </label>
-              <div className="relative mt-1">
+              <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Lock className="h-5 w-5 text-gray-400" />
+                  <Lock className="h-4 w-4 text-gray-400" />
                 </div>
                 <input
                   id="password"
@@ -224,52 +251,73 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full rounded-md border border-gray-300 py-2 pl-10 pr-10 text-sm placeholder-gray-500 focus:border-brand-500 focus:outline-none focus:ring-brand-500"
+                  className="block w-full rounded-lg border border-gray-300 py-2 pl-10 pr-10 text-sm transition-all focus:border-military-green focus:ring-2 focus:ring-military-green/50"
                   placeholder="Enter your password"
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 flex items-center pr-3"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 transition-opacity hover:opacity-70"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400" />
+                    <EyeOff className="h-4 w-4 text-gray-400" />
                   ) : (
-                    <Eye className="h-5 w-5 text-gray-400" />
+                    <Eye className="h-4 w-4 text-gray-400" />
                   )}
                 </button>
               </div>
-            </div>
+            </motion.div>
 
-            <div>
-              <button
+            {/* Submit Button */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <Button
                 type="submit"
                 disabled={isLoading}
-                className="flex w-full justify-center rounded-md border border-transparent bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                loading={isLoading}
+                fullWidth
+                size="md"
+                variant="primary"
+                endIcon={!isLoading && <ArrowRight className="h-4 w-4" />}
               >
                 {isLoading ? 'Signing in...' : 'Sign in'}
-              </button>
-            </div>
+              </Button>
+            </motion.div>
           </form>
 
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="bg-white px-2 text-gray-500">Or</span>
-              </div>
+          {/* Divider */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="relative my-6"
+          >
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200" />
             </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-white px-2 text-gray-500">OR</span>
+            </div>
+          </motion.div>
 
-            <div className="mt-6 space-y-3">
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                disabled={isLoading}
-                className="flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
+          {/* Google Sign In */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="space-y-3"
+          >
+            <Button
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+              fullWidth
+              size="md"
+              variant="outline"
+              startIcon={
+                <svg className="h-4 w-4" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -287,34 +335,42 @@ export default function LoginPage() {
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                Continue with Google
-              </button>
+              }
+            >
+              Continue with Google
+            </Button>
 
-              {process.env.NODE_ENV === 'development' && (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleLocalAdminLogin}
-                    disabled={isLoading}
-                    className="flex w-full justify-center rounded-md border border-yellow-300 bg-yellow-50 px-4 py-2 text-sm font-medium text-yellow-800 shadow-sm hover:bg-yellow-100 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Local Admin Login (Dev Only)
-                  </button>
+            {process.env.NODE_ENV === 'development' && (
+              <Button
+                onClick={handleLocalAdminLogin}
+                disabled={isLoading}
+                fullWidth
+                size="sm"
+                variant="ghost"
+                className="text-xs"
+                startIcon={<Sparkles className="h-3 w-3" />}
+              >
+                Local Admin (Dev)
+              </Button>
+            )}
+          </motion.div>
+        </Card>
 
-                  <button
-                    type="button"
-                    onClick={handleDirectTest}
-                    disabled={isLoading || !email || !password}
-                    className="flex w-full justify-center rounded-md border border-blue-300 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-800 shadow-sm hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Direct API Test (Dev Only)
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+        {/* Back to Home */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          className="mt-6 text-center"
+        >
+          <Link
+            href="/"
+            className="text-sm text-gray-600 transition-colors hover:text-military-green"
+          >
+            ← Back to home
+          </Link>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import LeaderboardSidebarLayout from './_components/LeaderboardSidebarLayout';
+import { designSystem, componentStyles } from '@/lib/design-system';
 
 export default function LeaderboardPage() {
   const { data: session, status } = useSession();
@@ -40,14 +41,12 @@ export default function LeaderboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="p-3">
+    <div className={componentStyles.pageContainer}>
+      <div className={componentStyles.contentWrapper}>
         {/* Header - Compact */}
-        <div className="mb-3">
-          <h1 className="text-xl font-bold text-gray-900">
-            🏆 Candidate Leaderboard
-          </h1>
-          <p className="mt-1 text-xs text-gray-600">
+        <div className={designSystem.gaps.section}>
+          <h1 className={designSystem.text.pageTitle}>Candidate Leaderboard</h1>
+          <p className={designSystem.text.pageSubtitle}>
             View and compare candidate performance with configurable scoring
             weights
           </p>

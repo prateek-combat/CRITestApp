@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { apiCache } from '@/lib/cache';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -98,6 +99,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         archivedById: user.id,
       },
     });
+
+    // Clear the cache after archiving
+    apiCache.delete('tests:all');
 
     return NextResponse.json({
       message: 'Test archived successfully',

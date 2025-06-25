@@ -229,14 +229,14 @@ export default function PositionAnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-3">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 p-3 md:p-4 lg:p-6">
+      <div className="mx-auto max-w-7xl space-y-3">
         {/* Header - Compact */}
         <div className="mb-3">
           <h1 className="text-xl font-bold text-gray-900">
             Position Analytics
           </h1>
-          <p className="mt-1 text-xs text-gray-600">
+          <p className="mt-1 text-sm text-gray-600">
             View detailed analytics and insights by job position
           </p>
         </div>
