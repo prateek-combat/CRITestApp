@@ -22,7 +22,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Find the public test link
     const publicLink = await prisma.publicTestLink.findUnique({
       where: { linkToken },
-      include: {
+      select: {
+        id: true,
+        isActive: true,
+        expiresAt: true,
         test: {
           select: { id: true, title: true },
         },
@@ -56,6 +59,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       where: {
         publicLinkId: publicLink.id,
         candidateEmail: email.trim().toLowerCase(),
+      },
+      select: {
+        id: true,
+        status: true,
+        startedAt: true,
+        completedAt: true,
+        candidateName: true,
       },
       orderBy: { createdAt: 'desc' },
     });

@@ -896,12 +896,12 @@ export default function TestsPage() {
               Invitation and public link functionality has been moved to the Job
               Profiles page for better organization around job positions.
             </p>
-            <a
+            <Link
               href="/admin/job-profiles"
               className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
             >
               Go to Job Profiles →
-            </a>
+            </Link>
           </div>
         </div>
       )}
@@ -917,12 +917,12 @@ export default function TestsPage() {
               Public link functionality has been moved to the Job Profiles page
               where you can create comprehensive assessments for job positions.
             </p>
-            <a
+            <Link
               href="/admin/job-profiles"
               className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
             >
               Go to Job Profiles →
-            </a>
+            </Link>
           </div>
         </div>
       )}

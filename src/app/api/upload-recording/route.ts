@@ -17,11 +17,13 @@ export async function POST(request: NextRequest) {
     // Try to find test attempt by ID first, then by invitation ID as fallback
     let testAttempt = await prisma.testAttempt.findUnique({
       where: { id: testAttemptId },
+      select: { id: true },
     });
 
     if (!testAttempt) {
       testAttempt = await prisma.testAttempt.findFirst({
         where: { invitationId: testAttemptId },
+        select: { id: true },
         orderBy: { startedAt: 'desc' },
       });
     }
@@ -49,6 +51,9 @@ export async function POST(request: NextRequest) {
         fileSize: buffer.length,
         data: buffer,
         fileType: 'RECORDING',
+      },
+      select: {
+        id: true,
       },
     });
 

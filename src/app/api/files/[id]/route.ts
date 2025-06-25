@@ -11,6 +11,13 @@ export async function GET(
     // Find the uploaded file in the database
     const uploadedFile = await prisma.uploadedFile.findUnique({
       where: { id },
+      select: {
+        id: true,
+        fileName: true,
+        mimeType: true,
+        fileSize: true,
+        data: true,
+      },
     });
 
     if (!uploadedFile) {

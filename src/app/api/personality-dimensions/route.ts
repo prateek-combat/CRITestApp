@@ -48,7 +48,13 @@ export async function GET(request: NextRequest) {
     }
 
     const dimensions = await prisma.personalityDimension.findMany({
-      include: {
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        code: true,
+        createdAt: true,
+        updatedAt: true,
         _count: {
           select: {
             questions: true,
@@ -151,6 +157,11 @@ export async function POST(request: NextRequest) {
       where: {
         OR: [{ name: name }, { code: code }],
       },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+      },
     });
 
     if (existingDimension) {
@@ -170,6 +181,14 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         description: description?.trim() || null,
         code: code.trim().toUpperCase(),
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        code: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
 

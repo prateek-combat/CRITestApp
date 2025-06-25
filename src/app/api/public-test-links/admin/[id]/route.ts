@@ -20,7 +20,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     const publicLink = await prisma.publicTestLink.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        testId: true,
+        linkToken: true,
+        title: true,
+        description: true,
+        isActive: true,
+        expiresAt: true,
+        maxUses: true,
+        usedCount: true,
+        createdAt: true,
         test: {
           select: {
             id: true,
@@ -111,7 +121,17 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             : undefined,
         maxUses: maxUses !== undefined ? maxUses : undefined,
       },
-      include: {
+      select: {
+        id: true,
+        testId: true,
+        linkToken: true,
+        title: true,
+        description: true,
+        isActive: true,
+        expiresAt: true,
+        maxUses: true,
+        usedCount: true,
+        createdAt: true,
         test: {
           select: {
             id: true,

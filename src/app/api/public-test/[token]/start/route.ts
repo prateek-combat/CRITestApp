@@ -33,7 +33,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const publicLink = await prisma.publicTestLink.findUnique({
       where: { linkToken: token },
-      include: {
+      select: {
+        id: true,
+        testId: true,
+        isActive: true,
+        expiresAt: true,
+        maxUses: true,
+        usedCount: true,
         test: {
           select: {
             id: true,
@@ -77,6 +83,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         publicLinkId: publicLink.id,
         candidateEmail: candidateEmail.trim().toLowerCase(),
       },
+      select: {
+        id: true,
+        status: true,
+      },
     });
 
     if (existingAttempt) {
@@ -107,6 +117,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           candidateName: candidateName.trim(),
           candidateEmail: candidateEmail.trim().toLowerCase(),
           ipAddress: ipAddress,
+        },
+        select: {
+          id: true,
         },
       });
 

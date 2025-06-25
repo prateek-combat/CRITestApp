@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
     // Get user ID for tracking
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
+      select: { id: true },
     });
 
     // Store file in database
@@ -68,6 +69,9 @@ export async function POST(request: NextRequest) {
         data: buffer,
         fileType: 'QUESTION_IMAGE',
         uploadedBy: user?.id,
+      },
+      select: {
+        id: true,
       },
     });
 
