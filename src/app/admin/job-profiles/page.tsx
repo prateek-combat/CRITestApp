@@ -35,7 +35,10 @@ interface Position {
 interface Test {
   id: string;
   title: string;
-  questions: { id: string }[];
+  questionsCount: number;
+  description?: string;
+  isArchived?: boolean;
+  weight?: number;
 }
 
 interface JobProfile {
@@ -137,7 +140,9 @@ export default function JobProfilesPage() {
         profile.description?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesDepartment =
         departmentFilter === 'all' ||
-        profile.positions.some((p) => p.department === departmentFilter);
+        (profile.positions || []).some(
+          (p) => p.department === departmentFilter
+        );
       return matchesSearch && matchesDepartment;
     });
   }, [jobProfiles, searchTerm, departmentFilter]);
@@ -441,8 +446,8 @@ export default function JobProfilesPage() {
       name: profile.name,
       description: profile.description || '',
       isActive: profile.isActive,
-      positionIds: profile.positions.map((p) => p.id),
-      testIds: profile.tests.map((t) => t.id),
+      positionIds: (profile.positions || []).map((p) => p.id),
+      testIds: (profile.tests || []).map((t) => t.id),
     });
     setShowEditModal(true);
   };
@@ -579,7 +584,7 @@ export default function JobProfilesPage() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-wrap gap-1">
-                      {profile.positions.slice(0, 2).map((position) => (
+                      {(profile.positions || []).slice(0, 2).map((position) => (
                         <span
                           key={position.id}
                           className="inline-flex items-center rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-800"
@@ -587,9 +592,9 @@ export default function JobProfilesPage() {
                           {position.code}
                         </span>
                       ))}
-                      {profile.positions.length > 2 && (
+                      {(profile.positions || []).length > 2 && (
                         <span className="text-xs text-gray-500">
-                          +{profile.positions.length - 2} more
+                          +{(profile.positions || []).length - 2} more
                         </span>
                       )}
                     </div>
@@ -597,7 +602,7 @@ export default function JobProfilesPage() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <TestTube className="h-4 w-4" />
-                      <span>{profile.tests.length} tests</span>
+                      <span>{(profile.tests || []).length} tests</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -665,10 +670,10 @@ export default function JobProfilesPage() {
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div>
                           <h4 className="mb-2 text-sm font-medium text-gray-700">
-                            Positions ({profile.positions.length})
+                            Positions ({(profile.positions || []).length})
                           </h4>
                           <div className="space-y-1">
-                            {profile.positions.map((position) => (
+                            {(profile.positions || []).map((position) => (
                               <div
                                 key={position.id}
                                 className="text-sm text-gray-600"
@@ -681,15 +686,16 @@ export default function JobProfilesPage() {
                         </div>
                         <div>
                           <h4 className="mb-2 text-sm font-medium text-gray-700">
-                            Tests ({profile.tests.length})
+                            Tests ({(profile.tests || []).length})
                           </h4>
                           <div className="space-y-1">
-                            {profile.tests.map((test) => (
+                            {(profile.tests || []).map((test) => (
                               <div
                                 key={test.id}
                                 className="text-sm text-gray-600"
                               >
-                                {test.title} ({test.questions.length} questions)
+                                {test.title} ({test.questionsCount || 0}{' '}
+                                questions)
                               </div>
                             ))}
                           </div>
@@ -704,7 +710,7 @@ export default function JobProfilesPage() {
                         <div className="space-y-2">
                           {publicLinks
                             .filter((link) =>
-                              profile.tests.some(
+                              (profile.tests || []).some(
                                 (test) => test.title === link.testTitle
                               )
                             )
@@ -897,7 +903,7 @@ export default function JobProfilesPage() {
                             className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
                           />
                           <span className="text-sm text-gray-700">
-                            {test.title} ({test.questions.length} questions)
+                            {test.title} ({test.questionsCount || 0} questions)
                           </span>
                         </label>
                       ))}
