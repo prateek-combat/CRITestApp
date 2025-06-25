@@ -171,12 +171,13 @@ export default function TestTakingPage() {
       }
 
       // Step 4: Cleanup and redirect
-      setSubmissionStep('Processing results...');
+      setSubmissionStep('Finalizing submission...');
       localStorage.removeItem(`test-progress-${attemptId}`);
 
-      // Minimal delay - camera is already stopped
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Brief delay to show completion
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
+      // Redirect to completion page (not results page)
       router.push(`/test/results/${attemptId}`);
     } catch (e) {
       console.error(e);
@@ -420,7 +421,7 @@ export default function TestTakingPage() {
           return '60%';
         case 'Submitting your test...':
           return '80%';
-        case 'Processing results...':
+        case 'Finalizing submission...':
           return '95%';
         default:
           return '20%';
@@ -475,8 +476,10 @@ export default function TestTakingPage() {
             </h1>
             <p className="mb-4 text-gray-600">
               {submissionStep === 'Stopping camera...'
-                ? 'Camera stopped - processing your submission...'
-                : 'Please wait while we process your submission...'}
+                ? 'Camera access released - uploading data securely...'
+                : submissionStep === 'Finalizing submission...'
+                  ? 'Almost done - preparing your completion confirmation...'
+                  : 'Please wait while we process your submission...'}
             </p>
             <div className="text-sm font-medium text-blue-600">
               {submissionStep}
@@ -493,8 +496,10 @@ export default function TestTakingPage() {
 
           <p className="text-xs text-gray-500">
             {submissionStep === 'Stopping camera...'
-              ? 'Camera access released'
-              : 'Do not close this window or navigate away'}
+              ? 'Camera access released - data uploading in background'
+              : submissionStep === 'Finalizing submission...'
+                ? 'Preparing your completion confirmation...'
+                : 'Do not close this window or navigate away'}
           </p>
         </div>
       </div>
@@ -521,7 +526,7 @@ export default function TestTakingPage() {
     router.replace(`/test/results/${attemptId}`);
     return (
       <div className="flex h-screen items-center justify-center">
-        Test already completed. Redirecting to results...
+        Test already completed. Redirecting to completion page...
       </div>
     );
   }
@@ -532,7 +537,7 @@ export default function TestTakingPage() {
     // This can happen briefly if the test is completed and is about to redirect.
     return (
       <div className="flex h-screen items-center justify-center">
-        Test completed. Finalizing results...
+        Test completed. Redirecting to completion page...
       </div>
     );
   }
