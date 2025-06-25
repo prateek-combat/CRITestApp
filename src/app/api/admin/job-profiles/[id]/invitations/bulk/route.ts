@@ -12,7 +12,7 @@ const prisma = new PrismaClient();
 // POST /api/admin/job-profiles/[id]/invitations/bulk - Create bulk job profile invitations
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptionsSimple);
@@ -24,7 +24,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const jobProfileId = params.id;
+    const { id: jobProfileId } = await params;
     const body = await request.json();
     const { emails, customMessage, expiresInDays = 7 } = body;
 
