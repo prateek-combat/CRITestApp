@@ -29,7 +29,7 @@ export default function TestResultsPage() {
 
   const fetchTestAttempt = async () => {
     try {
-      const response = await fetch(`/api/test-attempts/${attemptId}`, {
+      const response = await fetch(`/api/test-results/${attemptId}`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
