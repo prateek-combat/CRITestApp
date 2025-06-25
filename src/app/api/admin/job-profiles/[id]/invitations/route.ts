@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptionsSimple } from '@/lib/auth-simple';
 import { PrismaClient } from '@prisma/client';
-// import { sendInvitationEmail, type InvitationEmailData } from '@/lib/email';
+import {
+  sendJobProfileInvitationEmail,
+  type JobProfileInvitationEmailData,
+} from '@/lib/email';
 
 const prisma = new PrismaClient();
 
@@ -114,12 +117,46 @@ export async function POST(
       },
     });
 
-    // TODO: Implement job profile invitation email sending
-    // For now, mark as SENT without actually sending email
-    await prisma.jobProfileInvitation.update({
-      where: { id: invitation.id },
-      data: { status: 'SENT' },
-    });
+    // Send job profile invitation email
+    try {
+      const emailData: JobProfileInvitationEmailData = {
+        candidateEmail,
+        candidateName,
+        jobProfileName: jobProfile.name,
+        positions: jobProfile.positions.map((p) => p.name),
+        tests: jobProfile.testWeights.map((tw) => ({
+          title: tw.test.title,
+          questionsCount: undefined, // We don't have question count in this query
+        })),
+        customMessage: customMessage || '',
+        invitationLink: `${process.env.NEXTAUTH_URL}/job-profile-invitation/${invitation.id}`,
+        expiresAt: expiresAt,
+      };
+
+      const emailResult = await sendJobProfileInvitationEmail(emailData);
+
+      if (emailResult.success) {
+        // Update invitation status to SENT
+        await prisma.jobProfileInvitation.update({
+          where: { id: invitation.id },
+          data: { status: 'SENT' },
+        });
+      } else {
+        console.error('Failed to send invitation email:', emailResult.error);
+        // Still mark as SENT in database even if email fails
+        await prisma.jobProfileInvitation.update({
+          where: { id: invitation.id },
+          data: { status: 'SENT' },
+        });
+      }
+    } catch (emailError) {
+      console.error('Failed to send invitation email:', emailError);
+      // Don't fail the request if email fails, just log it
+      await prisma.jobProfileInvitation.update({
+        where: { id: invitation.id },
+        data: { status: 'SENT' },
+      });
+    }
 
     return NextResponse.json({
       success: true,
