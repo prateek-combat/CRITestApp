@@ -76,7 +76,7 @@ export default function AdminLayout({
   if (status === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="h-32 w-32 animate-spin rounded-full border-b-2 border-blue-500"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent"></div>
       </div>
     );
   }
@@ -103,31 +103,30 @@ export default function AdminLayout({
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Top Navigation */}
+    <div className="min-h-screen bg-gray-50">
+      {/* Compact Top Navigation */}
       <nav className="border-b border-gray-200 bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 justify-between">
-            {/* Logo */}
+          <div className="flex h-14 justify-between">
+            {/* Logo - More Compact */}
             <div className="flex items-center">
               <Link
                 href="/admin/dashboard"
-                className="flex items-center space-x-3 transition-opacity hover:opacity-80"
+                className="flex items-center space-x-2 transition-opacity hover:opacity-80"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-600">
-                  <Zap className="h-5 w-5 text-white" />
+                  <Zap className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold text-gray-900">
+                  <h1 className="text-base font-bold text-gray-900">
                     Test Platform
                   </h1>
-                  <p className="-mt-1 text-xs text-gray-500">Admin Panel</p>
                 </div>
               </Link>
             </div>
 
-            {/* Navigation Links */}
-            <div className="hidden items-center space-x-8 md:flex">
+            {/* Navigation Links - Compact */}
+            <div className="hidden items-center space-x-1 md:flex">
               {navigation.map((item) => {
                 const isActive =
                   pathname === item.href ||
@@ -136,29 +135,25 @@ export default function AdminLayout({
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`flex items-center space-x-2 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
+                    className={`flex items-center space-x-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-200 ${
                       isActive
-                        ? 'bg-blue-100 text-blue-900'
+                        ? 'bg-brand-50 text-brand-700'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     }`}
                   >
-                    <item.icon
-                      className={`h-4 w-4 ${
-                        isActive ? 'text-blue-500' : 'text-gray-400'
-                      }`}
-                    />
+                    <item.icon className="h-4 w-4" />
                     <span>{item.name}</span>
                   </Link>
                 );
               })}
             </div>
 
-            {/* User Menu */}
-            <div className="flex items-center space-x-4">
+            {/* User Menu - Compact */}
+            <div className="flex items-center space-x-3">
               {/* Mobile menu button */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-500 md:hidden"
+                className="inline-flex items-center justify-center rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-500 md:hidden"
               >
                 {isMobileMenuOpen ? (
                   <X className="h-5 w-5" />
@@ -171,9 +166,12 @@ export default function AdminLayout({
                 <div className="relative" ref={userMenuRef}>
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center space-x-3 rounded-md px-3 py-2 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50 hover:text-gray-900"
+                    className="flex items-center space-x-2 rounded-md px-2 py-1.5 text-sm font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50"
                   >
-                    <div className="text-right">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-600">
+                      <User className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <div className="hidden text-left lg:block">
                       <p className="text-sm font-medium text-gray-900">
                         {session.user.name}
                       </p>
@@ -181,28 +179,23 @@ export default function AdminLayout({
                         {session.user.role}
                       </p>
                     </div>
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-blue-600 shadow-sm">
-                      <User className="h-4 w-4 text-white" />
-                    </div>
                     <ChevronDown
-                      className={`h-4 w-4 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`}
+                      className={`h-3.5 w-3.5 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`}
                     />
                   </button>
 
                   {/* Dropdown Menu */}
                   {isUserMenuOpen && (
-                    <div className="animate-scale-in absolute right-0 z-50 mt-2 w-48 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
+                    <div className="absolute right-0 z-50 mt-1 w-48 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5">
                       <div className="py-1">
-                        <button
-                          onClick={() => {
-                            setIsUserMenuOpen(false);
-                            // TODO: Add settings functionality later
-                          }}
-                          className="flex w-full items-center px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100"
-                        >
-                          <Settings className="mr-3 h-4 w-4" />
-                          Settings
-                        </button>
+                        <div className="border-b border-gray-100 px-4 py-2 lg:hidden">
+                          <p className="text-sm font-medium text-gray-900">
+                            {session.user.name}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {session.user.email}
+                          </p>
+                        </div>
                         <button
                           onClick={() => {
                             setIsUserMenuOpen(false);
@@ -224,7 +217,7 @@ export default function AdminLayout({
 
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <div className="animate-gentle-fade border-t border-gray-200 md:hidden">
+          <div className="border-t border-gray-200 md:hidden">
             <div className="space-y-1 px-2 pb-3 pt-2">
               {navigation.map((item) => {
                 const isActive =
@@ -236,15 +229,11 @@ export default function AdminLayout({
                     href={item.href}
                     className={`flex items-center space-x-3 rounded-md px-3 py-2 text-base font-medium transition-all duration-200 ${
                       isActive
-                        ? 'bg-blue-100 text-blue-900'
+                        ? 'bg-brand-50 text-brand-700'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     }`}
                   >
-                    <item.icon
-                      className={`h-5 w-5 ${
-                        isActive ? 'text-blue-500' : 'text-gray-400'
-                      }`}
-                    />
+                    <item.icon className="h-5 w-5" />
                     <span>{item.name}</span>
                   </Link>
                 );
@@ -254,8 +243,8 @@ export default function AdminLayout({
         )}
       </nav>
 
-      {/* Main content */}
-      <main className="page-transition mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      {/* Main content - Reduced padding */}
+      <main className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
         {children}
       </main>
     </div>

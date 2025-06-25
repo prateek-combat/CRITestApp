@@ -177,7 +177,7 @@ export default function TestsPage() {
   const fetchPublicLinks = async () => {
     try {
       setPublicLinksLoading(true);
-      const response = await fetch('/api/admin/public-links');
+      const response = await fetch('/api/public-test-links');
       if (!response.ok) {
         throw new Error('Failed to fetch public links');
       }
@@ -195,7 +195,7 @@ export default function TestsPage() {
 
   const toggleLinkStatus = async (linkId: string, isActive: boolean) => {
     try {
-      const response = await fetch(`/api/admin/public-links/${linkId}`, {
+      const response = await fetch(`/api/public-test-links/admin/${linkId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -226,7 +226,7 @@ export default function TestsPage() {
     }
 
     try {
-      const response = await fetch(`/api/admin/public-links/${linkId}`, {
+      const response = await fetch(`/api/public-test-links/admin/${linkId}`, {
         method: 'DELETE',
       });
 
@@ -716,57 +716,68 @@ export default function TestsPage() {
               </div>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {tests.map((test, index) => (
-                <div
-                  key={test.id}
-                  className="card-hover micro-lift rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all duration-300 hover:shadow-md"
-                >
-                  <div className="mb-3 flex items-start justify-between">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="truncate text-base font-semibold text-gray-900">
-                        {test.title}
-                      </h3>
-                      {test.description && (
-                        <p className="mt-1 line-clamp-2 text-xs text-gray-600">
-                          {test.description}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Three-dots menu */}
-                    <div className="relative ml-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenDropdown(
-                            openDropdown === test.id ? null : test.id
-                          );
-                        }}
-                        className="micro-bounce rounded-md p-1.5 text-gray-400 transition-all duration-200 hover:bg-gray-100 hover:text-gray-600"
-                      >
-                        <MoreVertical className="h-4 w-4" />
-                      </button>
-
-                      {openDropdown === test.id && (
-                        <div className="absolute right-0 top-8 z-10 w-44 rounded-md border border-gray-200 bg-white py-1 shadow-lg">
+            <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      Test Details
+                    </th>
+                    <th className="px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                      Questions
+                    </th>
+                    <th className="px-4 py-2 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                      Invitations
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      Created
+                    </th>
+                    <th className="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {tests.map((test) => (
+                    <tr key={test.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-900">
+                            {test.title}
+                          </h3>
+                          {test.description && (
+                            <p className="mt-0.5 line-clamp-1 text-xs text-gray-500">
+                              {test.description}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="text-sm font-medium text-gray-900">
+                          {test.questionsCount}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="text-sm font-medium text-gray-900">
+                          {test.invitationsCount}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-sm text-gray-500">
+                          {new Date(test.createdAt).toLocaleDateString()}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end space-x-1">
                           <Link
                             href={`/admin/tests/${test.id}`}
-                            className="micro-lift flex items-center px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-100"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenDropdown(null);
-                            }}
+                            className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                            title="Edit Test"
                           >
-                            <Edit className="mr-2 h-3.5 w-3.5" />
-                            Edit Test
+                            <Edit className="h-4 w-4" />
                           </Link>
-
                           <button
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              setOpenDropdown(null);
-
+                            onClick={async () => {
                               try {
                                 const response = await fetch(
                                   `/api/admin/tests/${test.id}/preview`,
@@ -789,97 +800,49 @@ export default function TestsPage() {
                                 alert('Failed to create preview link');
                               }
                             }}
-                            className="micro-scale flex w-full items-center px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-100"
+                            className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                            title="Preview Test"
                           >
-                            <Eye className="mr-2 h-3.5 w-3.5" />
-                            Preview Test
+                            <Eye className="h-4 w-4" />
                           </button>
-
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
+                            onClick={() => {
                               handleEmailNotifications({
                                 id: test.id,
                                 title: test.title,
                               });
                             }}
-                            className="micro-rotate flex w-full items-center px-3 py-1.5 text-sm text-gray-700 transition-colors hover:bg-gray-100"
+                            className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                            title="Email Notifications"
                           >
-                            <Bell className="mr-2 h-3.5 w-3.5" />
-                            Email Notifications
+                            <Bell className="h-4 w-4" />
                           </button>
-
                           {session?.user?.role === 'SUPER_ADMIN' && (
                             <>
-                              <div className="my-1 border-t border-gray-100"></div>
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleArchiveTest(test.id);
-                                  setOpenDropdown(null);
-                                }}
+                                onClick={() => handleArchiveTest(test.id)}
                                 disabled={archivingTestId === test.id}
-                                className="flex w-full items-center px-3 py-1.5 text-sm text-yellow-700 hover:bg-yellow-50 disabled:opacity-50"
+                                className="rounded p-1 text-yellow-600 transition-colors hover:bg-yellow-50 hover:text-yellow-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                title="Archive Test"
                               >
-                                <Archive className="mr-2 h-3.5 w-3.5" />
-                                {archivingTestId === test.id
-                                  ? 'Archiving...'
-                                  : 'Archive Test'}
+                                <Archive className="h-4 w-4" />
                               </button>
-
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteTest(test.id);
-                                  setOpenDropdown(null);
-                                }}
+                                onClick={() => handleDeleteTest(test.id)}
                                 disabled={deletingTestId === test.id}
-                                className="flex w-full items-center px-3 py-1.5 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
+                                className="rounded p-1 text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                title="Delete Test"
                               >
-                                <Trash2 className="mr-2 h-3.5 w-3.5" />
-                                {deletingTestId === test.id
-                                  ? 'Deleting...'
-                                  : 'Delete Test'}
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             </>
                           )}
                         </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mb-3 grid grid-cols-2 gap-2 text-xs text-gray-600">
-                    <div className="flex items-center justify-between">
-                      <span>Questions:</span>
-                      <span className="font-medium text-gray-900">
-                        {test.questionsCount}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Invitations:</span>
-                      <span className="font-medium text-gray-900">
-                        {test.invitationsCount}
-                      </span>
-                    </div>
-                    <div className="col-span-2 flex items-center justify-between">
-                      <span>Created:</span>
-                      <span className="font-medium text-gray-900">
-                        {new Date(test.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-500">Click ⋮ for options</span>
-                    <Link
-                      href={`/admin/tests/${test.id}`}
-                      className="inline-flex items-center font-medium text-blue-600 hover:text-blue-800"
-                    >
-                      View Details →
-                    </Link>
-                  </div>
-                </div>
-              ))}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
