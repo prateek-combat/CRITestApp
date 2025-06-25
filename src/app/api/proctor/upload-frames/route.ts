@@ -8,7 +8,6 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const attemptId = formData.get('attemptId') as string;
-    const files = formData.getAll('frames') as File[];
 
     if (!attemptId) {
       return NextResponse.json(
@@ -17,7 +16,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!files || files.length === 0) {
+    // Get all frame files - they are sent as frame_0, frame_1, etc.
+    const files: File[] = [];
+    for (const [key, value] of formData.entries()) {
+      if (key.startsWith('frame_') && value instanceof File) {
+        files.push(value);
+      }
+    }
+
+    if (files.length === 0) {
       return NextResponse.json(
         { error: 'No frames provided' },
         { status: 400 }

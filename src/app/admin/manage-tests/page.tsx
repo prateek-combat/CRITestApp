@@ -7,6 +7,7 @@ const QUESTION_CATEGORIES = [
   'VERBAL',
   'NUMERICAL',
   'ATTENTION_TO_DETAIL',
+  'OTHER',
 ] as const;
 import { useRouter } from 'next/navigation';
 
