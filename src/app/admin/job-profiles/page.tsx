@@ -22,6 +22,8 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { parseMultipleEmails } from '@/lib/validation-utils';
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog';
+import { useConfirmation } from '@/hooks/useConfirmation';
 
 interface Position {
   id: string;
@@ -116,6 +118,10 @@ export default function JobProfilesPage() {
 
   // Copy state
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+
+  // Confirmation dialog hook
+  const { confirmationState, showConfirmation, hideConfirmation } =
+    useConfirmation();
 
   // Get unique departments
   const departments = useMemo(() => {
@@ -285,23 +291,37 @@ export default function JobProfilesPage() {
     }
   };
 
-  const handleDeleteProfile = async (profile: JobProfile) => {
-    if (!confirm(`Are you sure you want to delete "${profile.name}"?`)) return;
+  const handleDeleteProfile = (profile: JobProfile) => {
+    showConfirmation(
+      {
+        title: 'Delete Job Profile',
+        message: `Are you sure you want to delete "${profile.name}"?\n\nThis action cannot be undone and will remove all associated data including invitations and test attempts.`,
+        confirmText: 'Delete Profile',
+        type: 'danger',
+      },
+      async () => {
+        try {
+          const response = await fetch(
+            `/api/admin/job-profiles/${profile.id}`,
+            {
+              method: 'DELETE',
+            }
+          );
 
-    try {
-      const response = await fetch(`/api/admin/job-profiles/${profile.id}`, {
-        method: 'DELETE',
-      });
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to delete profile');
+          }
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to delete profile');
+          await fetchJobProfiles();
+        } catch (err) {
+          setError(
+            err instanceof Error ? err.message : 'Failed to delete profile'
+          );
+          throw err; // Re-throw to keep the dialog open on error
+        }
       }
-
-      await fetchJobProfiles();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete profile');
-    }
+    );
   };
 
   const handleSendInvitation = async (e: React.FormEvent) => {
@@ -343,9 +363,16 @@ export default function JobProfilesPage() {
     e.preventDefault();
     if (!selectedProfile) return;
 
-    const emails = parseMultipleEmails(bulkEmails);
-    if (emails.length === 0) {
+    const emailResult = parseMultipleEmails(bulkEmails);
+    if (emailResult.valid.length === 0) {
       setError('Please enter valid email addresses');
+      return;
+    }
+
+    if (emailResult.invalid.length > 0) {
+      setError(
+        `Invalid email addresses found: ${emailResult.invalid.join(', ')}`
+      );
       return;
     }
 
@@ -357,7 +384,7 @@ export default function JobProfilesPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            emails,
+            emails: emailResult.valid,
             customMessage: invitationData.customMessage,
             expiresInDays: invitationData.expiresInDays,
           }),
@@ -1135,6 +1162,20 @@ export default function JobProfilesPage() {
           </div>
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={confirmationState.isOpen}
+        onClose={hideConfirmation}
+        onConfirm={confirmationState.onConfirm}
+        title={confirmationState.title}
+        message={confirmationState.message}
+        confirmText={confirmationState.confirmText}
+        cancelText={confirmationState.cancelText}
+        type={confirmationState.type}
+        isLoading={confirmationState.isLoading}
+        icon={confirmationState.icon}
+      />
     </div>
   );
 }
