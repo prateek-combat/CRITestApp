@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import { Trash2 } from 'lucide-react';
 
 interface User {
   id: string;
@@ -166,12 +167,12 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <div className="p-4">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">
+    <div className="space-y-3">
+      <div>
+        <h1 className="text-xl font-bold text-gray-900">
           Admin User Management
         </h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="text-sm text-gray-600">
           Manage admin users who can access the admin panel via Google sign-in
         </p>
       </div>
@@ -191,10 +192,10 @@ export default function AdminUsersPage() {
       )}
 
       {/* Add User Button */}
-      <div className="mb-4">
+      <div>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-primary-700"
+          className="rounded-md bg-brand-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-brand-700"
         >
           {showAddForm ? 'Cancel' : '+ Add New Admin'}
         </button>
@@ -202,12 +203,12 @@ export default function AdminUsersPage() {
 
       {/* Add User Form */}
       {showAddForm && (
-        <div className="mb-6 rounded-lg border bg-white p-6">
-          <h2 className="mb-4 text-xl font-semibold">Add New Admin User</h2>
-          <form onSubmit={handleAddUser} className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <h2 className="mb-3 text-base font-semibold">Add New Admin User</h2>
+          <form onSubmit={handleAddUser} className="space-y-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-xs font-medium text-gray-700">
                   Email (Google Account) *
                 </label>
                 <input
@@ -217,12 +218,12 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     setNewUser({ ...newUser, email: e.target.value })
                   }
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                   placeholder="admin@example.com"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-xs font-medium text-gray-700">
                   Role *
                 </label>
                 <select
@@ -230,14 +231,14 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     setNewUser({ ...newUser, role: e.target.value })
                   }
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 >
                   <option value="ADMIN">Admin</option>
                   <option value="SUPER_ADMIN">Super Admin</option>
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-xs font-medium text-gray-700">
                   First Name
                 </label>
                 <input
@@ -246,11 +247,11 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     setNewUser({ ...newUser, firstName: e.target.value })
                   }
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 block text-xs font-medium text-gray-700">
                   Last Name
                 </label>
                 <input
@@ -259,7 +260,7 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     setNewUser({ ...newUser, lastName: e.target.value })
                   }
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 />
               </div>
             </div>
@@ -267,22 +268,22 @@ export default function AdminUsersPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+                className="rounded-md bg-green-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-green-700 disabled:opacity-50"
               >
                 {submitting ? 'Adding...' : 'Add Admin User'}
               </button>
             </div>
           </form>
-          <div className="mt-4 space-y-3">
-            <div className="rounded-lg bg-primary-50 p-4">
-              <p className="text-sm text-primary-800">
+          <div className="mt-3 space-y-2">
+            <div className="rounded-md bg-blue-50 p-2">
+              <p className="text-xs text-blue-800">
                 <strong>Note:</strong> The user must sign in with their Google
                 account first. Only pre-registered admin emails can access the
                 admin panel.
               </p>
             </div>
-            <div className="rounded-lg bg-amber-50 p-4">
-              <p className="text-sm text-amber-800">
+            <div className="rounded-md bg-amber-50 p-2">
+              <p className="text-xs text-amber-800">
                 <strong>Delete Policy:</strong> Users who have created tests,
                 invitations, or public links cannot be deleted to preserve data
                 integrity. Change their role instead if needed.
@@ -293,101 +294,95 @@ export default function AdminUsersPage() {
       )}
 
       {/* Users Table */}
-      <div className="overflow-hidden rounded-lg border bg-white">
-        <div className="border-b border-gray-200 px-6 py-4">
-          <h2 className="text-lg font-semibold">Current Admin Users</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  User
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Created
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {users.map((user) => (
-                <tr key={user.id}>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">
-                      {user.firstName || user.lastName
-                        ? `${user.firstName} ${user.lastName}`.trim()
-                        : 'No name set'}
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                    {user.email}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <select
-                      value={user.role}
-                      onChange={(e) =>
-                        handleRoleChange(user.id, e.target.value)
-                      }
-                      className="rounded border border-gray-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={user.id === session?.user.id} // Can't change own role
-                    >
-                      <option value="ADMIN">Admin</option>
-                      <option value="SUPER_ADMIN">Super Admin</option>
-                    </select>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {new Date(user.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {user.id === session?.user.id ? (
-                      <span className="font-medium text-blue-600">
-                        Current User
-                      </span>
-                    ) : (
-                      <div className="flex gap-2">
-                        {showDeleteConfirm === user.id ? (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleDeleteUser(user.id)}
-                              disabled={deletingUserId === user.id}
-                              className="rounded bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-700 disabled:opacity-50"
-                            >
-                              {deletingUserId === user.id
-                                ? 'Deleting...'
-                                : 'Confirm Delete'}
-                            </button>
-                            <button
-                              onClick={() => setShowDeleteConfirm(null)}
-                              className="rounded bg-gray-300 px-3 py-1 text-xs text-gray-700 hover:bg-gray-400"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        ) : (
+      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                User
+              </th>
+              <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                Email
+              </th>
+              <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                Role
+              </th>
+              <th className="px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                Created
+              </th>
+              <th className="px-4 py-2 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 bg-white">
+            {users.map((user) => (
+              <tr key={user.id} className="hover:bg-gray-50">
+                <td className="whitespace-nowrap px-4 py-3">
+                  <div className="text-sm font-medium text-gray-900">
+                    {user.firstName || user.lastName
+                      ? `${user.firstName} ${user.lastName}`.trim()
+                      : 'No name set'}
+                  </div>
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                  {user.email}
+                </td>
+                <td className="whitespace-nowrap px-4 py-3">
+                  <select
+                    value={user.role}
+                    onChange={(e) => handleRoleChange(user.id, e.target.value)}
+                    className="rounded border border-gray-300 px-2 py-1 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    disabled={user.id === session?.user.id} // Can't change own role
+                  >
+                    <option value="ADMIN">Admin</option>
+                    <option value="SUPER_ADMIN">Super Admin</option>
+                  </select>
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
+                  {new Date(user.createdAt).toLocaleDateString()}
+                </td>
+                <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-500">
+                  {user.id === session?.user.id ? (
+                    <span className="font-medium text-brand-600">
+                      Current User
+                    </span>
+                  ) : (
+                    <div className="flex justify-end gap-1">
+                      {showDeleteConfirm === user.id ? (
+                        <>
                           <button
-                            onClick={() => setShowDeleteConfirm(user.id)}
-                            className="rounded bg-red-100 px-3 py-1 text-xs text-red-700 hover:bg-red-200"
+                            onClick={() => handleDeleteUser(user.id)}
+                            disabled={deletingUserId === user.id}
+                            className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700 disabled:opacity-50"
                           >
-                            🗑️ Delete
+                            {deletingUserId === user.id
+                              ? 'Deleting...'
+                              : 'Confirm'}
                           </button>
-                        )}
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                          <button
+                            onClick={() => setShowDeleteConfirm(null)}
+                            className="rounded bg-gray-200 px-2 py-1 text-xs text-gray-700 hover:bg-gray-300"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => setShowDeleteConfirm(user.id)}
+                          className="rounded p-1 text-red-600 hover:bg-red-50"
+                          title="Delete User"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
