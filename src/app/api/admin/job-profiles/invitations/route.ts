@@ -18,18 +18,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Fetch all invitations with related data
-    const invitations = await prisma.invitation.findMany({
+    // Fetch all job profile invitations with related data
+    const invitations = await prisma.jobProfileInvitation.findMany({
       include: {
-        test: {
-          select: {
-            id: true,
-            title: true,
+        jobProfile: {
+          include: {
             positions: {
               select: {
                 id: true,
                 name: true,
                 department: true,
+              },
+            },
+            testWeights: {
+              include: {
+                test: {
+                  select: {
+                    id: true,
+                    title: true,
+                  },
+                },
               },
             },
           },
@@ -42,13 +50,22 @@ export async function GET(request: NextRequest) {
             email: true,
           },
         },
+        testAttempts: {
+          select: {
+            id: true,
+            status: true,
+            completedAt: true,
+            rawScore: true,
+            percentile: true,
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
 
-    // Transform the data to include job profile information
+    // Transform the data
     const transformedInvitations = invitations.map((invitation) => ({
       id: invitation.id,
       candidateEmail: invitation.candidateEmail,
@@ -57,15 +74,17 @@ export async function GET(request: NextRequest) {
       emailSent: invitation.status === 'SENT' || invitation.status === 'OPENED',
       createdAt: invitation.createdAt,
       expiresAt: invitation.expiresAt,
-      test: invitation.test,
-      jobProfile: invitation.test?.positions?.[0]
-        ? {
-            id: invitation.test.positions[0].id,
-            name: invitation.test.positions[0].name,
-          }
-        : null,
-      jobProfiles: invitation.test?.positions || [],
-      testAttempts: [], // TODO: Add test attempts data if needed
+      jobProfile: {
+        id: invitation.jobProfile.id,
+        name: invitation.jobProfile.name,
+        positions: invitation.jobProfile.positions,
+        tests: invitation.jobProfile.testWeights.map((tw) => ({
+          id: tw.test.id,
+          title: tw.test.title,
+          weight: tw.weight,
+        })),
+      },
+      testAttempts: invitation.testAttempts,
       createdBy: invitation.createdBy,
     }));
 
@@ -107,11 +126,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get the job profile (position) with its tests
-    const jobProfile = await prisma.position.findUnique({
+    // Get the job profile with its tests
+    const jobProfile = await prisma.jobProfile.findUnique({
       where: { id: jobProfileId },
       include: {
-        testsMany: true,
+        positions: true,
+        testWeights: {
+          include: {
+            test: true,
+          },
+        },
       },
     });
 
@@ -122,7 +146,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (jobProfile.testsMany.length === 0) {
+    if (jobProfile.testWeights.length === 0) {
       return NextResponse.json(
         { error: 'Job profile has no tests assigned' },
         { status: 400 }
@@ -146,56 +170,60 @@ export async function POST(request: NextRequest) {
 
       for (const email of emails) {
         try {
-          // For now, create invitations for the first test in the job profile
-          // In a full implementation, you'd create a job profile invitation that tracks all tests
-          const firstTest = jobProfile.testsMany[0];
-
           // Check if invitation already exists
-          const existingInvitation = await prisma.invitation.findFirst({
-            where: {
-              candidateEmail: email,
-              testId: firstTest.id,
-              status: { in: ['PENDING', 'SENT'] },
-            },
-          });
+          const existingInvitation =
+            await prisma.jobProfileInvitation.findFirst({
+              where: {
+                candidateEmail: email,
+                jobProfileId: jobProfileId,
+                status: { in: ['PENDING', 'SENT'] },
+              },
+            });
 
           if (existingInvitation) {
             results.push({
               email,
               success: false,
-              error: 'Invitation already exists for this email and test',
+              error: 'Invitation already exists for this email and job profile',
             });
             summary.totalFailed++;
             continue;
           }
 
-          const invitation = await prisma.invitation.create({
+          const invitation = await prisma.jobProfileInvitation.create({
             data: {
               candidateEmail: email,
-              testId: firstTest.id,
+              jobProfileId: jobProfileId,
               createdById: session.user.id,
               expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
             },
           });
 
           // Send email
-          const testLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/test/${invitation.id}`;
+          const testLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/job-profile-test/${invitation.id}`;
+          const positionNames = jobProfile.positions
+            .map((p) => p.name)
+            .join(', ');
+          const testTitles = jobProfile.testWeights
+            .map((tw) => tw.test.title)
+            .join(', ');
+
           const emailData: InvitationEmailData = {
             candidateEmail: email,
-            testTitle: `${jobProfile.name} - ${firstTest.title}`,
+            testTitle: `${jobProfile.name} - ${positionNames}`,
             testLink,
             expiresAt: invitation.expiresAt,
             companyName: 'Combat Robotics India',
             customMessage:
               customMessage ||
-              `You have been invited to complete the assessment for the ${jobProfile.name} position.`,
+              `You have been invited to complete the assessment for the ${jobProfile.name} position. This includes the following tests: ${testTitles}`,
           };
 
           const emailResult = await sendInvitationEmail(emailData);
 
           if (emailResult.success) {
             // Update invitation to mark email as sent
-            await prisma.invitation.update({
+            await prisma.jobProfileInvitation.update({
               where: { id: invitation.id },
               data: {
                 status: 'SENT',
@@ -227,13 +255,11 @@ export async function POST(request: NextRequest) {
     } else if (candidateEmail) {
       // Single invitation handling
       try {
-        const firstTest = jobProfile.testsMany[0];
-
         // Check if invitation already exists
-        const existingInvitation = await prisma.invitation.findFirst({
+        const existingInvitation = await prisma.jobProfileInvitation.findFirst({
           where: {
             candidateEmail: candidateEmail,
-            testId: firstTest.id,
+            jobProfileId: jobProfileId,
             status: { in: ['PENDING', 'SENT'] },
           },
         });
@@ -241,40 +267,48 @@ export async function POST(request: NextRequest) {
         if (existingInvitation) {
           return NextResponse.json(
             {
-              error: 'An invitation already exists for this email and test',
+              error:
+                'An invitation already exists for this email and job profile',
             },
             { status: 400 }
           );
         }
 
-        const invitation = await prisma.invitation.create({
+        const invitation = await prisma.jobProfileInvitation.create({
           data: {
             candidateEmail: candidateEmail,
             candidateName: candidateName,
-            testId: firstTest.id,
+            jobProfileId: jobProfileId,
             createdById: session.user.id,
             expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
           },
         });
 
         // Send email
-        const testLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/test/${invitation.id}`;
+        const testLink = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/job-profile-test/${invitation.id}`;
+        const positionNames = jobProfile.positions
+          .map((p) => p.name)
+          .join(', ');
+        const testTitles = jobProfile.testWeights
+          .map((tw) => tw.test.title)
+          .join(', ');
+
         const emailData: InvitationEmailData = {
           candidateEmail: candidateEmail,
-          testTitle: `${jobProfile.name} - ${firstTest.title}`,
+          testTitle: `${jobProfile.name} - ${positionNames}`,
           testLink,
           expiresAt: invitation.expiresAt,
           companyName: 'Combat Robotics India',
           customMessage:
             customMessage ||
-            `You have been invited to complete the assessment for the ${jobProfile.name} position.`,
+            `You have been invited to complete the assessment for the ${jobProfile.name} position. This includes the following tests: ${testTitles}`,
         };
 
         const emailResult = await sendInvitationEmail(emailData);
 
         if (emailResult.success) {
           // Update invitation to mark email as sent
-          await prisma.invitation.update({
+          await prisma.jobProfileInvitation.update({
             where: { id: invitation.id },
             data: {
               status: 'SENT',

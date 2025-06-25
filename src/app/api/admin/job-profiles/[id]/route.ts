@@ -21,16 +21,31 @@ export async function GET(
     }
 
     const { id } = await params;
-    const jobProfile = await prisma.position.findUnique({
+    const jobProfile = await prisma.jobProfile.findUnique({
       where: { id },
       include: {
-        testsMany: {
+        positions: {
+          where: {
+            isActive: true,
+          },
+        },
+        testWeights: {
           include: {
-            questions: {
-              select: {
-                id: true,
+            test: {
+              include: {
+                questions: {
+                  select: {
+                    id: true,
+                  },
+                },
               },
             },
+          },
+        },
+        invitations: true,
+        _count: {
+          select: {
+            invitations: true,
           },
         },
       },
@@ -51,27 +66,30 @@ export async function GET(
       isActive: jobProfile.isActive,
       createdAt: jobProfile.createdAt.toISOString(),
       updatedAt: jobProfile.updatedAt.toISOString(),
-      positions: [
-        {
-          id: jobProfile.id,
-          name: jobProfile.name,
-          code: jobProfile.code,
-          description: jobProfile.description,
-          department: jobProfile.department,
-          level: jobProfile.level,
-          isActive: jobProfile.isActive,
-        },
-      ],
-      tests: jobProfile.testsMany.map((test: any) => ({
-        id: test.id,
-        title: test.title,
-        description: test.description,
-        questionsCount: test.questions.length,
-        isArchived: test.isArchived,
+      positions: jobProfile.positions.map((position) => ({
+        id: position.id,
+        name: position.name,
+        code: position.code,
+        description: position.description,
+        department: position.department,
+        level: position.level,
+        isActive: position.isActive,
       })),
+      tests: jobProfile.testWeights
+        .filter((tw) => tw.test && !tw.test.isArchived)
+        .map((testWeight) => ({
+          id: testWeight.test.id,
+          title: testWeight.test.title,
+          description: testWeight.test.description,
+          questionsCount: testWeight.test.questions.length,
+          isArchived: testWeight.test.isArchived,
+          weight: testWeight.weight,
+        })),
       _count: {
-        invitations: 0,
-        completedInvitations: 0,
+        invitations: jobProfile._count.invitations,
+        completedInvitations: jobProfile.invitations.filter(
+          (inv) => inv.status === 'COMPLETED'
+        ).length,
       },
     };
 
@@ -101,41 +119,70 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, description, isActive, positionIds, testIds } = body;
+    const { name, description, isActive, positionIds, testIds, testWeights } =
+      body;
 
     // Validate required fields
-    if (!name || !testIds?.length) {
+    if (!name || !positionIds?.length || !testIds?.length) {
       return NextResponse.json(
-        { error: 'Name and tests are required' },
+        { error: 'Name, positions, and tests are required' },
         { status: 400 }
       );
     }
 
     const { id } = await params;
-    // Update the position (job profile)
-    const jobProfile = await prisma.position.update({
-      where: { id },
-      data: {
-        name,
-        code: name.toLowerCase().replace(/\s+/g, '-'),
-        description,
-        isActive: isActive ?? true,
-        // Update the many-to-many relationship
-        testsMany: {
-          set: testIds.map((id: string) => ({ id })),
+
+    // Update the job profile with transaction to handle both positions and test weights
+    const jobProfile = await prisma.$transaction(async (tx) => {
+      // First, delete existing test weights
+      await tx.testWeight.deleteMany({
+        where: { jobProfileId: id },
+      });
+
+      // Then update the job profile with new data
+      return await tx.jobProfile.update({
+        where: { id },
+        data: {
+          name,
+          description,
+          isActive: isActive ?? true,
+          positions: {
+            set: positionIds.map((positionId: string) => ({ id: positionId })),
+          },
+          testWeights: {
+            create: testIds.map((testId: string, index: number) => ({
+              testId,
+              weight: testWeights?.[index] || 1.0,
+            })),
+          },
         },
-      },
-      include: {
-        testsMany: {
-          include: {
-            questions: {
-              select: {
-                id: true,
+        include: {
+          positions: {
+            where: {
+              isActive: true,
+            },
+          },
+          testWeights: {
+            include: {
+              test: {
+                include: {
+                  questions: {
+                    select: {
+                      id: true,
+                    },
+                  },
+                },
               },
             },
           },
+          invitations: true,
+          _count: {
+            select: {
+              invitations: true,
+            },
+          },
         },
-      },
+      });
     });
 
     // Transform the response
@@ -146,27 +193,30 @@ export async function PUT(
       isActive: jobProfile.isActive,
       createdAt: jobProfile.createdAt.toISOString(),
       updatedAt: jobProfile.updatedAt.toISOString(),
-      positions: [
-        {
-          id: jobProfile.id,
-          name: jobProfile.name,
-          code: jobProfile.code,
-          description: jobProfile.description,
-          department: jobProfile.department,
-          level: jobProfile.level,
-          isActive: jobProfile.isActive,
-        },
-      ],
-      tests: jobProfile.testsMany.map((test: any) => ({
-        id: test.id,
-        title: test.title,
-        description: test.description,
-        questionsCount: test.questions.length,
-        isArchived: test.isArchived,
+      positions: jobProfile.positions.map((position) => ({
+        id: position.id,
+        name: position.name,
+        code: position.code,
+        description: position.description,
+        department: position.department,
+        level: position.level,
+        isActive: position.isActive,
       })),
+      tests: jobProfile.testWeights
+        .filter((tw) => tw.test && !tw.test.isArchived)
+        .map((testWeight) => ({
+          id: testWeight.test.id,
+          title: testWeight.test.title,
+          description: testWeight.test.description,
+          questionsCount: testWeight.test.questions.length,
+          isArchived: testWeight.test.isArchived,
+          weight: testWeight.weight,
+        })),
       _count: {
-        invitations: 0,
-        completedInvitations: 0,
+        invitations: jobProfile._count.invitations,
+        completedInvitations: jobProfile.invitations.filter(
+          (inv) => inv.status === 'COMPLETED'
+        ).length,
       },
     };
 
@@ -196,13 +246,14 @@ export async function DELETE(
     }
 
     const { id } = await params;
+
     // Check if the job profile exists
-    const jobProfile = await prisma.position.findUnique({
+    const jobProfile = await prisma.jobProfile.findUnique({
       where: { id },
       include: {
         _count: {
           select: {
-            testsMany: true,
+            invitations: true,
           },
         },
       },
@@ -217,14 +268,10 @@ export async function DELETE(
 
     // For safety, we'll just mark it as inactive instead of deleting
     // In a production system, you might want to check for dependencies first
-    await prisma.position.update({
+    await prisma.jobProfile.update({
       where: { id },
       data: {
         isActive: false,
-        // Disconnect all tests
-        testsMany: {
-          set: [],
-        },
       },
     });
 

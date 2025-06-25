@@ -30,7 +30,7 @@ export async function DELETE(
     }
 
     // Check if invitation exists
-    const invitation = await prisma.invitation.findUnique({
+    const invitation = await prisma.jobProfileInvitation.findUnique({
       where: { id: invitationId },
     });
 
@@ -42,7 +42,7 @@ export async function DELETE(
     }
 
     // Delete the invitation
-    await prisma.invitation.delete({
+    await prisma.jobProfileInvitation.delete({
       where: { id: invitationId },
     });
 
