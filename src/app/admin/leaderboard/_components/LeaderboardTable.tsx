@@ -7,6 +7,7 @@ import {
   Eye,
   ChevronRight,
   ChevronLeft,
+  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -51,6 +52,7 @@ interface LeaderboardTableProps {
   onPageChange?: (page: number) => void; // Make optional since we removed pagination
   onSort: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
   showWeightedScores?: boolean;
+  userRole?: string;
 }
 
 const InlineBar = ({ value, max = 100 }: { value: number; max?: number }) => {
@@ -132,10 +134,15 @@ export default function LeaderboardTable({
   onPageChange,
   onSort,
   showWeightedScores = false,
+  userRole,
 }: LeaderboardTableProps) {
   const { toggle, isSelected, selected, startCompare, clear } =
     useCompareStore();
   const [showDetailedColumns, setShowDetailedColumns] = useState(false);
+  const [deletingAttemptId, setDeletingAttemptId] = useState<string | null>(
+    null
+  );
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const formatDate = (date: Date): string => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -182,6 +189,41 @@ export default function LeaderboardTable({
   };
 
   const visibleColumns = getVisibleColumns();
+
+  const handleDeleteAttempt = async (attemptId: string) => {
+    if (
+      !confirm(
+        'Are you sure you want to delete this test attempt? This action cannot be undone.'
+      )
+    ) {
+      setConfirmDeleteId(null);
+      return;
+    }
+
+    setDeletingAttemptId(attemptId);
+    try {
+      const response = await fetch(`/api/admin/test-attempts/${attemptId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete test attempt');
+      }
+
+      // Refresh the page to update the data
+      window.location.reload();
+    } catch (error) {
+      alert(
+        `Failed to delete test attempt: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    } finally {
+      setDeletingAttemptId(null);
+      setConfirmDeleteId(null);
+    }
+  };
+
+  const isSuperAdmin = userRole === 'SUPER_ADMIN';
 
   return (
     <div className="overflow-hidden rounded-lg bg-white shadow">
@@ -471,6 +513,23 @@ export default function LeaderboardTable({
                     >
                       {isSelected(candidate.attemptId) ? '✓' : '+'}
                     </button>
+                    {isSuperAdmin && (
+                      <button
+                        onClick={() => handleDeleteAttempt(candidate.attemptId)}
+                        disabled={deletingAttemptId === candidate.attemptId}
+                        className="inline-flex items-center rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-200 disabled:opacity-50"
+                        title="Delete test attempt"
+                      >
+                        {deletingAttemptId === candidate.attemptId ? (
+                          <span className="animate-pulse">...</span>
+                        ) : (
+                          <>
+                            <Trash2 className="mr-0.5 h-3 w-3" />
+                            Delete
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

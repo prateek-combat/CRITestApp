@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
+import { useSession } from 'next-auth/react';
+import { Trash2 } from 'lucide-react';
 
 interface ProctorEvent {
   id: string;
@@ -109,12 +111,15 @@ interface AnalysisData {
 
 export default function ProctorAnalysisPage() {
   const params = useParams();
+  const router = useRouter();
+  const { data: session } = useSession();
   const attemptId = params.attemptId as string;
 
   const [data, setData] = useState<AnalysisData | null>(null);
   const [questionsData, setQuestionsData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingAttempt, setDeletingAttempt] = useState(false);
   const [selectedTab, setSelectedTab] = useState<
     'overview' | 'video' | 'events' | 'analysis' | 'questions'
   >('overview');
@@ -242,6 +247,39 @@ export default function ProctorAnalysisPage() {
   const pasteDetectedCount = countSpecificEvents('PASTE_DETECTED');
   const windowBlurCount = countSpecificEvents('WINDOW_BLUR');
 
+  const handleDeleteAttempt = async () => {
+    if (
+      !confirm(
+        'Are you sure you want to delete this test attempt? This action cannot be undone.'
+      )
+    ) {
+      return;
+    }
+
+    setDeletingAttempt(true);
+    try {
+      const response = await fetch(`/api/admin/test-attempts/${attemptId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete test attempt');
+      }
+
+      alert('Test attempt deleted successfully');
+      router.push('/admin/analytics');
+    } catch (error) {
+      alert(
+        `Failed to delete test attempt: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    } finally {
+      setDeletingAttempt(false);
+    }
+  };
+
+  const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -256,12 +294,31 @@ export default function ProctorAnalysisPage() {
                 {testAttempt.test.title} - {testAttempt.candidateName}
               </p>
             </div>
-            <Link
-              href="/admin/analytics"
-              className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
-            >
-              ← Back to Analytics
-            </Link>
+            <div className="flex items-center space-x-2">
+              {isSuperAdmin && (
+                <button
+                  onClick={handleDeleteAttempt}
+                  disabled={deletingAttempt}
+                  className="inline-flex items-center rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-200 disabled:opacity-50"
+                  title="Delete test attempt"
+                >
+                  {deletingAttempt ? (
+                    <span className="animate-pulse">Deleting...</span>
+                  ) : (
+                    <>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Attempt
+                    </>
+                  )}
+                </button>
+              )}
+              <Link
+                href="/admin/analytics"
+                className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+              >
+                ← Back to Analytics
+              </Link>
+            </div>
           </div>
         </div>
       </div>
