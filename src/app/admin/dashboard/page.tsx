@@ -2,31 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { useAutoAnimate } from '@formkit/auto-animate/react';
-import {
-  FileText,
-  Mail,
-  Users,
-  BarChart3,
-  Plus,
-  Activity,
-  Send,
-  CheckCircle,
-  TrendingUp,
-  Clock,
-  ArrowRight,
-} from 'lucide-react';
-import Card from '@/components/ui/Card';
-import Button from '@/components/ui/button/Button';
-import Skeleton from '@/components/ui/Skeleton';
-import { designSystem, componentStyles } from '@/lib/design-system';
 
 interface DashboardStats {
   totalTests: number;
   totalInvitations: number;
   totalAttempts: number;
-  completionRate: number;
   activeTests: number;
 }
 
@@ -37,46 +17,15 @@ interface ActivityItem {
   timestamp: string;
 }
 
-const StatCard = ({ icon: Icon, title, value, color, delay }: any) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.4, delay }}
-  >
-    <div className={componentStyles.card}>
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <p className={`${designSystem.text.small} mb-1`}>{title}</p>
-          <motion.p
-            className="text-2xl font-bold text-gray-900"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', delay: delay + 0.2 }}
-          >
-            {value}
-          </motion.p>
-        </div>
-        <div
-          className={`rounded-lg p-2.5 ${color} transition-transform group-hover:scale-110`}
-        >
-          <Icon className="h-5 w-5 text-white" />
-        </div>
-      </div>
-    </div>
-  </motion.div>
-);
-
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
     totalTests: 0,
     totalInvitations: 0,
     totalAttempts: 0,
-    completionRate: 0,
     activeTests: 0,
   });
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [animationParent] = useAutoAnimate();
 
   useEffect(() => {
     fetchDashboardData();
@@ -91,7 +40,6 @@ export default function DashboardPage() {
           totalTests: data.totalTests,
           totalInvitations: data.totalInvitations,
           totalAttempts: data.totalAttempts,
-          completionRate: data.completionRate,
           activeTests: data.activeTests,
         });
         setRecentActivity(data.recentActivity || []);
@@ -103,193 +51,258 @@ export default function DashboardPage() {
     }
   };
 
-  const quickActions = [
-    {
-      href: '/admin/tests/new',
-      label: 'Create Test',
-      icon: Plus,
-      color: 'text-military-green',
-    },
-    {
-      href: '/admin/tests',
-      label: 'Manage Tests',
-      icon: FileText,
-      color: 'text-accent-orange',
-    },
-    {
-      href: '/admin/analytics',
-      label: 'View Analytics',
-      icon: BarChart3,
-      color: 'text-military-green',
-    },
-    {
-      href: '/admin/users',
-      label: 'Manage Users',
-      icon: Users,
-      color: 'text-accent-orange',
-    },
-  ];
+  if (loading) {
+    return (
+      <div className="flex min-h-64 items-center justify-center">
+        <div className="text-gray-600">Loading dashboard...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className={componentStyles.pageContainer}>
-      <div className={componentStyles.contentWrapper}>
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className={designSystem.gaps.section}
-        >
-          <h1 className={designSystem.text.pageTitle}>Dashboard</h1>
-          <p className={designSystem.text.pageSubtitle}>
-            Welcome back to Test Platform
-          </p>
-        </motion.div>
+    <div className="min-h-screen space-y-6 bg-gray-50 p-6">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="mb-2 text-2xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-gray-600">Welcome back to Test Platform</p>
+      </div>
 
-        {/* Stats Grid */}
-        <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
-          {loading ? (
-            <>
-              {[...Array(4)].map((_, i) => (
-                <Skeleton
-                  key={i}
-                  variant="rectangular"
-                  height={100}
-                  className="rounded-xl"
+      {/* Stats Overview */}
+      <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+        {/* Total Tests */}
+        <div className="rounded-lg border bg-white p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="mb-1 text-sm font-medium text-gray-600">
+                Total Tests
+              </p>
+              <p className="text-3xl font-bold text-gray-900">
+                {stats.totalTests}
+              </p>
+            </div>
+            <div className="rounded-lg bg-blue-100 p-3">
+              <svg
+                className="h-6 w-6 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
-              ))}
-            </>
-          ) : (
-            <>
-              <StatCard
-                icon={FileText}
-                title="Total Tests"
-                value={stats.totalTests}
-                color="bg-gradient-to-br from-military-green to-primary-600"
-                delay={0}
-              />
-              <StatCard
-                icon={CheckCircle}
-                title="Active Tests"
-                value={stats.activeTests}
-                color="bg-gradient-to-br from-green-500 to-green-600"
-                delay={0.1}
-              />
-              <StatCard
-                icon={Users}
-                title="Total Attempts"
-                value={stats.totalAttempts}
-                color="bg-gradient-to-br from-blue-500 to-blue-600"
-                delay={0.2}
-              />
-              <StatCard
-                icon={TrendingUp}
-                title="Completion Rate"
-                value={`${stats.completionRate}%`}
-                color="bg-gradient-to-br from-purple-500 to-purple-600"
-                delay={0.3}
-              />
-            </>
-          )}
+              </svg>
+            </div>
+          </div>
         </div>
 
-        {/* Quick Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-        >
-          <div className={`${componentStyles.card} mb-6`}>
-            <h2 className={`${designSystem.text.sectionTitle} mb-4`}>
-              Quick Actions
-            </h2>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
-              {quickActions.map((action, index) => (
-                <motion.div
-                  key={action.href}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, delay: 0.5 + index * 0.1 }}
-                >
-                  <Link href={action.href}>
-                    <motion.div
-                      className={`flex items-center justify-between rounded-lg p-3 ${designSystem.borders.default} group cursor-pointer transition-all hover:border-military-green/30 hover:bg-military-green/5`}
-                      whileHover={{ x: 2 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <action.icon className={`h-4 w-4 ${action.color}`} />
-                        <span className={designSystem.text.body}>
-                          {action.label}
-                        </span>
-                      </div>
-                      <ArrowRight className="h-4 w-4 text-gray-400 transition-colors group-hover:text-military-green" />
-                    </motion.div>
-                  </Link>
-                </motion.div>
-              ))}
+        {/* Active Tests */}
+        <div className="rounded-lg border bg-white p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="mb-1 text-sm font-medium text-gray-600">
+                Active Tests
+              </p>
+              <p className="text-3xl font-bold text-gray-900">
+                {stats.activeTests}
+              </p>
+            </div>
+            <div className="rounded-lg bg-green-100 p-3">
+              <svg
+                className="h-6 w-6 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
             </div>
           </div>
-        </motion.div>
+        </div>
 
-        {/* Recent Activity */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-        >
-          <div className={componentStyles.card}>
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className={designSystem.text.sectionTitle}>
-                Recent Activity
-              </h2>
-              <Activity className="h-5 w-5 text-gray-400" />
+        {/* Total Attempts */}
+        <div className="rounded-lg border bg-white p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="mb-1 text-sm font-medium text-gray-600">
+                Total Attempts
+              </p>
+              <p className="text-3xl font-bold text-gray-900">
+                {stats.totalAttempts}
+              </p>
             </div>
+            <div className="rounded-lg bg-purple-100 p-3">
+              <svg
+                className="h-6 w-6 text-purple-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
 
-            <div ref={animationParent} className="space-y-2">
-              {loading ? (
-                <>
-                  {[...Array(5)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-3">
-                      <Skeleton variant="circular" width={32} height={32} />
-                      <div className="flex-1 space-y-1">
-                        <Skeleton variant="text" width="75%" />
-                        <Skeleton variant="text" width="50%" height={12} />
-                      </div>
-                    </div>
-                  ))}
-                </>
-              ) : recentActivity.length === 0 ? (
-                <div className="py-8 text-center text-gray-500">
-                  <Activity className="mx-auto mb-2 h-12 w-12 opacity-20" />
-                  <p>No recent activity</p>
-                </div>
-              ) : (
-                recentActivity.map((activity, index) => (
-                  <motion.div
-                    key={activity.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: 0.7 + index * 0.1 }}
-                    className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50"
+      {/* Quick Actions */}
+      <div className="mb-8 rounded-lg border bg-white p-6">
+        <h2 className="mb-6 text-xl font-semibold text-gray-900">
+          Quick Actions
+        </h2>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Link
+            href="/admin/tests/new"
+            className="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-4 text-gray-700 hover:bg-gray-50"
+          >
+            <svg
+              className="mr-3 h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            Create Test
+          </Link>
+
+          <Link
+            href="/admin/tests"
+            className="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-4 text-gray-700 hover:bg-gray-50"
+          >
+            <svg
+              className="mr-3 h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
+            </svg>
+            Manage Tests
+          </Link>
+
+          <Link
+            href="/admin/analytics"
+            className="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-4 text-gray-700 hover:bg-gray-50"
+          >
+            <svg
+              className="mr-3 h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+              />
+            </svg>
+            View Analytics
+          </Link>
+
+          <Link
+            href="/admin/users"
+            className="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-4 text-gray-700 hover:bg-gray-50"
+          >
+            <svg
+              className="mr-3 h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+              />
+            </svg>
+            Manage Users
+          </Link>
+        </div>
+      </div>
+
+      {/* Recent Activity */}
+      <div className="rounded-lg border bg-white p-6">
+        <h2 className="mb-6 text-xl font-semibold text-gray-900">
+          Recent Activity
+        </h2>
+        {loading ? (
+          <div className="text-gray-500">Loading activity...</div>
+        ) : recentActivity.length === 0 ? (
+          <div className="py-8 text-center">
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"
+              />
+            </svg>
+            <p className="mt-2 text-gray-500">No recent activity</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {recentActivity.map((activity) => (
+              <div
+                key={activity.id}
+                className="flex items-start space-x-3 border-b border-gray-100 py-3 last:border-b-0"
+              >
+                <div className="flex-shrink-0 rounded-full bg-blue-100 p-2">
+                  <svg
+                    className="h-4 w-4 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-military-green/10 to-accent-orange/10">
-                      <Clock className="h-4 w-4 text-military-green" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className={`${designSystem.text.body} truncate`}>
-                        {activity.description}
-                      </p>
-                      <p className={designSystem.text.small}>
-                        {new Date(activity.timestamp).toLocaleString()}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))
-              )}
-            </div>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-900">
+                    {activity.description}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {new Date(activity.timestamp).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
-        </motion.div>
+        )}
       </div>
     </div>
   );
