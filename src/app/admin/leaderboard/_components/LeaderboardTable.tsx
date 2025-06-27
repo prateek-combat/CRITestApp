@@ -8,6 +8,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Trash2,
+  Download,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -143,6 +144,7 @@ export default function LeaderboardTable({
     null
   );
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [exportingPdf, setExportingPdf] = useState<string | null>(null);
 
   const formatDate = (date: Date): string => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -220,6 +222,41 @@ export default function LeaderboardTable({
     } finally {
       setDeletingAttemptId(null);
       setConfirmDeleteId(null);
+    }
+  };
+
+  const handleExportPdf = async (attemptId: string, candidateName: string) => {
+    try {
+      setExportingPdf(attemptId);
+
+      const response = await fetch('/api/admin/leaderboard/export-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ attemptId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF');
+      }
+
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `${candidateName.replace(/[^a-zA-Z0-9]/g, '_')}_test_results.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      alert('Failed to export PDF. Please try again.');
+    } finally {
+      setExportingPdf(null);
     }
   };
 
@@ -491,6 +528,26 @@ export default function LeaderboardTable({
                       <Eye className="mr-0.5 h-3 w-3" />
                       Analysis
                     </Link>
+                    <button
+                      onClick={() =>
+                        handleExportPdf(
+                          candidate.attemptId,
+                          candidate.candidateName
+                        )
+                      }
+                      disabled={exportingPdf === candidate.attemptId}
+                      className="inline-flex items-center rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-200 disabled:opacity-50"
+                      title="Export PDF Report"
+                    >
+                      {exportingPdf === candidate.attemptId ? (
+                        <span className="animate-pulse">...</span>
+                      ) : (
+                        <>
+                          <Download className="mr-0.5 h-3 w-3" />
+                          PDF
+                        </>
+                      )}
+                    </button>
                     <button
                       onClick={() => toggle(candidate.attemptId)}
                       disabled={

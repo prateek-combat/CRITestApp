@@ -25,6 +25,7 @@ export interface TestAttemptData {
       questionType: 'OBJECTIVE' | 'PERSONALITY';
       personalityDimension?: PersonalityDimension;
       answerWeights?: Record<string, number>;
+      correctAnswerIndex?: number;
     }>;
   };
   answers: Record<string, { answerIndex: number; timeTaken: number }>;
@@ -51,28 +52,29 @@ export class PDFReportGenerator {
   }
 
   private addSectionHeader(title: string, color: string = '#2563eb'): void {
-    this.checkNewPage(15);
+    this.checkNewPage(25);
     this.pdf.setFontSize(16);
     this.pdf.setFont('helvetica', 'bold');
     this.pdf.setTextColor(color);
     this.pdf.text(title, 20, this.yPosition);
     this.yPosition += 8;
-    this.pdf.setDrawColor(220, 220, 220);
+    this.pdf.setDrawColor(200, 200, 200);
+    this.pdf.setLineWidth(0.5);
     this.pdf.line(20, this.yPosition, this.pageWidth - 20, this.yPosition);
-    this.yPosition += 10;
+    this.yPosition += 15;
   }
 
-  private addParagraph(text: string, fontSize: number = 11): void {
+  private addParagraph(text: string, fontSize: number = 12): void {
     this.pdf.setFontSize(fontSize);
     this.pdf.setFont('helvetica', 'normal');
     this.pdf.setTextColor('#374151');
     const lines = this.pdf.splitTextToSize(text, this.pageWidth - 40);
     lines.forEach((line: string) => {
-      this.checkNewPage(6);
+      this.checkNewPage(7);
       this.pdf.text(line, 20, this.yPosition);
-      this.yPosition += 6;
+      this.yPosition += 7;
     });
-    this.yPosition += 5;
+    this.yPosition += 6;
   }
 
   private drawRadarChart(
@@ -449,6 +451,475 @@ export class PDFReportGenerator {
     // Save the PDF
     const fileName = `Assessment_Report_${testAttempt.candidateName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
     this.pdf.save(fileName);
+  }
+
+  public async generateQAReport(
+    testAttempt: TestAttemptData
+  ): Promise<Uint8Array> {
+    // Reset PDF for new report
+    this.pdf = new jsPDF('p', 'mm', 'a4');
+    this.pageWidth = this.pdf.internal.pageSize.getWidth();
+    this.pageHeight = this.pdf.internal.pageSize.getHeight();
+    this.yPosition = 20;
+
+    // Title and Header
+    this.pdf.setFontSize(22);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.setTextColor('#1a1a1a');
+    this.pdf.text('Test Results Summary', 20, this.yPosition);
+    this.yPosition += 15;
+
+    // Candidate Info
+    this.pdf.setFontSize(11);
+    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.setTextColor('#666666');
+    this.pdf.text(
+      `Candidate: ${testAttempt.candidateName}`,
+      20,
+      this.yPosition
+    );
+    this.yPosition += 6;
+    this.pdf.text(`Email: ${testAttempt.candidateEmail}`, 20, this.yPosition);
+    this.yPosition += 6;
+    this.pdf.text(`Test: ${testAttempt.test.title}`, 20, this.yPosition);
+    this.yPosition += 6;
+    this.pdf.text(
+      `Date: ${new Date().toLocaleDateString()}`,
+      20,
+      this.yPosition
+    );
+    this.yPosition += 20;
+
+    // Score Summary
+    const cognitivePercentage =
+      (testAttempt.objectiveScore / testAttempt.totalQuestions) * 100;
+    this.pdf.setFontSize(14);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.setTextColor('#2e7d32');
+    this.pdf.text(
+      `Overall Score: ${testAttempt.objectiveScore}/${testAttempt.totalQuestions} (${cognitivePercentage.toFixed(1)}%)`,
+      20,
+      this.yPosition
+    );
+    this.yPosition += 20;
+
+    // Questions and Answers Section
+    this.addSectionHeader('Questions & Answers', '#2563eb');
+
+    const objectiveQuestions = testAttempt.test.questions.filter(
+      (q) => q.questionType !== 'PERSONALITY'
+    );
+
+    objectiveQuestions.forEach((question, index) => {
+      this.checkNewPage(35); // Ensure enough space for question block
+
+      // Question number and text
+      this.pdf.setFontSize(12);
+      this.pdf.setFont('helvetica', 'bold');
+      this.pdf.setTextColor('#1a1a1a');
+      this.pdf.text(`Question ${index + 1}:`, 20, this.yPosition);
+      this.yPosition += 7;
+
+      // Question text (wrapped)
+      this.pdf.setFontSize(11);
+      this.pdf.setFont('helvetica', 'normal');
+      this.pdf.setTextColor('#333333');
+      const questionLines = this.pdf.splitTextToSize(
+        question.promptText,
+        this.pageWidth - 50
+      );
+      questionLines.forEach((line: string) => {
+        this.pdf.text(line, 25, this.yPosition);
+        this.yPosition += 5;
+      });
+      this.yPosition += 6;
+
+      // Answer options with indicators
+      const userAnswer = testAttempt.answers[question.id];
+      const userAnswerIndex = userAnswer?.answerIndex;
+      const correctIndex = question.correctAnswerIndex;
+
+      question.answerOptions.forEach((option, optionIndex) => {
+        this.checkNewPage(6);
+        const letter = String.fromCharCode(65 + optionIndex); // A, B, C, D
+        let prefix = `${letter}) `;
+        let color = '#666666'; // Default gray
+
+        // Mark user's answer and correct answer
+        if (optionIndex === userAnswerIndex && optionIndex === correctIndex) {
+          prefix = `${letter}) ✓ `;
+          color = '#2e7d32'; // Green for correct answer
+          this.pdf.setFont('helvetica', 'bold');
+        } else if (optionIndex === userAnswerIndex) {
+          prefix = `${letter}) ✗ `;
+          color = '#d32f2f'; // Red for wrong answer
+          this.pdf.setFont('helvetica', 'bold');
+        } else if (optionIndex === correctIndex) {
+          prefix = `${letter}) ✓ `;
+          color = '#2e7d32'; // Green for correct answer
+          this.pdf.setFont('helvetica', 'normal');
+        } else {
+          this.pdf.setFont('helvetica', 'normal');
+        }
+
+        this.pdf.setFontSize(10);
+        this.pdf.setTextColor(color);
+
+        // Split long option text if needed
+        const optionText = prefix + option;
+        const optionLines = this.pdf.splitTextToSize(
+          optionText,
+          this.pageWidth - 80
+        );
+        optionLines.forEach((line: string) => {
+          this.checkNewPage(4);
+          this.pdf.text(line, 30, this.yPosition);
+          this.yPosition += 4;
+        });
+        this.yPosition += 2;
+      });
+
+      // Add spacing between questions
+      this.yPosition += 12;
+    });
+
+    // Generate and return PDF as Uint8Array
+    return new Uint8Array(this.pdf.output('arraybuffer'));
+  }
+
+  public async generateBulkQAReport(
+    testAttempts: TestAttemptData[],
+    positionName?: string
+  ): Promise<Uint8Array> {
+    // Reset PDF for new report
+    this.pdf = new jsPDF('p', 'mm', 'a4');
+    this.pageWidth = this.pdf.internal.pageSize.getWidth();
+    this.pageHeight = this.pdf.internal.pageSize.getHeight();
+    this.yPosition = 20;
+
+    // Title and Header
+    this.pdf.setFontSize(22);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.setTextColor('#1a1a1a');
+    const title = positionName
+      ? `Test Comparison - ${positionName}`
+      : 'Bulk Test Comparison';
+    this.pdf.text(title, 20, this.yPosition);
+    this.yPosition += 15;
+
+    // Summary
+    this.pdf.setFontSize(11);
+    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.setTextColor('#666666');
+    this.pdf.text(
+      `Total Candidates: ${testAttempts.length}`,
+      20,
+      this.yPosition
+    );
+    this.yPosition += 6;
+    this.pdf.text(
+      `Generated: ${new Date().toLocaleDateString()}`,
+      20,
+      this.yPosition
+    );
+    this.yPosition += 20;
+
+    // Legend Section
+    this.addSectionHeader('How to Read This Report', '#d32f2f');
+
+    // Create a clean legend box
+    this.pdf.setFillColor(252, 252, 252);
+    this.pdf.rect(20, this.yPosition - 2, this.pageWidth - 40, 25, 'F');
+    this.pdf.setDrawColor('#e0e0e0');
+    this.pdf.setLineWidth(0.5);
+    this.pdf.rect(20, this.yPosition - 2, this.pageWidth - 40, 25, 'S');
+
+    this.pdf.setFontSize(9);
+    this.pdf.setFont('helvetica', 'normal');
+    this.pdf.setTextColor('#444444');
+
+    this.pdf.text(
+      '• Correct answers are highlighted with blue backgrounds and marked with ✓ CORRECT',
+      25,
+      this.yPosition + 4
+    );
+    this.pdf.text(
+      '• Candidate names are displayed in a clean grid format under each option',
+      25,
+      this.yPosition + 8
+    );
+    this.pdf.text(
+      '• Green text indicates candidates who selected the correct answer',
+      25,
+      this.yPosition + 12
+    );
+    this.pdf.text(
+      '• Red text indicates candidates who selected incorrect answers',
+      25,
+      this.yPosition + 16
+    );
+    this.pdf.text(
+      '• Success rates are shown both in question headers and summary sections',
+      25,
+      this.yPosition + 20
+    );
+
+    this.yPosition += 35;
+
+    // Candidates Summary
+    this.addSectionHeader('Candidate Scores', '#1976d2');
+
+    // Create table header
+    this.pdf.setFillColor(240, 248, 255);
+    this.pdf.rect(20, this.yPosition - 2, this.pageWidth - 40, 8, 'F');
+    this.pdf.setFontSize(9);
+    this.pdf.setFont('helvetica', 'bold');
+    this.pdf.setTextColor('#1976d2');
+    this.pdf.text('Rank', 25, this.yPosition + 3);
+    this.pdf.text('Candidate Name', 45, this.yPosition + 3);
+    this.pdf.text('Score', this.pageWidth - 80, this.yPosition + 3);
+    this.pdf.text('Percentage', this.pageWidth - 45, this.yPosition + 3);
+    this.yPosition += 12;
+
+    // Sort candidates by score for ranking
+    const sortedAttempts = [...testAttempts].sort(
+      (a, b) => b.objectiveScore - a.objectiveScore
+    );
+
+    sortedAttempts.forEach((attempt, index) => {
+      this.checkNewPage(6);
+      const cognitivePercentage =
+        (attempt.objectiveScore / attempt.totalQuestions) * 100;
+
+      // Alternating row colors
+      if (index % 2 === 0) {
+        this.pdf.setFillColor(248, 250, 252);
+        this.pdf.rect(20, this.yPosition - 1, this.pageWidth - 40, 5, 'F');
+      }
+
+      this.pdf.setFontSize(9);
+      this.pdf.setFont('helvetica', 'normal');
+      this.pdf.setTextColor('#333333');
+
+      // Rank
+      this.pdf.text(`${index + 1}`, 27, this.yPosition + 2);
+
+      // Candidate name (truncate if too long)
+      let candidateName = attempt.candidateName;
+      if (candidateName.length > 25) {
+        candidateName = candidateName.substring(0, 22) + '...';
+      }
+      this.pdf.text(candidateName, 45, this.yPosition + 2);
+
+      // Score
+      this.pdf.text(
+        `${attempt.objectiveScore}/${attempt.totalQuestions}`,
+        this.pageWidth - 78,
+        this.yPosition + 2
+      );
+
+      // Percentage with color coding
+      if (cognitivePercentage >= 80) {
+        this.pdf.setTextColor('#2e7d32');
+      } else if (cognitivePercentage >= 60) {
+        this.pdf.setTextColor('#f57c00');
+      } else {
+        this.pdf.setTextColor('#d32f2f');
+      }
+      this.pdf.text(
+        `${cognitivePercentage.toFixed(1)}%`,
+        this.pageWidth - 40,
+        this.yPosition + 2
+      );
+
+      this.yPosition += 5;
+    });
+    this.yPosition += 20;
+
+    // Get questions from the first test (assuming all have same questions)
+    if (testAttempts.length === 0) {
+      return new Uint8Array(this.pdf.output('arraybuffer'));
+    }
+
+    const objectiveQuestions = testAttempts[0].test.questions.filter(
+      (q) => q.questionType !== 'PERSONALITY'
+    );
+
+    // Question-by-Question Analysis
+    this.addSectionHeader('Question-by-Question Analysis', '#1976d2');
+
+    objectiveQuestions.forEach((question, qIndex) => {
+      this.checkNewPage(60); // Ensure enough space for question block
+
+      // Group candidates by their answers first
+      const answerGroups: Record<number, string[]> = {};
+      testAttempts.forEach((attempt) => {
+        const userAnswer = attempt.answers[question.id];
+        if (userAnswer?.answerIndex !== undefined) {
+          const answerIndex = userAnswer.answerIndex;
+          if (!answerGroups[answerIndex]) {
+            answerGroups[answerIndex] = [];
+          }
+          answerGroups[answerIndex].push(attempt.candidateName);
+        }
+      });
+
+      // Question Header Box
+      this.pdf.setFillColor(248, 250, 252); // Light gray background
+      this.pdf.rect(20, this.yPosition - 2, this.pageWidth - 40, 15, 'F');
+
+      // Question number
+      this.pdf.setFontSize(11);
+      this.pdf.setFont('helvetica', 'bold');
+      this.pdf.setTextColor('#1976d2');
+      this.pdf.text(`Question ${qIndex + 1}`, 25, this.yPosition + 6);
+
+      // Question stats on the right
+      const questionTotalAnswered = Object.values(answerGroups).reduce(
+        (sum, candidates) => sum + candidates.length,
+        0
+      );
+      const questionCorrectCount =
+        answerGroups[question.correctAnswerIndex!]?.length || 0;
+      const questionAccuracy =
+        questionTotalAnswered > 0
+          ? ((questionCorrectCount / questionTotalAnswered) * 100).toFixed(0)
+          : '0';
+
+      this.pdf.setFontSize(9);
+      this.pdf.setTextColor('#666666');
+      this.pdf.text(
+        `${questionAccuracy}% correct`,
+        this.pageWidth - 45,
+        this.yPosition + 6
+      );
+
+      this.yPosition += 18;
+
+      // Question text (properly wrapped)
+      this.pdf.setFontSize(10);
+      this.pdf.setFont('helvetica', 'normal');
+      this.pdf.setTextColor('#333333');
+      const questionLines = this.pdf.splitTextToSize(
+        question.promptText,
+        this.pageWidth - 50
+      );
+      questionLines.forEach((line: string) => {
+        this.checkNewPage(4);
+        this.pdf.text(line, 25, this.yPosition);
+        this.yPosition += 4;
+      });
+      this.yPosition += 12;
+
+      // Display each answer option in a clean table format
+      question.answerOptions.forEach((option, optionIndex) => {
+        this.checkNewPage(20);
+        const letter = String.fromCharCode(65 + optionIndex);
+        const isCorrect = optionIndex === question.correctAnswerIndex;
+        const candidatesWhoSelected = answerGroups[optionIndex] || [];
+
+        // Draw option box background
+        if (isCorrect) {
+          this.pdf.setFillColor(240, 248, 255); // Light blue background for correct answer
+          this.pdf.rect(25, this.yPosition - 3, this.pageWidth - 50, 12, 'F');
+        }
+
+        // Option letter and text
+        this.pdf.setFontSize(10);
+        this.pdf.setFont('helvetica', 'bold');
+        this.pdf.setTextColor(isCorrect ? '#1976d2' : '#333333');
+
+        // Option letter in a circle/box
+        this.pdf.setDrawColor(isCorrect ? '#1976d2' : '#999999');
+        this.pdf.setLineWidth(1);
+        this.pdf.circle(30, this.yPosition + 2, 3, 'S');
+        this.pdf.text(letter, 28.5, this.yPosition + 3.5);
+
+        // Option text
+        this.pdf.setTextColor('#333333');
+        const optionLines = this.pdf.splitTextToSize(
+          option,
+          this.pageWidth - 90
+        );
+        let currentY = this.yPosition + 3;
+        optionLines.forEach((line: string) => {
+          this.pdf.text(line, 38, currentY);
+          currentY += 4;
+        });
+
+        // Correct answer indicator
+        if (isCorrect) {
+          this.pdf.setTextColor('#2e7d32');
+          this.pdf.setFont('helvetica', 'bold');
+          this.pdf.text('✓ CORRECT', this.pageWidth - 45, this.yPosition + 3);
+        }
+
+        this.yPosition = currentY + 2;
+
+        // Show candidates in a clean format
+        if (candidatesWhoSelected.length > 0) {
+          this.pdf.setFontSize(9);
+          this.pdf.setFont('helvetica', 'normal');
+          this.pdf.setTextColor(isCorrect ? '#2e7d32' : '#d32f2f');
+
+          // Header for candidate list
+          const headerText = isCorrect ? 'Selected by:' : 'Selected by:';
+          this.pdf.text(headerText, 40, this.yPosition);
+          this.yPosition += 4;
+
+          // Display candidates in a clean grid format
+          let currentX = 45;
+          let maxY = this.yPosition;
+          const nameSpacing = 85; // Fixed width for each name
+          const lineHeight = 4;
+
+          candidatesWhoSelected.forEach((name, index) => {
+            // Check if we need to move to next line
+            if (currentX + nameSpacing > this.pageWidth - 30) {
+              currentX = 45;
+              maxY += lineHeight;
+            }
+
+            this.checkNewPage(4);
+            this.pdf.text(`• ${name}`, currentX, maxY);
+            currentX += nameSpacing;
+          });
+
+          this.yPosition = maxY + 6;
+        } else {
+          this.pdf.setFontSize(9);
+          this.pdf.setFont('helvetica', 'italic');
+          this.pdf.setTextColor('#888888');
+          this.pdf.text(
+            'No candidates selected this option',
+            40,
+            this.yPosition
+          );
+          this.yPosition += 6;
+        }
+
+        // Add separator line
+        this.pdf.setDrawColor('#e0e0e0');
+        this.pdf.setLineWidth(0.3);
+        this.pdf.line(25, this.yPosition, this.pageWidth - 25, this.yPosition);
+        this.yPosition += 8;
+      });
+
+      // Final question summary
+      this.yPosition += 5;
+      this.pdf.setFontSize(9);
+      this.pdf.setFont('helvetica', 'bold');
+      this.pdf.setTextColor('#666666');
+      this.pdf.text(
+        `Overall Success Rate: ${questionAccuracy}% (${questionCorrectCount}/${questionTotalAnswered} candidates)`,
+        30,
+        this.yPosition
+      );
+      this.yPosition += 25; // Extra space between questions
+    });
+
+    // Generate and return PDF as Uint8Array
+    return new Uint8Array(this.pdf.output('arraybuffer'));
   }
 
   private getPersonalityData(
