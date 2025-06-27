@@ -15,6 +15,7 @@ import {
   Building2,
   Target,
   TestTube,
+  Download,
 } from 'lucide-react';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
 
@@ -173,6 +174,7 @@ export default function LeaderboardSidebarLayout({
 
   // NEW: State for right sidebar visibility
   const [isWeightsSidebarOpen, setIsWeightsSidebarOpen] = useState(true);
+  const [isExportingBulkPdf, setIsExportingBulkPdf] = useState(false);
 
   // Fetch weight profiles
   const fetchProfiles = useCallback(async () => {
@@ -445,6 +447,55 @@ export default function LeaderboardSidebarLayout({
     handleFilterChange(weightParams);
   };
 
+  const handleBulkExportPdf = async () => {
+    if (!data || !data.rows.length) {
+      alert('No data available to export');
+      return;
+    }
+
+    try {
+      setIsExportingBulkPdf(true);
+
+      const attemptIds = data.rows.map((row) => row.attemptId);
+      const positionName = selectedPosition?.name;
+
+      const response = await fetch('/api/admin/leaderboard/export-bulk-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          attemptIds,
+          positionName,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate bulk PDF');
+      }
+
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      const filename = positionName
+        ? `${positionName.replace(/[^a-zA-Z0-9]/g, '_')}_comparison.pdf`
+        : `test_comparison_${new Date().toISOString().split('T')[0]}.pdf`;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error exporting bulk PDF:', error);
+      alert('Failed to export bulk PDF. Please try again.');
+    } finally {
+      setIsExportingBulkPdf(false);
+    }
+  };
+
   return (
     <div className="flex h-[calc(100vh-8rem)] gap-3">
       {/* Left Sidebar - Position Selector */}
@@ -618,6 +669,21 @@ export default function LeaderboardSidebarLayout({
                     </div>
                     <div className="text-xs text-gray-500">avg score</div>
                   </div>
+                  <button
+                    onClick={handleBulkExportPdf}
+                    disabled={isExportingBulkPdf || !data.rows.length}
+                    className="inline-flex items-center rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-sm font-medium text-orange-700 transition-colors hover:bg-orange-100 disabled:opacity-50"
+                    title={`Export comparison view showing who answered what for each question`}
+                  >
+                    {isExportingBulkPdf ? (
+                      <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-orange-700 border-t-transparent"></span>
+                    ) : (
+                      <Download className="mr-2 h-4 w-4" />
+                    )}
+                    {isExportingBulkPdf
+                      ? 'Generating...'
+                      : 'Export Comparison PDF'}
+                  </button>
                 </div>
               )}
             </div>
