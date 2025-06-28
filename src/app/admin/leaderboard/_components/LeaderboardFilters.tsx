@@ -11,6 +11,12 @@ interface Test {
 interface JobProfile {
   id: string;
   name: string;
+  isActive?: boolean;
+  positions?: Array<{
+    id: string;
+    name: string;
+    isActive: boolean;
+  }>;
   testWeights: Array<{
     test: {
       id: string;
@@ -75,7 +81,7 @@ export default function LeaderboardFilters({
       const response = await fetch('/api/admin/job-profiles');
       if (response.ok) {
         const data = await response.json();
-        // Filter job profiles that have tests
+        // Filter job profiles that have tests (more inclusive filtering)
         const profilesWithTests = data.filter(
           (profile: JobProfile) =>
             profile.testWeights && profile.testWeights.length > 0
