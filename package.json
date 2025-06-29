@@ -52,7 +52,6 @@
     "papaparse": "^5.5.3",
     "pg-boss": "^9.0.3",
     "prismjs": "^1.30.0",
-    "puppeteer": "^24.11.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-intersection-observer": "^9.16.0",
@@ -89,6 +88,7 @@
     "prettier": "^3.6.0",
     "prettier-plugin-tailwindcss": "^0.6.13",
     "prisma": "^6.10.1",
+    "puppeteer": "^24.11.1",
     "typescript": "^5"
   },
   "lint-staged": {
