@@ -140,7 +140,7 @@ export async function PUT(
       });
 
       // Then update the job profile with new data
-      return await tx.jobProfile.update({
+      const updatedJobProfile = await tx.jobProfile.update({
         where: { id },
         data: {
           name,
@@ -183,6 +183,31 @@ export async function PUT(
           },
         },
       });
+
+      // Associate tests directly with positions for analytics/leaderboard visibility
+      // If multiple positions, associate with the first active position
+      const primaryPosition = updatedJobProfile.positions.find(
+        (p) => p.isActive
+      );
+      if (primaryPosition) {
+        for (const testId of testIds) {
+          // Check if test already has a position association
+          const existingTest = await tx.test.findUnique({
+            where: { id: testId },
+            select: { positionId: true },
+          });
+
+          // Only update if test doesn't have a position association
+          if (!existingTest?.positionId) {
+            await tx.test.update({
+              where: { id: testId },
+              data: { positionId: primaryPosition.id },
+            });
+          }
+        }
+      }
+
+      return updatedJobProfile;
     });
 
     // Transform the response

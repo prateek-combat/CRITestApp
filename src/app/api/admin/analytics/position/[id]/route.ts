@@ -5,6 +5,37 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// Retry helper function for database operations
+async function retryOperation<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  delay: number = 1000
+): Promise<T> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      // If this is the last attempt, throw the error
+      if (attempt === maxRetries) {
+        throw error;
+      }
+
+      // Check if it's a database connectivity error
+      if (
+        error.code === 'P1001' ||
+        error.message?.includes("Can't reach database")
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        delay *= 1.5; // Exponential backoff
+      } else {
+        // For non-connectivity errors, don't retry
+        throw error;
+      }
+    }
+  }
+  throw new Error('Max retries exceeded');
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -21,15 +52,17 @@ export async function GET(
 
     const { id: positionId } = await params;
 
-    // Get the position
-    const position = await prisma.position.findUnique({
-      where: { id: positionId },
-      include: {
-        tests: {
-          where: { isArchived: false },
-          select: { id: true },
+    // Get the position with retry logic
+    const position = await retryOperation(async () => {
+      return await prisma.position.findUnique({
+        where: { id: positionId },
+        include: {
+          tests: {
+            where: { isArchived: false },
+            select: { id: true },
+          },
         },
-      },
+      });
     });
 
     if (!position) {
@@ -74,13 +107,16 @@ export async function GET(
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // Get total questions per test for percentage calculations
-    const testQuestionCounts = await Promise.all(
-      testIds.map(async (testId) => {
-        const count = await prisma.question.count({ where: { testId } });
-        return { testId, totalQuestions: count };
-      })
-    );
+    // Get total questions per test for percentage calculations with retry
+    const testQuestionCounts = await retryOperation(async () => {
+      return await Promise.all(
+        testIds.map(async (testId) => {
+          const count = await prisma.question.count({ where: { testId } });
+          return { testId, totalQuestions: count };
+        })
+      );
+    });
+
     const testQuestionMap = Object.fromEntries(
       testQuestionCounts.map(({ testId, totalQuestions }) => [
         testId,
@@ -88,7 +124,7 @@ export async function GET(
       ])
     );
 
-    // Parallel queries for performance
+    // Parallel queries for performance with retry logic
     const [
       completedRegularAttemptsCount,
       completedPublicAttemptsCount,
@@ -96,75 +132,77 @@ export async function GET(
       recentPublicAttempts,
       completedRegularAttempts,
       completedPublicAttempts,
-    ] = await Promise.all([
-      // Completed regular attempts for these tests (for total count)
-      prisma.testAttempt.count({
-        where: {
-          testId: { in: testIds },
-          status: 'COMPLETED',
-        },
-      }),
-
-      // Completed public attempts for these tests (for total count)
-      prisma.publicTestAttempt.count({
-        where: {
-          publicLink: {
+    ] = await retryOperation(async () => {
+      return await Promise.all([
+        // Completed regular attempts for these tests (for total count)
+        prisma.testAttempt.count({
+          where: {
             testId: { in: testIds },
+            status: 'COMPLETED',
           },
-          status: 'COMPLETED',
-        },
-      }),
+        }),
 
-      // Recent completed regular attempts (last 30 days)
-      prisma.testAttempt.count({
-        where: {
-          testId: { in: testIds },
-          status: 'COMPLETED',
-          completedAt: { gte: thirtyDaysAgo },
-        },
-      }),
+        // Completed public attempts for these tests (for total count)
+        prisma.publicTestAttempt.count({
+          where: {
+            publicLink: {
+              testId: { in: testIds },
+            },
+            status: 'COMPLETED',
+          },
+        }),
 
-      // Recent completed public attempts (last 30 days)
-      prisma.publicTestAttempt.count({
-        where: {
-          publicLink: {
+        // Recent completed regular attempts (last 30 days)
+        prisma.testAttempt.count({
+          where: {
             testId: { in: testIds },
+            status: 'COMPLETED',
+            completedAt: { gte: thirtyDaysAgo },
           },
-          status: 'COMPLETED',
-          completedAt: { gte: thirtyDaysAgo },
-        },
-      }),
+        }),
 
-      // Completed regular attempts with duration calculation
-      prisma.testAttempt.findMany({
-        where: {
-          testId: { in: testIds },
-          status: 'COMPLETED',
-        },
-        include: {
-          invitation: {
-            select: { candidateEmail: true, candidateName: true },
+        // Recent completed public attempts (last 30 days)
+        prisma.publicTestAttempt.count({
+          where: {
+            publicLink: {
+              testId: { in: testIds },
+            },
+            status: 'COMPLETED',
+            completedAt: { gte: thirtyDaysAgo },
           },
-        },
-        orderBy: { rawScore: 'desc' },
-      }),
+        }),
 
-      // Completed public attempts with duration calculation
-      prisma.publicTestAttempt.findMany({
-        where: {
-          publicLink: {
+        // Completed regular attempts with duration calculation
+        prisma.testAttempt.findMany({
+          where: {
             testId: { in: testIds },
+            status: 'COMPLETED',
           },
-          status: 'COMPLETED',
-        },
-        include: {
-          publicLink: {
-            select: { testId: true },
+          include: {
+            invitation: {
+              select: { candidateEmail: true, candidateName: true },
+            },
           },
-        },
-        orderBy: { rawScore: 'desc' },
-      }),
-    ]);
+          orderBy: { rawScore: 'desc' },
+        }),
+
+        // Completed public attempts with duration calculation
+        prisma.publicTestAttempt.findMany({
+          where: {
+            publicLink: {
+              testId: { in: testIds },
+            },
+            status: 'COMPLETED',
+          },
+          include: {
+            publicLink: {
+              select: { testId: true },
+            },
+          },
+          orderBy: { rawScore: 'desc' },
+        }),
+      ]);
+    });
 
     const totalAttempts =
       completedRegularAttemptsCount + completedPublicAttemptsCount;
@@ -308,7 +346,7 @@ export async function GET(
     };
 
     if (allCompletedAttempts.length > 0) {
-      // Get all submitted answers for completed attempts
+      // Get all submitted answers for completed attempts with retry logic
       const regularAttemptIds = completedRegularAttempts.map(
         (attempt) => attempt.id
       );
@@ -317,28 +355,30 @@ export async function GET(
       );
 
       const [regularSubmittedAnswers, publicSubmittedAnswers] =
-        await Promise.all([
-          regularAttemptIds.length > 0
-            ? prisma.submittedAnswer.findMany({
-                where: { testAttemptId: { in: regularAttemptIds } },
-                include: {
-                  question: {
-                    select: { category: true },
+        await retryOperation(async () => {
+          return await Promise.all([
+            regularAttemptIds.length > 0
+              ? prisma.submittedAnswer.findMany({
+                  where: { testAttemptId: { in: regularAttemptIds } },
+                  include: {
+                    question: {
+                      select: { category: true },
+                    },
                   },
-                },
-              })
-            : [],
-          publicAttemptIds.length > 0
-            ? prisma.publicSubmittedAnswer.findMany({
-                where: { attemptId: { in: publicAttemptIds } },
-                include: {
-                  question: {
-                    select: { category: true },
+                })
+              : [],
+            publicAttemptIds.length > 0
+              ? prisma.publicSubmittedAnswer.findMany({
+                  where: { attemptId: { in: publicAttemptIds } },
+                  include: {
+                    question: {
+                      select: { category: true },
+                    },
                   },
-                },
-              })
-            : [],
-        ]);
+                })
+              : [],
+          ]);
+        });
 
       // Combine all submitted answers
       const allSubmittedAnswers = [
@@ -478,10 +518,42 @@ export async function GET(
     };
 
     return NextResponse.json(analytics);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching position analytics:', error);
+
+    // Check if it's a database connectivity error
+    if (
+      error.code === 'P1001' ||
+      error.message?.includes("Can't reach database")
+    ) {
+      console.error('Database connectivity issue detected');
+      return NextResponse.json(
+        {
+          error: 'Database connection error. Please try again in a moment.',
+          details:
+            'The database server is temporarily unavailable. This is usually resolved quickly.',
+        },
+        { status: 503 } // Service Unavailable
+      );
+    }
+
+    // Check if it's a timeout error
+    if (error.message?.includes('timeout') || error.code === 'P1008') {
+      return NextResponse.json(
+        {
+          error: 'Request timeout. Please try again.',
+          details: 'The database query took too long to complete.',
+        },
+        { status: 504 } // Gateway Timeout
+      );
+    }
+
+    // For other errors, return generic error
     return NextResponse.json(
-      { error: 'Failed to fetch position analytics' },
+      {
+        error: 'Failed to fetch position analytics',
+        details: 'An unexpected error occurred while processing your request.',
+      },
       { status: 500 }
     );
   } finally {
