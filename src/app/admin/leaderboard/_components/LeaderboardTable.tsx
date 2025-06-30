@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
+import LinkButton from '@/components/ui/LinkButton';
 
 interface CandidateScore {
   attemptId: string;
@@ -520,14 +521,16 @@ export default function LeaderboardTable({
 
                 <td className="whitespace-nowrap px-2 py-1.5 text-center">
                   <div className="flex items-center justify-center space-x-1">
-                    <Link
+                    <LinkButton
                       href={`/admin/analytics/analysis/${candidate.attemptId}`}
-                      className="inline-flex items-center rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 transition-colors hover:bg-blue-200"
+                      variant="outline"
+                      size="xs"
+                      startIcon={<Eye className="h-3 w-3" />}
+                      className="border-blue-200 bg-blue-100 text-blue-700 hover:border-blue-300 hover:bg-blue-200"
                       title="View Analysis"
                     >
-                      <Eye className="mr-0.5 h-3 w-3" />
                       Analysis
-                    </Link>
+                    </LinkButton>
                     <button
                       onClick={() =>
                         handleExportPdf(

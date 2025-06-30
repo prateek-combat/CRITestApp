@@ -37,6 +37,7 @@
     "@types/papaparse": "^5.3.16",
     "bcryptjs": "^3.0.2",
     "core-js": "^3.43.0",
+    "date-fns": "^4.1.0",
     "devtools-detect": "^4.0.2",
     "eslint": "^8.57.1",
     "framer-motion": "^12.19.1",

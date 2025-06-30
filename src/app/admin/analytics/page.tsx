@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import InfoPanel from '@/components/ui/InfoPanel';
 import {
   Users,
   TrendingUp,
@@ -241,6 +242,30 @@ export default function PositionAnalyticsPage() {
           </p>
         </div>
 
+        {/* Info Panel */}
+        <InfoPanel
+          title="📈 Analytics Dashboard Guide"
+          variant="success"
+          dismissible={true}
+        >
+          <div className="space-y-2">
+            <p>
+              <strong>Available Analytics:</strong>
+            </p>
+            <ul className="ml-4 list-disc space-y-1 text-sm">
+              <li>Overall performance statistics and growth rates</li>
+              <li>Position-specific analytics with score distributions</li>
+              <li>Category breakdowns (Logical, Verbal, Numerical, etc.)</li>
+              <li>Monthly trends and top performers</li>
+              <li>Detailed candidate performance analysis</li>
+            </ul>
+            <p className="text-sm font-medium text-green-700">
+              💡 Tip: Use the detailed analysis links to get comprehensive
+              insights!
+            </p>
+          </div>
+        </InfoPanel>
+
         {/* Overall Stats Cards - Compact */}
         {overallStats && (
           <div className="mb-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -470,7 +495,7 @@ export default function PositionAnalyticsPage() {
                   <p className="mt-1 text-xs text-gray-500">{error}</p>
                   <button
                     onClick={fetchPositionAnalytics}
-                    className="mt-3 rounded-md bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg border-2 border-blue-700/50 bg-gradient-to-r from-blue-600 to-blue-700 px-3 py-1.5 text-xs font-medium text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
                   >
                     Try Again
                   </button>

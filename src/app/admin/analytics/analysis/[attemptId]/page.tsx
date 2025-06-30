@@ -805,13 +805,25 @@ export default function ProctorAnalysisPage() {
                   }
                 }}
                 disabled={loading}
-                className="rounded-md bg-military-green px-4 py-2 text-sm font-medium text-white hover:bg-opacity-90 disabled:opacity-50"
+                className="relative inline-flex items-center justify-center rounded-md border border-transparent bg-military-green px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-opacity-90 disabled:opacity-50"
               >
-                {loading
-                  ? 'Analyzing...'
-                  : analysisResults
-                    ? 'Re-run AI Analysis'
-                    : 'Run AI Analysis'}
+                {/* Loading spinner */}
+                {loading && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-md bg-inherit">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                  </div>
+                )}
+
+                {/* Button content */}
+                <span
+                  className={`flex items-center ${loading ? 'opacity-0' : ''}`}
+                >
+                  {loading
+                    ? 'Analyzing...'
+                    : analysisResults
+                      ? 'Re-run AI Analysis'
+                      : 'Run AI Analysis'}
+                </span>
               </button>
             </div>
             {analysisResults ? (
