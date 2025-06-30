@@ -19,6 +19,9 @@ export async function GET(request: NextRequest) {
     const baseUrl = `${protocol}://${host}`;
 
     const publicLinks = await prisma.publicTestLink.findMany({
+      where: {
+        isTimeRestricted: false, // Only get non-time-restricted links
+      },
       include: {
         test: {
           select: {
@@ -106,6 +109,7 @@ export async function POST(request: NextRequest) {
         description,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
         maxUses: maxUses || null,
+        isTimeRestricted: false, // Explicitly set to false for regular public links
         createdById: session.user.id,
       },
       include: {

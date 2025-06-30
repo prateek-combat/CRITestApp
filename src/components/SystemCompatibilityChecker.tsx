@@ -651,15 +651,23 @@ export default function SystemCompatibilityChecker({
           {/* Show Continue button only when camera and microphone pass */}
           {onStartTest && (
             <div className="space-y-3">
-              {overallStatus === 'pass' &&
-              results.camera.status === 'pass' &&
-              results.microphone.status === 'pass' ? (
+              {(overallStatus === 'pass' &&
+                results.camera.status === 'pass' &&
+                results.microphone.status === 'pass') ||
+              process.env.NEXT_PUBLIC_DISABLE_PROCTORING_REQUIREMENTS ===
+                'true' ? (
                 <button
                   onClick={onStartTest}
                   className="mx-auto flex items-center space-x-2 rounded-lg bg-primary-600 px-6 py-3 font-medium text-white transition-colors hover:bg-primary-700"
                 >
                   <Play className="h-5 w-5" />
-                  <span>Continue to Test</span>
+                  <span>
+                    Continue to Test{' '}
+                    {process.env.NEXT_PUBLIC_DISABLE_PROCTORING_REQUIREMENTS ===
+                    'true'
+                      ? '(Proctoring Disabled)'
+                      : ''}
+                  </span>
                 </button>
               ) : (
                 <div className="space-y-3">

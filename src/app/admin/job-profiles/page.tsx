@@ -20,11 +20,13 @@ import {
   Copy,
   Eye,
   EyeOff,
+  Clock,
 } from 'lucide-react';
 import { parseMultipleEmails } from '@/lib/validation-utils';
 import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog';
 import { useConfirmation } from '@/hooks/useConfirmation';
 import { designSystem, componentStyles } from '@/lib/design-system';
+import TimeSlotModal from '@/components/ui/TimeSlotModal';
 
 interface Position {
   id: string;
@@ -77,12 +79,48 @@ interface Invitation {
   };
 }
 
+interface TimeSlot {
+  id: string;
+  name: string;
+  description?: string;
+  startDateTime: string;
+  endDateTime: string;
+  timezone: string;
+  maxParticipants?: number;
+  currentParticipants: number;
+  isActive: boolean;
+  createdAt: string;
+  jobProfile: {
+    id: string;
+    name: string;
+  };
+  publicTestLinks: Array<{
+    id: string;
+    title: string;
+    isActive: boolean;
+    usedCount: number;
+  }>;
+  _count: {
+    publicTestLinks: number;
+  };
+}
+
 export default function JobProfilesPage() {
   const [jobProfiles, setJobProfiles] = useState<JobProfile[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [tests, setTests] = useState<Test[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [publicLinks, setPublicLinks] = useState<PublicLink[]>([]);
+
+  // Add time slots state
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | null>(
+    null
+  );
+  const [showTimeSlotLinks, setShowTimeSlotLinks] = useState(false);
+  const [timeSlotLinks, setTimeSlotLinks] = useState<any[]>([]);
+  // Store all time slot links for display in the UI
+  const [allTimeSlotLinks, setAllTimeSlotLinks] = useState<any[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +132,7 @@ export default function JobProfilesPage() {
     null
   );
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showTimeSlotModal, setShowTimeSlotModal] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   // Form state
@@ -119,6 +158,7 @@ export default function JobProfilesPage() {
   const [sendingInvite, setSendingInvite] = useState(false);
   const [sendingBulk, setSendingBulk] = useState(false);
   const [generatingPublicLink, setGeneratingPublicLink] = useState(false);
+  const [generatingTimeSlotLink, setGeneratingTimeSlotLink] = useState(false);
 
   // Copy state
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
@@ -148,6 +188,14 @@ export default function JobProfilesPage() {
     });
   }, [jobProfiles, searchTerm, departmentFilter]);
 
+  // Helper function to get links for a specific time slot
+  const getLinksForTimeSlot = useCallback(
+    (timeSlotId: string) => {
+      return allTimeSlotLinks.filter((link) => link.timeSlotId === timeSlotId);
+    },
+    [allTimeSlotLinks]
+  );
+
   // Fetch functions
   const fetchJobProfiles = useCallback(async () => {
     try {
@@ -158,6 +206,40 @@ export default function JobProfilesPage() {
     } catch (err) {
       setError('Failed to fetch job profiles');
       console.error('Failed to fetch job profiles:', err);
+    }
+  }, []);
+
+  const fetchTimeSlots = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/time-slots');
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: 'Failed to fetch time slots' }));
+        throw new Error(errorData.error || 'Failed to fetch time slots');
+      }
+      const data = await response.json();
+      setTimeSlots(data);
+    } catch (err) {
+      console.error('Failed to fetch time slots:', err);
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to fetch time slots';
+
+      // Don't show error for temporary database connection issues
+      if (
+        errorMessage.includes('Database connection temporarily unavailable')
+      ) {
+        console.warn(
+          'Database temporarily unavailable for time slots, will retry...'
+        );
+        // Optionally retry after a delay
+        setTimeout(() => {
+          fetchTimeSlots();
+        }, 5000);
+      } else {
+        // Only set error for non-temporary issues
+        console.error('Time slots error:', errorMessage);
+      }
     }
   }, []);
 
@@ -205,6 +287,17 @@ export default function JobProfilesPage() {
     }
   }, []);
 
+  const fetchAllTimeSlotLinks = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/time-slot-links');
+      if (!response.ok) throw new Error('Failed to fetch time slot links');
+      const data = await response.json();
+      setAllTimeSlotLinks(data);
+    } catch (err) {
+      console.error('Failed to fetch time slot links:', err);
+    }
+  }, []);
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -214,6 +307,8 @@ export default function JobProfilesPage() {
         fetchPositions(),
         fetchTests(),
         fetchPublicLinks(),
+        fetchTimeSlots(),
+        fetchAllTimeSlotLinks(),
       ]);
       setLoading(false);
     };
@@ -224,6 +319,8 @@ export default function JobProfilesPage() {
     fetchPositions,
     fetchTests,
     fetchPublicLinks,
+    fetchTimeSlots,
+    fetchAllTimeSlotLinks,
   ]);
 
   // Handlers
@@ -458,6 +555,238 @@ export default function JobProfilesPage() {
     setShowInviteModal(true);
   };
 
+  const openTimeSlotModal = (profile: JobProfile) => {
+    setSelectedProfile(profile);
+    setShowTimeSlotModal(true);
+  };
+
+  const handleCreateTimeSlot = async (
+    timeSlotData: Omit<
+      TimeSlot,
+      | 'id'
+      | 'currentParticipants'
+      | 'isActive'
+      | 'createdAt'
+      | 'jobProfile'
+      | 'publicTestLinks'
+      | '_count'
+    >
+  ) => {
+    if (!selectedProfile) return;
+
+    const payload = {
+      jobProfileId: selectedProfile.id,
+      ...timeSlotData,
+    };
+
+    try {
+      const response = await fetch('/api/admin/time-slots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create time slot');
+      }
+
+      // Refresh data after creating time slot
+      await fetchJobProfiles();
+    } catch (err) {
+      throw err; // Re-throw to be handled by the modal
+    }
+  };
+
+  const generateTimeSlotLink = async (
+    profileId: string,
+    timeSlotId: string
+  ) => {
+    setGeneratingTimeSlotLink(true);
+    try {
+      const response = await fetch(
+        `/api/admin/job-profiles/${profileId}/time-slot-link`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ timeSlotId }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(
+          error.error || 'Failed to generate time-restricted link'
+        );
+      }
+
+      const result = await response.json();
+
+      // Store the generated links and show them
+      setTimeSlotLinks(result.links);
+      setSelectedTimeSlot(timeSlots.find((ts) => ts.id === timeSlotId) || null);
+      setShowTimeSlotLinks(true);
+
+      // Refresh data
+      await Promise.all([
+        fetchPublicLinks(),
+        fetchTimeSlots(),
+        fetchAllTimeSlotLinks(),
+      ]);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to generate time-restricted link'
+      );
+    } finally {
+      setGeneratingTimeSlotLink(false);
+    }
+  };
+
+  const deleteTimeSlotLink = async (linkId: string) => {
+    try {
+      const response = await fetch(
+        `/api/admin/time-slot-links?linkId=${linkId}`,
+        {
+          method: 'DELETE',
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete time-restricted link');
+      }
+
+      // Remove the deleted link from the current view
+      setTimeSlotLinks((prev) => prev.filter((link) => link.id !== linkId));
+      setAllTimeSlotLinks((prev) => prev.filter((link) => link.id !== linkId));
+
+      // Refresh data
+      await Promise.all([
+        fetchPublicLinks(),
+        fetchTimeSlots(),
+        fetchAllTimeSlotLinks(),
+      ]);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to delete time-restricted link'
+      );
+    }
+  };
+
+  const deleteAllTimeSlotLinks = async (timeSlotId: string) => {
+    try {
+      const response = await fetch(
+        `/api/admin/time-slot-links?timeSlotId=${timeSlotId}`,
+        {
+          method: 'DELETE',
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(
+          error.error || 'Failed to delete time-restricted links'
+        );
+      }
+
+      const result = await response.json();
+
+      // Clear the current view
+      setTimeSlotLinks([]);
+      setShowTimeSlotLinks(false);
+
+      // Refresh data
+      await Promise.all([
+        fetchPublicLinks(),
+        fetchTimeSlots(),
+        fetchAllTimeSlotLinks(),
+      ]);
+
+      // Show success message
+      alert(
+        `Successfully deleted ${result.deletedCount} time-restricted links`
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to delete time-restricted links'
+      );
+    }
+  };
+
+  const deleteTimeSlot = async (timeSlot: TimeSlot) => {
+    const hasLinks = timeSlot._count.publicTestLinks > 0;
+    const hasUsage = timeSlot.publicTestLinks.some(
+      (link) => link.usedCount > 0
+    );
+
+    let warningMessage = `Are you sure you want to delete the time slot "${timeSlot.name}"?`;
+
+    if (hasUsage) {
+      warningMessage +=
+        '\n\n⚠️ This time slot has test attempts and cannot be deleted. Please contact an administrator if you need to remove it.';
+    } else if (hasLinks) {
+      warningMessage += `\n\nThis will also delete ${timeSlot._count.publicTestLinks} associated test links.`;
+    }
+
+    warningMessage += '\n\nThis action cannot be undone.';
+
+    showConfirmation(
+      {
+        title: 'Delete Time Slot',
+        message: warningMessage,
+        confirmText: hasUsage ? 'Cannot Delete' : 'Delete Time Slot',
+        type: 'danger',
+      },
+      async () => {
+        if (hasUsage) {
+          setError('Cannot delete time slot with existing test attempts');
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `/api/admin/time-slots?timeSlotId=${timeSlot.id}`,
+            {
+              method: 'DELETE',
+            }
+          );
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to delete time slot');
+          }
+
+          const result = await response.json();
+
+          // Refresh data
+          await Promise.all([
+            fetchJobProfiles(),
+            fetchTimeSlots(),
+            fetchAllTimeSlotLinks(),
+          ]);
+
+          // Time slot deleted successfully
+        } catch (err) {
+          setError(
+            err instanceof Error ? err.message : 'Failed to delete time slot'
+          );
+          throw err; // Re-throw to keep the dialog open on error
+        }
+      }
+    );
+  };
+
+  const handleTimeSlotCreated = async () => {
+    await fetchTimeSlots();
+    setShowTimeSlotModal(false);
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -635,6 +964,13 @@ export default function JobProfilesPage() {
                           <ExternalLink className="h-4 w-4" />
                         </button>
                         <button
+                          onClick={() => openTimeSlotModal(profile)}
+                          className={designSystem.button.iconButton}
+                          title="Create Time Slot"
+                        >
+                          <Clock className="h-4 w-4" />
+                        </button>
+                        <button
                           onClick={() => openEditModal(profile)}
                           className={designSystem.button.iconButton}
                           title="Edit Profile"
@@ -705,23 +1041,22 @@ export default function JobProfilesPage() {
                         </div>
 
                         {/* Enhanced Public Links Section */}
-                        <div className="mt-4">
-                          <div className="mb-3 flex items-center justify-between">
-                            <h4 className="text-base font-semibold text-gray-900">
-                              🔗 Public Test Links
+                        <div className="mt-2">
+                          <div className="mb-1 flex items-center justify-between">
+                            <h4 className="text-sm font-medium text-gray-900">
+                              🔗 Public Links
                             </h4>
-                            <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
+                            <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-800">
                               {
                                 publicLinks.filter((link) =>
                                   (profile.tests || []).some(
                                     (test) => test.title === link.testTitle
                                   )
                                 ).length
-                              }{' '}
-                              active
+                              }
                             </span>
                           </div>
-                          <div className="space-y-3">
+                          <div className="space-y-1">
                             {publicLinks
                               .filter((link) =>
                                 (profile.tests || []).some(
@@ -731,48 +1066,47 @@ export default function JobProfilesPage() {
                               .map((link) => (
                                 <div
                                   key={link.id}
-                                  className="rounded-lg border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 shadow-sm transition-all duration-200 hover:shadow-md"
+                                  className="rounded border border-blue-200 bg-blue-50/30 p-2 text-xs"
                                 >
                                   <div className="flex items-start justify-between">
-                                    <div className="flex-1">
-                                      <div className="mb-2 flex items-center gap-3">
+                                    <div className="min-w-0 flex-1">
+                                      <div className="mb-1 flex items-center gap-2">
                                         <div
-                                          className={`h-3 w-3 rounded-full ${link.isActive ? 'animate-pulse bg-green-500' : 'bg-gray-400'}`}
+                                          className={`h-2 w-2 rounded-full ${link.isActive ? 'animate-pulse bg-green-500' : 'bg-gray-400'}`}
                                         ></div>
-                                        <span className="font-semibold text-gray-900">
+                                        <span className="truncate text-xs font-medium text-gray-900">
                                           {link.testTitle}
                                         </span>
                                         <span
-                                          className={`rounded-full px-2 py-1 text-xs font-medium ${link.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}
+                                          className={`rounded px-1 py-0.5 text-xs ${link.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}
                                         >
                                           {link.isActive
                                             ? 'Active'
                                             : 'Inactive'}
                                         </span>
                                       </div>
-                                      <div className="mb-3 flex items-center gap-4 text-sm text-gray-600">
+                                      <div className="mb-1 flex items-center gap-2 text-xs text-gray-600">
                                         <span className="flex items-center gap-1">
                                           <span className="font-medium">
                                             {link.usedCount}
-                                          </span>{' '}
-                                          uses
+                                          </span>
                                           {link.maxUses && (
-                                            <span>/ {link.maxUses}</span>
+                                            <span>/{link.maxUses}</span>
                                           )}
                                         </span>
                                         <span>•</span>
                                         <span>
                                           {link.expiresAt
-                                            ? 'Expires soon'
+                                            ? 'Expires'
                                             : 'No expiry'}
                                         </span>
                                       </div>
-                                      <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-1">
                                         <input
                                           type="text"
                                           value={link.publicUrl}
                                           readOnly
-                                          className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm text-gray-700"
+                                          className="flex-1 rounded border border-gray-300 bg-white px-2 py-1 font-mono text-xs text-gray-700"
                                         />
                                         <button
                                           onClick={() =>
@@ -781,18 +1115,12 @@ export default function JobProfilesPage() {
                                               link.id
                                             )
                                           }
-                                          className="flex items-center gap-1 rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                                          className="flex items-center gap-1 rounded bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700"
                                         >
                                           {copiedLink === link.id ? (
-                                            <>
-                                              <Check className="h-4 w-4" />
-                                              Copied!
-                                            </>
+                                            <Check className="h-3 w-3" />
                                           ) : (
-                                            <>
-                                              <Copy className="h-4 w-4" />
-                                              Copy
-                                            </>
+                                            <Copy className="h-3 w-3" />
                                           )}
                                         </button>
                                       </div>
@@ -805,13 +1133,255 @@ export default function JobProfilesPage() {
                                 (test) => test.title === link.testTitle
                               )
                             ).length === 0 && (
-                              <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 py-4 text-center text-gray-500">
-                                <ExternalLink className="mx-auto mb-2 h-6 w-6 text-gray-400" />
-                                <p className="text-sm">
-                                  No public links created yet
-                                </p>
+                              <div className="rounded border-dashed border-gray-300 bg-gray-50 py-2 text-center text-gray-500">
+                                <ExternalLink className="mx-auto mb-1 h-4 w-4 text-gray-400" />
+                                <p className="text-xs">No links yet</p>
                                 <p className="text-xs">
-                                  Click "Generate Public Link" to create one
+                                  Click "Generate Public Link"
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Time Slots Section */}
+                        <div className="mt-2">
+                          <div className="mb-1 flex items-center justify-between">
+                            <h4 className="text-sm font-medium text-gray-900">
+                              ⏰ Time Slots
+                            </h4>
+                            <span className="rounded-full bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-800">
+                              {
+                                timeSlots.filter(
+                                  (slot) => slot.jobProfile.id === profile.id
+                                ).length
+                              }
+                            </span>
+                          </div>
+                          <div className="space-y-1">
+                            {timeSlots
+                              .filter(
+                                (slot) => slot.jobProfile.id === profile.id
+                              )
+                              .map((slot) => (
+                                <div
+                                  key={slot.id}
+                                  className="rounded border border-purple-200 bg-purple-50/30 p-2 text-xs"
+                                >
+                                  <div className="flex items-start justify-between">
+                                    <div className="min-w-0 flex-1">
+                                      <div className="mb-1 flex items-center gap-2">
+                                        <div
+                                          className={`h-2 w-2 rounded-full ${
+                                            slot.isActive &&
+                                            new Date(slot.startDateTime) <=
+                                              new Date() &&
+                                            new Date() <=
+                                              new Date(slot.endDateTime)
+                                              ? 'animate-pulse bg-green-500'
+                                              : slot.isActive
+                                                ? 'bg-yellow-500'
+                                                : 'bg-gray-400'
+                                          }`}
+                                        ></div>
+                                        <span className="truncate text-xs font-medium text-gray-900">
+                                          {slot.name}
+                                        </span>
+                                        <span
+                                          className={`rounded px-1 py-0.5 text-xs ${
+                                            slot.isActive
+                                              ? 'bg-green-100 text-green-700'
+                                              : 'bg-gray-100 text-gray-600'
+                                          }`}
+                                        >
+                                          {slot.isActive
+                                            ? 'Active'
+                                            : 'Inactive'}
+                                        </span>
+                                      </div>
+                                      {slot.description && (
+                                        <p className="mb-1 truncate text-xs text-gray-600">
+                                          {slot.description}
+                                        </p>
+                                      )}
+                                      <div className="mb-1 text-xs text-gray-600">
+                                        <div className="mb-0.5 flex items-center gap-1">
+                                          <Clock className="h-3 w-3" />
+                                          <span className="truncate">
+                                            {new Date(
+                                              slot.startDateTime
+                                            ).toLocaleDateString()}{' '}
+                                            {new Date(
+                                              slot.startDateTime
+                                            ).toLocaleTimeString([], {
+                                              hour: '2-digit',
+                                              minute: '2-digit',
+                                            })}
+                                            {' → '}
+                                            {new Date(
+                                              slot.endDateTime
+                                            ).toLocaleDateString()}{' '}
+                                            {new Date(
+                                              slot.endDateTime
+                                            ).toLocaleTimeString([], {
+                                              hour: '2-digit',
+                                              minute: '2-digit',
+                                            })}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <span className="flex items-center gap-1">
+                                            <Users className="h-3 w-3" />
+                                            {slot.currentParticipants}
+                                            {slot.maxParticipants &&
+                                              `/${slot.maxParticipants}`}
+                                          </span>
+                                          <span className="flex items-center gap-1">
+                                            <ExternalLink className="h-3 w-3" />
+                                            {slot._count?.publicTestLinks || 0}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      {/* Time Slot Links */}
+                                      {(() => {
+                                        const slotLinks = getLinksForTimeSlot(
+                                          slot.id
+                                        );
+                                        return (
+                                          <div className="mt-1">
+                                            {slotLinks.length > 0 ? (
+                                              <div className="space-y-1">
+                                                <h5 className="text-xs font-medium text-gray-700">
+                                                  Links:
+                                                </h5>
+                                                {slotLinks.map((link) => (
+                                                  <div
+                                                    key={link.id}
+                                                    className="flex items-center justify-between rounded border border-purple-200 bg-white/70 p-1.5"
+                                                  >
+                                                    <div className="min-w-0 flex-1">
+                                                      <p className="truncate text-xs font-medium text-gray-900">
+                                                        {link.testTitle}
+                                                      </p>
+                                                      <p className="text-xs text-gray-600">
+                                                        Used {link.usedCount}x
+                                                      </p>
+                                                    </div>
+                                                    <div className="ml-2 flex items-center gap-1">
+                                                      <button
+                                                        onClick={() =>
+                                                          copyToClipboard(
+                                                            link.publicUrl,
+                                                            link.id
+                                                          )
+                                                        }
+                                                        className="inline-flex items-center gap-1 rounded border border-gray-300 px-1.5 py-0.5 text-xs text-gray-700 hover:bg-gray-50"
+                                                      >
+                                                        {copiedLink ===
+                                                        link.id ? (
+                                                          <Check className="h-3 w-3 text-green-600" />
+                                                        ) : (
+                                                          <Copy className="h-3 w-3" />
+                                                        )}
+                                                      </button>
+                                                      <button
+                                                        onClick={() => {
+                                                          if (
+                                                            confirm(
+                                                              'Delete this link?'
+                                                            )
+                                                          ) {
+                                                            deleteTimeSlotLink(
+                                                              link.id
+                                                            );
+                                                          }
+                                                        }}
+                                                        className="inline-flex items-center gap-1 rounded bg-red-600 px-1.5 py-0.5 text-xs text-white hover:bg-red-700"
+                                                      >
+                                                        <Trash2 className="h-3 w-3" />
+                                                      </button>
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            ) : (
+                                              <div className="mt-1 rounded border-dashed border-purple-300 bg-purple-50/50 py-1 text-center">
+                                                <p className="text-xs text-gray-600">
+                                                  No links yet
+                                                </p>
+                                              </div>
+                                            )}
+
+                                            {/* Action Buttons */}
+                                            <div className="mt-1 flex items-center gap-1">
+                                              <button
+                                                onClick={() =>
+                                                  generateTimeSlotLink(
+                                                    profile.id,
+                                                    slot.id
+                                                  )
+                                                }
+                                                disabled={
+                                                  generatingTimeSlotLink
+                                                }
+                                                className="inline-flex items-center gap-1 rounded bg-purple-600 px-2 py-1 text-xs text-white hover:bg-purple-700 disabled:opacity-50"
+                                              >
+                                                {generatingTimeSlotLink ? (
+                                                  <>
+                                                    <div className="h-3 w-3 animate-spin rounded-full border border-white border-t-transparent"></div>
+                                                    Gen...
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <ExternalLink className="h-3 w-3" />
+                                                    Generate
+                                                  </>
+                                                )}
+                                              </button>
+                                              {slotLinks.length > 0 && (
+                                                <button
+                                                  onClick={() => {
+                                                    if (
+                                                      confirm(
+                                                        `Delete all ${slotLinks.length} links for "${slot.name}"?`
+                                                      )
+                                                    ) {
+                                                      deleteAllTimeSlotLinks(
+                                                        slot.id
+                                                      );
+                                                    }
+                                                  }}
+                                                  className="inline-flex items-center gap-1 rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700"
+                                                >
+                                                  <Trash2 className="h-3 w-3" />
+                                                  All
+                                                </button>
+                                              )}
+                                              <button
+                                                onClick={() =>
+                                                  deleteTimeSlot(slot)
+                                                }
+                                                className="inline-flex items-center gap-1 rounded bg-gray-600 px-2 py-1 text-xs text-white hover:bg-gray-700"
+                                              >
+                                                <Trash2 className="h-3 w-3" />
+                                                Slot
+                                              </button>
+                                            </div>
+                                          </div>
+                                        );
+                                      })()}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            {timeSlots.filter(
+                              (slot) => slot.jobProfile.id === profile.id
+                            ).length === 0 && (
+                              <div className="rounded border-dashed border-gray-300 bg-gray-50 py-2 text-center text-gray-500">
+                                <Clock className="mx-auto mb-1 h-4 w-4 text-gray-400" />
+                                <p className="text-xs">No time slots yet</p>
+                                <p className="text-xs">
+                                  Click clock icon to create
                                 </p>
                               </div>
                             )}
@@ -1233,6 +1803,183 @@ export default function JobProfilesPage() {
                   </div>
                 </form>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Time Slot Modal */}
+        <TimeSlotModal
+          isOpen={showTimeSlotModal}
+          onClose={() => {
+            setShowTimeSlotModal(false);
+            setSelectedProfile(null);
+          }}
+          onSubmit={handleCreateTimeSlot}
+          jobProfileId={selectedProfile?.id || ''}
+          jobProfileName={selectedProfile?.name || ''}
+        />
+
+        {/* Time Slot Links Modal */}
+        {showTimeSlotLinks && selectedTimeSlot && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-lg bg-white p-6 shadow-xl">
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Time-Restricted Test Links
+                  </h2>
+                  <p className="text-sm text-gray-600">
+                    Links for "{selectedTimeSlot.name}" -{' '}
+                    {selectedTimeSlot.jobProfile.name}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Active:{' '}
+                    {new Date(selectedTimeSlot.startDateTime).toLocaleString()}{' '}
+                    - {new Date(selectedTimeSlot.endDateTime).toLocaleString()}{' '}
+                    ({selectedTimeSlot.timezone})
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowTimeSlotLinks(false)}
+                  className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {timeSlotLinks.map((link, index) => (
+                  <div
+                    key={link.id}
+                    className="rounded-lg border border-gray-200 p-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-900">
+                          {link.testTitle}
+                        </h3>
+                        <p className="mt-1 text-sm text-gray-600">
+                          {link.title}
+                        </p>
+                        <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
+                          <span>Used: {link.usedCount} times</span>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                              link.isActive
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {link.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                          {link.isExisting && (
+                            <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
+                              Existing Link
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() =>
+                            copyToClipboard(link.publicUrl, link.id)
+                          }
+                          className="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                        >
+                          {copiedLink === link.id ? (
+                            <>
+                              <Check className="h-4 w-4 text-green-600" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-4 w-4" />
+                              Copy Link
+                            </>
+                          )}
+                        </button>
+                        <a
+                          href={link.publicUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded-lg border-2 border-blue-700/50 bg-gradient-to-r from-blue-600 to-blue-700 px-3 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          Open
+                        </a>
+                        <button
+                          onClick={() => {
+                            if (
+                              confirm(
+                                'Are you sure you want to delete this time-restricted link?'
+                              )
+                            ) {
+                              deleteTimeSlotLink(link.id);
+                            }
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg border-2 border-red-700/50 bg-gradient-to-r from-red-600 to-red-700 px-3 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:from-red-700 hover:to-red-800 hover:shadow-xl"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-3 rounded bg-gray-50 p-2">
+                      <p className="break-all font-mono text-xs text-gray-600">
+                        {link.publicUrl}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 flex justify-between">
+                <div className="text-sm text-gray-600">
+                  <p>
+                    <strong>Share these links:</strong> Send to candidates who
+                    should take the test during the specified time window.
+                  </p>
+                  <p className="mt-1">
+                    <strong>Note:</strong> Links will only work during the
+                    active time slot ({selectedTimeSlot.timezone}).
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  {timeSlotLinks.length > 0 && (
+                    <button
+                      onClick={() => {
+                        if (
+                          confirm(
+                            `Are you sure you want to delete all ${timeSlotLinks.length} time-restricted links for this time slot?`
+                          )
+                        ) {
+                          deleteAllTimeSlotLinks(selectedTimeSlot.id);
+                        }
+                      }}
+                      className="inline-flex items-center gap-2 rounded-lg border-2 border-red-700/50 bg-gradient-to-r from-red-600 to-red-700 px-4 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:from-red-700 hover:to-red-800 hover:shadow-xl"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete All Links
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowTimeSlotLinks(false);
+                      deleteTimeSlot(selectedTimeSlot);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-700/50 bg-gradient-to-r from-gray-600 to-gray-700 px-4 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:from-gray-700 hover:to-gray-800 hover:shadow-xl"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete Time Slot
+                  </button>
+                  <button
+                    onClick={() => setShowTimeSlotLinks(false)}
+                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

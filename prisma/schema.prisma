@@ -18,12 +18,13 @@ model User {
   updatedAt              DateTime                @updatedAt
   categoryWeightProfiles CategoryWeightProfile[]
   invitations            Invitation[]
+  jobProfiles            JobProfile[]
+  jobProfileInvitations  JobProfileInvitation[]
+  positions              Position[]
   publicTestLinks        PublicTestLink[]
   archivedTests          Test[]                  @relation("ArchivedTests")
   tests                  Test[]
-  positions              Position[]
-  jobProfiles            JobProfile[]
-  jobProfileInvitations  JobProfileInvitation[]
+  timeSlots              TimeSlot[]
 }
 
 model Position {
@@ -37,27 +38,28 @@ model Position {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   createdById String
-  tests       Test[]
-  testsMany   Test[]       @relation("TestPositions")
-  jobProfiles JobProfile[]
   createdBy   User         @relation(fields: [createdById], references: [id])
+  tests       Test[]
+  jobProfiles JobProfile[] @relation("JobProfileToPosition")
+  testsMany   Test[]       @relation("TestPositions")
 
   @@index([isActive, department])
   @@index([code])
 }
 
 model JobProfile {
-  id          String        @id @default(uuid())
-  name        String        @unique
+  id          String                 @id @default(uuid())
+  name        String                 @unique
   description String?
-  isActive    Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  isActive    Boolean                @default(true)
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
   createdById String
-  positions   Position[]
-  testWeights TestWeight[]
+  createdBy   User                   @relation(fields: [createdById], references: [id])
   invitations JobProfileInvitation[]
-  createdBy   User          @relation(fields: [createdById], references: [id])
+  testWeights TestWeight[]
+  timeSlots   TimeSlot[]
+  positions   Position[]             @relation("JobProfileToPosition")
 
   @@index([isActive])
   @@index([createdById])
@@ -88,9 +90,9 @@ model JobProfileInvitation {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   createdById    String
-  testAttempts   TestAttempt[]    @relation("JobProfileTestAttempts")
-  jobProfile     JobProfile       @relation(fields: [jobProfileId], references: [id], onDelete: Cascade)
   createdBy      User             @relation(fields: [createdById], references: [id])
+  jobProfile     JobProfile       @relation(fields: [jobProfileId], references: [id], onDelete: Cascade)
+  testAttempts   TestAttempt[]    @relation("JobProfileTestAttempts")
 
   @@index([jobProfileId])
   @@index([candidateEmail])
@@ -105,7 +107,6 @@ model Test {
   createdAt                 DateTime         @default(now())
   updatedAt                 DateTime         @updatedAt
   createdById               String
-  positionId                String?
   allowReview               Boolean          @default(true)
   isArchived                Boolean          @default(false)
   archivedAt                DateTime?
@@ -113,15 +114,16 @@ model Test {
   emailNotificationsEnabled Boolean          @default(true)
   notificationEmails        String[]         @default(["prateek@combatrobotics.in", "gaurav@combatrobotics.in"])
   includeAnalytics          Boolean          @default(true)
+  positionId                String?
   invitations               Invitation[]
   publicTestLinks           PublicTestLink[]
   questions                 Question[]
-  testWeights               TestWeight[]
   archivedBy                User?            @relation("ArchivedTests", fields: [archivedById], references: [id])
   createdBy                 User             @relation(fields: [createdById], references: [id])
   position                  Position?        @relation(fields: [positionId], references: [id])
-  positions                 Position[]       @relation("TestPositions")
   testAttempts              TestAttempt[]
+  testWeights               TestWeight[]
+  positions                 Position[]       @relation("TestPositions")
 
   @@index([isArchived, createdAt])
   @@index([createdById])
@@ -204,16 +206,16 @@ model TestAttempt {
   updatedAt              DateTime              @updatedAt
   invitationId           String                @unique
   testId                 String
-  jobProfileInvitationId String?
   personalityProfile     Json?
   personalityScores      Json?
   riskScoreBreakdown     Json?
+  jobProfileInvitationId String?
   proctorAssets          ProctorAsset[]
   proctorEvents          ProctorEvent[]
   submittedAnswers       SubmittedAnswer[]
   invitation             Invitation            @relation(fields: [invitationId], references: [id], onDelete: Cascade)
-  test                   Test                  @relation(fields: [testId], references: [id], onDelete: Cascade)
   jobProfileInvitation   JobProfileInvitation? @relation("JobProfileTestAttempts", fields: [jobProfileInvitationId], references: [id])
+  test                   Test                  @relation(fields: [testId], references: [id], onDelete: Cascade)
 
   @@index([status, completedAt])
   @@index([testId, status])
@@ -258,21 +260,27 @@ model ProctorAsset {
 }
 
 model PublicTestLink {
-  id          String              @id @default(uuid())
-  testId      String
-  linkToken   String              @unique
-  title       String?
-  description String?
-  isActive    Boolean             @default(true)
-  expiresAt   DateTime?
-  maxUses     Int?
-  usedCount   Int                 @default(0)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  createdById String
-  attempts    PublicTestAttempt[]
-  createdBy   User                @relation(fields: [createdById], references: [id])
-  test        Test                @relation(fields: [testId], references: [id], onDelete: Cascade)
+  id               String              @id @default(uuid())
+  testId           String
+  linkToken        String              @unique
+  title            String?
+  description      String?
+  isActive         Boolean             @default(true)
+  expiresAt        DateTime?
+  maxUses          Int?
+  usedCount        Int                 @default(0)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  createdById      String
+  isTimeRestricted Boolean             @default(false)
+  timeSlotId       String?
+  attempts         PublicTestAttempt[]
+  createdBy        User                @relation(fields: [createdById], references: [id])
+  test             Test                @relation(fields: [testId], references: [id], onDelete: Cascade)
+  timeSlot         TimeSlot?           @relation(fields: [timeSlotId], references: [id])
+
+  @@index([timeSlotId])
+  @@index([isTimeRestricted])
 }
 
 model PublicTestAttempt {
@@ -374,6 +382,29 @@ model CategoryWeightProfile {
 
   @@index([isDefault])
   @@index([isSystem])
+}
+
+model TimeSlot {
+  id                  String           @id @default(uuid())
+  jobProfileId        String
+  name                String
+  description         String?
+  startDateTime       DateTime
+  endDateTime         DateTime
+  timezone            String           @default("UTC")
+  maxParticipants     Int?
+  currentParticipants Int              @default(0)
+  isActive            Boolean          @default(true)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  createdById         String
+  publicTestLinks     PublicTestLink[]
+  createdBy           User             @relation(fields: [createdById], references: [id])
+  jobProfile          JobProfile       @relation(fields: [jobProfileId], references: [id], onDelete: Cascade)
+
+  @@index([jobProfileId])
+  @@index([startDateTime, endDateTime])
+  @@index([isActive])
 }
 
 enum UserRole {
