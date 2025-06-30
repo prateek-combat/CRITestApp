@@ -2,307 +2,238 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import InfoPanel from '@/components/ui/InfoPanel';
+import {
+  FileText,
+  Mail,
+  CheckCircle,
+  BarChart2,
+  Briefcase,
+  Users,
+  Plus,
+} from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+
+interface Activity {
+  type: string;
+  timestamp: string;
+  description: string;
+  link: string;
+}
 
 interface DashboardStats {
   totalTests: number;
-  totalInvitations: number;
-  totalAttempts: number;
   activeTests: number;
-}
-
-interface ActivityItem {
-  id: string;
-  type: string;
-  description: string;
-  timestamp: string;
+  totalAttempts: number;
+  totalInvitations: number;
 }
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalTests: 0,
-    totalInvitations: 0,
-    totalAttempts: 0,
-    activeTests: 0,
-  });
-  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboardData();
+    const fetchData = async () => {
+      try {
+        const [statsRes, activityRes] = await Promise.all([
+          fetch('/api/admin/dashboard-stats'),
+          fetch('/api/admin/activity-feed'),
+        ]);
+
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          setStats(statsData);
+        } else {
+          console.error('Failed to fetch stats');
+        }
+
+        if (activityRes.ok) {
+          const activityData = await activityRes.json();
+          setActivities(activityData);
+        } else {
+          console.error('Failed to fetch activities');
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
-  const fetchDashboardData = async () => {
-    try {
-      const response = await fetch('/api/analytics?range=30d');
-      if (response.ok) {
-        const data = await response.json();
-        setStats({
-          totalTests: data.totalTests,
-          totalInvitations: data.totalInvitations,
-          totalAttempts: data.totalAttempts,
-          activeTests: data.activeTests,
-        });
-        setRecentActivity(data.recentActivity || []);
-      }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
+  const StatCard = ({
+    title,
+    value,
+    icon,
+    color,
+  }: {
+    title: string;
+    value: number;
+    icon: React.ReactNode;
+    color: string;
+  }) => (
+    <div className="flex items-center rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <div className={`rounded-full p-3 ${color}`}>{icon}</div>
+      <div className="ml-4">
+        <p className="text-sm text-gray-500">{title}</p>
+        <p className="text-2xl font-bold text-gray-900">{value}</p>
+      </div>
+    </div>
+  );
+
+  const QuickActionButton = ({
+    href,
+    title,
+    icon,
+  }: {
+    href: string;
+    title: string;
+    icon: React.ReactNode;
+  }) => (
+    <Link
+      href={href}
+      className="flex flex-col items-center justify-center rounded-lg border border-gray-200 bg-gray-50 p-4 text-center shadow-sm transition-colors hover:bg-gray-100"
+    >
+      {icon}
+      <p className="mt-2 text-sm font-medium text-gray-700">{title}</p>
+    </Link>
+  );
+
+  const ActivityIcon = ({ type }: { type: string }) => {
+    const icons: { [key: string]: React.ReactNode } = {
+      'Test Created': <FileText className="h-4 w-4 text-blue-500" />,
+      'Invitation Sent': <Mail className="h-4 w-4 text-orange-500" />,
+      'Test Completed': <CheckCircle className="h-4 w-4 text-green-500" />,
+    };
+    return (
+      <div className="rounded-full bg-gray-100 p-2">
+        {icons[type] || <FileText className="h-4 w-4 text-gray-500" />}
+      </div>
+    );
   };
 
   if (loading) {
     return (
-      <div className="flex min-h-64 items-center justify-center">
-        <div className="text-gray-600">Loading dashboard...</div>
+      <div className="flex h-full items-center justify-center p-6">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen space-y-6 bg-gray-50 p-6">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="mb-2 text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600">Welcome back to Test Platform</p>
-      </div>
-
-      {/* Stats Overview */}
-      <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-        {/* Total Tests */}
-        <div className="rounded-lg border bg-white p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="mb-1 text-sm font-medium text-gray-600">
-                Total Tests
-              </p>
-              <p className="text-3xl font-bold text-gray-900">
-                {stats.totalTests}
-              </p>
-            </div>
-            <div className="rounded-lg bg-blue-100 p-3">
-              <svg
-                className="h-6 w-6 text-blue-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-sm text-gray-600">
+            Welcome back! Here's an overview of your test platform.
+          </p>
         </div>
 
-        {/* Active Tests */}
-        <div className="rounded-lg border bg-white p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="mb-1 text-sm font-medium text-gray-600">
-                Active Tests
-              </p>
-              <p className="text-3xl font-bold text-gray-900">
-                {stats.activeTests}
-              </p>
-            </div>
-            <div className="rounded-lg bg-green-100 p-3">
-              <svg
-                className="h-6 w-6 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-          </div>
+        <InfoPanel
+          title="🚀 Getting Started Guide"
+          variant="neutral"
+          dismissible={true}
+        >
+          <p>
+            Use this dashboard to get a quick glance at your platform's
+            activity. You can create new tests, manage job profiles, and view
+            detailed analytics all from one place.
+          </p>
+        </InfoPanel>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Total Tests"
+            value={stats?.totalTests ?? 0}
+            icon={<FileText className="h-6 w-6 text-blue-600" />}
+            color="bg-blue-100"
+          />
+          <StatCard
+            title="Active Tests"
+            value={stats?.activeTests ?? 0}
+            icon={<CheckCircle className="h-6 w-6 text-green-600" />}
+            color="bg-green-100"
+          />
+          <StatCard
+            title="Total Attempts"
+            value={stats?.totalAttempts ?? 0}
+            icon={<Users className="h-6 w-6 text-purple-600" />}
+            color="bg-purple-100"
+          />
+          <StatCard
+            title="Invitations"
+            value={stats?.totalInvitations ?? 0}
+            icon={<Mail className="h-6 w-6 text-orange-600" />}
+            color="bg-orange-100"
+          />
         </div>
 
-        {/* Total Attempts */}
-        <div className="rounded-lg border bg-white p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="mb-1 text-sm font-medium text-gray-600">
-                Total Attempts
-              </p>
-              <p className="text-3xl font-bold text-gray-900">
-                {stats.totalAttempts}
-              </p>
-            </div>
-            <div className="rounded-lg bg-purple-100 p-3">
-              <svg
-                className="h-6 w-6 text-purple-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm lg:col-span-2">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              Quick Actions
+            </h2>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <QuickActionButton
+                href="/admin/tests/new"
+                title="Create Test"
+                icon={<Plus className="h-8 w-8 text-blue-500" />}
+              />
+              <QuickActionButton
+                href="/admin/job-profiles"
+                title="Job Profiles"
+                icon={<Briefcase className="h-8 w-8 text-orange-500" />}
+              />
+              <QuickActionButton
+                href="/admin/analytics"
+                title="View Analytics"
+                icon={<BarChart2 className="h-8 w-8 text-green-500" />}
+              />
+              <QuickActionButton
+                href="/admin/users"
+                title="Manage Users"
+                icon={<Users className="h-8 w-8 text-purple-500" />}
+              />
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Quick Actions */}
-      <div className="mb-8 rounded-lg border bg-white p-6">
-        <h2 className="mb-6 text-xl font-semibold text-gray-900">
-          Quick Actions
-        </h2>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Link
-            href="/admin/tests/new"
-            className="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-4 text-gray-700 hover:bg-gray-50"
-          >
-            <svg
-              className="mr-3 h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Create Test
-          </Link>
-
-          <Link
-            href="/admin/tests"
-            className="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-4 text-gray-700 hover:bg-gray-50"
-          >
-            <svg
-              className="mr-3 h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-              />
-            </svg>
-            Manage Tests
-          </Link>
-
-          <Link
-            href="/admin/analytics"
-            className="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-4 text-gray-700 hover:bg-gray-50"
-          >
-            <svg
-              className="mr-3 h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-              />
-            </svg>
-            View Analytics
-          </Link>
-
-          <Link
-            href="/admin/users"
-            className="flex items-center justify-center rounded-lg border border-gray-200 bg-white p-4 text-gray-700 hover:bg-gray-50"
-          >
-            <svg
-              className="mr-3 h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-              />
-            </svg>
-            Manage Users
-          </Link>
-        </div>
-      </div>
-
-      {/* Recent Activity */}
-      <div className="rounded-lg border bg-white p-6">
-        <h2 className="mb-6 text-xl font-semibold text-gray-900">
-          Recent Activity
-        </h2>
-        {loading ? (
-          <div className="text-gray-500">Loading activity...</div>
-        ) : recentActivity.length === 0 ? (
-          <div className="py-8 text-center">
-            <svg
-              className="mx-auto h-12 w-12 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"
-              />
-            </svg>
-            <p className="mt-2 text-gray-500">No recent activity</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {recentActivity.map((activity) => (
-              <div
-                key={activity.id}
-                className="flex items-start space-x-3 border-b border-gray-100 py-3 last:border-b-0"
-              >
-                <div className="flex-shrink-0 rounded-full bg-blue-100 p-2">
-                  <svg
-                    className="h-4 w-4 text-blue-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm lg:col-span-1 lg:row-span-2">
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">
+              Recent Activity
+            </h2>
+            <div className="max-h-[400px] space-y-4 overflow-y-auto">
+              {activities.length > 0 ? (
+                activities.map((activity, index) => (
+                  <Link
+                    href={activity.link}
+                    key={index}
+                    className="flex items-start gap-3 rounded-lg p-2 transition-colors hover:bg-gray-50"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900">
-                    {activity.description}
-                  </p>
-                  <p className="mt-1 text-xs text-gray-500">
-                    {new Date(activity.timestamp).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            ))}
+                    <ActivityIcon type={activity.type} />
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-800">
+                        {activity.description}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {formatDistanceToNow(new Date(activity.timestamp), {
+                          addSuffix: true,
+                        })}
+                      </p>
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <p className="py-8 text-center text-sm text-gray-500">
+                  No recent activity found.
+                </p>
+              )}
+            </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import InfoPanel from '@/components/ui/InfoPanel';
 import {
   Users,
   TrendingUp,
@@ -106,29 +107,9 @@ export default function PositionAnalyticsPage() {
   const fetchPositions = useCallback(async () => {
     try {
       const response = await fetch(
-        '/api/admin/positions?includeTestCount=true',
-        {
-          method: 'GET',
-          credentials: 'include', // Include cookies for authentication
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
+        '/api/admin/positions?includeTestCount=true'
       );
-
-      if (response.status === 401) {
-        // Redirect to login if unauthorized
-        router.push('/login');
-        return;
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.error || `Failed to fetch positions (${response.status})`
-        );
-      }
-
+      if (!response.ok) throw new Error('Failed to fetch positions');
       const data = await response.json();
 
       // Only show active positions with tests
@@ -142,73 +123,23 @@ export default function PositionAnalyticsPage() {
         setSelectedPositionId(activePositionsWithTests[0].id);
       }
     } catch (err) {
-      console.error('Error fetching positions:', err);
       setError(
         err instanceof Error ? err.message : 'Failed to fetch positions'
       );
     }
-  }, [selectedPositionId, router]);
+  }, [selectedPositionId]);
 
   // Fetch overall statistics
   const fetchOverallStats = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/analytics/overview', {
-        method: 'GET',
-        credentials: 'include', // Include cookies for authentication
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.status === 401) {
-        // Redirect to login if unauthorized
-        router.push('/login');
-        return;
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.error ||
-            `Failed to fetch overall statistics (${response.status})`
-        );
-      }
-
+      const response = await fetch('/api/admin/analytics/overview');
+      if (!response.ok) throw new Error('Failed to fetch overall statistics');
       const data = await response.json();
       setOverallStats(data);
     } catch (err) {
       console.error('Failed to fetch overall stats:', err);
-      // Don't set error for overall stats as it's not critical
     }
-  }, [router]);
-
-  // Retry helper for better error handling
-  const retryFetch = useCallback(
-    async (fetchFn: () => Promise<void>, maxRetries: number = 2) => {
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-          await fetchFn();
-          return; // Success, exit retry loop
-        } catch (error: any) {
-          if (attempt === maxRetries) {
-            throw error; // Last attempt failed, re-throw error
-          }
-
-          // Only retry on network/connectivity errors
-          if (
-            error.message?.includes('connection') ||
-            error.message?.includes('timeout') ||
-            error.message?.includes('fetch')
-          ) {
-            await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
-          } else {
-            throw error; // Don't retry non-network errors
-          }
-        }
-      }
-    },
-    []
-  );
+  }, []);
 
   // Fetch position analytics
   const fetchPositionAnalytics = useCallback(async () => {
@@ -218,51 +149,13 @@ export default function PositionAnalyticsPage() {
     setError(null);
 
     try {
-      await retryFetch(async () => {
-        const response = await fetch(
-          `/api/admin/analytics/position/${selectedPositionId}`,
-          {
-            method: 'GET',
-            credentials: 'include', // Include cookies for authentication
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        if (response.status === 401) {
-          // Redirect to login if unauthorized
-          router.push('/login');
-          return;
-        }
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          let errorMessage =
-            errorData.error ||
-            `Failed to fetch position analytics (${response.status})`;
-
-          // Add more context for specific error types
-          if (response.status === 503) {
-            errorMessage =
-              'Database temporarily unavailable. Please try again in a moment.';
-          } else if (response.status === 504) {
-            errorMessage = 'Request timed out. Please try again.';
-          }
-
-          // Include details if available
-          if (errorData.details) {
-            errorMessage += ' ' + errorData.details;
-          }
-
-          throw new Error(errorMessage);
-        }
-
-        const data = await response.json();
-        setAnalytics(data);
-      });
+      const response = await fetch(
+        `/api/admin/analytics/position/${selectedPositionId}`
+      );
+      if (!response.ok) throw new Error('Failed to fetch position analytics');
+      const data = await response.json();
+      setAnalytics(data);
     } catch (err) {
-      console.error('Error fetching position analytics:', err);
       setError(
         err instanceof Error
           ? err.message
@@ -271,7 +164,7 @@ export default function PositionAnalyticsPage() {
     } finally {
       setLoadingAnalytics(false);
     }
-  }, [selectedPositionId, router, retryFetch]);
+  }, [selectedPositionId]);
 
   // Initial data fetch
   useEffect(() => {
@@ -348,6 +241,30 @@ export default function PositionAnalyticsPage() {
             View detailed analytics and insights by job position
           </p>
         </div>
+
+        {/* Info Panel */}
+        <InfoPanel
+          title="📈 Analytics Dashboard Guide"
+          variant="success"
+          dismissible={true}
+        >
+          <div className="space-y-2">
+            <p>
+              <strong>Available Analytics:</strong>
+            </p>
+            <ul className="ml-4 list-disc space-y-1 text-sm">
+              <li>Overall performance statistics and growth rates</li>
+              <li>Position-specific analytics with score distributions</li>
+              <li>Category breakdowns (Logical, Verbal, Numerical, etc.)</li>
+              <li>Monthly trends and top performers</li>
+              <li>Detailed candidate performance analysis</li>
+            </ul>
+            <p className="text-sm font-medium text-green-700">
+              💡 Tip: Use the detailed analysis links to get comprehensive
+              insights!
+            </p>
+          </div>
+        </InfoPanel>
 
         {/* Overall Stats Cards - Compact */}
         {overallStats && (
@@ -573,34 +490,14 @@ export default function PositionAnalyticsPage() {
                     <BarChart3 className="mx-auto h-10 w-10" />
                   </div>
                   <h3 className="mt-2 text-sm font-medium text-gray-900">
-                    {error.includes('Database')
-                      ? 'Database Connection Issue'
-                      : error.includes('timeout')
-                        ? 'Request Timeout'
-                        : 'Error Loading Analytics'}
+                    Error Loading Analytics
                   </h3>
-                  <p className="mt-1 max-w-md text-xs text-gray-500">{error}</p>
-                  {error.includes('Database') && (
-                    <p className="mt-1 text-xs text-blue-600">
-                      This is usually temporary and resolves quickly.
-                    </p>
-                  )}
+                  <p className="mt-1 text-xs text-gray-500">{error}</p>
                   <button
                     onClick={fetchPositionAnalytics}
-                    disabled={loadingAnalytics}
-                    className="mx-auto mt-3 flex items-center gap-1 rounded-md bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg border-2 border-blue-700/50 bg-gradient-to-r from-blue-600 to-blue-700 px-3 py-1.5 text-xs font-medium text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
                   >
-                    {loadingAnalytics ? (
-                      <>
-                        <div className="h-3 w-3 animate-spin rounded-full border border-white border-t-transparent"></div>
-                        Retrying...
-                      </>
-                    ) : (
-                      <>
-                        <RefreshCw className="h-3 w-3" />
-                        Try Again
-                      </>
-                    )}
+                    Try Again
                   </button>
                 </div>
               </div>

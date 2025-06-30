@@ -3,6 +3,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import LinkButton from '@/components/ui/LinkButton';
+import InfoPanel from '@/components/ui/InfoPanel';
 import EmailNotificationSettings from '@/components/EmailNotificationSettings';
 import {
   Mail,
@@ -85,9 +87,6 @@ type FilterStatus =
 
 export default function TestsPage() {
   const { data: session, status } = useSession();
-  const [activeTab, setActiveTab] = useState<
-    'tests' | 'invitations' | 'publicLinks'
-  >('tests');
 
   // Tests state
   const [tests, setTests] = useState<Test[]>([]);
@@ -618,298 +617,231 @@ export default function TestsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className={designSystem.text.pageTitle}>Tests & Invitations</h1>
+            <h1 className={designSystem.text.pageTitle}>Manage Tests</h1>
             <p className={designSystem.text.pageSubtitle}>
-              Create tests, manage questions, and send invitations
+              Create and manage test questions and configurations
             </p>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-6">
-            <button
-              onClick={() => setActiveTab('tests')}
-              className={`micro-lift border-b-2 px-1 py-2 text-sm font-medium transition-all duration-200 ${
-                activeTab === 'tests'
-                  ? 'border-brand-500 text-brand-600'
-                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <Settings className="h-4 w-4" />
-                <span>Manage Tests</span>
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('invitations')}
-              className={`micro-scale border-b-2 px-1 py-2 text-sm font-medium transition-all duration-200 ${
-                activeTab === 'invitations'
-                  ? 'border-brand-500 text-brand-600'
-                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <Users className="h-4 w-4" />
-                <span>Send Invitations</span>
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('publicLinks')}
-              className={`micro-bounce border-b-2 px-1 py-2 text-sm font-medium transition-all duration-200 ${
-                activeTab === 'publicLinks'
-                  ? 'border-brand-500 text-brand-600'
-                  : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-              }`}
-            >
-              <div className="flex items-center space-x-2">
-                <ExternalLink className="h-4 w-4" />
-                <span>Public Links</span>
-              </div>
-            </button>
-          </nav>
-        </div>
+        {/* Info Panel */}
+        <InfoPanel
+          title="💡 Need to send invitations or create public links?"
+          variant="info"
+          dismissible={true}
+        >
+          <p className="mb-2">
+            <strong>
+              For sending test invitations and creating public links:
+            </strong>
+          </p>
+          <ul className="ml-4 list-disc space-y-1">
+            <li>
+              Go to{' '}
+              <Link
+                href="/admin/job-profiles"
+                className="font-medium text-blue-600 underline hover:text-blue-800"
+              >
+                Job Profiles
+              </Link>{' '}
+              to create assessment profiles
+            </li>
+            <li>
+              Send individual or bulk invitations from the job profiles page
+            </li>
+            <li>
+              Generate public test links that can be shared with candidates
+            </li>
+            <li>
+              View all test attempts and analytics in one centralized location
+            </li>
+          </ul>
+        </InfoPanel>
 
-        {/* Tests Tab */}
-        {activeTab === 'tests' && (
-          <div className="page-transition-staggered space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex gap-2">
-                {session?.user?.role === 'SUPER_ADMIN' && (
-                  <Link
-                    href="/admin/tests/archived"
-                    className={componentStyles.button.secondary}
-                  >
-                    <Archive className="mr-1.5 inline h-4 w-4" />
-                    View Archived
-                  </Link>
-                )}
+        {/* Tests Management */}
+        <div className="page-transition-staggered space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2">
+              {session?.user?.role === 'SUPER_ADMIN' && (
+                <Link
+                  href="/admin/tests/archived"
+                  className={componentStyles.button.secondary}
+                >
+                  <Archive className="mr-1.5 inline h-4 w-4" />
+                  View Archived
+                </Link>
+              )}
+              <Link
+                href="/admin/tests/new"
+                className={componentStyles.button.primary}
+              >
+                <Plus className="mr-1.5 inline h-4 w-4" />
+                Create New Test
+              </Link>
+            </div>
+          </div>
+
+          {testsLoading ? (
+            <div className="flex justify-center py-6">
+              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-brand-500"></div>
+            </div>
+          ) : tests.length === 0 ? (
+            <div className={`${componentStyles.card} text-center`}>
+              <Settings className="mx-auto h-10 w-10 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">
+                No tests
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Get started by creating your first test.
+              </p>
+              <div className="mt-4">
                 <Link
                   href="/admin/tests/new"
                   className={componentStyles.button.primary}
                 >
-                  <Plus className="mr-1.5 inline h-4 w-4" />
-                  Create New Test
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Test
                 </Link>
               </div>
             </div>
-
-            {testsLoading ? (
-              <div className="flex justify-center py-6">
-                <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-brand-500"></div>
-              </div>
-            ) : tests.length === 0 ? (
-              <div className={`${componentStyles.card} text-center`}>
-                <Settings className="mx-auto h-10 w-10 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">
-                  No tests
-                </h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Get started by creating your first test.
-                </p>
-                <div className="mt-4">
-                  <Link
-                    href="/admin/tests/new"
-                    className={componentStyles.button.primary}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Test
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              <div className={componentStyles.table}>
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className={designSystem.table.header}>
-                    <tr>
-                      <th className={designSystem.table.headerCell}>
-                        Test Details
-                      </th>
-                      <th
-                        className={`${designSystem.table.headerCell} text-center`}
-                      >
-                        Questions
-                      </th>
-                      <th
-                        className={`${designSystem.table.headerCell} text-center`}
-                      >
-                        Invitations
-                      </th>
-                      <th className={designSystem.table.headerCell}>Created</th>
-                      <th
-                        className={`${designSystem.table.headerCell} text-right`}
-                      >
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
-                    {tests.map((test) => (
-                      <tr key={test.id} className={designSystem.table.row}>
-                        <td className={designSystem.table.cell}>
-                          <div>
-                            <h3 className="text-sm font-medium text-gray-900">
-                              {test.title}
-                            </h3>
-                            {test.description && (
-                              <p className="mt-0.5 line-clamp-1 text-xs text-gray-500">
-                                {test.description}
-                              </p>
-                            )}
-                          </div>
-                        </td>
-                        <td
-                          className={`${designSystem.table.cell} text-center`}
-                        >
-                          <span className="text-sm font-medium text-gray-900">
-                            {test.questionsCount}
-                          </span>
-                        </td>
-                        <td
-                          className={`${designSystem.table.cell} text-center`}
-                        >
-                          <span className="text-sm font-medium text-gray-900">
-                            {test.invitationsCount}
-                          </span>
-                        </td>
-                        <td className={designSystem.table.cell}>
-                          <span className="text-sm text-gray-500">
-                            {new Date(test.createdAt).toLocaleDateString()}
-                          </span>
-                        </td>
-                        <td className={designSystem.table.cell}>
-                          <div className="flex items-center justify-end space-x-1">
-                            <Link
-                              href={`/admin/tests/${test.id}`}
-                              className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
-                              title="Edit Test"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Link>
-                            <button
-                              onClick={async () => {
-                                try {
-                                  const response = await fetch(
-                                    `/api/admin/tests/${test.id}/preview`,
-                                    {
-                                      method: 'POST',
-                                    }
-                                  );
-
-                                  if (response.ok) {
-                                    const data = await response.json();
-                                    window.open(data.previewUrl, '_blank');
-                                  } else {
-                                    const error = await response.json();
-                                    alert(
-                                      `Failed to create preview: ${error.error}`
-                                    );
+          ) : (
+            <div className={componentStyles.table}>
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className={designSystem.table.header}>
+                  <tr>
+                    <th className={designSystem.table.headerCell}>
+                      Test Details
+                    </th>
+                    <th
+                      className={`${designSystem.table.headerCell} text-center`}
+                    >
+                      Questions
+                    </th>
+                    <th
+                      className={`${designSystem.table.headerCell} text-center`}
+                    >
+                      Invitations
+                    </th>
+                    <th className={designSystem.table.headerCell}>Created</th>
+                    <th
+                      className={`${designSystem.table.headerCell} text-right`}
+                    >
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {tests.map((test) => (
+                    <tr key={test.id} className={designSystem.table.row}>
+                      <td className={designSystem.table.cell}>
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-900">
+                            {test.title}
+                          </h3>
+                          {test.description && (
+                            <p className="mt-0.5 line-clamp-1 text-xs text-gray-500">
+                              {test.description}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+                      <td className={`${designSystem.table.cell} text-center`}>
+                        <span className="text-sm font-medium text-gray-900">
+                          {test.questionsCount}
+                        </span>
+                      </td>
+                      <td className={`${designSystem.table.cell} text-center`}>
+                        <span className="text-sm font-medium text-gray-900">
+                          {test.invitationsCount}
+                        </span>
+                      </td>
+                      <td className={designSystem.table.cell}>
+                        <span className="text-sm text-gray-500">
+                          {new Date(test.createdAt).toLocaleDateString()}
+                        </span>
+                      </td>
+                      <td className={designSystem.table.cell}>
+                        <div className="flex items-center justify-end space-x-1">
+                          <Link
+                            href={`/admin/tests/${test.id}`}
+                            className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                            title="Edit Test"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Link>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const response = await fetch(
+                                  `/api/admin/tests/${test.id}/preview`,
+                                  {
+                                    method: 'POST',
                                   }
-                                } catch (error) {
-                                  console.error(
-                                    'Error creating preview:',
-                                    error
+                                );
+
+                                if (response.ok) {
+                                  const data = await response.json();
+                                  window.open(data.previewUrl, '_blank');
+                                } else {
+                                  const error = await response.json();
+                                  alert(
+                                    `Failed to create preview: ${error.error}`
                                   );
-                                  alert('Failed to create preview link');
                                 }
-                              }}
-                              className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
-                              title="Preview Test"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                handleEmailNotifications({
-                                  id: test.id,
-                                  title: test.title,
-                                });
-                              }}
-                              className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
-                              title="Email Notifications"
-                            >
-                              <Bell className="h-4 w-4" />
-                            </button>
-                            {session?.user?.role === 'SUPER_ADMIN' && (
-                              <>
-                                <button
-                                  onClick={() => handleArchiveTest(test.id)}
-                                  disabled={archivingTestId === test.id}
-                                  className="rounded p-1 text-yellow-600 transition-colors hover:bg-yellow-50 hover:text-yellow-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                  title="Archive Test"
-                                >
-                                  <Archive className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteTest(test.id)}
-                                  disabled={deletingTestId === test.id}
-                                  className="rounded p-1 text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                  title="Delete Test"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Redirect message for invitations */}
-        {activeTab === 'invitations' && (
-          <div className="page-transition-slide-up space-y-3">
-            <div
-              className={`${componentStyles.card} border-blue-200 bg-blue-50 text-center`}
-            >
-              <h2
-                className={`mb-3 ${designSystem.text.sectionTitle} text-blue-900`}
-              >
-                Invitations Moved to Job Profiles
-              </h2>
-              <p className="mb-4 text-blue-700">
-                Invitation and public link functionality has been moved to the
-                Job Profiles page for better organization around job positions.
-              </p>
-              <Link
-                href="/admin/job-profiles"
-                className={componentStyles.button.primary}
-              >
-                Go to Job Profiles →
-              </Link>
+                              } catch (error) {
+                                console.error('Error creating preview:', error);
+                                alert('Failed to create preview link');
+                              }
+                            }}
+                            className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                            title="Preview Test"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              handleEmailNotifications({
+                                id: test.id,
+                                title: test.title,
+                              });
+                            }}
+                            className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                            title="Email Notifications"
+                          >
+                            <Bell className="h-4 w-4" />
+                          </button>
+                          {session?.user?.role === 'SUPER_ADMIN' && (
+                            <>
+                              <button
+                                onClick={() => handleArchiveTest(test.id)}
+                                disabled={archivingTestId === test.id}
+                                className="rounded p-1 text-yellow-600 transition-colors hover:bg-yellow-50 hover:text-yellow-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                title="Archive Test"
+                              >
+                                <Archive className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTest(test.id)}
+                                disabled={deletingTestId === test.id}
+                                className="rounded p-1 text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                title="Delete Test"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          </div>
-        )}
-
-        {/* Redirect message for public links */}
-        {activeTab === 'publicLinks' && (
-          <div className="page-transition-circle space-y-3">
-            <div className="micro-bounce rounded-lg border border-green-200 bg-green-50 p-3 text-center shadow-sm">
-              <h2 className="mb-3 text-lg font-medium text-green-900">
-                Public Links Moved to Job Profiles
-              </h2>
-              <p className="mb-4 text-green-700">
-                Public link functionality has been moved to the Job Profiles
-                page where you can create comprehensive assessments for job
-                positions.
-              </p>
-              <Link
-                href="/admin/job-profiles"
-                className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-              >
-                Go to Job Profiles →
-              </Link>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Legacy invitation content - keeping for reference but hiding */}
-        {false && activeTab === 'invitations' && (
+        {false && (
           <div className="page-transition-slide-up space-y-3">
             {/* Send Invitation Form */}
             <div className="micro-lift rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
@@ -1138,12 +1070,14 @@ export default function TestsPage() {
                           <td className="whitespace-nowrap px-3 py-2 text-sm font-medium">
                             <div className="flex items-center space-x-2">
                               {invitation.testAttempt?.id && (
-                                <Link
+                                <LinkButton
                                   href={`/admin/analytics/analysis/${invitation.testAttempt.id}`}
-                                  className="text-brand-600 hover:text-brand-900"
+                                  variant="outline"
+                                  size="xs"
+                                  className="border-brand-600 text-brand-600 hover:bg-brand-50"
                                 >
                                   View Analysis
-                                </Link>
+                                </LinkButton>
                               )}
                               {canRevokeInvitation(invitation) && (
                                 <button
@@ -1182,139 +1116,6 @@ export default function TestsPage() {
                     </tbody>
                   </table>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Public Links Tab */}
-        {activeTab === 'publicLinks' && (
-          <div className="page-transition-circle space-y-3">
-            {/* Error Message */}
-            {publicLinksError && (
-              <div className="rounded-md bg-red-50 p-3 shadow-sm">
-                <div className="text-sm text-red-700">{publicLinksError}</div>
-              </div>
-            )}
-
-            {/* Public Links List */}
-            {publicLinksLoading ? (
-              <div className="flex justify-center py-6">
-                <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-brand-500"></div>
-              </div>
-            ) : (
-              <div className="micro-bounce overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-                {publicLinks.length === 0 ? (
-                  <div className="py-8 text-center">
-                    <ExternalLink className="mx-auto h-10 w-10 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">
-                      No public links
-                    </h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Get started by creating a new public test link from the
-                      invitations tab.
-                    </p>
-                    <div className="mt-4">
-                      <button
-                        onClick={() => setActiveTab('invitations')}
-                        className="inline-flex items-center rounded-md border border-transparent bg-brand-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-brand-700"
-                      >
-                        Create Public Link
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <ul className="divide-y divide-gray-200">
-                    {publicLinks.map((link) => {
-                      const publicUrl = `${window.location.origin}/public-test/${link.linkToken}`;
-
-                      return (
-                        <li key={link.id} className="px-3 py-2">
-                          <div className="flex items-center justify-between">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center space-x-3">
-                                <div className="flex-1">
-                                  <div className="flex items-center space-x-2">
-                                    <h3 className="truncate text-base font-medium text-gray-900">
-                                      {link.title}
-                                    </h3>
-                                    {getStatusBadge(link)}
-                                  </div>
-                                  <p className="mt-0.5 text-sm text-gray-600">
-                                    Test: {link.test.title}
-                                  </p>
-                                  <div className="mt-1.5 flex items-center space-x-3 text-xs text-gray-500">
-                                    <span>
-                                      Used: {link.usedCount}
-                                      {link.maxUses ? ` / ${link.maxUses}` : ''}
-                                    </span>
-                                    <span>•</span>
-                                    <span>
-                                      Created: {formatDate(link.createdAt)}
-                                    </span>
-                                    {link.expiresAt && (
-                                      <>
-                                        <span>•</span>
-                                        <span>
-                                          Expires: {formatDate(link.expiresAt)}
-                                        </span>
-                                      </>
-                                    )}
-                                  </div>
-                                  <div className="mt-2 flex items-center space-x-2">
-                                    <input
-                                      type="text"
-                                      value={publicUrl}
-                                      readOnly
-                                      className="flex-1 rounded border border-gray-300 bg-gray-50 px-2 py-1 font-mono text-xs"
-                                    />
-                                    <button
-                                      onClick={() => copyToClipboard(publicUrl)}
-                                      className="inline-flex items-center rounded border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-                                    >
-                                      <Copy className="mr-1 h-3 w-3" />
-                                      Copy
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="ml-3 flex items-center space-x-1.5">
-                              <Link
-                                href={`/admin/analytics/analysis?publicLinkId=${link.id}`}
-                                className="inline-flex items-center rounded border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50"
-                              >
-                                📊 View Attempts
-                              </Link>
-
-                              <button
-                                onClick={() =>
-                                  toggleLinkStatus(link.id, link.isActive)
-                                }
-                                className={`inline-flex items-center rounded border px-2 py-1 text-xs font-medium shadow-sm ${
-                                  link.isActive
-                                    ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
-                                    : 'border-green-300 bg-green-50 text-green-700 hover:bg-green-100'
-                                }`}
-                              >
-                                {link.isActive ? 'Deactivate' : 'Activate'}
-                              </button>
-
-                              <button
-                                onClick={() => deletePublicLink(link.id)}
-                                className="inline-flex items-center rounded border border-red-300 bg-red-50 px-2 py-1 text-xs font-medium text-red-700 shadow-sm hover:bg-red-100"
-                              >
-                                <Trash2 className="mr-1 h-3 w-3" />
-                                Delete
-                              </button>
-                            </div>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
               </div>
             )}
           </div>
