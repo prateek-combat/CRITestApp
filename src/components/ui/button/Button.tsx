@@ -38,16 +38,16 @@ const Button: React.FC<ButtonProps> = ({
     lg: 'px-4 py-2.5 text-base gap-2',
   };
 
-  // Modern variant classes with effects
+  // Enhanced modern variant classes with premium styling
   const variantClasses = {
     primary:
-      'bg-gradient-to-r from-military-green to-primary-600 text-white shadow-sm hover:shadow-md hover:from-primary-600 hover:to-primary-700 active:scale-[0.98] disabled:from-gray-400 disabled:to-gray-500 disabled:hover:shadow-sm',
+      'bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 text-white shadow-lg hover:shadow-xl hover:shadow-blue-500/25 hover:from-blue-700 hover:to-blue-900 active:scale-[0.98] disabled:from-gray-400 disabled:to-gray-500 disabled:shadow-none border border-blue-700/50 hover:border-blue-600',
     outline:
-      'bg-white text-military-green ring-1 ring-inset ring-military-green/20 hover:bg-military-green/5 hover:ring-military-green/30 active:scale-[0.98] dark:bg-gray-800 dark:text-military-green dark:ring-military-green/30 dark:hover:bg-military-green/10',
+      'bg-white text-blue-600 border-2 border-blue-600 shadow-sm hover:bg-blue-50 hover:shadow-md hover:border-blue-700 active:scale-[0.98] disabled:text-gray-400 disabled:border-gray-300 disabled:shadow-none',
     ghost:
-      'text-military-green hover:bg-military-green/10 hover:text-primary-700 active:scale-[0.98] dark:text-military-green dark:hover:bg-military-green/20',
+      'text-gray-700 bg-gray-50 border-2 border-gray-200 shadow-sm hover:bg-gray-100 hover:border-gray-300 hover:shadow-md active:scale-[0.98] disabled:text-gray-400 disabled:bg-gray-50 disabled:border-gray-200',
     glass:
-      'backdrop-blur-md bg-white/10 text-military-green ring-1 ring-inset ring-white/20 hover:bg-white/20 active:scale-[0.98] dark:text-white dark:ring-white/10 dark:hover:bg-white/10',
+      'backdrop-blur-md bg-white/80 text-blue-600 border border-white/50 shadow-lg hover:bg-white/90 hover:shadow-xl active:scale-[0.98] disabled:bg-white/60 disabled:text-gray-400 disabled:shadow-none',
   };
 
   const isDisabled = disabled || loading;

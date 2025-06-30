@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import InfoPanel from '@/components/ui/InfoPanel';
 import {
   Plus,
   Edit2,
@@ -321,13 +322,38 @@ export default function PositionsPage() {
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="inline-flex items-center gap-2 rounded-lg border-2 border-blue-700/50 bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="h-4 w-4" />
               Create Position
             </button>
           </div>
         </div>
+
+        {/* Info Panel */}
+        <InfoPanel
+          title="🎯 Position Management Guide"
+          variant="info"
+          dismissible={true}
+        >
+          <div className="space-y-2">
+            <p>
+              <strong>Key Features:</strong>
+            </p>
+            <ul className="ml-4 list-disc space-y-1 text-sm">
+              <li>
+                Create and manage job positions with departments and levels
+              </li>
+              <li>Assign multiple tests to each position</li>
+              <li>Track active vs archived tests for each position</li>
+              <li>Filter positions by department and search by name/code</li>
+            </ul>
+            <p className="text-sm font-medium text-blue-700">
+              💡 Tip: Assign tests to positions, then use Job Profiles to invite
+              candidates!
+            </p>
+          </div>
+        </InfoPanel>
 
         {/* Filters */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -351,7 +377,7 @@ export default function PositionsPage() {
               >
                 <option value="all">All Departments</option>
                 {departments.map((dept) => (
-                  <option key={dept} value={dept}>
+                  <option key={dept} value={dept || ''}>
                     {dept}
                   </option>
                 ))}

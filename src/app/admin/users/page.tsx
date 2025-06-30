@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/lib/logger';
+import InfoPanel from '@/components/ui/InfoPanel';
 import { Trash2 } from 'lucide-react';
 
 interface User {
@@ -177,6 +178,28 @@ export default function AdminUsersPage() {
         </p>
       </div>
 
+      {/* Info Panel */}
+      <InfoPanel
+        title="🔐 User Management Guide"
+        variant="warning"
+        dismissible={true}
+      >
+        <div className="space-y-2">
+          <p>
+            <strong>Important Notes:</strong>
+          </p>
+          <ul className="ml-4 list-disc space-y-1 text-sm">
+            <li>Only Super Admins can add, modify, or delete admin users</li>
+            <li>Users sign in with their Google account (OAuth)</li>
+            <li>ADMIN role: Access to all features except user management</li>
+            <li>SUPER_ADMIN role: Full access including user management</li>
+          </ul>
+          <p className="text-sm font-medium text-amber-700">
+            ⚠️ Warning: Be careful when deleting users with existing content!
+          </p>
+        </div>
+      </InfoPanel>
+
       {message && (
         <div
           className={`mb-4 rounded-lg p-3 ${
@@ -195,7 +218,7 @@ export default function AdminUsersPage() {
       <div>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="rounded-md bg-brand-600 px-3 py-1.5 text-sm text-white transition-colors hover:bg-brand-700"
+          className="inline-flex items-center gap-2 rounded-lg border-2 border-blue-700/50 bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
         >
           {showAddForm ? 'Cancel' : '+ Add New Admin'}
         </button>

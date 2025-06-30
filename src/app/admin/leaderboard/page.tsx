@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import LeaderboardSidebarLayout from './_components/LeaderboardSidebarLayout';
+import InfoPanel from '@/components/ui/InfoPanel';
 import { designSystem, componentStyles } from '@/lib/design-system';
 
 export default function LeaderboardPage() {
@@ -51,6 +52,29 @@ export default function LeaderboardPage() {
             weights
           </p>
         </div>
+
+        {/* Info Panel */}
+        <InfoPanel
+          title="📊 Understanding the Leaderboard"
+          variant="info"
+          dismissible={true}
+        >
+          <div className="space-y-2">
+            <p>
+              <strong>Leaderboard Features:</strong>
+            </p>
+            <ul className="ml-4 list-disc space-y-1 text-sm">
+              <li>Compare candidates across different tests and profiles</li>
+              <li>Adjust scoring weights to match your criteria</li>
+              <li>Export results as PDF reports</li>
+              <li>Filter by job profiles and test types</li>
+            </ul>
+            <p className="text-sm font-medium text-blue-700">
+              💡 Tip: Use the weight profiles to customize scoring for different
+              roles!
+            </p>
+          </div>
+        </InfoPanel>
 
         <Suspense
           fallback={

@@ -68,15 +68,18 @@ export const designSystem = {
     neutral: 'badge-tactical bg-gray-100 text-gray-700 border-gray-200',
   },
 
-  // Buttons - Enhanced with military styling
+  // Buttons - Enhanced with premium styling
   button: {
-    base: 'btn-military',
+    base: 'relative inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1',
     group: 'flex items-center gap-2',
     iconButton:
-      'rounded p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all duration-200',
-    primary: 'btn-military bg-gradient-military-dark text-white',
-    secondary: 'btn-military border-tactical bg-white text-gray-700',
-    danger: 'btn-military bg-gradient-accent text-white',
+      'rounded-lg p-2 text-gray-600 bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 hover:shadow-md transition-all duration-200',
+    primary:
+      'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 border-2 border-blue-700/50 shadow-lg hover:shadow-xl px-4 py-2 text-sm font-medium',
+    secondary:
+      'bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-50 hover:border-gray-400 shadow-sm hover:shadow-md px-4 py-2 text-sm font-medium',
+    danger:
+      'bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 border-2 border-red-700/50 shadow-lg hover:shadow-xl px-4 py-2 text-sm font-medium',
   },
 
   // Modals - Enhanced with glass morphism
