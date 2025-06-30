@@ -11,6 +11,7 @@ interface CompactButtonProps {
   className?: string;
   type?: 'button' | 'submit' | 'reset';
   title?: string;
+  loading?: boolean;
 }
 
 export const CompactButton: React.FC<CompactButtonProps> = ({
@@ -23,17 +24,20 @@ export const CompactButton: React.FC<CompactButtonProps> = ({
   className = '',
   type = 'button',
   title,
+  loading = false,
 }) => {
   const baseStyles =
-    'inline-flex items-center justify-center font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1';
+    'relative inline-flex items-center justify-center font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1';
 
   const variantStyles = {
-    primary: 'bg-brand-600 text-white hover:bg-brand-700 focus:ring-brand-500',
+    primary:
+      'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 focus:ring-blue-500 border border-blue-700/50 shadow-md hover:shadow-lg',
     secondary:
-      'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-gray-500',
-    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+      'bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-50 hover:border-gray-400 focus:ring-gray-500 shadow-sm hover:shadow-md',
+    danger:
+      'bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 focus:ring-red-500 border border-red-700/50 shadow-md hover:shadow-lg',
     ghost:
-      'text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:ring-gray-500',
+      'text-gray-700 bg-gray-50 hover:bg-gray-100 hover:text-gray-900 focus:ring-gray-500 border-2 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md',
   };
 
   const sizeStyles = {
@@ -48,16 +52,28 @@ export const CompactButton: React.FC<CompactButtonProps> = ({
     md: 'h-4 w-4',
   };
 
+  const isDisabled = disabled || loading;
+
   return (
     <button
       type={type}
       onClick={onClick}
-      disabled={disabled}
+      disabled={isDisabled}
       title={title}
-      className={` ${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${disabled ? 'cursor-not-allowed opacity-50' : ''} ${className} `}
+      className={` ${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${isDisabled ? 'cursor-not-allowed opacity-50' : ''} ${className} `}
     >
-      {Icon && <Icon className={iconSizes[size]} />}
-      {children}
+      {/* Loading spinner */}
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center rounded-md bg-inherit">
+          <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+        </div>
+      )}
+
+      {/* Button content */}
+      <span className={`flex items-center ${loading ? 'opacity-0' : ''}`}>
+        {Icon && <Icon className={iconSizes[size]} />}
+        {children}
+      </span>
     </button>
   );
 };
