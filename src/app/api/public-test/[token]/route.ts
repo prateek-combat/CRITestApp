@@ -22,10 +22,24 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         expiresAt: true,
         maxUses: true,
         usedCount: true,
+        isTimeRestricted: true,
+        timeSlotId: true,
         test: {
           select: {
             id: true,
             title: true,
+          },
+        },
+        timeSlot: {
+          select: {
+            id: true,
+            name: true,
+            startDateTime: true,
+            endDateTime: true,
+            timezone: true,
+            maxParticipants: true,
+            currentParticipants: true,
+            isActive: true,
           },
         },
       },
@@ -59,6 +73,72 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    // Check time slot restrictions if this is a time-restricted link
+    if (publicLink.isTimeRestricted && publicLink.timeSlot) {
+      const now = new Date();
+      const startTime = new Date(publicLink.timeSlot.startDateTime);
+      const endTime = new Date(publicLink.timeSlot.endDateTime);
+
+      if (!publicLink.timeSlot.isActive) {
+        return NextResponse.json(
+          { error: 'This time slot is not active' },
+          { status: 403 }
+        );
+      }
+
+      if (now < startTime) {
+        return NextResponse.json(
+          {
+            error: 'Time slot not yet started',
+            timeSlotInfo: {
+              name: publicLink.timeSlot.name,
+              startDateTime: publicLink.timeSlot.startDateTime,
+              endDateTime: publicLink.timeSlot.endDateTime,
+              timezone: publicLink.timeSlot.timezone,
+              message: `This test will be available from ${startTime.toLocaleString()} to ${endTime.toLocaleString()} (${publicLink.timeSlot.timezone})`,
+            },
+          },
+          { status: 403 }
+        );
+      }
+
+      if (now > endTime) {
+        return NextResponse.json(
+          {
+            error: 'Time slot has ended',
+            timeSlotInfo: {
+              name: publicLink.timeSlot.name,
+              startDateTime: publicLink.timeSlot.startDateTime,
+              endDateTime: publicLink.timeSlot.endDateTime,
+              timezone: publicLink.timeSlot.timezone,
+              message: `This test was available from ${startTime.toLocaleString()} to ${endTime.toLocaleString()} (${publicLink.timeSlot.timezone})`,
+            },
+          },
+          { status: 403 }
+        );
+      }
+
+      // Check if time slot is full
+      if (
+        publicLink.timeSlot.maxParticipants &&
+        publicLink.timeSlot.currentParticipants >=
+          publicLink.timeSlot.maxParticipants
+      ) {
+        return NextResponse.json(
+          {
+            error: 'Time slot is full',
+            timeSlotInfo: {
+              name: publicLink.timeSlot.name,
+              maxParticipants: publicLink.timeSlot.maxParticipants,
+              currentParticipants: publicLink.timeSlot.currentParticipants,
+              message: `This time slot is full (${publicLink.timeSlot.currentParticipants}/${publicLink.timeSlot.maxParticipants} participants)`,
+            },
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     return NextResponse.json({
       id: publicLink.id,
       testId: publicLink.testId,
@@ -69,6 +149,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       expiresAt: publicLink.expiresAt?.toISOString(),
       maxUses: publicLink.maxUses,
       usedCount: publicLink.usedCount,
+      isTimeRestricted: publicLink.isTimeRestricted,
+      timeSlot: publicLink.timeSlot
+        ? {
+            id: publicLink.timeSlot.id,
+            name: publicLink.timeSlot.name,
+            startDateTime: publicLink.timeSlot.startDateTime.toISOString(),
+            endDateTime: publicLink.timeSlot.endDateTime.toISOString(),
+            timezone: publicLink.timeSlot.timezone,
+            maxParticipants: publicLink.timeSlot.maxParticipants,
+            currentParticipants: publicLink.timeSlot.currentParticipants,
+            isActive: publicLink.timeSlot.isActive,
+          }
+        : null,
     });
   } catch (error) {
     console.error('Error fetching public test link:', error);

@@ -13,6 +13,17 @@ interface PublicTestLink {
   expiresAt?: string;
   maxUses?: number;
   usedCount: number;
+  isTimeRestricted?: boolean;
+  timeSlot?: {
+    id: string;
+    name: string;
+    startDateTime: string;
+    endDateTime: string;
+    timezone: string;
+    maxParticipants?: number;
+    currentParticipants: number;
+    isActive: boolean;
+  };
 }
 
 export default function PublicTestPage() {
@@ -23,6 +34,7 @@ export default function PublicTestPage() {
   const [publicLink, setPublicLink] = useState<PublicTestLink | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [timeSlotInfo, setTimeSlotInfo] = useState<any>(null);
   const [candidateName, setCandidateName] = useState('');
   const [candidateEmail, setCandidateEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -41,6 +53,9 @@ export default function PublicTestPage() {
       } else {
         const error = await response.json();
         setError(error.error || 'Invalid or expired link');
+        if (error.timeSlotInfo) {
+          setTimeSlotInfo(error.timeSlotInfo);
+        }
       }
     } catch (error) {
       console.error('Error fetching public link:', error);
@@ -106,14 +121,35 @@ export default function PublicTestPage() {
   }
 
   if (error) {
+    const isTimeSlotError =
+      error.includes('Time slot') || error.includes('time slot');
+    const errorIcon = isTimeSlotError ? '⏰' : '❌';
+    const errorColor = isTimeSlotError ? 'text-amber-500' : 'text-red-500';
+
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="w-full max-w-md rounded-lg bg-white p-8 text-center shadow-lg">
-          <div className="mb-4 text-6xl text-red-500">❌</div>
+          <div className={`mb-4 text-6xl ${errorColor}`}>{errorIcon}</div>
           <h1 className="mb-2 text-2xl font-bold text-gray-900">
-            Access Denied
+            {isTimeSlotError ? 'Time Slot Restriction' : 'Access Denied'}
           </h1>
-          <p className="mb-6 text-gray-600">{error}</p>
+          <p className="mb-4 text-gray-600">{error}</p>
+
+          {timeSlotInfo && (
+            <div className="mb-6 rounded-lg bg-amber-50 p-4 text-left">
+              <h3 className="mb-2 font-semibold text-amber-900">
+                {timeSlotInfo.name}
+              </h3>
+              <p className="text-sm text-amber-700">{timeSlotInfo.message}</p>
+              {timeSlotInfo.maxParticipants && (
+                <p className="mt-2 text-xs text-amber-600">
+                  Participants: {timeSlotInfo.currentParticipants}/
+                  {timeSlotInfo.maxParticipants}
+                </p>
+              )}
+            </div>
+          )}
+
           <p className="text-sm text-gray-500">
             Please contact the test administrator if you believe this is an
             error.
@@ -167,6 +203,25 @@ export default function PublicTestPage() {
           )}
           <div className="rounded-lg bg-brand-50 p-4 text-sm text-brand-700">
             <p className="font-semibold">Test: {publicLink.testTitle}</p>
+            {publicLink.isTimeRestricted && publicLink.timeSlot && (
+              <div className="mt-2 rounded-md bg-amber-100 p-2 text-amber-800">
+                <p className="font-medium">
+                  ⏰ Time Slot: {publicLink.timeSlot.name}
+                </p>
+                <p className="text-xs">
+                  Available:{' '}
+                  {new Date(publicLink.timeSlot.startDateTime).toLocaleString()}{' '}
+                  - {new Date(publicLink.timeSlot.endDateTime).toLocaleString()}{' '}
+                  ({publicLink.timeSlot.timezone})
+                </p>
+                {publicLink.timeSlot.maxParticipants && (
+                  <p className="text-xs">
+                    Participants: {publicLink.timeSlot.currentParticipants}/
+                    {publicLink.timeSlot.maxParticipants}
+                  </p>
+                )}
+              </div>
+            )}
             {publicLink.expiresAt && (
               <p>
                 Expires: {new Date(publicLink.expiresAt).toLocaleDateString()}

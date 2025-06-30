@@ -86,12 +86,15 @@ export default function TestTakingPage() {
   };
 
   const handleStartTest = async () => {
+    // Import the flag to check if proctoring requirements are disabled
+    const { DISABLE_PROCTORING_REQUIREMENTS } = await import('@/lib/constants');
+
     // Check if camera and microphone permissions are granted
     const cameraGranted = systemCheckResults?.camera.status === 'pass';
     const microphoneGranted = systemCheckResults?.microphone.status === 'pass';
     const permissionsGranted = cameraGranted && microphoneGranted;
 
-    if (!permissionsGranted) {
+    if (!permissionsGranted && !DISABLE_PROCTORING_REQUIREMENTS) {
       alert(
         'Camera and microphone access is required to start the test. Please grant permissions and try again.'
       );
@@ -110,8 +113,9 @@ export default function TestTakingPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          permissionsGranted: true,
-          proctoringEnabled: true,
+          permissionsGranted:
+            DISABLE_PROCTORING_REQUIREMENTS || permissionsGranted,
+          proctoringEnabled: DISABLE_PROCTORING_REQUIREMENTS ? false : true,
         }),
       });
 
@@ -292,15 +296,28 @@ export default function TestTakingPage() {
     return () => clearInterval(timerId);
   }, [timeLeft, testReady]); // Removed handleNextQuestion to prevent circular dependency
 
-  // Start/Stop proctoring - only after test is ready
+  // Start/Stop proctoring - only after test is ready and if proctoring is enabled
   useEffect(() => {
-    if (testReady && attemptId && !isRecording) {
-      startRecording().catch((error) => {
-        console.error('Failed to start proctoring:', error);
-        setProctoringError(error.message || 'Failed to start proctoring');
-        setTestReady(false); // Prevent test from continuing
-      });
-    }
+    const initializeProctoring = async () => {
+      const { DISABLE_PROCTORING_REQUIREMENTS } = await import(
+        '@/lib/constants'
+      );
+
+      if (
+        testReady &&
+        attemptId &&
+        !isRecording &&
+        !DISABLE_PROCTORING_REQUIREMENTS
+      ) {
+        startRecording().catch((error) => {
+          console.error('Failed to start proctoring:', error);
+          setProctoringError(error.message || 'Failed to start proctoring');
+          setTestReady(false); // Prevent test from continuing
+        });
+      }
+    };
+
+    initializeProctoring();
   }, [testReady, attemptId, isRecording, startRecording]);
 
   // Separate cleanup effect for proctoring

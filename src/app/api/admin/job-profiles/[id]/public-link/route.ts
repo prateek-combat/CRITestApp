@@ -99,6 +99,7 @@ export async function POST(
             linkToken,
             title: `${jobProfile.name} - ${test.title}`,
             description: `Public link for ${test.title} as part of ${jobProfile.name} assessment`,
+            isTimeRestricted: false, // Explicitly set to false for regular public links
             createdById: session.user.id,
           },
         });
