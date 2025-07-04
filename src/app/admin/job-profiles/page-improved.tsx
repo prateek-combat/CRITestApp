@@ -1,15 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Plus,
-  Search,
-  Filter,
-  X,
-  AlertCircle,
-  Loader2,
-  Building2,
-} from 'lucide-react';
+import { Plus, Search, Filter, X, AlertCircle, Loader2 } from 'lucide-react';
 import { parseMultipleEmails } from '@/lib/validation-utils';
 import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog';
 import { useConfirmation } from '@/hooks/useConfirmation';
@@ -20,8 +12,6 @@ import TimeSlotModal from '@/components/ui/TimeSlotModal';
 import JobProfileCard from '@/components/admin/job-profiles/JobProfileCard';
 import JobProfileDetailsModal from '@/components/admin/job-profiles/JobProfileDetailsModal';
 import LinkBuilder from '@/components/admin/job-profiles/LinkBuilder';
-import ImprovedInviteModal from '@/components/admin/job-profiles/ImprovedInviteModal';
-import SuccessNotification from '@/components/ui/SuccessNotification';
 
 // Types
 interface Position {
@@ -103,7 +93,7 @@ interface TimeSlotLink {
   };
 }
 
-export default function JobProfilesPage() {
+export default function JobProfilesPageImproved() {
   // State Management
   const [jobProfiles, setJobProfiles] = useState<JobProfile[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
@@ -145,9 +135,6 @@ export default function JobProfilesPage() {
   });
 
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string>('');
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [modalKey, setModalKey] = useState(0); // Force modal refresh
 
   // Confirmation Dialog
   const {
@@ -252,11 +239,6 @@ export default function JobProfilesPage() {
   }, []);
 
   // Utility Functions
-  const showSuccessNotification = (message: string) => {
-    setSuccessMessage(message);
-    setShowSuccess(true);
-  };
-
   const copyToClipboard = async (text: string, linkId: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -276,17 +258,13 @@ export default function JobProfilesPage() {
   };
 
   const getTimeSlotsForProfile = (profileId: string) => {
-    return timeSlots.filter(
-      (slot) => slot.jobProfile && slot.jobProfile.id === profileId
-    );
+    return timeSlots.filter((slot) => slot.jobProfile.id === profileId);
   };
 
   const getTimeSlotLinksForProfile = (profileId: string) => {
     const profileTimeSlots = getTimeSlotsForProfile(profileId);
-    return allTimeSlotLinks.filter(
-      (link) =>
-        link.timeSlot &&
-        profileTimeSlots.some((slot) => slot.id === link.timeSlot.id)
+    return allTimeSlotLinks.filter((link) =>
+      profileTimeSlots.some((slot) => slot.id === link.timeSlot.id)
     );
   };
 
@@ -402,185 +380,6 @@ export default function JobProfilesPage() {
     }
   };
 
-  const handleSendPersonalizedInvitation = async (data: {
-    candidateEmail: string;
-    candidateName: string;
-    customMessage: string;
-    expiresInDays: number;
-  }) => {
-    if (!selectedProfile) return;
-
-    // Parse multiple emails separated by comma, semicolon, or newline
-    const emailDelimiters = /[,;\n]+/;
-    const emails = data.candidateEmail
-      .split(emailDelimiters)
-      .map((e) => e.trim())
-      .filter((e) => e);
-
-    if (emails.length === 1) {
-      // Single invitation
-      try {
-        const response = await fetch('/api/admin/invitations/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...data,
-            jobProfileId: selectedProfile.id,
-          }),
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || 'Failed to send invitation');
-        }
-
-        await fetchJobProfiles();
-        setShowInviteModal(false);
-        setSelectedProfile(null);
-        showSuccessNotification('Personalized invitation sent successfully!');
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to send invitation'
-        );
-      }
-    } else {
-      // Bulk invitations
-      const candidates = emails.map((email, index) => ({
-        email,
-        name: data.candidateName.includes(',')
-          ? data.candidateName.split(',')[index]?.trim() ||
-            `Candidate ${index + 1}`
-          : `${data.candidateName} ${index + 1}`,
-      }));
-
-      try {
-        const response = await fetch('/api/admin/invitations/bulk', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jobProfileId: selectedProfile.id,
-            candidates,
-            customMessage: data.customMessage,
-            expiresInDays: data.expiresInDays,
-          }),
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to send bulk invitations');
-        }
-
-        const result = await response.json();
-        await fetchJobProfiles();
-        setShowInviteModal(false);
-        setSelectedProfile(null);
-        showSuccessNotification(
-          `Successfully sent ${result.successCount} invitations!`
-        );
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to send invitations'
-        );
-      }
-    }
-  };
-
-  const handleSendExistingLink = async (data: {
-    candidateEmail: string;
-    candidateName: string;
-    linkUrl: string;
-    linkType: 'public' | 'timeSlot';
-    customMessage: string;
-    timeSlotInfo?: {
-      name: string;
-      startDateTime: string;
-      endDateTime: string;
-    };
-  }) => {
-    if (!selectedProfile) return;
-
-    // Parse multiple emails separated by comma, semicolon, or newline
-    const emailDelimiters = /[,;\n]+/;
-    const emails = data.candidateEmail
-      .split(emailDelimiters)
-      .map((e) => e.trim())
-      .filter((e) => e);
-
-    if (emails.length === 1) {
-      // Single invitation
-      try {
-        const response = await fetch('/api/admin/invitations/send-link', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...data,
-            jobProfileName: selectedProfile.name,
-          }),
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to send invitation');
-        }
-
-        const result = await response.json();
-
-        setShowInviteModal(false);
-        setSelectedProfile(null);
-
-        // Show success message
-        showSuccessNotification(
-          result.message ||
-            `${data.linkType === 'timeSlot' ? 'Time slot' : 'Public'} link sent successfully to ${data.candidateName}!`
-        );
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to send link');
-      }
-    } else {
-      // Bulk invitations
-      const candidates = emails.map((email, index) => ({
-        email,
-        name: data.candidateName.includes(',')
-          ? data.candidateName.split(',')[index]?.trim() ||
-            `Candidate ${index + 1}`
-          : `${data.candidateName} ${index + 1}`,
-      }));
-
-      try {
-        const response = await fetch('/api/admin/invitations/bulk-link', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jobProfileName: selectedProfile.name,
-            candidates,
-            linkUrl: data.linkUrl,
-            linkType: data.linkType,
-            customMessage: data.customMessage,
-            timeSlotInfo: data.timeSlotInfo,
-          }),
-        });
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to send bulk invitations');
-        }
-
-        const result = await response.json();
-
-        setShowInviteModal(false);
-        setSelectedProfile(null);
-
-        showSuccessNotification(
-          `Successfully sent ${data.linkType === 'timeSlot' ? 'time slot' : 'public'} link to ${result.successCount} candidates!`
-        );
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to send invitations'
-        );
-      }
-    }
-  };
-
   const handleGeneratePublicLink = async (profileId: string) => {
     try {
       const response = await fetch(
@@ -596,75 +395,10 @@ export default function JobProfilesPage() {
         throw new Error(error.message || 'Failed to generate public link');
       }
 
-      const result = await response.json();
-
       await fetchPublicLinks();
-
-      // Force modal refresh to show new links
-      setModalKey((prev) => prev + 1);
-
-      // Show success message
-      const profile = jobProfiles.find((p) => p.id === profileId);
-      if (profile) {
-        const newLinksCount =
-          result.links?.filter((link: any) => !link.isExisting).length || 0;
-        const existingLinksCount =
-          result.links?.filter((link: any) => link.isExisting).length || 0;
-
-        let message = `Generated ${newLinksCount} new public link${newLinksCount !== 1 ? 's' : ''}`;
-        if (existingLinksCount > 0) {
-          message += ` and found ${existingLinksCount} existing link${existingLinksCount !== 1 ? 's' : ''}`;
-        }
-        message += ` for ${profile.name}! Check the Links & Invitations tab to copy and share.`;
-
-        showSuccessNotification(message);
-      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to generate public link'
-      );
-    }
-  };
-
-  const handleGenerateTimeSlotLink = async (
-    profileId: string,
-    timeSlotId: string
-  ) => {
-    try {
-      const response = await fetch(
-        `/api/admin/job-profiles/${profileId}/time-slot-link`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ timeSlotId }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(
-          error.error || 'Failed to generate time-restricted link'
-        );
-      }
-
-      await Promise.all([
-        fetchPublicLinks(),
-        fetchTimeSlots(),
-        fetchAllTimeSlotLinks(),
-      ]);
-
-      // Force modal refresh to show new links
-      setModalKey((prev) => prev + 1);
-
-      // Show success message
-      showSuccessNotification(
-        'Time slot link generated successfully! Check the details view to copy and share the link.'
-      );
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to generate time-restricted link'
       );
     }
   };
@@ -687,19 +421,7 @@ export default function JobProfilesPage() {
         throw new Error(error.error || 'Failed to create time slot');
       }
 
-      await Promise.all([
-        fetchTimeSlots(),
-        fetchJobProfiles(),
-        fetchAllTimeSlotLinks(), // Also fetch the newly created links
-      ]);
-
-      // Force modal refresh to show new time slot and links
-      setModalKey((prev) => prev + 1);
-
-      // Show success message
-      showSuccessNotification(
-        'Time slot created successfully with assessment links!'
-      );
+      await Promise.all([fetchTimeSlots(), fetchJobProfiles()]);
     } catch (err) {
       throw err;
     }
@@ -727,9 +449,6 @@ export default function JobProfilesPage() {
         fetchTimeSlots(),
         fetchAllTimeSlotLinks(),
       ]);
-
-      // Force modal refresh to show updated links
-      setModalKey((prev) => prev + 1);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : `Failed to delete ${type} link`
@@ -831,7 +550,7 @@ export default function JobProfilesPage() {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center gap-2 rounded-lg border-2 border-blue-700/50 bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
         >
           <Plus className="h-4 w-4" />
           Create Profile
@@ -840,7 +559,7 @@ export default function JobProfilesPage() {
 
       {/* Job Profile Cards Grid */}
       {filteredProfiles.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredProfiles.map((profile) => (
             <JobProfileCard
               key={profile.id}
@@ -901,7 +620,6 @@ export default function JobProfilesPage() {
       {/* Details Modal */}
       {showDetailsModal && selectedProfile && (
         <JobProfileDetailsModal
-          key={modalKey}
           profile={selectedProfile}
           publicLinks={getPublicLinksForProfile(selectedProfile.id)}
           timeSlots={getTimeSlotsForProfile(selectedProfile.id)}
@@ -929,9 +647,10 @@ export default function JobProfilesPage() {
           }}
           onGeneratePublicLink={handleGeneratePublicLink}
           onGenerateTimeSlotLink={(timeSlotId) => {
-            handleGenerateTimeSlotLink(selectedProfile.id, timeSlotId);
+            // Generate time slot link
           }}
           onCreateTimeSlot={(profile) => {
+            setShowDetailsModal(false);
             setSelectedProfile(profile);
             setShowTimeSlotModal(true);
           }}
@@ -1127,7 +846,7 @@ export default function JobProfilesPage() {
                 </button>
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 rounded-lg border-2 border-blue-700/50 bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
                 >
                   {showCreateModal ? 'Create Profile' : 'Update Profile'}
                 </button>
@@ -1137,20 +856,114 @@ export default function JobProfilesPage() {
         </div>
       )}
 
-      {/* Improved Invitation Modal */}
+      {/* Invitation Modal */}
       {showInviteModal && selectedProfile && (
-        <ImprovedInviteModal
-          isOpen={showInviteModal}
-          onClose={() => {
-            setShowInviteModal(false);
-            setSelectedProfile(null);
-          }}
-          jobProfileName={selectedProfile.name}
-          publicLinks={getPublicLinksForProfile(selectedProfile.id)}
-          timeSlots={getTimeSlotsForProfile(selectedProfile.id)}
-          onSendPersonalized={handleSendPersonalizedInvitation}
-          onSendExistingLink={handleSendExistingLink}
-        />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-md rounded-lg bg-white shadow-xl">
+            <form onSubmit={handleSendInvitation}>
+              <div className="p-6">
+                <h2 className="mb-4 text-xl font-bold text-gray-900">
+                  Send Invitation - {selectedProfile.name}
+                </h2>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Candidate Email *
+                    </label>
+                    <input
+                      type="email"
+                      value={invitationData.candidateEmail}
+                      onChange={(e) =>
+                        setInvitationData({
+                          ...invitationData,
+                          candidateEmail: e.target.value,
+                        })
+                      }
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Candidate Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={invitationData.candidateName}
+                      onChange={(e) =>
+                        setInvitationData({
+                          ...invitationData,
+                          candidateName: e.target.value,
+                        })
+                      }
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Custom Message
+                    </label>
+                    <textarea
+                      value={invitationData.customMessage}
+                      onChange={(e) =>
+                        setInvitationData({
+                          ...invitationData,
+                          customMessage: e.target.value,
+                        })
+                      }
+                      rows={3}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Add a personal message to the invitation email..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Expires In (Days)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={invitationData.expiresInDays}
+                      onChange={(e) =>
+                        setInvitationData({
+                          ...invitationData,
+                          expiresInDays: parseInt(e.target.value),
+                        })
+                      }
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowInviteModal(false);
+                    setSelectedProfile(null);
+                    resetInvitationForm();
+                  }}
+                  className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                >
+                  Send Invitation
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Time Slot Modal */}
@@ -1172,13 +985,6 @@ export default function JobProfilesPage() {
         message={message}
         onConfirm={confirmAction}
         onCancel={closeConfirmation}
-      />
-
-      {/* Success Notification */}
-      <SuccessNotification
-        message={successMessage}
-        isVisible={showSuccess}
-        onClose={() => setShowSuccess(false)}
       />
     </div>
   );
