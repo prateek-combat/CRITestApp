@@ -20,9 +20,11 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const timeSlotId = searchParams.get('timeSlotId');
 
-    // Build where clause - if timeSlotId is provided, filter by it
+    // Build where clause - filter by timeSlotId not being null
     const whereClause: any = {
-      isTimeRestricted: true,
+      timeSlotId: {
+        not: null,
+      },
     };
 
     if (timeSlotId) {
@@ -102,6 +104,8 @@ export async function GET(request: NextRequest) {
       { error: 'Failed to fetch time-restricted links' },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
@@ -134,14 +138,14 @@ export async function DELETE(request: NextRequest) {
       // Delete a specific link
       const link = await prisma.publicTestLink.findUnique({
         where: { id: linkId },
-        select: { isTimeRestricted: true, timeSlotId: true },
+        select: { timeSlotId: true },
       });
 
       if (!link) {
         return NextResponse.json({ error: 'Link not found' }, { status: 404 });
       }
 
-      if (!link.isTimeRestricted) {
+      if (!link.timeSlotId) {
         return NextResponse.json(
           {
             error:
@@ -164,7 +168,6 @@ export async function DELETE(request: NextRequest) {
       deleteResult = await prisma.publicTestLink.deleteMany({
         where: {
           timeSlotId: timeSlotId,
-          isTimeRestricted: true,
         },
       });
 
@@ -182,5 +185,7 @@ export async function DELETE(request: NextRequest) {
       { error: 'Failed to delete time-restricted links' },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
