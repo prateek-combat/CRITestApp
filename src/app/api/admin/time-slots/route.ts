@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate time slot duration
+    // Store datetime as-is for now (we'll handle timezone conversion in validation)
     const start = new Date(startDateTime);
     const end = new Date(endDateTime);
 
