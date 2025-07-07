@@ -31,6 +31,8 @@ interface CandidateScore {
   percentile: number;
   rank: number;
   isPublicAttempt?: boolean;
+  riskScore?: number | null;
+  proctoringEnabled?: boolean;
 }
 
 interface LeaderboardData {
@@ -297,6 +299,25 @@ export default function LeaderboardTable({
         </div>
       )}
 
+      {/* Risk Score Legend */}
+      <div className="mb-3 flex items-center justify-end space-x-4 text-xs">
+        <div className="flex items-center space-x-3">
+          <span className="text-gray-500">Risk Score Highlighting:</span>
+          <span className="flex items-center space-x-1">
+            <span className="inline-block h-3 w-6 rounded border border-green-200 bg-green-100"></span>
+            <span className="text-gray-600">Low (&lt;2.5)</span>
+          </span>
+          <span className="flex items-center space-x-1">
+            <span className="inline-block h-3 w-6 rounded border border-yellow-200 bg-yellow-100"></span>
+            <span className="text-gray-600">Medium (2.5-5)</span>
+          </span>
+          <span className="flex items-center space-x-1">
+            <span className="inline-block h-3 w-6 rounded border border-red-200 bg-red-100"></span>
+            <span className="text-gray-600">High (&gt;5)</span>
+          </span>
+        </div>
+      </div>
+
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full divide-y divide-gray-200 text-xs">
@@ -423,177 +444,203 @@ export default function LeaderboardTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white">
-            {data.rows.map((candidate) => (
-              <tr
-                key={candidate.attemptId}
-                className={`transition-colors hover:bg-gray-50 ${
-                  isSelected(candidate.attemptId) ? 'bg-primary-50' : ''
-                }`}
-              >
-                <td className="whitespace-nowrap px-2 py-1.5">
-                  <span
-                    className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-xs font-medium ${getRankBadgeColor(candidate.rank)}`}
-                  >
-                    #{candidate.rank}
-                  </span>
-                </td>
+            {data.rows.map((candidate) => {
+              // Normalize risk score if it's on the old scale (> 10)
+              const normalizedRiskScore =
+                candidate.riskScore !== null && candidate.riskScore > 10
+                  ? candidate.riskScore / 10
+                  : candidate.riskScore;
 
-                <td className="whitespace-nowrap px-2 py-1.5">
-                  <div>
-                    <div className="text-xs font-medium text-gray-900">
-                      {candidate.candidateName}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {candidate.candidateEmail}
-                    </div>
-                  </div>
-                </td>
+              return (
+                <tr
+                  key={candidate.attemptId}
+                  className={`transition-colors ${
+                    candidate.proctoringEnabled && normalizedRiskScore !== null
+                      ? normalizedRiskScore < 2.5
+                        ? 'bg-green-50 hover:bg-green-100'
+                        : normalizedRiskScore >= 2.5 && normalizedRiskScore <= 5
+                          ? 'bg-yellow-50 hover:bg-yellow-100'
+                          : 'bg-red-50 hover:bg-red-100'
+                      : 'hover:bg-gray-50'
+                  } ${
+                    isSelected(candidate.attemptId)
+                      ? 'ring-2 ring-primary-500'
+                      : ''
+                  }`}
+                  title={
+                    candidate.proctoringEnabled && normalizedRiskScore !== null
+                      ? `Risk Score: ${normalizedRiskScore.toFixed(1)}/10`
+                      : ''
+                  }
+                >
+                  <td className="whitespace-nowrap px-2 py-1.5">
+                    <span
+                      className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-xs font-medium ${getRankBadgeColor(candidate.rank)}`}
+                    >
+                      #{candidate.rank}
+                    </span>
+                  </td>
 
-                <td className="whitespace-nowrap px-2 py-1.5 text-center">
-                  <div className="text-sm font-bold text-gray-900">
-                    {candidate.composite !== null &&
-                    candidate.composite !== undefined
-                      ? `${candidate.composite.toFixed(1)}%`
-                      : 'N/A'}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {showWeightedScores &&
-                    candidate.compositeUnweighted !== undefined &&
-                    candidate.compositeUnweighted !== candidate.composite ? (
-                      <div className="space-y-0.5">
-                        <div>Weighted</div>
-                        <div className="text-gray-400">
-                          (Unweighted:{' '}
-                          {candidate.compositeUnweighted.toFixed(1)}%)
-                        </div>
+                  <td className="whitespace-nowrap px-2 py-1.5">
+                    <div>
+                      <div className="text-xs font-medium text-gray-900">
+                        {candidate.candidateName}
                       </div>
-                    ) : (
-                      'Score'
-                    )}
-                  </div>
-                </td>
+                      <div className="text-xs text-gray-500">
+                        {candidate.candidateEmail}
+                      </div>
+                    </div>
+                  </td>
 
-                {showDetailedColumns && (
                   <td className="whitespace-nowrap px-2 py-1.5 text-center">
-                    <div className="text-xs font-bold text-gray-900">
-                      {candidate.percentile !== null &&
-                      candidate.percentile !== undefined
-                        ? `${candidate.percentile.toFixed(1)}th`
+                    <div className="text-sm font-bold text-gray-900">
+                      {candidate.composite !== null &&
+                      candidate.composite !== undefined
+                        ? `${candidate.composite.toFixed(1)}%`
                         : 'N/A'}
                     </div>
-                    <div className="text-xs text-gray-500">Percentile</div>
-                  </td>
-                )}
-
-                {showDetailedColumns && visibleColumns.scoreLogical && (
-                  <td className="whitespace-nowrap px-2 py-1.5">
-                    <InlineBar value={candidate.scoreLogical} />
-                  </td>
-                )}
-
-                {showDetailedColumns && visibleColumns.scoreVerbal && (
-                  <td className="whitespace-nowrap px-2 py-1.5">
-                    <InlineBar value={candidate.scoreVerbal} />
-                  </td>
-                )}
-
-                {showDetailedColumns && visibleColumns.scoreNumerical && (
-                  <td className="whitespace-nowrap px-2 py-1.5">
-                    <InlineBar value={candidate.scoreNumerical} />
-                  </td>
-                )}
-
-                {showDetailedColumns && visibleColumns.scoreAttention && (
-                  <td className="whitespace-nowrap px-2 py-1.5">
-                    <InlineBar value={candidate.scoreAttention} />
-                  </td>
-                )}
-
-                {showDetailedColumns && visibleColumns.scoreOther && (
-                  <td className="whitespace-nowrap px-2 py-1.5">
-                    <InlineBar value={candidate.scoreOther} />
-                  </td>
-                )}
-
-                <td className="whitespace-nowrap px-2 py-1.5 text-center text-xs text-gray-500">
-                  {formatDate(candidate.completedAt)}
-                </td>
-
-                <td className="whitespace-nowrap px-2 py-1.5 text-center">
-                  <div className="flex items-center justify-center space-x-1">
-                    <LinkButton
-                      href={`/admin/analytics/analysis/${candidate.attemptId}`}
-                      variant="outline"
-                      size="xs"
-                      startIcon={<Eye className="h-3 w-3" />}
-                      className="border-blue-200 bg-blue-100 text-blue-700 hover:border-blue-300 hover:bg-blue-200"
-                      title="View Analysis"
-                    >
-                      Analysis
-                    </LinkButton>
-                    <button
-                      onClick={() =>
-                        handleExportPdf(
-                          candidate.attemptId,
-                          candidate.candidateName
-                        )
-                      }
-                      disabled={exportingPdf === candidate.attemptId}
-                      className="inline-flex items-center rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-200 disabled:opacity-50"
-                      title="Export PDF Report"
-                    >
-                      {exportingPdf === candidate.attemptId ? (
-                        <span className="animate-pulse">...</span>
+                    <div className="text-xs text-gray-500">
+                      {showWeightedScores &&
+                      candidate.compositeUnweighted !== undefined &&
+                      candidate.compositeUnweighted !== candidate.composite ? (
+                        <div className="space-y-0.5">
+                          <div>Weighted</div>
+                          <div className="text-gray-400">
+                            (Unweighted:{' '}
+                            {candidate.compositeUnweighted.toFixed(1)}%)
+                          </div>
+                        </div>
                       ) : (
-                        <>
-                          <Download className="mr-0.5 h-3 w-3" />
-                          PDF
-                        </>
+                        'Score'
                       )}
-                    </button>
-                    <button
-                      onClick={() => toggle(candidate.attemptId)}
-                      disabled={
-                        !isSelected(candidate.attemptId) && selected.length >= 5
-                      }
-                      className={`rounded px-1.5 py-0.5 text-xs font-medium transition-colors ${
-                        isSelected(candidate.attemptId)
-                          ? 'bg-primary-600 text-white hover:bg-primary-700'
-                          : selected.length >= 5
-                            ? 'cursor-not-allowed bg-gray-100 text-gray-400'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                      title={
-                        isSelected(candidate.attemptId)
-                          ? 'Remove from comparison'
-                          : selected.length >= 5
-                            ? 'Maximum 5 candidates can be compared'
-                            : 'Add to comparison'
-                      }
-                    >
-                      {isSelected(candidate.attemptId) ? '✓' : '+'}
-                    </button>
-                    {isSuperAdmin && (
-                      <button
-                        onClick={() => handleDeleteAttempt(candidate.attemptId)}
-                        disabled={deletingAttemptId === candidate.attemptId}
-                        className="inline-flex items-center rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-200 disabled:opacity-50"
-                        title="Delete test attempt"
+                    </div>
+                  </td>
+
+                  {showDetailedColumns && (
+                    <td className="whitespace-nowrap px-2 py-1.5 text-center">
+                      <div className="text-xs font-bold text-gray-900">
+                        {candidate.percentile !== null &&
+                        candidate.percentile !== undefined
+                          ? `${candidate.percentile.toFixed(1)}th`
+                          : 'N/A'}
+                      </div>
+                      <div className="text-xs text-gray-500">Percentile</div>
+                    </td>
+                  )}
+
+                  {showDetailedColumns && visibleColumns.scoreLogical && (
+                    <td className="whitespace-nowrap px-2 py-1.5">
+                      <InlineBar value={candidate.scoreLogical} />
+                    </td>
+                  )}
+
+                  {showDetailedColumns && visibleColumns.scoreVerbal && (
+                    <td className="whitespace-nowrap px-2 py-1.5">
+                      <InlineBar value={candidate.scoreVerbal} />
+                    </td>
+                  )}
+
+                  {showDetailedColumns && visibleColumns.scoreNumerical && (
+                    <td className="whitespace-nowrap px-2 py-1.5">
+                      <InlineBar value={candidate.scoreNumerical} />
+                    </td>
+                  )}
+
+                  {showDetailedColumns && visibleColumns.scoreAttention && (
+                    <td className="whitespace-nowrap px-2 py-1.5">
+                      <InlineBar value={candidate.scoreAttention} />
+                    </td>
+                  )}
+
+                  {showDetailedColumns && visibleColumns.scoreOther && (
+                    <td className="whitespace-nowrap px-2 py-1.5">
+                      <InlineBar value={candidate.scoreOther} />
+                    </td>
+                  )}
+
+                  <td className="whitespace-nowrap px-2 py-1.5 text-center text-xs text-gray-500">
+                    {formatDate(candidate.completedAt)}
+                  </td>
+
+                  <td className="whitespace-nowrap px-2 py-1.5 text-center">
+                    <div className="flex items-center justify-center space-x-1">
+                      <LinkButton
+                        href={`/admin/analytics/analysis/${candidate.attemptId}`}
+                        variant="outline"
+                        size="xs"
+                        startIcon={<Eye className="h-3 w-3" />}
+                        className="border-blue-200 bg-blue-100 text-blue-700 hover:border-blue-300 hover:bg-blue-200"
+                        title="View Analysis"
                       >
-                        {deletingAttemptId === candidate.attemptId ? (
+                        Analysis
+                      </LinkButton>
+                      <button
+                        onClick={() =>
+                          handleExportPdf(
+                            candidate.attemptId,
+                            candidate.candidateName
+                          )
+                        }
+                        disabled={exportingPdf === candidate.attemptId}
+                        className="inline-flex items-center rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-200 disabled:opacity-50"
+                        title="Export PDF Report"
+                      >
+                        {exportingPdf === candidate.attemptId ? (
                           <span className="animate-pulse">...</span>
                         ) : (
                           <>
-                            <Trash2 className="mr-0.5 h-3 w-3" />
-                            Delete
+                            <Download className="mr-0.5 h-3 w-3" />
+                            PDF
                           </>
                         )}
                       </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
+                      <button
+                        onClick={() => toggle(candidate.attemptId)}
+                        disabled={
+                          !isSelected(candidate.attemptId) &&
+                          selected.length >= 5
+                        }
+                        className={`rounded px-1.5 py-0.5 text-xs font-medium transition-colors ${
+                          isSelected(candidate.attemptId)
+                            ? 'bg-primary-600 text-white hover:bg-primary-700'
+                            : selected.length >= 5
+                              ? 'cursor-not-allowed bg-gray-100 text-gray-400'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                        title={
+                          isSelected(candidate.attemptId)
+                            ? 'Remove from comparison'
+                            : selected.length >= 5
+                              ? 'Maximum 5 candidates can be compared'
+                              : 'Add to comparison'
+                        }
+                      >
+                        {isSelected(candidate.attemptId) ? '✓' : '+'}
+                      </button>
+                      {isSuperAdmin && (
+                        <button
+                          onClick={() =>
+                            handleDeleteAttempt(candidate.attemptId)
+                          }
+                          disabled={deletingAttemptId === candidate.attemptId}
+                          className="inline-flex items-center rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-200 disabled:opacity-50"
+                          title="Delete test attempt"
+                        >
+                          {deletingAttemptId === candidate.attemptId ? (
+                            <span className="animate-pulse">...</span>
+                          ) : (
+                            <>
+                              <Trash2 className="mr-0.5 h-3 w-3" />
+                              Delete
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

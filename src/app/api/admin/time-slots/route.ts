@@ -159,10 +159,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if job profile exists
+    // Check if job profile exists and get its tests
     const jobProfile = await prisma.jobProfile.findUnique({
       where: { id: jobProfileId },
-      select: { id: true, name: true },
+      include: {
+        testWeights: {
+          include: {
+            test: {
+              select: {
+                id: true,
+                title: true,
+                isArchived: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!jobProfile) {
@@ -172,6 +184,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Create the time slot
     const timeSlot = await prisma.timeSlot.create({
       data: {
         jobProfileId,
@@ -193,6 +206,43 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Get base URL for public links
+    const host = request.headers.get('host') || 'localhost:3000';
+    const protocol = request.headers.get('x-forwarded-proto') || 'http';
+    const baseUrl = `${protocol}://${host}`;
+
+    // Import nanoid for generating tokens
+    const { nanoid } = await import('nanoid');
+
+    // Automatically create public links for each test in the job profile
+    const createdLinks = [];
+    for (const testWeight of jobProfile.testWeights) {
+      const test = testWeight.test;
+
+      if (test.isArchived) {
+        continue; // Skip archived tests
+      }
+
+      const linkToken = nanoid(12);
+      const publicLink = await prisma.publicTestLink.create({
+        data: {
+          testId: test.id,
+          linkToken,
+          title: `${jobProfile.name} - ${test.title} (${name})`,
+          description: `Time-restricted access for ${test.title} during ${name}`,
+          isTimeRestricted: true,
+          timeSlotId: timeSlot.id,
+          createdById: session.user.id,
+        },
+      });
+
+      createdLinks.push({
+        id: publicLink.id,
+        testTitle: test.title,
+        publicUrl: `${baseUrl}/public-test/${linkToken}`,
+      });
+    }
+
     return NextResponse.json({
       id: timeSlot.id,
       name: timeSlot.name,
@@ -205,6 +255,8 @@ export async function POST(request: NextRequest) {
       isActive: timeSlot.isActive,
       createdAt: timeSlot.createdAt.toISOString(),
       jobProfile: timeSlot.jobProfile,
+      publicTestLinks: createdLinks,
+      message: `Time slot created with ${createdLinks.length} assessment links`,
     });
   } catch (error) {
     console.error('Error creating time slot:', error);
@@ -212,6 +264,8 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to create time slot' },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
 

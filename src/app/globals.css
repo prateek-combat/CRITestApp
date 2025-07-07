@@ -90,6 +90,22 @@ body {
   }
 }
 
+/* Animation for success notification */
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInFromRight 0.3s ease-out;
+}
+
 /* 3. Curtain Effect */
 @keyframes curtainReveal {
   0% {
