@@ -227,6 +227,7 @@ export async function POST(request: NextRequest) {
       const publicLink = await prisma.publicTestLink.create({
         data: {
           testId: test.id,
+          jobProfileId: jobProfile.id,
           linkToken,
           title: `${jobProfile.name} - ${test.title} (${name})`,
           description: `Time-restricted access for ${test.title} during ${name}`,

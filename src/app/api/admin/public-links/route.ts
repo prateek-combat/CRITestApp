@@ -31,6 +31,13 @@ export async function GET(request: NextRequest) {
             title: true,
           },
         },
+        jobProfile: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+          },
+        },
         _count: {
           select: {
             attempts: true,
@@ -46,6 +53,8 @@ export async function GET(request: NextRequest) {
       id: link.id,
       testId: link.testId,
       testTitle: link.test.title,
+      jobProfileId: link.jobProfile?.id || null,
+      jobProfileName: link.jobProfile?.name || null,
       linkToken: link.linkToken,
       title: link.title,
       description: link.description,
