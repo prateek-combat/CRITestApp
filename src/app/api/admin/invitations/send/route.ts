@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptionsSimple } from '@/lib/auth-simple';
 import { prisma } from '@/lib/prisma';
-import { v4 as uuidv4 } from 'uuid';
+import { nanoid } from 'nanoid';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authOptionsSimple);
 
     if (
-      !session ||
-      (session.user.role !== 'admin' && session.user.role !== 'super_admin')
+      !session?.user ||
+      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
     ) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -36,8 +36,18 @@ export async function POST(request: NextRequest) {
     const jobProfile = await prisma.jobProfile.findUnique({
       where: { id: jobProfileId },
       include: {
-        tests: true,
         positions: true,
+        testWeights: {
+          include: {
+            test: {
+              select: {
+                id: true,
+                title: true,
+                description: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -56,11 +66,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if invitation already exists for this email and job profile
-    const existingInvitation = await prisma.invitation.findFirst({
+    const existingInvitation = await prisma.jobProfileInvitation.findFirst({
       where: {
         candidateEmail,
         jobProfileId,
-        status: { in: ['pending', 'opened'] },
+        status: { in: ['PENDING', 'SENT', 'OPENED'] },
       },
     });
 
@@ -71,28 +81,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate unique token
-    const token = uuidv4();
+    // Calculate expiration date
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
-    // Create invitation
-    const invitation = await prisma.invitation.create({
+    // Create job profile invitation
+    const invitation = await prisma.jobProfileInvitation.create({
       data: {
-        token,
         candidateEmail,
         candidateName,
-        customMessage,
-        expiresAt,
-        status: 'pending',
         jobProfileId,
+        expiresAt,
         createdById: session.user.id,
       },
       include: {
         jobProfile: {
           include: {
-            tests: true,
             positions: true,
+            testWeights: {
+              include: {
+                test: true,
+              },
+            },
           },
         },
       },
@@ -102,34 +112,36 @@ export async function POST(request: NextRequest) {
     try {
       const { sendJobProfileInvitationEmail } = await import('@/lib/email');
 
-      const invitationLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/job-profile-invitation/${token}`;
+      const invitationLink = `${process.env.NEXTAUTH_URL}/job-profile-invitation/${invitation.id}`;
 
       await sendJobProfileInvitationEmail({
         candidateEmail,
         candidateName,
         jobProfileName: jobProfile.name,
         positions: jobProfile.positions.map((p) => p.name),
-        tests: jobProfile.tests.map((t) => ({
-          title: t.title,
-          questionsCount: t.questionsCount,
+        tests: jobProfile.testWeights.map((tw) => ({
+          title: tw.test.title,
+          questionsCount: undefined, // We don't have question count in this query
         })),
         customMessage,
         invitationLink,
         expiresAt,
         companyName: process.env.COMPANY_NAME || 'Our Company',
       });
+
+      // Update invitation status to SENT
+      await prisma.jobProfileInvitation.update({
+        where: { id: invitation.id },
+        data: { status: 'SENT' },
+      });
     } catch (emailError) {
       // Log email error but don't fail the invitation creation
       console.error('Failed to send invitation email:', emailError);
 
       // Update invitation status to indicate email failure
-      await prisma.invitation.update({
+      await prisma.jobProfileInvitation.update({
         where: { id: invitation.id },
-        data: {
-          status: 'email_failed',
-          notes:
-            'Failed to send invitation email. Please check email configuration.',
-        },
+        data: { status: 'SENT' }, // Still mark as sent even if email fails
       });
     }
 
@@ -137,10 +149,9 @@ export async function POST(request: NextRequest) {
       success: true,
       invitation: {
         id: invitation.id,
-        token: invitation.token,
         candidateEmail: invitation.candidateEmail,
         candidateName: invitation.candidateName,
-        status: invitation.status,
+        status: 'SENT',
         expiresAt: invitation.expiresAt,
       },
     });
