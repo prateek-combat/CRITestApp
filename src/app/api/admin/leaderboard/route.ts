@@ -184,6 +184,8 @@ export async function GET(request: NextRequest) {
           startedAt: true,
           rawScore: true,
           percentile: true,
+          riskScore: true,
+          proctoringEnabled: true,
           submittedAnswers: {
             select: {
               isCorrect: true,
@@ -203,6 +205,8 @@ export async function GET(request: NextRequest) {
           startedAt: true,
           rawScore: true,
           percentile: true,
+          riskScore: true,
+          proctoringEnabled: true,
           publicLink: {
             select: {
               title: true,
@@ -577,6 +581,8 @@ export async function GET(request: NextRequest) {
         type: attempt.type, // Add type to distinguish regular vs public
         testWeight: (attempt as any).testWeight || 1,
         jobProfileName: (attempt as any).jobProfileName || null,
+        riskScore: (attempt as any).riskScore || null,
+        proctoringEnabled: (attempt as any).proctoringEnabled || false,
       };
     });
 

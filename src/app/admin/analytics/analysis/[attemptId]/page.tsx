@@ -70,6 +70,22 @@ interface TestAttempt {
   }>;
 }
 
+// Define relevant event types to display
+const RELEVANT_EVENT_TYPES = [
+  'COPY_DETECTED',
+  'PASTE_DETECTED',
+  'TAB_HIDDEN',
+  'TAB_VISIBLE',
+  'WINDOW_BLUR',
+  'WINDOW_FOCUS',
+  'CONTEXT_MENU_DETECTED',
+  'MOUSE_LEFT_WINDOW',
+  'INACTIVITY_DETECTED',
+  'MULTIPLE_PEOPLE',
+  'PHONE_DETECTED',
+  'FACE_NOT_DETECTED',
+];
+
 interface AnalysisData {
   testAttempt: TestAttempt;
   proctorEvents: ProctorEvent[];
@@ -108,6 +124,48 @@ interface AnalysisData {
     };
   };
 }
+
+// Calculate risk score based on event counts
+const calculateRiskScore = (events: ProctorEvent[]): number => {
+  const counts = {
+    copyCount: events.filter((e) => e.type === 'COPY_DETECTED').length,
+    pasteCount: events.filter((e) => e.type === 'PASTE_DETECTED').length,
+    tabHiddenCount: events.filter((e) => e.type === 'TAB_HIDDEN').length,
+    windowBlurCount: events.filter((e) => e.type === 'WINDOW_BLUR').length,
+    contextMenuCount: events.filter((e) => e.type === 'CONTEXT_MENU_DETECTED')
+      .length,
+    // High-risk events
+    phoneDetected: events.some((e) => e.type === 'PHONE_DETECTED'),
+    multiplePeople: events.some((e) => e.type === 'MULTIPLE_PEOPLE'),
+  };
+
+  let score = 0;
+
+  // Base scoring
+  if (counts.copyCount > 1) score += 2;
+  if (counts.pasteCount > 0) score += 1.5;
+  if (counts.tabHiddenCount > 3) score += 2;
+  if (counts.windowBlurCount > 1) score += 1.5;
+
+  // Medium risk threshold check (specific requirement)
+  if (
+    counts.copyCount > 1 &&
+    counts.windowBlurCount > 1 &&
+    counts.tabHiddenCount > 3
+  ) {
+    score = Math.max(score, 5); // Ensure at least medium risk
+  }
+
+  // High-risk events
+  if (counts.phoneDetected) score += 4;
+  if (counts.multiplePeople) score += 5;
+
+  // Additional patterns
+  if (counts.tabHiddenCount > 10) score += 2;
+  if (counts.copyCount + counts.pasteCount > 5) score += 2;
+
+  return Math.min(score, 10); // Cap at 10
+};
 
 export default function ProctorAnalysisPage() {
   const params = useParams();
@@ -172,35 +230,39 @@ export default function ProctorAnalysisPage() {
   };
 
   const getRiskLevel = (score: number) => {
-    if (score >= 8)
+    if (score > 5)
       return { label: 'High Risk', color: 'text-red-600 bg-red-100' };
-    if (score >= 5)
+    if (score >= 2.5 && score <= 5)
       return { label: 'Medium Risk', color: 'text-yellow-600 bg-yellow-100' };
-    if (score >= 2)
+    if (score < 2.5)
       return { label: 'Low Risk', color: 'text-green-600 bg-green-100' };
-    return { label: 'Minimal Risk', color: 'text-blue-600 bg-blue-100' };
+    return { label: 'Low Risk', color: 'text-green-600 bg-green-100' };
   };
 
   const getEventIcon = (type: string) => {
     switch (type) {
-      case 'TAB_SWITCH':
+      case 'TAB_HIDDEN':
+      case 'TAB_VISIBLE':
         return '🔄';
-      case 'WINDOW_FOCUS_LOST':
+      case 'WINDOW_BLUR':
+      case 'WINDOW_FOCUS':
         return '👁️‍🗨️';
-      case 'DEVTOOLS_OPENED':
-        return '🔧';
-      case 'COPY_PASTE':
+      case 'COPY_DETECTED':
         return '📋';
-      case 'SUSPICIOUS_BEHAVIOR':
-        return '⚠️';
+      case 'PASTE_DETECTED':
+        return '📥';
+      case 'CONTEXT_MENU_DETECTED':
+        return '🖱️';
+      case 'MOUSE_LEFT_WINDOW':
+        return '↗️';
+      case 'INACTIVITY_DETECTED':
+        return '⏱️';
       case 'FACE_NOT_DETECTED':
         return '👤';
-      case 'MULTIPLE_FACES':
+      case 'MULTIPLE_PEOPLE':
         return '👥';
       case 'PHONE_DETECTED':
         return '📱';
-      case 'BOOK_DETECTED':
-        return '📚';
       default:
         return '📝';
     }
@@ -235,7 +297,10 @@ export default function ProctorAnalysisPage() {
   }
 
   const { testAttempt, proctorEvents, proctorAssets, analysisResults } = data;
-  const riskInfo = getRiskLevel(testAttempt.riskScore || 0);
+
+  // Calculate risk score based on actual events
+  const calculatedRiskScore = calculateRiskScore(proctorEvents);
+  const riskInfo = getRiskLevel(calculatedRiskScore);
 
   // Calculate specific event counts
   const countSpecificEvents = (eventType: string) => {
@@ -404,7 +469,7 @@ export default function ProctorAnalysisPage() {
                   {riskInfo.label}
                 </div>
                 <p className="mt-2 text-3xl font-bold text-gray-900">
-                  {testAttempt.riskScore || 0}/10
+                  {calculatedRiskScore.toFixed(1)}/10
                 </p>
                 <p className="text-sm text-gray-500">Risk Score</p>
               </div>
@@ -427,6 +492,30 @@ export default function ProctorAnalysisPage() {
                     <span className="font-medium">{windowBlurCount}</span>
                   </p>
                   <hr className="my-2" />
+                  <p className="font-medium text-gray-700">Risk Factors:</p>
+                  {copyDetectedCount > 1 && (
+                    <p className="text-xs text-orange-600">
+                      • Multiple copy events detected
+                    </p>
+                  )}
+                  {tabHiddenCount > 3 && (
+                    <p className="text-xs text-orange-600">
+                      • Excessive tab switching
+                    </p>
+                  )}
+                  {windowBlurCount > 1 && (
+                    <p className="text-xs text-orange-600">
+                      • Multiple window focus losses
+                    </p>
+                  )}
+                  {copyDetectedCount > 1 &&
+                    windowBlurCount > 1 &&
+                    tabHiddenCount > 3 && (
+                      <p className="text-xs font-medium text-red-600">
+                        • Combined suspicious behavior pattern
+                      </p>
+                    )}
+                  <hr className="my-2" />
                   <p>
                     Total Proctoring Events:{' '}
                     <span className="font-medium">{proctorEvents.length}</span>
@@ -445,22 +534,30 @@ export default function ProctorAnalysisPage() {
                 Quick Stats
               </h3>
               <div className="space-y-3">
-                {proctorEvents.slice(0, 5).map((event, index) => (
-                  <div key={index} className="flex items-center text-sm">
-                    <span className="mr-2">{getEventIcon(event.type)}</span>
-                    <span className="text-gray-600">
-                      {event.type.replace('_', ' ')}
-                    </span>
-                    <span className="ml-auto text-gray-400">
-                      {new Date(event.ts).toLocaleTimeString()}
-                    </span>
-                  </div>
-                ))}
-                {proctorEvents.length > 5 && (
-                  <p className="text-sm text-gray-500">
-                    +{proctorEvents.length - 5} more events...
-                  </p>
-                )}
+                {proctorEvents
+                  .filter((event) => RELEVANT_EVENT_TYPES.includes(event.type))
+                  .slice(0, 5)
+                  .map((event, index) => (
+                    <div key={index} className="flex items-center text-sm">
+                      <span className="mr-2">{getEventIcon(event.type)}</span>
+                      <span className="text-gray-600">
+                        {event.type.replace(/_/g, ' ')}
+                      </span>
+                      <span className="ml-auto text-gray-400">
+                        {new Date(event.ts).toLocaleTimeString()}
+                      </span>
+                    </div>
+                  ))}
+                {(() => {
+                  const relevantEventCount = proctorEvents.filter((event) =>
+                    RELEVANT_EVENT_TYPES.includes(event.type)
+                  ).length;
+                  return relevantEventCount > 5 ? (
+                    <p className="text-sm text-gray-500">
+                      +{relevantEventCount - 5} more events...
+                    </p>
+                  ) : null;
+                })()}
               </div>
             </div>
           </div>
@@ -738,36 +835,41 @@ export default function ProctorAnalysisPage() {
               </h3>
             </div>
             <div className="divide-y">
-              {proctorEvents.length > 0 ? (
-                proctorEvents.map((event) => (
-                  <div key={event.id} className="p-4 hover:bg-gray-50">
-                    <div className="flex items-start">
-                      <span className="mr-3 text-lg">
-                        {getEventIcon(event.type)}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-medium text-gray-900">
-                            {event.type.replace(/_/g, ' ')}
-                          </h4>
-                          <span className="text-sm text-gray-500">
-                            {new Date(event.ts).toLocaleString()}
-                          </span>
+              {(() => {
+                const filteredEvents = proctorEvents.filter((event) =>
+                  RELEVANT_EVENT_TYPES.includes(event.type)
+                );
+                return filteredEvents.length > 0 ? (
+                  filteredEvents.map((event) => (
+                    <div key={event.id} className="p-4 hover:bg-gray-50">
+                      <div className="flex items-start">
+                        <span className="mr-3 text-lg">
+                          {getEventIcon(event.type)}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-medium text-gray-900">
+                              {event.type.replace(/_/g, ' ')}
+                            </h4>
+                            <span className="text-sm text-gray-500">
+                              {new Date(event.ts).toLocaleString()}
+                            </span>
+                          </div>
+                          {event.extra && (
+                            <pre className="mt-2 rounded bg-gray-100 p-2 text-xs text-gray-600">
+                              {JSON.stringify(event.extra, null, 2)}
+                            </pre>
+                          )}
                         </div>
-                        {event.extra && (
-                          <pre className="mt-2 rounded bg-gray-100 p-2 text-xs text-gray-600">
-                            {JSON.stringify(event.extra, null, 2)}
-                          </pre>
-                        )}
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="p-6 text-center text-gray-500">
+                    No relevant proctoring events recorded.
                   </div>
-                ))
-              ) : (
-                <div className="p-6 text-center text-gray-500">
-                  No proctoring events recorded.
-                </div>
-              )}
+                );
+              })()}
             </div>
           </div>
         )}
