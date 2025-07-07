@@ -89,8 +89,8 @@ export default function JobProfileInvitationPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          invitationType: 'job_profile',
-          invitationId: invitation.id,
+          jobProfileInvitationId: invitation.id,
+          type: 'job-profile',
         }),
       });
 
