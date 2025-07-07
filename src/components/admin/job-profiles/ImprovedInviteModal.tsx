@@ -75,6 +75,7 @@ export default function ImprovedInviteModal({
 }: ImprovedInviteModalProps) {
   const [inviteType, setInviteType] = useState<InviteType>('personalized');
   const [candidateEmail, setCandidateEmail] = useState('');
+  const [candidateName, setCandidateName] = useState('');
   const [customMessage, setCustomMessage] = useState('');
   const [expiresInDays, setExpiresInDays] = useState(7);
   const [selectedLink, setSelectedLink] = useState<string>('');
@@ -93,8 +94,6 @@ export default function ImprovedInviteModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    const candidateName = ''; // No name required
 
     if (inviteType === 'personalized') {
       onSendPersonalized({
@@ -125,6 +124,7 @@ export default function ImprovedInviteModal({
 
     // Reset form
     setCandidateEmail('');
+    setCandidateName('');
     setCustomMessage('');
     setSelectedLink('');
     onClose();
@@ -437,22 +437,37 @@ export default function ImprovedInviteModal({
                     {inviteType === 'personalized' ? '2. ' : '3. '}Candidate
                     Information
                   </h4>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">
-                      Email(s) *
-                    </label>
-                    <textarea
-                      value={candidateEmail}
-                      onChange={(e) => setCandidateEmail(e.target.value)}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter email(s) - for multiple, separate with commas, semicolons, or new lines"
-                      rows={3}
-                      required
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      For bulk invites: email1@example.com, email2@example.com
-                      or use new lines
-                    </p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">
+                        Candidate Name *
+                      </label>
+                      <input
+                        type="text"
+                        value={candidateName}
+                        onChange={(e) => setCandidateName(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter candidate's full name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-gray-700">
+                        Email(s) *
+                      </label>
+                      <textarea
+                        value={candidateEmail}
+                        onChange={(e) => setCandidateEmail(e.target.value)}
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter email(s) - for multiple, separate with commas, semicolons, or new lines"
+                        rows={3}
+                        required
+                      />
+                      <p className="mt-1 text-xs text-gray-500">
+                        For bulk invites: email1@example.com, email2@example.com
+                        or use new lines
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -516,6 +531,7 @@ export default function ImprovedInviteModal({
                 type="submit"
                 disabled={
                   !candidateEmail ||
+                  !candidateName.trim() ||
                   (inviteType !== 'personalized' && !selectedLink)
                 }
                 className="inline-flex items-center gap-2 rounded-lg border-2 border-blue-700/50 bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"

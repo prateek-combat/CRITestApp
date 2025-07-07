@@ -16,8 +16,6 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    console.log('Received invitation request body:', body);
-
     const {
       jobProfileId,
       candidateEmail,
@@ -26,28 +24,19 @@ export async function POST(request: NextRequest) {
       expiresInDays = 7,
     } = body;
 
-    console.log('Extracted fields:', {
-      jobProfileId,
-      candidateEmail,
-      candidateName,
-      customMessage,
-      expiresInDays,
-    });
+    // Validate required fields (trim to handle empty strings properly)
+    const trimmedCandidateName = candidateName?.trim();
+    const trimmedCandidateEmail = candidateEmail?.trim();
 
-    // Validate required fields
-    if (!jobProfileId || !candidateEmail || !candidateName) {
-      console.log('Validation failed - missing fields:', {
-        hasJobProfileId: !!jobProfileId,
-        hasCandidateEmail: !!candidateEmail,
-        hasCandidateName: !!candidateName,
-      });
+    if (!jobProfileId || !trimmedCandidateEmail || !trimmedCandidateName) {
       return NextResponse.json(
         {
-          error: 'Missing required fields',
-          details: {
-            jobProfileId: !!jobProfileId,
-            candidateEmail: !!candidateEmail,
-            candidateName: !!candidateName,
+          error:
+            'Missing required fields: Job Profile ID, Candidate Email, and Candidate Name are required',
+          missing: {
+            jobProfileId: !jobProfileId,
+            candidateEmail: !trimmedCandidateEmail,
+            candidateName: !trimmedCandidateName,
           },
         },
         { status: 400 }
@@ -90,7 +79,7 @@ export async function POST(request: NextRequest) {
     // Check if invitation already exists for this email and job profile
     const existingInvitation = await prisma.jobProfileInvitation.findFirst({
       where: {
-        candidateEmail,
+        candidateEmail: trimmedCandidateEmail,
         jobProfileId,
         status: { in: ['PENDING', 'SENT', 'OPENED'] },
       },
@@ -110,8 +99,8 @@ export async function POST(request: NextRequest) {
     // Create job profile invitation
     const invitation = await prisma.jobProfileInvitation.create({
       data: {
-        candidateEmail,
-        candidateName,
+        candidateEmail: trimmedCandidateEmail,
+        candidateName: trimmedCandidateName,
         jobProfileId,
         expiresAt,
         createdById: session.user.id,
@@ -137,8 +126,8 @@ export async function POST(request: NextRequest) {
       const invitationLink = `${process.env.NEXTAUTH_URL}/job-profile-invitation/${invitation.id}`;
 
       await sendJobProfileInvitationEmail({
-        candidateEmail,
-        candidateName,
+        candidateEmail: trimmedCandidateEmail,
+        candidateName: trimmedCandidateName,
         jobProfileName: jobProfile.name,
         positions: jobProfile.positions.map((p) => p.name),
         tests: jobProfile.testWeights.map((tw) => ({
