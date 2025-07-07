@@ -12,8 +12,6 @@ import {
   Clock,
   Monitor,
   Info,
-  Users,
-  FileText,
 } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/button/Button';
@@ -176,7 +174,7 @@ export default function JobProfileInvitationPage() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="w-full space-y-6"
+            className="w-full space-y-4"
           >
             {/* Header */}
             <div className="space-y-2 text-center">
@@ -202,68 +200,6 @@ export default function JobProfileInvitationPage() {
                   {invitation.candidateEmail}
                 </p>
               </div>
-            </div>
-
-            {/* Job Profile Details */}
-            <div className="space-y-4">
-              {/* Positions */}
-              {invitation.jobProfile.positions.length > 0 && (
-                <Card variant="glass" className="p-4">
-                  <div className="mb-3 flex items-center gap-2">
-                    <Users className="h-4 w-4 text-military-green" />
-                    <h3 className="font-semibold text-gray-900">Positions</h3>
-                  </div>
-                  <div className="space-y-2">
-                    {invitation.jobProfile.positions.map((position) => (
-                      <div
-                        key={position.id}
-                        className="flex items-center justify-between rounded-lg bg-gray-50 p-2"
-                      >
-                        <span className="font-medium text-gray-800">
-                          {position.name}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          {position.department}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              )}
-
-              {/* Tests */}
-              {invitation.jobProfile.tests.length > 0 && (
-                <Card variant="glass" className="p-4">
-                  <div className="mb-3 flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-military-green" />
-                    <h3 className="font-semibold text-gray-900">
-                      Assessment Tests
-                    </h3>
-                  </div>
-                  <div className="space-y-2">
-                    {invitation.jobProfile.tests.map((test) => (
-                      <div
-                        key={test.id}
-                        className="flex items-center justify-between rounded-lg bg-gray-50 p-3"
-                      >
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-800">
-                            {test.title}
-                          </p>
-                          {test.description && (
-                            <p className="text-sm text-gray-600">
-                              {test.description}
-                            </p>
-                          )}
-                        </div>
-                        <span className="text-sm font-medium text-military-green">
-                          {test.weight}% weight
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              )}
             </div>
 
             {/* Instructions */}
@@ -377,7 +313,7 @@ export default function JobProfileInvitationPage() {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
-        className="relative z-10 w-full max-w-2xl"
+        className="relative z-10 w-full max-w-md"
       >
         <Card variant="default" className="p-6 shadow-xl">
           {renderContent()}
