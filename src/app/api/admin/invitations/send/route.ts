@@ -16,6 +16,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    console.log('Received invitation request body:', body);
+
     const {
       jobProfileId,
       candidateEmail,
@@ -24,10 +26,30 @@ export async function POST(request: NextRequest) {
       expiresInDays = 7,
     } = body;
 
+    console.log('Extracted fields:', {
+      jobProfileId,
+      candidateEmail,
+      candidateName,
+      customMessage,
+      expiresInDays,
+    });
+
     // Validate required fields
     if (!jobProfileId || !candidateEmail || !candidateName) {
+      console.log('Validation failed - missing fields:', {
+        hasJobProfileId: !!jobProfileId,
+        hasCandidateEmail: !!candidateEmail,
+        hasCandidateName: !!candidateName,
+      });
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        {
+          error: 'Missing required fields',
+          details: {
+            jobProfileId: !!jobProfileId,
+            candidateEmail: !!candidateEmail,
+            candidateName: !!candidateName,
+          },
+        },
         { status: 400 }
       );
     }
