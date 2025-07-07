@@ -434,7 +434,7 @@ export default function JobProfilesPageImproved() {
     try {
       const endpoint =
         type === 'public'
-          ? `/api/admin/public-links/${linkId}`
+          ? `/api/public-test-links/admin/${linkId}`
           : `/api/admin/time-slot-links?linkId=${linkId}`;
 
       const response = await fetch(endpoint, { method: 'DELETE' });
