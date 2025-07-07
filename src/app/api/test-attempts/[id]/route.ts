@@ -8,19 +8,39 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-
-    if (
-      !session?.user ||
-      (session.user.role !== 'ADMIN' && session.user.role !== 'SUPER_ADMIN')
-    ) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-
     const { id } = await params;
 
-    // Try to fetch from regular test attempts first
-    let testAttempt = (await prisma.testAttempt.findUnique({
+    // First, check if this is a job profile invitation test attempt (public access)
+    const testAttempt = await prisma.testAttempt.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        jobProfileInvitationId: true,
+      },
+    });
+
+    // If test attempt doesn't exist, return 404
+    if (!testAttempt) {
+      return NextResponse.json(
+        { message: 'Test attempt not found' },
+        { status: 404 }
+      );
+    }
+
+    // If this is NOT a job profile invitation, require admin authentication
+    if (!testAttempt.jobProfileInvitationId) {
+      const session = await auth();
+
+      if (
+        !session?.user ||
+        (session.user.role !== 'ADMIN' && session.user.role !== 'SUPER_ADMIN')
+      ) {
+        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
+    // Now fetch the full test attempt data
+    let fullTestAttempt = (await prisma.testAttempt.findUnique({
       where: { id },
       include: {
         test: {
@@ -52,8 +72,8 @@ export async function GET(
     let isPublicAttempt = false;
 
     // If not found in regular attempts, try public attempts
-    if (!testAttempt) {
-      testAttempt = (await prisma.publicTestAttempt.findUnique({
+    if (!fullTestAttempt) {
+      fullTestAttempt = (await prisma.publicTestAttempt.findUnique({
         where: { id },
         include: {
           publicLink: {
@@ -80,18 +100,18 @@ export async function GET(
         },
       })) as any;
 
-      if (testAttempt) {
+      if (fullTestAttempt) {
         isPublicAttempt = true;
         // Restructure public attempt to match regular attempt format
-        testAttempt.test = testAttempt.publicLink.test;
-        testAttempt.invitation = {
-          candidateName: testAttempt.candidateName,
-          candidateEmail: testAttempt.candidateEmail,
+        fullTestAttempt.test = fullTestAttempt.publicLink.test;
+        fullTestAttempt.invitation = {
+          candidateName: fullTestAttempt.candidateName,
+          candidateEmail: fullTestAttempt.candidateEmail,
         };
       }
     }
 
-    if (!testAttempt) {
+    if (!fullTestAttempt) {
       return NextResponse.json(
         { message: 'Test attempt not found' },
         { status: 404 }
@@ -101,7 +121,7 @@ export async function GET(
     // Transform submitted answers into the expected format
     const answers: Record<string, { answerIndex: number; timeTaken: number }> =
       {};
-    testAttempt.submittedAnswers.forEach((submittedAnswer: any) => {
+    fullTestAttempt.submittedAnswers.forEach((submittedAnswer: any) => {
       answers[submittedAnswer.questionId] = {
         answerIndex: submittedAnswer.selectedAnswerIndex,
         timeTaken: submittedAnswer.timeTakenSeconds,
@@ -109,7 +129,7 @@ export async function GET(
     });
 
     // Calculate personality scores if there are personality questions
-    const personalityQuestions = testAttempt.test.questions.filter(
+    const personalityQuestions = fullTestAttempt.test.questions.filter(
       (q: any) => q.questionType === 'PERSONALITY'
     );
 
@@ -117,9 +137,9 @@ export async function GET(
     if (personalityQuestions.length > 0 && Object.keys(answers).length > 0) {
       try {
         personalityScores = calculatePersonalityScores(
-          testAttempt.test.questions,
+          fullTestAttempt.test.questions,
           answers as any,
-          testAttempt.test.id
+          fullTestAttempt.test.id
         );
       } catch (error) {
         console.error('Error calculating personality scores:', error);
@@ -127,7 +147,7 @@ export async function GET(
     }
 
     // Calculate objective score
-    const objectiveQuestions = testAttempt.test.questions.filter(
+    const objectiveQuestions = fullTestAttempt.test.questions.filter(
       (q: any) => q.questionType !== 'PERSONALITY'
     );
 
@@ -147,24 +167,24 @@ export async function GET(
 
     // Format the response
     const response = {
-      id: testAttempt.id,
-      candidateName: testAttempt.invitation?.candidateName || 'Unknown',
-      candidateEmail: testAttempt.invitation?.candidateEmail || 'Unknown',
+      id: fullTestAttempt.id,
+      candidateName: fullTestAttempt.invitation?.candidateName || 'Unknown',
+      candidateEmail: fullTestAttempt.invitation?.candidateEmail || 'Unknown',
       answers: answers,
       objectiveScore,
-      totalQuestions: testAttempt.test.questions.length,
+      totalQuestions: fullTestAttempt.test.questions.length,
       personalityScores:
         Object.keys(personalityScores).length > 0 ? personalityScores : null,
-      personalityProfile: testAttempt.personalityProfile,
-      status: testAttempt.status,
-      createdAt: testAttempt.createdAt,
-      updatedAt: testAttempt.updatedAt,
+      personalityProfile: fullTestAttempt.personalityProfile,
+      status: fullTestAttempt.status,
+      createdAt: fullTestAttempt.createdAt,
+      updatedAt: fullTestAttempt.updatedAt,
       isPublicAttempt, // Add flag to indicate type
       test: {
-        id: testAttempt.test.id,
-        title: testAttempt.test.title,
-        description: testAttempt.test.description,
-        questions: testAttempt.test.questions.map((q: any) => ({
+        id: fullTestAttempt.test.id,
+        title: fullTestAttempt.test.title,
+        description: fullTestAttempt.test.description,
+        questions: fullTestAttempt.test.questions.map((q: any) => ({
           id: q.id,
           promptText: q.promptText,
           answerOptions: q.answerOptions,
