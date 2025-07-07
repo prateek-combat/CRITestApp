@@ -25,7 +25,8 @@
     "test:quick": "./scripts/test-quick.sh",
     "cleanup:deps": "rm -rf node_modules package-lock.json && npm install",
     "check:todos": "grep -r 'TODO\\|FIXME\\|HACK\\|XXX' --include='*.js' --include='*.jsx' --include='*.ts' --include='*.tsx' src/ || echo 'No TODOs found'",
-    "check:quality": "npm run lint && npm run check:todos"
+    "check:quality": "npm run lint && npm run check:todos",
+    "recalculate:risk-scores": "npx ts-node scripts/recalculate-risk-scores.ts"
   },
   "dependencies": {
     "@formkit/auto-animate": "^0.8.2",
