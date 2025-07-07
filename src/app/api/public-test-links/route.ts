@@ -79,11 +79,19 @@ export async function POST(request: NextRequest) {
     console.log('Session user:', session.user);
 
     const body = await request.json();
-    const { testId, title, description, expiresAt, maxUses } = body;
+    const { testId, jobProfileId, title, description, expiresAt, maxUses } =
+      body;
 
     if (!testId) {
       return NextResponse.json(
         { error: 'Test ID is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!jobProfileId) {
+      return NextResponse.json(
+        { error: 'Job Profile ID is required' },
         { status: 400 }
       );
     }
@@ -98,15 +106,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Test not found' }, { status: 404 });
     }
 
+    // Verify job profile exists
+    const jobProfile = await prisma.jobProfile.findUnique({
+      where: { id: jobProfileId },
+      select: { id: true, name: true },
+    });
+
+    if (!jobProfile) {
+      return NextResponse.json(
+        { error: 'Job Profile not found' },
+        { status: 404 }
+      );
+    }
+
     // Generate unique token
     const linkToken = nanoid(12);
 
     const publicLink = await prisma.publicTestLink.create({
       data: {
         testId,
+        jobProfileId,
         linkToken,
-        title: title || `Public Link for ${test.title}`,
-        description,
+        title: title || `${jobProfile.name} - ${test.title}`,
+        description:
+          description ||
+          `Public link for ${test.title} as part of ${jobProfile.name} assessment`,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
         maxUses: maxUses || null,
         isTimeRestricted: false, // Explicitly set to false for regular public links
@@ -117,6 +141,12 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             title: true,
+          },
+        },
+        jobProfile: {
+          select: {
+            id: true,
+            name: true,
           },
         },
       },

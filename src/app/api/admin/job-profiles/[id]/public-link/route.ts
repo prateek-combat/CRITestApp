@@ -96,6 +96,7 @@ export async function POST(
         const publicLink = await prisma.publicTestLink.create({
           data: {
             testId: test.id,
+            jobProfileId: jobProfileId,
             linkToken,
             title: `${jobProfile.name} - ${test.title}`,
             description: `Public link for ${test.title} as part of ${jobProfile.name} assessment`,
