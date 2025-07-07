@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptionsSimple } from '@/lib/auth-simple';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authOptionsSimple);
 
     if (
-      !session ||
-      (session.user.role !== 'admin' && session.user.role !== 'super_admin')
+      !session?.user ||
+      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
     ) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
