@@ -1,5 +1,6 @@
 import { proctorLogger } from '../logger';
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { DISABLE_PROCTORING_REQUIREMENTS } from '../constants';
 
 export interface RecordingSession {
   stream: MediaStream;
@@ -16,6 +17,15 @@ export function useProctoring(attemptId: string) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const start = useCallback(async () => {
+    // If proctoring is disabled, do nothing
+    if (DISABLE_PROCTORING_REQUIREMENTS) {
+      proctorLogger.info('Proctoring disabled - skipping recording', {
+        attemptId,
+      });
+      setIsRecording(false);
+      return;
+    }
+
     try {
       const recordingSession = await startRecording();
       setSession(recordingSession);
