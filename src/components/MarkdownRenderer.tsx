@@ -37,7 +37,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
   };
 
   return (
-    <div className={`rendered-markdown-content ${className}`}>
+    <div className={`rendered-markdown-content text-gray-900 ${className}`}>
       <ReactMarkdown components={components} remarkPlugins={[remarkGfm]}>
         {content || ''}
       </ReactMarkdown>

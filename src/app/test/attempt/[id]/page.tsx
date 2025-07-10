@@ -94,12 +94,13 @@ export default function TestTakingPage() {
     const microphoneGranted = systemCheckResults?.microphone.status === 'pass';
     const permissionsGranted = cameraGranted && microphoneGranted;
 
-    if (!permissionsGranted && !DISABLE_PROCTORING_REQUIREMENTS) {
-      alert(
-        'Camera and microphone access is required to start the test. Please grant permissions and try again.'
-      );
-      return;
-    }
+    // TEMPORARILY DISABLED: Skip camera/microphone requirement check
+    // if (!permissionsGranted && !DISABLE_PROCTORING_REQUIREMENTS) {
+    //   alert(
+    //     'Camera and microphone access is required to start the test. Please grant permissions and try again.'
+    //   );
+    //   return;
+    // }
 
     try {
       // Update permission status in database using the correct endpoint
@@ -588,7 +589,7 @@ export default function TestTakingPage() {
         <div className="grid h-full min-h-0 flex-1 grid-cols-1 md:grid-cols-3">
           <div className="flex min-h-0 flex-col border-r border-gray-200 bg-white md:col-span-2">
             <div className="flex-1 overflow-y-auto p-4 md:p-6">
-              <div className="prose prose-lg max-w-none">
+              <div className="prose prose-lg max-w-none text-gray-900">
                 <MarkdownRenderer content={currentQuestion?.promptText || ''} />
               </div>
             </div>

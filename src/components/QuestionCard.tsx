@@ -52,7 +52,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
         <div className="mb-4">
           <MarkdownRenderer
             content={question.promptText}
-            className="text-lg font-semibold leading-snug"
+            className="text-lg font-semibold leading-snug text-gray-900"
           />
         </div>
 

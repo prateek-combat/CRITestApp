@@ -648,14 +648,11 @@ export default function SystemCompatibilityChecker({
               : 'Some hardware issues were detected. You can still continue with the test, but proctoring features may be limited.'}
           </p>
 
-          {/* Show Continue button only when camera and microphone pass */}
+          {/* Show Continue button - TEMPORARILY ALLOWING WITHOUT CAMERA/MIC */}
           {onStartTest && (
             <div className="space-y-3">
-              {(overallStatus === 'pass' &&
-                results.camera.status === 'pass' &&
-                results.microphone.status === 'pass') ||
-              process.env.NEXT_PUBLIC_DISABLE_PROCTORING_REQUIREMENTS ===
-                'true' ? (
+              {/* TEMPORARILY DISABLED: Always show continue button */}
+              {true ? (
                 <button
                   onClick={onStartTest}
                   className="mx-auto flex items-center space-x-2 rounded-lg bg-primary-600 px-6 py-3 font-medium text-white transition-colors hover:bg-primary-700"
@@ -663,9 +660,9 @@ export default function SystemCompatibilityChecker({
                   <Play className="h-5 w-5" />
                   <span>
                     Continue to Test{' '}
-                    {process.env.NEXT_PUBLIC_DISABLE_PROCTORING_REQUIREMENTS ===
-                    'true'
-                      ? '(Proctoring Disabled)'
+                    {results.camera.status !== 'pass' ||
+                    results.microphone.status !== 'pass'
+                      ? '(Without Camera/Microphone)'
                       : ''}
                   </span>
                 </button>

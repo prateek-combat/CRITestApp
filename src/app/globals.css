@@ -803,8 +803,55 @@ body {
 .rendered-markdown-content {
   font-size: 0.9rem;
   line-height: 1.7;
-  color: inherit;
+  color: #111827; /* gray-900 - explicit dark color */
   font-weight: 400;
+}
+
+/* Force dark text in dark mode when inside white/light containers */
+@media (prefers-color-scheme: dark) {
+  /* Ensure all text in white/light containers stays dark */
+  .bg-white,
+  .bg-white *,
+  .bg-slate-50,
+  .bg-slate-50 *,
+  .bg-gray-50,
+  .bg-gray-50 *,
+  .bg-blue-50,
+  .bg-blue-50 * {
+    color: #111827 !important; /* gray-900 - force dark text */
+  }
+  
+  /* Specific overrides for prose and markdown content */
+  .bg-white .prose,
+  .bg-white .prose *,
+  .bg-white .rendered-markdown-content,
+  .bg-white .rendered-markdown-content * {
+    color: #111827 !important; /* gray-900 */
+  }
+  
+  /* Ensure test question and answer text is always visible */
+  .bg-white .text-gray-900,
+  .bg-white .text-gray-800,
+  .bg-white .text-gray-700,
+  .bg-white .text-gray-600,
+  .bg-slate-50 .text-gray-900,
+  .bg-slate-50 .text-gray-800,
+  .bg-slate-50 .text-gray-700,
+  .bg-slate-50 .text-gray-600 {
+    color: #111827 !important; /* gray-900 */
+  }
+  
+  /* Fix for buttons and interactive elements */
+  .bg-white button span,
+  .bg-slate-50 button span {
+    color: #111827 !important; /* gray-900 */
+  }
+  
+  /* Exception for selected state with blue background */
+  .bg-blue-500,
+  .bg-blue-500 * {
+    color: #ffffff !important; /* white text on blue */
+  }
 }
 
 .rendered-markdown-content > *:first-child {
@@ -860,12 +907,36 @@ body {
   font-style: italic;
 }
 
+/* Force proper colors in dark mode for markdown content inside white backgrounds */
+@media (prefers-color-scheme: dark) {
+  .bg-white .rendered-markdown-content blockquote {
+    color: #4b5563 !important;
+  }
+  
+  /* Additional fixes for code blocks and special elements */
+  .bg-white .rendered-markdown-content code,
+  .bg-white .rendered-markdown-content pre {
+    color: #111827 !important;
+  }
+  
+  /* Ensure headers in markdown are visible */
+  .bg-white .rendered-markdown-content h1,
+  .bg-white .rendered-markdown-content h2,
+  .bg-white .rendered-markdown-content h3,
+  .bg-white .rendered-markdown-content h4,
+  .bg-white .rendered-markdown-content h5,
+  .bg-white .rendered-markdown-content h6 {
+    color: #111827 !important;
+  }
+}
+
 .rendered-markdown-content :not(pre) > code {
   background-color: rgba(0, 0, 0, 0.05);
   border-radius: 4px;
   padding: 0.2em 0.4em;
   font-size: 0.875em;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  color: #111827;
 }
 
 .rendered-markdown-content pre {
@@ -2333,4 +2404,3 @@ body {
   position: relative;
   z-index: 1;
 }
-
