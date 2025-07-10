@@ -13,10 +13,8 @@ export const PROCTORING_RISK_THRESHOLDS = {
   HIGH: 50.0,
 } as const;
 
-// Temporary flag to disable proctoring requirements (for testing)
-export const DISABLE_PROCTORING_REQUIREMENTS =
-  process.env.NEXT_PUBLIC_DISABLE_PROCTORING_REQUIREMENTS === 'true' ||
-  process.env.DISABLE_PROCTORING_REQUIREMENTS === 'true';
+// Proctoring is mandatory for all tests
+export const DISABLE_PROCTORING_REQUIREMENTS = false;
 
 // Risk Weights for Proctoring Events
 export const PROCTORING_RISK_WEIGHTS = {

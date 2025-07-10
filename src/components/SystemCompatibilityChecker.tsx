@@ -648,23 +648,67 @@ export default function SystemCompatibilityChecker({
               : 'Some hardware issues were detected. You can still continue with the test, but proctoring features may be limited.'}
           </p>
 
-          {/* Show Continue button - TEMPORARILY ALLOWING WITHOUT CAMERA/MIC */}
+          {/* Test Instructions */}
+          {overallStatus === 'pass' && (
+            <div className="mx-auto mb-6 max-w-lg rounded-lg border border-blue-200 bg-blue-50 p-4 text-left">
+              <h3 className="mb-3 text-lg font-semibold text-blue-900">
+                Important Instructions - Please Read Carefully
+              </h3>
+              <ul className="list-inside list-disc space-y-2 text-sm text-blue-800">
+                <li>
+                  Camera and microphone must remain{' '}
+                  <strong>active throughout the test</strong>
+                </li>
+                <li>
+                  Ensure you are in a{' '}
+                  <strong>quiet, well-lit environment</strong>
+                </li>
+                <li>
+                  Keep your <strong>face visible to the camera</strong> at all
+                  times
+                </li>
+                <li>
+                  Do not <strong>switch tabs or windows</strong> during the test
+                </li>
+                <li>
+                  Do not use any <strong>external help or resources</strong>
+                </li>
+                <li>
+                  Any <strong>suspicious activity</strong> will be flagged and
+                  may result in disqualification
+                </li>
+                <li>
+                  Once you start the test, you{' '}
+                  <strong>cannot pause or restart</strong> it
+                </li>
+                <li>
+                  Make sure you have a{' '}
+                  <strong>stable internet connection</strong>
+                </li>
+                <li>
+                  Close all other <strong>applications and browser tabs</strong>{' '}
+                  before starting
+                </li>
+                <li>
+                  The test will be <strong>automatically submitted</strong> when
+                  time expires
+                </li>
+              </ul>
+            </div>
+          )}
+
+          {/* Show Continue button - Proctoring is MANDATORY */}
           {onStartTest && (
             <div className="space-y-3">
-              {/* TEMPORARILY DISABLED: Always show continue button */}
-              {true ? (
+              {/* Proctoring is mandatory - check for camera/mic permissions */}
+              {results.camera.status === 'pass' &&
+              results.microphone.status === 'pass' ? (
                 <button
                   onClick={onStartTest}
                   className="mx-auto flex items-center space-x-2 rounded-lg bg-primary-600 px-6 py-3 font-medium text-white transition-colors hover:bg-primary-700"
                 >
                   <Play className="h-5 w-5" />
-                  <span>
-                    Continue to Test{' '}
-                    {results.camera.status !== 'pass' ||
-                    results.microphone.status !== 'pass'
-                      ? '(Without Camera/Microphone)'
-                      : ''}
-                  </span>
+                  <span>Continue to Test</span>
                 </button>
               ) : (
                 <div className="space-y-3">
