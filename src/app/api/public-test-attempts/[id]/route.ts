@@ -155,7 +155,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           submittedAt: new Date(),
         }));
 
-        // Use a transaction to ensure atomicity
+        // Use a transaction to ensure atomicity with optimized settings
         await prisma.$transaction(async (tx) => {
           // Delete existing answers for this attempt
           await tx.publicSubmittedAnswer.deleteMany({
@@ -177,8 +177,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             },
           });
         }, {
-          maxWait: 10000, // 10 seconds
-          timeout: 15000, // 15 seconds
+          maxWait: 3000, // Reduced to 3 seconds
+          timeout: 10000, // Reduced to 10 seconds
         });
 
         // Send admin email notification for public test completion (async, don't wait for completion)
@@ -246,6 +246,23 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     console.error('Error updating public test attempt:', error);
+    
+    // Handle specific Prisma errors
+    if (error instanceof Error) {
+      if (error.message.includes('P2028')) {
+        return NextResponse.json(
+          { error: 'Database transaction timeout. Please try again.' },
+          { status: 503 }
+        );
+      }
+      if (error.message.includes('not found')) {
+        return NextResponse.json(
+          { error: 'Test attempt not found' },
+          { status: 404 }
+        );
+      }
+    }
+    
     return NextResponse.json(
       { error: 'Failed to update test attempt' },
       { status: 500 }
