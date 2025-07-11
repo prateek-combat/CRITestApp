@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptionsSimple } from '@/lib/auth-simple';
 import { PrismaClient } from '@prisma/client';
+import { JobProfileNotificationManager } from '@/lib/jobProfileNotifications';
 
 const prisma = new PrismaClient();
 
@@ -64,6 +65,9 @@ export async function GET(
       name: jobProfile.name,
       description: jobProfile.description,
       isActive: jobProfile.isActive,
+      notificationEmails: JobProfileNotificationManager.getNotificationEmails(
+        jobProfile.id
+      ),
       createdAt: jobProfile.createdAt.toISOString(),
       updatedAt: jobProfile.updatedAt.toISOString(),
       positions: jobProfile.positions.map((position) => ({
@@ -119,8 +123,15 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { name, description, isActive, positionIds, testIds, testWeights } =
-      body;
+    const {
+      name,
+      description,
+      isActive,
+      positionIds,
+      testIds,
+      testWeights,
+      notificationEmails,
+    } = body;
 
     // Validate required fields
     if (!name || !positionIds?.length || !testIds?.length) {
@@ -209,6 +220,16 @@ export async function PUT(
 
       return updatedJobProfile;
     });
+
+    // Process and store notification emails if provided
+    if (notificationEmails && typeof notificationEmails === 'string') {
+      const emailList = notificationEmails
+        .split(/[,\n]+/)
+        .map((email) => email.trim())
+        .filter((email) => email && email.includes('@'));
+
+      JobProfileNotificationManager.setNotificationEmails(id, emailList);
+    }
 
     // Transform the response
     const transformedProfile = {
