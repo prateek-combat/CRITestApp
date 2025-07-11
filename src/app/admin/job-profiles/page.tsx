@@ -24,13 +24,6 @@ import ImprovedInviteModal from '@/components/admin/job-profiles/ImprovedInviteM
 import SuccessNotification from '@/components/ui/SuccessNotification';
 
 // Types
-interface Position {
-  id: string;
-  name: string;
-  code: string;
-  department: string;
-}
-
 interface Test {
   id: string;
   title: string;
@@ -45,7 +38,6 @@ interface JobProfile {
   name: string;
   description: string | null;
   isActive: boolean;
-  positions: Position[];
   tests: Test[];
   _count: {
     invitations: number;
@@ -80,10 +72,8 @@ interface TimeSlot {
   };
   publicTestLinks: Array<{
     id: string;
-    title: string;
-    isActive: boolean;
     publicUrl: string;
-    usedCount: number;
+    testTitle: string;
   }>;
   _count?: {
     publicTestLinks: number;
@@ -106,7 +96,6 @@ interface TimeSlotLink {
 export default function JobProfilesPage() {
   // State Management
   const [jobProfiles, setJobProfiles] = useState<JobProfile[]>([]);
-  const [positions, setPositions] = useState<Position[]>([]);
   const [tests, setTests] = useState<Test[]>([]);
   const [publicLinks, setPublicLinks] = useState<PublicLink[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
@@ -133,8 +122,8 @@ export default function JobProfilesPage() {
     name: '',
     description: '',
     isActive: true,
-    positionIds: [] as string[],
     testIds: [] as string[],
+    notificationEmails: '',
   });
 
   const [invitationData, setInvitationData] = useState({
@@ -150,13 +139,8 @@ export default function JobProfilesPage() {
   const [modalKey, setModalKey] = useState(0); // Force modal refresh
 
   // Confirmation Dialog
-  const {
-    isOpen,
-    message,
-    confirmAction,
-    openConfirmation,
-    closeConfirmation,
-  } = useConfirmation();
+  const { confirmationState, showConfirmation, hideConfirmation } =
+    useConfirmation();
 
   // Data Fetching
   const fetchJobProfiles = useCallback(async () => {
@@ -168,19 +152,6 @@ export default function JobProfilesPage() {
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to fetch job profiles'
-      );
-    }
-  }, []);
-
-  const fetchPositions = useCallback(async () => {
-    try {
-      const response = await fetch('/api/admin/positions');
-      if (!response.ok) throw new Error('Failed to fetch positions');
-      const data = await response.json();
-      setPositions(data);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to fetch positions'
       );
     }
   }, []);
@@ -240,7 +211,6 @@ export default function JobProfilesPage() {
       setLoading(true);
       await Promise.all([
         fetchJobProfiles(),
-        fetchPositions(),
         fetchTests(),
         fetchPublicLinks(),
         fetchTimeSlots(),
@@ -346,8 +316,13 @@ export default function JobProfilesPage() {
   };
 
   const handleDeleteProfile = (profile: JobProfile) => {
-    openConfirmation(
-      `Are you sure you want to delete "${profile.name}"? This will also delete all associated invitations and public links.`,
+    showConfirmation(
+      {
+        title: 'Delete Job Profile',
+        message: `Are you sure you want to delete "${profile.name}"? This will also delete all associated invitations and public links.`,
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+      },
       async () => {
         try {
           const response = await fetch(
@@ -743,8 +718,8 @@ export default function JobProfilesPage() {
       name: '',
       description: '',
       isActive: true,
-      positionIds: [],
       testIds: [],
+      notificationEmails: '',
     });
   };
 
@@ -853,8 +828,9 @@ export default function JobProfilesPage() {
                   name: profile.name,
                   description: profile.description || '',
                   isActive: profile.isActive,
-                  positionIds: profile.positions.map((p) => p.id),
                   testIds: profile.tests.map((t) => t.id),
+                  notificationEmails:
+                    (profile as any).notificationEmails?.join(', ') || '',
                 });
                 setShowEditModal(true);
               }}
@@ -917,8 +893,9 @@ export default function JobProfilesPage() {
               name: profile.name,
               description: profile.description || '',
               isActive: profile.isActive,
-              positionIds: profile.positions.map((p) => p.id),
               testIds: profile.tests.map((t) => t.id),
+              notificationEmails:
+                (profile as any).notificationEmails?.join(', ') || '',
             });
             setShowEditModal(true);
           }}
@@ -1008,88 +985,65 @@ export default function JobProfilesPage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
-                        Positions *
-                      </label>
-                      <div className="max-h-48 overflow-y-auto rounded-lg border border-gray-300 p-3">
-                        {positions.map((position) => (
-                          <label
-                            key={position.id}
-                            className="flex cursor-pointer items-center gap-2 py-1 hover:bg-gray-50"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={formData.positionIds.includes(
-                                position.id
-                              )}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setFormData({
-                                    ...formData,
-                                    positionIds: [
-                                      ...formData.positionIds,
-                                      position.id,
-                                    ],
-                                  });
-                                } else {
-                                  setFormData({
-                                    ...formData,
-                                    positionIds: formData.positionIds.filter(
-                                      (id) => id !== position.id
-                                    ),
-                                  });
-                                }
-                              }}
-                              className="h-4 w-4 rounded border-gray-300 text-blue-600"
-                            />
-                            <span className="text-sm text-gray-700">
-                              {position.name} ({position.code})
-                            </span>
-                          </label>
-                        ))}
-                      </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Tests *
+                    </label>
+                    <div className="max-h-48 overflow-y-auto rounded-lg border border-gray-300 p-3">
+                      {tests.map((test) => (
+                        <label
+                          key={test.id}
+                          className="flex cursor-pointer items-center gap-2 py-1 hover:bg-gray-50"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.testIds.includes(test.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData({
+                                  ...formData,
+                                  testIds: [...formData.testIds, test.id],
+                                });
+                              } else {
+                                setFormData({
+                                  ...formData,
+                                  testIds: formData.testIds.filter(
+                                    (id) => id !== test.id
+                                  ),
+                                });
+                              }
+                            }}
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                          />
+                          <span className="text-sm text-gray-700">
+                            {test.title} ({test.questionsCount || 0} questions)
+                          </span>
+                        </label>
+                      ))}
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-gray-700">
-                        Tests *
-                      </label>
-                      <div className="max-h-48 overflow-y-auto rounded-lg border border-gray-300 p-3">
-                        {tests.map((test) => (
-                          <label
-                            key={test.id}
-                            className="flex cursor-pointer items-center gap-2 py-1 hover:bg-gray-50"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={formData.testIds.includes(test.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setFormData({
-                                    ...formData,
-                                    testIds: [...formData.testIds, test.id],
-                                  });
-                                } else {
-                                  setFormData({
-                                    ...formData,
-                                    testIds: formData.testIds.filter(
-                                      (id) => id !== test.id
-                                    ),
-                                  });
-                                }
-                              }}
-                              className="h-4 w-4 rounded border-gray-300 text-blue-600"
-                            />
-                            <span className="text-sm text-gray-700">
-                              {test.title} ({test.questionsCount || 0}{' '}
-                              questions)
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                      Notification Emails
+                    </label>
+                    <p className="mb-2 text-sm text-gray-500">
+                      Enter email addresses (separated by commas or one per
+                      line) to receive notifications when tests are completed
+                      for this job profile.
+                    </p>
+                    <textarea
+                      value={formData.notificationEmails || ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          notificationEmails: e.target.value,
+                        })
+                      }
+                      rows={4}
+                      placeholder="admin@company.com, hr@company.com&#10;manager@company.com"
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -1162,16 +1116,20 @@ export default function JobProfilesPage() {
             setSelectedProfile(null);
           }}
           onSubmit={handleCreateTimeSlot}
+          jobProfileId={selectedProfile.id}
           jobProfileName={selectedProfile.name}
         />
       )}
 
       {/* Confirmation Dialog */}
       <ConfirmationDialog
-        isOpen={isOpen}
-        message={message}
-        onConfirm={confirmAction}
-        onCancel={closeConfirmation}
+        isOpen={confirmationState.isOpen}
+        title={confirmationState.title}
+        message={confirmationState.message}
+        confirmText={confirmationState.confirmText}
+        cancelText={confirmationState.cancelText}
+        onConfirm={confirmationState.onConfirm}
+        onCancel={hideConfirmation}
       />
 
       {/* Success Notification */}

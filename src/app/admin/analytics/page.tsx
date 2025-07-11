@@ -25,7 +25,6 @@ interface Position {
   name: string;
   code: string;
   description: string | null;
-  department: string | null;
   level: string | null;
   isActive: boolean;
   testCount: number;
@@ -89,7 +88,6 @@ export default function PositionAnalyticsPage() {
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [departmentFilter, setDepartmentFilter] = useState('all');
 
   // Auth check
   useEffect(() => {
@@ -194,15 +192,8 @@ export default function PositionAnalyticsPage() {
       (position.description &&
         position.description.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesDepartment =
-      departmentFilter === 'all' || position.department === departmentFilter;
-
-    return matchesSearch && matchesDepartment;
+    return matchesSearch;
   });
-
-  const departments = [
-    ...new Set(positions.map((p) => p.department).filter(Boolean)),
-  ];
   const selectedPosition = positions.find((p) => p.id === selectedPositionId);
 
   const formatNumber = (num: number) => {
@@ -360,8 +351,8 @@ export default function PositionAnalyticsPage() {
                 </p>
               </div>
 
-              {/* Search and Filters - Compact */}
-              <div className="space-y-2 border-b border-gray-200 p-2">
+              {/* Search - Compact */}
+              <div className="border-b border-gray-200 p-2">
                 <div className="relative">
                   <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-400" />
                   <input
@@ -372,22 +363,6 @@ export default function PositionAnalyticsPage() {
                     className="w-full rounded-md border border-gray-300 py-1.5 pl-7 pr-3 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                   />
                 </div>
-
-                <div className="flex items-center gap-1">
-                  <Filter className="h-3 w-3 text-gray-400" />
-                  <select
-                    value={departmentFilter}
-                    onChange={(e) => setDepartmentFilter(e.target.value)}
-                    className="flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-                  >
-                    <option value="all">All Departments</option>
-                    {departments.map((dept) => (
-                      <option key={dept || 'unknown'} value={dept || ''}>
-                        {dept}
-                      </option>
-                    ))}
-                  </select>
-                </div>
               </div>
 
               {/* Positions List - Compact */}
@@ -396,8 +371,8 @@ export default function PositionAnalyticsPage() {
                   <div className="p-3 text-center">
                     <Target className="mx-auto h-6 w-6 text-gray-400" />
                     <p className="mt-1 text-xs text-gray-500">
-                      {searchTerm || departmentFilter !== 'all'
-                        ? 'No positions match your filters'
+                      {searchTerm
+                        ? 'No positions match your search'
                         : 'No active positions with tests found'}
                     </p>
                   </div>
@@ -438,12 +413,6 @@ export default function PositionAnalyticsPage() {
                         </div>
 
                         <div className="mt-1 flex flex-wrap gap-1">
-                          {position.department && (
-                            <span className="inline-flex items-center rounded-md bg-brand-50 px-1.5 py-0.5 text-xs font-medium text-brand-700">
-                              <Building2 className="mr-1 h-2.5 w-2.5" />
-                              {position.department}
-                            </span>
-                          )}
                           {position.level && (
                             <span className="inline-flex items-center rounded-md bg-secondary-50 px-1.5 py-0.5 text-xs font-medium text-secondary-700">
                               <Target className="mr-1 h-2.5 w-2.5" />
@@ -511,7 +480,7 @@ export default function PositionAnalyticsPage() {
                         {selectedPosition.name} Analytics
                       </h2>
                       <p className="text-xs text-gray-600">
-                        {selectedPosition.code} • {selectedPosition.department}
+                        {selectedPosition.code}
                       </p>
                     </div>
                     <button

@@ -80,11 +80,10 @@ export default function CheatingDetectionAI({
 
     try {
       // TEMPORARY DISABLE: Skip camera access, simulate successful start
-      console.log('Camera proctoring temporarily disabled');
       setDetectionStatus('active');
       setLastActivity('Camera disabled - monitoring other behaviors only');
       startDetection();
-      
+
       // Original camera code commented out:
       // const stream = await navigator.mediaDevices.getUserMedia({
       //   video: {
@@ -93,9 +92,9 @@ export default function CheatingDetectionAI({
       //     frameRate: { ideal: 15 }, // Lower framerate for AI processing
       //   },
       // });
-      // 
+      //
       // streamRef.current = stream;
-      // 
+      //
       // if (videoRef.current) {
       //   videoRef.current.srcObject = stream;
       //   videoRef.current.play();
@@ -117,8 +116,7 @@ export default function CheatingDetectionAI({
     if (detectionStatus !== 'active') return;
 
     // TEMPORARY DISABLE: Skip actual frame analysis but keep other monitoring
-    console.log('Frame analysis temporarily disabled');
-    
+
     // Original frame analysis code commented out:
     // if (!videoRef.current || !canvasRef.current) return;
     // const video = videoRef.current;
@@ -128,7 +126,7 @@ export default function CheatingDetectionAI({
     // canvas.width = video.videoWidth;
     // canvas.height = video.videoHeight;
     // ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    // 
+    //
     // try {
     //   const simulatedAnalysis = await simulateFaceDetection(canvas);
     //   if (simulatedAnalysis.faces.length === 0) {
