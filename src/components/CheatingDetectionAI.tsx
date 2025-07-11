@@ -79,77 +79,82 @@ export default function CheatingDetectionAI({
     if (!isActive || !faceApiLoaded) return;
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          frameRate: { ideal: 15 }, // Lower framerate for AI processing
-        },
-      });
-
-      streamRef.current = stream;
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-        setDetectionStatus('active');
-        setLastActivity('Camera initialized - monitoring started');
-        startDetection();
-      }
+      // TEMPORARY DISABLE: Skip camera access, simulate successful start
+      console.log('Camera proctoring temporarily disabled');
+      setDetectionStatus('active');
+      setLastActivity('Camera disabled - monitoring other behaviors only');
+      startDetection();
+      
+      // Original camera code commented out:
+      // const stream = await navigator.mediaDevices.getUserMedia({
+      //   video: {
+      //     width: { ideal: 640 },
+      //     height: { ideal: 480 },
+      //     frameRate: { ideal: 15 }, // Lower framerate for AI processing
+      //   },
+      // });
+      // 
+      // streamRef.current = stream;
+      // 
+      // if (videoRef.current) {
+      //   videoRef.current.srcObject = stream;
+      //   videoRef.current.play();
+      //   setDetectionStatus('active');
+      //   setLastActivity('Camera initialized - monitoring started');
+      //   startDetection();
+      // }
     } catch (error) {
       console.error('Camera initialization failed:', error);
-      setDetectionStatus('error');
-      setLastActivity('Camera access failed');
+      // TEMPORARY: Don't show error, just continue with other monitoring
+      setDetectionStatus('active');
+      setLastActivity('Camera disabled - monitoring other behaviors only');
+      startDetection();
     }
   }, [isActive, faceApiLoaded]);
 
   // Eye movement and behavior analysis
   const analyzeFrame = useCallback(async () => {
-    if (!videoRef.current || !canvasRef.current || detectionStatus !== 'active')
-      return;
+    if (detectionStatus !== 'active') return;
 
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-
-    if (!ctx) return;
-
-    // Set canvas size to match video
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-
-    // Draw current video frame to canvas
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    try {
-      // Simulate face detection analysis (in production, use actual face-api.js)
-      const simulatedAnalysis = await simulateFaceDetection(canvas);
-
-      if (simulatedAnalysis.faces.length === 0) {
-        handleSuspiciousActivity({
-          type: 'no_face',
-          severity: 'medium',
-          timestamp: Date.now(),
-          description: 'No face detected in frame',
-          confidence: 0.85,
-        });
-      } else if (simulatedAnalysis.faces.length > 1) {
-        handleSuspiciousActivity({
-          type: 'multiple_faces',
-          severity: 'high',
-          timestamp: Date.now(),
-          description: 'Multiple faces detected',
-          confidence: 0.95,
-        });
-      } else {
-        // Analyze single face
-        const face = simulatedAnalysis.faces[0];
-        analyzeEyeMovement(face);
-        analyzeFacePosition(face);
-      }
-    } catch (error) {
-      console.error('Frame analysis failed:', error);
-    }
+    // TEMPORARY DISABLE: Skip actual frame analysis but keep other monitoring
+    console.log('Frame analysis temporarily disabled');
+    
+    // Original frame analysis code commented out:
+    // if (!videoRef.current || !canvasRef.current) return;
+    // const video = videoRef.current;
+    // const canvas = canvasRef.current;
+    // const ctx = canvas.getContext('2d');
+    // if (!ctx) return;
+    // canvas.width = video.videoWidth;
+    // canvas.height = video.videoHeight;
+    // ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // 
+    // try {
+    //   const simulatedAnalysis = await simulateFaceDetection(canvas);
+    //   if (simulatedAnalysis.faces.length === 0) {
+    //     handleSuspiciousActivity({
+    //       type: 'no_face',
+    //       severity: 'medium',
+    //       timestamp: Date.now(),
+    //       description: 'No face detected in frame',
+    //       confidence: 0.85,
+    //     });
+    //   } else if (simulatedAnalysis.faces.length > 1) {
+    //     handleSuspiciousActivity({
+    //       type: 'multiple_faces',
+    //       severity: 'high',
+    //       timestamp: Date.now(),
+    //       description: 'Multiple faces detected',
+    //       confidence: 0.95,
+    //     });
+    //   } else {
+    //     const face = simulatedAnalysis.faces[0];
+    //     analyzeEyeMovement(face);
+    //     analyzeFacePosition(face);
+    //   }
+    // } catch (error) {
+    //   console.error('Frame analysis failed:', error);
+    // }
   }, [detectionStatus]);
 
   // Simulate face detection (replace with actual face-api.js in production)
