@@ -191,7 +191,7 @@ export async function PUT(
     console.log('🔍 [VERCEL DEBUG] Job profile ID:', id);
 
     // Update the job profile with transaction to handle both positions and test weights
-    console.log('🔍 [VERCEL DEBUG] Starting transaction...');
+    console.log('🔍 [VERCEL DEBUG] Starting transaction with increased timeout...');
     const jobProfile = await prisma.$transaction(async (tx) => {
       console.log('🔍 [VERCEL DEBUG] Transaction started - deleting existing test weights...');
       const deletedWeights = await tx.testWeight.deleteMany({
@@ -254,35 +254,48 @@ export async function PUT(
 
       // Associate tests directly with positions for analytics/leaderboard visibility
       // If multiple positions, associate with the first available position (active preferred)
-      console.log('🔍 [VERCEL DEBUG] Starting position association...');
+      console.log('🔍 [VERCEL DEBUG] Starting optimized position association...');
       const primaryPosition = updatedJobProfile.positions.find(
         (p) => p.isActive
       ) || updatedJobProfile.positions[0]; // Fallback to first position if no active ones
+      
       if (primaryPosition) {
         console.log('🔍 [VERCEL DEBUG] Primary position found:', primaryPosition.id);
-        for (const testId of testIds) {
-          // Check if test already has a position association
-          const existingTest = await tx.test.findUnique({
-            where: { id: testId },
-            select: { positionId: true },
+        
+        // Batch check which tests need position association
+        const testsToCheck = await tx.test.findMany({
+          where: {
+            id: { in: testIds },
+            positionId: null
+          },
+          select: { id: true }
+        });
+        
+        const testsNeedingAssociation = testsToCheck.map(t => t.id);
+        console.log('🔍 [VERCEL DEBUG] Tests needing position association:', testsNeedingAssociation);
+        
+        // Batch update tests that need position association
+        if (testsNeedingAssociation.length > 0) {
+          const updateResult = await tx.test.updateMany({
+            where: {
+              id: { in: testsNeedingAssociation }
+            },
+            data: {
+              positionId: primaryPosition.id
+            }
           });
-
-          // Only update if test doesn't have a position association
-          if (!existingTest?.positionId) {
-            await tx.test.update({
-              where: { id: testId },
-              data: { positionId: primaryPosition.id },
-            });
-            console.log('🔍 [VERCEL DEBUG] Associated test', testId, 'with position', primaryPosition.id);
-          } else {
-            console.log('🔍 [VERCEL DEBUG] Test', testId, 'already has position association');
-          }
+          console.log('🔍 [VERCEL DEBUG] Batch associated', updateResult.count, 'tests with position', primaryPosition.id);
+        } else {
+          console.log('🔍 [VERCEL DEBUG] All tests already have position associations');
         }
       } else {
         console.log('🔍 [VERCEL DEBUG] No primary position found');
       }
 
       return updatedJobProfile;
+    }, {
+      maxWait: 10000, // 10 seconds
+      timeout: 15000, // 15 seconds
     });
     
     console.log('🔍 [VERCEL DEBUG] Transaction completed successfully');
