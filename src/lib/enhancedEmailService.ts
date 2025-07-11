@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { prisma } from './prisma';
 import { emailLogger } from './logger';
+import { JobProfileNotificationManager } from './jobProfileNotifications';
 
 interface TestCompletionData {
   testId: string;
@@ -413,25 +414,29 @@ export class EnhancedEmailService {
     data: TestCompletionData
   ): Promise<boolean> {
     try {
-      // Get notification settings for this test
-      const settings = await this.getTestNotificationSettings(data.testId);
+      // First, try to get job profile notification emails
+      let notificationEmails: string[] = [];
+      let includeAnalytics = true; // Default to true for job profile notifications
 
-      if (
-        !settings ||
-        !settings.emailNotificationsEnabled ||
-        settings.notificationEmails.length === 0
-      ) {
-        console.log(
-          'Email notifications disabled or no recipients configured for test:',
-          data.testId
-        );
-        return true; // Not an error, just disabled
-      }
-
-      // Get test details
+      // Get test details and associated job profile
       const test = await prisma.test.findUnique({
         where: { id: data.testId },
-        select: { title: true },
+        select: {
+          title: true,
+          emailNotificationsEnabled: true,
+          notificationEmails: true,
+          includeAnalytics: true,
+          testWeights: {
+            include: {
+              jobProfile: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       if (!test) {
@@ -439,9 +444,33 @@ export class EnhancedEmailService {
         return false;
       }
 
+      // Check for job profile notification emails first (new approach)
+      if (test.testWeights && test.testWeights.length > 0) {
+        const jobProfile = test.testWeights[0].jobProfile;
+        if (jobProfile) {
+          const jobProfileEmails =
+            JobProfileNotificationManager.getNotificationEmails(jobProfile.id);
+          if (jobProfileEmails.length > 0) {
+            notificationEmails = jobProfileEmails;
+            console.log(
+              `Using job profile notifications for ${jobProfile.name}: ${jobProfileEmails.join(', ')}`
+            );
+          }
+        }
+      }
+
+      // Only use job profile notifications - no fallback to test-level
+      if (notificationEmails.length === 0) {
+        console.log(
+          'No job profile notification emails configured for test:',
+          data.testId
+        );
+        return true; // Not an error, just no emails configured
+      }
+
       // Calculate analytics if enabled
       let analytics: TestAnalytics | undefined;
-      if (settings.includeAnalytics) {
+      if (includeAnalytics) {
         analytics = await this.calculateTestAnalytics(data.testId, data.score);
       }
 
@@ -464,7 +493,7 @@ export class EnhancedEmailService {
         process.env.GMAIL_USER ||
         process.env.SMTP_FROM ||
         'noreply@combatrobotics.in';
-      const emailPromises = settings.notificationEmails.map((email) =>
+      const emailPromises = notificationEmails.map((email) =>
         this.transporter.sendMail({
           from: `Combat Robotics India <${fromEmail}>`,
           to: email,
@@ -475,7 +504,7 @@ export class EnhancedEmailService {
 
       await Promise.all(emailPromises);
       console.log(
-        `Test completion notification sent for test ${data.testId} to ${settings.notificationEmails.length} recipients`
+        `Test completion notification sent for test ${data.testId} to ${notificationEmails.length} recipients`
       );
       return true;
     } catch (error) {

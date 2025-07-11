@@ -87,8 +87,7 @@ export function useProctoring(attemptId: string) {
 export async function startRecording(): Promise<RecordingSession> {
   try {
     // TEMPORARY DISABLE: Skip media stream acquisition
-    console.log('Proctoring recording temporarily disabled');
-    
+
     // Create a dummy stream and canvas to maintain interface compatibility
     const canvas = document.createElement('canvas');
     canvas.width = 640;
@@ -103,9 +102,7 @@ export async function startRecording(): Promise<RecordingSession> {
     const capturedFrames: Blob[] = [];
 
     // Dummy interval that doesn't actually capture frames
-    const intervalId = window.setInterval(() => {
-      console.log('Frame capture temporarily disabled');
-    }, 500);
+    const intervalId = window.setInterval(() => {}, 500);
 
     // Return a dummy session
     return {

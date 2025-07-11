@@ -90,7 +90,7 @@
     "prettier": "^3.6.0",
     "prettier-plugin-tailwindcss": "^0.6.13",
     "prisma": "^6.10.1",
-    "puppeteer": "^24.11.1",
+    "puppeteer": "^24.12.1",
     "typescript": "^5"
   },
   "lint-staged": {
