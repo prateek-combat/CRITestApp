@@ -166,28 +166,37 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Associate tests directly with positions for analytics/leaderboard visibility
-      // If multiple positions, associate with the first active position
+      // Optimized position association - batch check tests without position association
       const primaryPosition = jobProfile.positions.find((p) => p.isActive);
       if (primaryPosition) {
-        for (const testId of testIds) {
-          // Check if test already has a position association
-          const existingTest = await tx.test.findUnique({
-            where: { id: testId },
-            select: { positionId: true },
+        // Batch check which tests need position association
+        const testsToCheck = await tx.test.findMany({
+          where: {
+            id: { in: testIds },
+            positionId: null
+          },
+          select: { id: true }
+        });
+        
+        const testsNeedingAssociation = testsToCheck.map(t => t.id);
+        
+        // Batch update tests that need position association
+        if (testsNeedingAssociation.length > 0) {
+          await tx.test.updateMany({
+            where: {
+              id: { in: testsNeedingAssociation }
+            },
+            data: {
+              positionId: primaryPosition.id
+            }
           });
-
-          // Only update if test doesn't have a position association
-          if (!existingTest?.positionId) {
-            await tx.test.update({
-              where: { id: testId },
-              data: { positionId: primaryPosition.id },
-            });
-          }
         }
       }
 
       return jobProfile;
+    }, {
+      maxWait: 10000, // 10 seconds
+      timeout: 15000, // 15 seconds
     });
 
     // Transform the response
