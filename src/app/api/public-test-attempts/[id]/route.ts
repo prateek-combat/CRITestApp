@@ -76,6 +76,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const body = await request.json();
     const { status, answers, questionStartTime, proctoringEnabled } = body;
 
+    console.log('PUT /api/public-test-attempts/[id] - Request details:', {
+      attemptId,
+      status,
+      hasAnswers: !!answers,
+      answersCount: answers ? Object.keys(answers).length : 0,
+      proctoringEnabled,
+    });
+
     // Verify the public test attempt exists
     const existingAttempt = await prisma.publicTestAttempt.findUnique({
       where: { id: attemptId },
@@ -85,10 +93,18 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         candidateEmail: true,
         candidateName: true,
         startedAt: true,
+        status: true,
       },
     });
 
+    console.log('Existing attempt lookup result:', {
+      attemptId,
+      found: !!existingAttempt,
+      status: existingAttempt?.status,
+    });
+
     if (!existingAttempt) {
+      console.error('Public test attempt not found:', { attemptId });
       return NextResponse.json(
         { error: 'Public test attempt not found' },
         { status: 404 }
@@ -156,30 +172,61 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }));
 
         // Use a transaction to ensure atomicity with optimized settings
-        await prisma.$transaction(async (tx) => {
-          // Delete existing answers for this attempt
-          await tx.publicSubmittedAnswer.deleteMany({
-            where: { attemptId },
+        let transactionSuccess = false;
+        try {
+          await prisma.$transaction(async (tx) => {
+            // Delete existing answers for this attempt
+            await tx.publicSubmittedAnswer.deleteMany({
+              where: { attemptId },
+            });
+            
+            // Create new answers
+            await tx.publicSubmittedAnswer.createMany({
+              data: answerRecords,
+            });
+            
+            // Update attempt with detailed score
+            await tx.publicTestAttempt.update({
+              where: { id: attemptId },
+              data: {
+                rawScore: scoringResult.rawScore,
+                percentile: scoringResult.percentile,
+                categorySubScores: scoringResult.categorySubScores,
+                status: 'COMPLETED',
+                completedAt: new Date(),
+              },
+            });
+          }, {
+            maxWait: 15000, // Increased to 15 seconds
+            timeout: 45000, // Increased to 45 seconds
           });
+          transactionSuccess = true;
+        } catch (transactionError) {
+          console.error('Transaction failed, attempting fallback:', transactionError);
           
-          // Create new answers
-          await tx.publicSubmittedAnswer.createMany({
-            data: answerRecords,
-          });
-          
-          // Update attempt with detailed score
-          await tx.publicTestAttempt.update({
-            where: { id: attemptId },
-            data: {
-              rawScore: scoringResult.rawScore,
-              percentile: scoringResult.percentile,
-              categorySubScores: scoringResult.categorySubScores,
-            },
-          });
-        }, {
-          maxWait: 3000, // Reduced to 3 seconds
-          timeout: 10000, // Reduced to 10 seconds
-        });
+          // Fallback: At minimum, mark the attempt as completed
+          try {
+            await prisma.publicTestAttempt.update({
+              where: { id: attemptId },
+              data: {
+                status: 'COMPLETED',
+                completedAt: new Date(),
+                rawScore: scoringResult.rawScore,
+                percentile: scoringResult.percentile,
+                categorySubScores: scoringResult.categorySubScores,
+              },
+            });
+            transactionSuccess = true;
+            console.log('Fallback update successful');
+          } catch (fallbackError) {
+            console.error('Fallback update also failed:', fallbackError);
+            throw fallbackError;
+          }
+        }
+        
+        if (!transactionSuccess) {
+          throw new Error('Failed to save test submission');
+        }
 
         // Send admin email notification for public test completion (async, don't wait for completion)
         if (status === 'COMPLETED') {
@@ -242,7 +289,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({
       id: updatedAttempt.id,
       status: updatedAttempt.status,
-      message: 'Public test attempt updated successfully',
+      message: 'Test submitted successfully',
+      success: true,
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     console.error('Error updating public test attempt:', error);
