@@ -107,21 +107,38 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    console.log('[PUT /api/admin/job-profiles/[id]] Request started');
+    
     const session = await getServerSession(authOptionsSimple);
+    console.log('[PUT] Session check:', { 
+      hasSession: !!session, 
+      hasUser: !!session?.user, 
+      role: session?.user?.role 
+    });
 
     if (
       !session?.user ||
       !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
     ) {
+      console.log('[PUT] Authorization failed');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    console.log('[PUT] Parsing request body...');
     const body = await request.json();
+    console.log('[PUT] Request body received:', { 
+      hasName: !!body.name,
+      positionIdsLength: body.positionIds?.length || 0,
+      testIdsLength: body.testIds?.length || 0,
+      hasTestWeights: !!body.testWeights 
+    });
+    
     const { name, description, isActive, positionIds, testIds, testWeights } =
       body;
 
     // Validate required fields
     if (!name || !positionIds?.length || !testIds?.length) {
+      console.log('[PUT] Validation failed:', { name: !!name, positionIds: positionIds?.length, testIds: testIds?.length });
       return NextResponse.json(
         { error: 'Name, positions, and tests are required' },
         { status: 400 }
@@ -129,15 +146,18 @@ export async function PUT(
     }
 
     const { id } = await params;
+    console.log('[PUT] Job profile ID:', id);
 
     // Update the job profile with transaction to handle both positions and test weights
+    console.log('[PUT] Starting transaction...');
     const jobProfile = await prisma.$transaction(async (tx) => {
-      // First, delete existing test weights
-      await tx.testWeight.deleteMany({
+      console.log('[PUT] Deleting existing test weights...');
+      const deletedWeights = await tx.testWeight.deleteMany({
         where: { jobProfileId: id },
       });
+      console.log('[PUT] Deleted test weights count:', deletedWeights.count);
 
-      // Then update the job profile with new data
+      console.log('[PUT] Updating job profile...');
       const updatedJobProfile = await tx.jobProfile.update({
         where: { id },
         data: {
@@ -182,12 +202,16 @@ export async function PUT(
         },
       });
 
+      console.log('[PUT] Job profile updated successfully');
+
       // Associate tests directly with positions for analytics/leaderboard visibility
       // If multiple positions, associate with the first active position
+      console.log('[PUT] Starting position association...');
       const primaryPosition = updatedJobProfile.positions.find(
         (p) => p.isActive
       );
       if (primaryPosition) {
+        console.log('[PUT] Primary position found:', primaryPosition.id);
         for (const testId of testIds) {
           // Check if test already has a position association
           const existingTest = await tx.test.findUnique({
@@ -201,12 +225,19 @@ export async function PUT(
               where: { id: testId },
               data: { positionId: primaryPosition.id },
             });
+            console.log('[PUT] Associated test', testId, 'with position', primaryPosition.id);
+          } else {
+            console.log('[PUT] Test', testId, 'already has position association');
           }
         }
+      } else {
+        console.log('[PUT] No primary position found');
       }
 
       return updatedJobProfile;
     });
+    
+    console.log('[PUT] Transaction completed successfully');
 
     // Transform the response
     const transformedProfile = {
@@ -243,9 +274,15 @@ export async function PUT(
       },
     };
 
+    console.log('[PUT] Returning transformed profile');
     return NextResponse.json(transformedProfile);
   } catch (error) {
-    console.error('Error updating job profile:', error);
+    console.error('[PUT] Error updating job profile:', {
+      message: error instanceof Error ? error.message : String(error),
+      code: (error as any)?.code,
+      meta: (error as any)?.meta,
+      stack: error instanceof Error ? error.stack?.split('\n').slice(0, 5) : undefined, // First 5 lines of stack
+    });
     return NextResponse.json(
       { error: 'Failed to update job profile' },
       { status: 500 }
