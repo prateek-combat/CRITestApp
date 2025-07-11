@@ -141,6 +141,32 @@ export async function PUT(
       );
     }
 
+    // Validate array lengths match (if testWeights provided)
+    if (testWeights && testWeights.length !== testIds.length) {
+      console.log('[PUT] Array length mismatch:', { 
+        testIdsLength: testIds.length, 
+        testWeightsLength: testWeights.length 
+      });
+      return NextResponse.json(
+        { 
+          error: 'Test weights array must match the number of tests',
+          details: `Expected ${testIds.length} weights, got ${testWeights.length}`
+        },
+        { status: 400 }
+      );
+    }
+
+    // Ensure testWeights array has the correct length (pad with 1.0 if needed)
+    const normalizedTestWeights = testIds.map((_: string, index: number) => 
+      testWeights && testWeights[index] !== undefined ? testWeights[index] : 1.0
+    );
+    
+    console.log('[PUT] Normalized test weights:', {
+      original: testWeights,
+      normalized: normalizedTestWeights,
+      testIdsCount: testIds.length
+    });
+
     const { id } = await params;
     console.log('[PUT] Job profile ID:', id);
 
@@ -154,6 +180,17 @@ export async function PUT(
       console.log('[PUT] Deleted test weights count:', deletedWeights.count);
 
       console.log('[PUT] Updating job profile...');
+      
+      // Create test weights data with validation
+      const testWeightsData = testIds.map((testId: string, index: number) => {
+        const weight = normalizedTestWeights[index];
+        console.log(`[PUT] Creating test weight: testId=${testId}, weight=${weight}`);
+        return {
+          testId,
+          weight,
+        };
+      });
+      
       const updatedJobProfile = await tx.jobProfile.update({
         where: { id },
         data: {
@@ -164,10 +201,7 @@ export async function PUT(
             set: positionIds.map((positionId: string) => ({ id: positionId })),
           },
           testWeights: {
-            create: testIds.map((testId: string, index: number) => ({
-              testId,
-              weight: testWeights?.[index] || 1.0,
-            })),
+            create: testWeightsData,
           },
         },
         include: {
@@ -273,10 +307,30 @@ export async function PUT(
       message: error instanceof Error ? error.message : String(error),
       code: (error as any)?.code,
       meta: (error as any)?.meta,
-      stack: error instanceof Error ? error.stack?.split('\n').slice(0, 5) : undefined, // First 5 lines of stack
+      stack: error instanceof Error ? error.stack?.split('\\n').slice(0, 5) : undefined, // First 5 lines of stack
     });
+    
+    // Provide more specific error messages based on error type
+    let errorMessage = 'Failed to update job profile';
+    let errorDetails = error instanceof Error ? error.message : String(error);
+    
+    if ((error as any)?.code === 'P2002') {
+      errorMessage = 'Duplicate constraint violation';
+      errorDetails = 'A unique constraint would be violated';
+    } else if ((error as any)?.code === 'P2025') {
+      errorMessage = 'Record not found';
+      errorDetails = 'One or more referenced records do not exist';
+    } else if ((error as any)?.code === 'P2003') {
+      errorMessage = 'Foreign key constraint failed';
+      errorDetails = 'Invalid reference to related record';
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to update job profile' },
+      { 
+        error: errorMessage,
+        details: errorDetails,
+        code: (error as any)?.code || 'UNKNOWN'
+      },
       { status: 500 }
     );
   }
