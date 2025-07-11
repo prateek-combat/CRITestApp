@@ -178,8 +178,20 @@ export default function TestTakingPage() {
       // Brief delay to show completion
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Redirect to completion page (not results page)
-      router.push(`/test/results/${attemptId}`);
+      // Redirect based on test type
+      if (isPublicTest) {
+        // For public tests, redirect to success page
+        const token = searchParams.get('token');
+        if (token) {
+          window.location.href = `/public-test/${token}/success`;
+        } else {
+          // Fallback if no token available
+          window.location.href = '/public-test/success';
+        }
+      } else {
+        // For regular tests, redirect to results page
+        router.push(`/test/results/${attemptId}`);
+      }
     } catch (e) {
       console.error(e);
       setIsSubmitting(false);
