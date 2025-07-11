@@ -103,29 +103,39 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('[PUT /api/admin/job-profiles/[id]] Request started');
+    console.log('🔍 [VERCEL DEBUG] PUT Request started');
     
     const session = await getServerSession(authOptionsSimple);
-    console.log('[PUT] Session check:', { 
+    console.log('🔍 [VERCEL DEBUG] Session check:', { 
       hasSession: !!session, 
       hasUser: !!session?.user, 
-      role: session?.user?.role 
+      role: session?.user?.role,
+      userEmail: session?.user?.email,
+      sessionKeys: session ? Object.keys(session) : []
     });
 
     if (
       !session?.user ||
       !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
     ) {
-      console.log('[PUT] Authorization failed');
+      console.log('🔍 [VERCEL DEBUG] Authorization failed');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('[PUT] Parsing request body...');
+    console.log('🔍 [VERCEL DEBUG] Parsing request body...');
     const body = await request.json();
-    console.log('[PUT] Request body received:', { 
+    console.log('🔍 [VERCEL DEBUG] Full request body:', JSON.stringify(body, null, 2));
+    console.log('🔍 [VERCEL DEBUG] Request body summary:', { 
       hasName: !!body.name,
+      name: body.name,
+      description: body.description,
+      isActive: body.isActive,
       positionIdsLength: body.positionIds?.length || 0,
+      positionIds: body.positionIds,
       testIdsLength: body.testIds?.length || 0,
+      testIds: body.testIds,
+      testWeightsLength: body.testWeights?.length || 0,
+      testWeights: body.testWeights,
       hasTestWeights: !!body.testWeights 
     });
     
@@ -134,7 +144,14 @@ export async function PUT(
 
     // Validate required fields
     if (!name || !positionIds?.length || !testIds?.length) {
-      console.log('[PUT] Validation failed:', { name: !!name, positionIds: positionIds?.length, testIds: testIds?.length });
+      console.log('🔍 [VERCEL DEBUG] Validation failed:', { 
+        name: !!name, 
+        nameValue: name,
+        positionIds: positionIds?.length, 
+        positionIdsValue: positionIds,
+        testIds: testIds?.length,
+        testIdsValue: testIds
+      });
       return NextResponse.json(
         { error: 'Name, positions, and tests are required' },
         { status: 400 }
@@ -143,9 +160,11 @@ export async function PUT(
 
     // Validate array lengths match (if testWeights provided)
     if (testWeights && testWeights.length !== testIds.length) {
-      console.log('[PUT] Array length mismatch:', { 
+      console.log('🔍 [VERCEL DEBUG] Array length mismatch:', { 
         testIdsLength: testIds.length, 
-        testWeightsLength: testWeights.length 
+        testWeightsLength: testWeights.length,
+        testIdsActual: testIds,
+        testWeightsActual: testWeights
       });
       return NextResponse.json(
         { 
@@ -161,35 +180,38 @@ export async function PUT(
       testWeights && testWeights[index] !== undefined ? testWeights[index] : 1.0
     );
     
-    console.log('[PUT] Normalized test weights:', {
+    console.log('🔍 [VERCEL DEBUG] Test weights normalization:', {
       original: testWeights,
       normalized: normalizedTestWeights,
-      testIdsCount: testIds.length
+      testIdsCount: testIds.length,
+      mapping: testIds.map((testId: string, index: number) => ({ testId, weight: normalizedTestWeights[index] }))
     });
 
     const { id } = await params;
-    console.log('[PUT] Job profile ID:', id);
+    console.log('🔍 [VERCEL DEBUG] Job profile ID:', id);
 
     // Update the job profile with transaction to handle both positions and test weights
-    console.log('[PUT] Starting transaction...');
+    console.log('🔍 [VERCEL DEBUG] Starting transaction...');
     const jobProfile = await prisma.$transaction(async (tx) => {
-      console.log('[PUT] Deleting existing test weights...');
+      console.log('🔍 [VERCEL DEBUG] Transaction started - deleting existing test weights...');
       const deletedWeights = await tx.testWeight.deleteMany({
         where: { jobProfileId: id },
       });
-      console.log('[PUT] Deleted test weights count:', deletedWeights.count);
+      console.log('🔍 [VERCEL DEBUG] Deleted test weights count:', deletedWeights.count);
 
-      console.log('[PUT] Updating job profile...');
+      console.log('🔍 [VERCEL DEBUG] Preparing job profile update...');
       
       // Create test weights data with validation
       const testWeightsData = testIds.map((testId: string, index: number) => {
         const weight = normalizedTestWeights[index];
-        console.log(`[PUT] Creating test weight: testId=${testId}, weight=${weight}`);
+        console.log(`🔍 [VERCEL DEBUG] Creating test weight: testId=${testId}, weight=${weight}, index=${index}`);
         return {
           testId,
           weight,
         };
       });
+      
+      console.log('🔍 [VERCEL DEBUG] Test weights data prepared:', JSON.stringify(testWeightsData, null, 2));
       
       const updatedJobProfile = await tx.jobProfile.update({
         where: { id },
@@ -228,16 +250,16 @@ export async function PUT(
         },
       });
 
-      console.log('[PUT] Job profile updated successfully');
+      console.log('🔍 [VERCEL DEBUG] Job profile updated successfully');
 
       // Associate tests directly with positions for analytics/leaderboard visibility
       // If multiple positions, associate with the first available position (active preferred)
-      console.log('[PUT] Starting position association...');
+      console.log('🔍 [VERCEL DEBUG] Starting position association...');
       const primaryPosition = updatedJobProfile.positions.find(
         (p) => p.isActive
       ) || updatedJobProfile.positions[0]; // Fallback to first position if no active ones
       if (primaryPosition) {
-        console.log('[PUT] Primary position found:', primaryPosition.id);
+        console.log('🔍 [VERCEL DEBUG] Primary position found:', primaryPosition.id);
         for (const testId of testIds) {
           // Check if test already has a position association
           const existingTest = await tx.test.findUnique({
@@ -251,19 +273,19 @@ export async function PUT(
               where: { id: testId },
               data: { positionId: primaryPosition.id },
             });
-            console.log('[PUT] Associated test', testId, 'with position', primaryPosition.id);
+            console.log('🔍 [VERCEL DEBUG] Associated test', testId, 'with position', primaryPosition.id);
           } else {
-            console.log('[PUT] Test', testId, 'already has position association');
+            console.log('🔍 [VERCEL DEBUG] Test', testId, 'already has position association');
           }
         }
       } else {
-        console.log('[PUT] No primary position found');
+        console.log('🔍 [VERCEL DEBUG] No primary position found');
       }
 
       return updatedJobProfile;
     });
     
-    console.log('[PUT] Transaction completed successfully');
+    console.log('🔍 [VERCEL DEBUG] Transaction completed successfully');
 
     // Transform the response
     const transformedProfile = {
@@ -300,14 +322,16 @@ export async function PUT(
       },
     };
 
-    console.log('[PUT] Returning transformed profile');
+    console.log('🔍 [VERCEL DEBUG] Returning transformed profile');
     return NextResponse.json(transformedProfile);
   } catch (error) {
-    console.error('[PUT] Error updating job profile:', {
+    console.error('🔍 [VERCEL DEBUG] ERROR CAUGHT:', {
       message: error instanceof Error ? error.message : String(error),
+      name: error instanceof Error ? error.name : typeof error,
       code: (error as any)?.code,
       meta: (error as any)?.meta,
-      stack: error instanceof Error ? error.stack?.split('\\n').slice(0, 5) : undefined, // First 5 lines of stack
+      stack: error instanceof Error ? error.stack?.split('\\n').slice(0, 10) : undefined,
+      fullError: JSON.stringify(error, null, 2)
     });
     
     // Provide more specific error messages based on error type
@@ -315,14 +339,19 @@ export async function PUT(
     let errorDetails = error instanceof Error ? error.message : String(error);
     
     if ((error as any)?.code === 'P2002') {
+      console.log('🔍 [VERCEL DEBUG] Prisma P2002 - Unique constraint violation');
       errorMessage = 'Duplicate constraint violation';
       errorDetails = 'A unique constraint would be violated';
     } else if ((error as any)?.code === 'P2025') {
+      console.log('🔍 [VERCEL DEBUG] Prisma P2025 - Record not found');
       errorMessage = 'Record not found';
       errorDetails = 'One or more referenced records do not exist';
     } else if ((error as any)?.code === 'P2003') {
+      console.log('🔍 [VERCEL DEBUG] Prisma P2003 - Foreign key constraint failed');
       errorMessage = 'Foreign key constraint failed';
       errorDetails = 'Invalid reference to related record';
+    } else {
+      console.log('🔍 [VERCEL DEBUG] Unknown error type');
     }
     
     return NextResponse.json(
