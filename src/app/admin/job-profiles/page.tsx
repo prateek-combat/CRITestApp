@@ -905,7 +905,10 @@ export default function JobProfilesPage() {
               name: profile.name,
               description: profile.description || '',
               isActive: profile.isActive,
-              testIds: profile.tests.map((t) => t.id),
+              testIds:
+                profile.testWeights?.map((tw) => tw.test.id) ||
+                profile.tests?.map((t) => t.id) ||
+                [],
               notificationEmails:
                 (profile as any).notificationEmails?.join(', ') || '',
             });

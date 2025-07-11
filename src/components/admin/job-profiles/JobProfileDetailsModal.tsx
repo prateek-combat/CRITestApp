@@ -32,16 +32,23 @@ interface Test {
   description?: string;
 }
 
+interface TestWeight {
+  testId: string;
+  weight: number;
+  test: Test;
+}
+
 interface JobProfile {
   id: string;
   name: string;
   description: string | null;
   isActive: boolean;
-  positions: Position[];
-  tests: Test[];
+  positions?: Position[];
+  tests?: Test[];
+  testWeights?: TestWeight[];
   _count: {
     invitations: number;
-    completedInvitations: number;
+    completedInvitations?: number;
   };
 }
 
@@ -118,8 +125,10 @@ export default function JobProfileDetailsModal({
     'overview'
   );
 
+  const tests =
+    profile.testWeights?.map((tw) => tw.test) || profile.tests || [];
   const profilePublicLinks = publicLinks.filter((link) =>
-    profile.tests.some((test) => test.title === link.testTitle)
+    tests.some((test) => test.title === link.testTitle)
   );
 
   const profileTimeSlots = timeSlots;
@@ -213,18 +222,16 @@ export default function JobProfileDetailsModal({
                       <div className="mb-2 flex items-center justify-between">
                         <Building2 className="h-8 w-8 text-blue-600" />
                         <span className="text-2xl font-bold text-gray-900">
-                          {profile.positions.length}
+                          {tests.length}
                         </span>
                       </div>
-                      <p className="text-sm font-medium text-gray-700">
-                        Positions
-                      </p>
+                      <p className="text-sm font-medium text-gray-700">Tests</p>
                     </div>
                     <div className="rounded-lg bg-purple-50 p-4">
                       <div className="mb-2 flex items-center justify-between">
                         <TestTube className="h-8 w-8 text-purple-600" />
                         <span className="text-2xl font-bold text-gray-900">
-                          {profile.tests.length}
+                          {tests.length}
                         </span>
                       </div>
                       <p className="text-sm font-medium text-gray-700">Tests</p>
@@ -259,7 +266,7 @@ export default function JobProfileDetailsModal({
                         Positions
                       </h3>
                       <div className="space-y-3">
-                        {profile.positions.map((position) => (
+                        {(profile.positions || []).map((position) => (
                           <div
                             key={position.id}
                             className="rounded-lg border border-gray-200 bg-white p-3"
@@ -285,7 +292,7 @@ export default function JobProfileDetailsModal({
                         Tests
                       </h3>
                       <div className="space-y-3">
-                        {profile.tests.map((test) => (
+                        {tests.map((test) => (
                           <div
                             key={test.id}
                             className="rounded-lg border border-gray-200 bg-white p-3"
