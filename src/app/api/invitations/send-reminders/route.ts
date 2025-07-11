@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { sendReminderEmail, type ReminderEmailData } from '@/lib/email';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
+
 
 /**
  * @swagger

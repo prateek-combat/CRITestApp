@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptionsSimple } from '@/lib/auth-simple';
-import { PrismaClient } from '@prisma/client';
 import { sendInvitationEmail, type InvitationEmailData } from '@/lib/email';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
+
 
 // GET /api/admin/job-profiles/invitations - Get all job profile invitations
 export async function GET(request: NextRequest) {

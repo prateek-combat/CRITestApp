@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptionsSimple } from '@/lib/auth-simple';
-import { PrismaClient } from '@prisma/client';
 import { nanoid } from 'nanoid';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
+
 
 // POST /api/admin/job-profiles/[id]/public-link - Create public links for all tests in a job profile
 export async function POST(
