@@ -22,15 +22,22 @@ interface Test {
   questionsCount: number;
 }
 
+interface TestWeight {
+  testId: string;
+  weight: number;
+  test: Test;
+}
+
 interface JobProfile {
   id: string;
   name: string;
   description: string | null;
   isActive: boolean;
-  tests: Test[];
+  tests?: Test[];
+  testWeights?: TestWeight[];
   _count: {
     invitations: number;
-    completedInvitations: number;
+    completedInvitations?: number;
   };
 }
 
@@ -114,7 +121,7 @@ export default function JobProfileCard({
               <span>Tests</span>
             </div>
             <p className="font-semibold text-gray-900">
-              {profile.tests.length}
+              {profile.testWeights?.length || profile.tests?.length || 0}
             </p>
           </div>
           <div className="text-center">

@@ -33,15 +33,22 @@ interface Test {
   weight?: number;
 }
 
+interface TestWeight {
+  testId: string;
+  weight: number;
+  test: Test;
+}
+
 interface JobProfile {
   id: string;
   name: string;
   description: string | null;
   isActive: boolean;
-  tests: Test[];
+  tests?: Test[];
+  testWeights?: TestWeight[];
   _count: {
     invitations: number;
-    completedInvitations: number;
+    completedInvitations?: number;
   };
 }
 
@@ -240,8 +247,10 @@ export default function JobProfilesPage() {
   const getPublicLinksForProfile = (profileId: string) => {
     const profile = jobProfiles.find((p) => p.id === profileId);
     if (!profile) return [];
+    const tests =
+      profile.testWeights?.map((tw) => tw.test) || profile.tests || [];
     return publicLinks.filter((link) =>
-      profile.tests.some((test) => test.title === link.testTitle)
+      tests.some((test) => test.title === link.testTitle)
     );
   };
 
@@ -828,7 +837,10 @@ export default function JobProfilesPage() {
                   name: profile.name,
                   description: profile.description || '',
                   isActive: profile.isActive,
-                  testIds: profile.tests.map((t) => t.id),
+                  testIds:
+                    profile.testWeights?.map((tw) => tw.test.id) ||
+                    profile.tests?.map((t) => t.id) ||
+                    [],
                   notificationEmails:
                     (profile as any).notificationEmails?.join(', ') || '',
                 });
@@ -923,7 +935,11 @@ export default function JobProfilesPage() {
         <LinkBuilder
           jobProfileId={selectedProfile.id}
           jobProfileName={selectedProfile.name}
-          tests={selectedProfile.tests}
+          tests={
+            selectedProfile.testWeights?.map((tw) => tw.test) ||
+            selectedProfile.tests ||
+            []
+          }
           timeSlots={getTimeSlotsForProfile(selectedProfile.id)}
           onCreatePublicLink={async (settings) => {
             // Implement public link creation with settings
