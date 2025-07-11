@@ -176,7 +176,7 @@ export default function JobProfilesPage() {
 
   const fetchPublicLinks = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/public-links');
+      const response = await fetch('/api/public-test-links');
       if (!response.ok) throw new Error('Failed to fetch public links');
       const data = await response.json();
       setPublicLinks(data);
