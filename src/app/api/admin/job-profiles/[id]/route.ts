@@ -22,11 +22,7 @@ export async function GET(
     const jobProfile = await prisma.jobProfile.findUnique({
       where: { id },
       include: {
-        positions: {
-          where: {
-            isActive: true,
-          },
-        },
+        positions: true, // Include all positions, not just active ones
         testWeights: {
           include: {
             test: {
@@ -175,11 +171,7 @@ export async function PUT(
           },
         },
         include: {
-          positions: {
-            where: {
-              isActive: true,
-            },
-          },
+          positions: true, // Include all positions, not just active ones
           testWeights: {
             include: {
               test: {
@@ -205,11 +197,11 @@ export async function PUT(
       console.log('[PUT] Job profile updated successfully');
 
       // Associate tests directly with positions for analytics/leaderboard visibility
-      // If multiple positions, associate with the first active position
+      // If multiple positions, associate with the first available position (active preferred)
       console.log('[PUT] Starting position association...');
       const primaryPosition = updatedJobProfile.positions.find(
         (p) => p.isActive
-      );
+      ) || updatedJobProfile.positions[0]; // Fallback to first position if no active ones
       if (primaryPosition) {
         console.log('[PUT] Primary position found:', primaryPosition.id);
         for (const testId of testIds) {
