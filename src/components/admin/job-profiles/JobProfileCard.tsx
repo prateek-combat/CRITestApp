@@ -16,13 +16,6 @@ import {
   EyeOff,
 } from 'lucide-react';
 
-interface Position {
-  id: string;
-  name: string;
-  code: string;
-  department: string;
-}
-
 interface Test {
   id: string;
   title: string;
@@ -34,7 +27,6 @@ interface JobProfile {
   name: string;
   description: string | null;
   isActive: boolean;
-  positions: Position[];
   tests: Test[];
   _count: {
     invitations: number;
@@ -115,16 +107,7 @@ export default function JobProfileCard({
           </div>
         </div>
 
-        <div className="mb-3 grid grid-cols-4 gap-2 text-xs">
-          <div className="text-center">
-            <div className="mb-0.5 flex items-center justify-center gap-1 text-gray-500">
-              <Building2 className="h-3 w-3" />
-              <span>Positions</span>
-            </div>
-            <p className="font-semibold text-gray-900">
-              {profile.positions.length}
-            </p>
-          </div>
+        <div className="mb-3 grid grid-cols-3 gap-2 text-xs">
           <div className="text-center">
             <div className="mb-0.5 flex items-center justify-center gap-1 text-gray-500">
               <TestTube className="h-3 w-3" />

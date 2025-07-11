@@ -1,4 +1,5 @@
-import puppeteer from 'puppeteer';
+// Import puppeteer conditionally for server-side only
+const puppeteer = typeof window === 'undefined' ? require('puppeteer') : null;
 
 export interface TestAttemptData {
   id: string;
