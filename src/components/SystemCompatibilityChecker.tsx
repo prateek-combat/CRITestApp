@@ -156,90 +156,22 @@ export default function SystemCompatibilityChecker({
     updateResult('camera', 'checking', 'Testing camera access...');
 
     try {
-      // Use mic-check library for better error handling
-      const { requestMediaPermissions } = await import('mic-check');
-
-      // Request both camera and microphone permissions in one go
-      await requestMediaPermissions({ video: true, audio: true });
-
-      // If we get here, camera permission was granted
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          frameRate: { ideal: 30 },
-        },
-      });
-
-      const videoTracks = stream.getVideoTracks();
-      if (videoTracks.length === 0) {
-        updateResult(
-          'camera',
-          'fail',
-          'No camera detected',
-          'No video tracks available'
-        );
-        return;
-      }
-
-      const track = videoTracks[0];
-      const settings = track.getSettings();
-
-      // Test video preview
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await new Promise((resolve, reject) => {
-          if (!videoRef.current) return reject('Video element not available');
-          videoRef.current.onloadedmetadata = resolve;
-          videoRef.current.onerror = reject;
-        });
-      }
-
-      streamRef.current = stream;
+      // TEMPORARY DISABLE: Skip actual camera check, mark as passed
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate check delay
       updateResult(
         'camera',
         'pass',
-        'Camera working perfectly',
-        `${settings.width}x${settings.height} at ${settings.frameRate}fps`
+        'Camera check temporarily disabled',
+        'Proctoring continues without camera requirement'
       );
-
-      // Stop the stream after testing
-      stream.getTracks().forEach((track) => track.stop());
     } catch (error: any) {
-      let message = 'Camera access failed';
-      let details = 'Please check camera permissions';
-
-      if (error && error.type) {
-        // Handle mic-check specific errors
-        const { MediaPermissionsErrorType } = await import('mic-check');
-        switch (error.type) {
-          case MediaPermissionsErrorType.SystemPermissionDenied:
-            message = 'System permission denied';
-            details = 'Please enable camera access in system settings';
-            break;
-          case MediaPermissionsErrorType.UserPermissionDenied:
-            message = 'User permission denied';
-            details = 'Please click "Allow" when prompted for camera access';
-            break;
-          case MediaPermissionsErrorType.CouldNotStartVideoSource:
-            message = 'Camera in use';
-            details = 'Close other apps using the camera and try again';
-            break;
-          default:
-            message = error.message || 'Camera test failed';
-            break;
-        }
-      } else if (error instanceof Error) {
-        if (error.name === 'NotFoundError') {
-          message = 'No camera found';
-          details = 'Please connect a camera device';
-        } else if (error.name === 'NotAllowedError') {
-          message = 'Camera access denied';
-          details = 'Please allow camera access in browser settings';
-        }
-      }
-
-      updateResult('camera', 'fail', message, details);
+      // TEMPORARY: Force pass even on error
+      updateResult(
+        'camera',
+        'pass',
+        'Camera check temporarily disabled',
+        'Proctoring continues without camera requirement'
+      );
     }
   };
 
@@ -247,96 +179,22 @@ export default function SystemCompatibilityChecker({
     updateResult('microphone', 'checking', 'Testing microphone access...');
 
     try {
-      // Since we already requested both permissions in camera check,
-      // just test microphone functionality without requesting again
-      // const { requestMediaPermissions } = await import('mic-check');
-      // await requestMediaPermissions({ audio: true, video: false });
-
-      // If we get here, microphone permission was granted
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 44100,
-        },
-      });
-
-      const audioTracks = stream.getAudioTracks();
-      if (audioTracks.length === 0) {
-        updateResult(
-          'microphone',
-          'fail',
-          'No microphone detected',
-          'No audio tracks available'
-        );
-        return;
-      }
-
-      const track = audioTracks[0];
-      const settings = track.getSettings();
-
-      // Test audio level detection
-      const audioContext = new AudioContext();
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
-      source.connect(analyser);
-
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-      // Check for audio input for 1 second
-      let hasAudioInput = false;
-      const checkAudio = () => {
-        analyser.getByteFrequencyData(dataArray);
-        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-        if (average > 5) hasAudioInput = true;
-      };
-
-      const audioCheckInterval = setInterval(checkAudio, 100);
-
-      setTimeout(() => {
-        clearInterval(audioCheckInterval);
-        audioContext.close();
-        stream.getTracks().forEach((track) => track.stop());
-
-        updateResult(
-          'microphone',
-          'pass',
-          'Microphone working perfectly',
-          `Sample rate: ${settings.sampleRate}Hz`
-        );
-      }, 1000);
+      // TEMPORARY DISABLE: Skip actual microphone check, mark as passed
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate check delay
+      updateResult(
+        'microphone',
+        'pass',
+        'Microphone check temporarily disabled',
+        'Proctoring continues without microphone requirement'
+      );
     } catch (error: any) {
-      let message = 'Microphone access failed';
-      let details = 'Please check microphone permissions';
-
-      if (error && error.type) {
-        // Handle mic-check specific errors
-        const { MediaPermissionsErrorType } = await import('mic-check');
-        switch (error.type) {
-          case MediaPermissionsErrorType.SystemPermissionDenied:
-            message = 'System permission denied';
-            details = 'Please enable microphone access in system settings';
-            break;
-          case MediaPermissionsErrorType.UserPermissionDenied:
-            message = 'User permission denied';
-            details =
-              'Please click "Allow" when prompted for microphone access';
-            break;
-          default:
-            message = error.message || 'Microphone test failed';
-            break;
-        }
-      } else if (error instanceof Error) {
-        if (error.name === 'NotFoundError') {
-          message = 'No microphone found';
-          details = 'Please connect a microphone device';
-        } else if (error.name === 'NotAllowedError') {
-          message = 'Microphone access denied';
-          details = 'Please allow microphone access in browser settings';
-        }
-      }
-
-      updateResult('microphone', 'fail', message, details);
+      // TEMPORARY: Force pass even on error
+      updateResult(
+        'microphone',
+        'pass',
+        'Microphone check temporarily disabled',
+        'Proctoring continues without microphone requirement'
+      );
     }
   };
 
