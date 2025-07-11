@@ -258,6 +258,9 @@ export class CategoryWeightService {
         where: { id },
         data: { isDefault: true },
       });
+    }, {
+      maxWait: 10000, // 10 seconds
+      timeout: 15000, // 15 seconds
     });
   }
 

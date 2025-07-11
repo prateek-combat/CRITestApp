@@ -811,6 +811,9 @@ export async function POST(request: NextRequest) {
             }
           );
         }
+      }, {
+        maxWait: 10000, // 10 seconds
+        timeout: 15000, // 15 seconds
       });
       console.log(
         '[QUESTION_IMPORT_DEBUG] Transaction completed successfully!'
