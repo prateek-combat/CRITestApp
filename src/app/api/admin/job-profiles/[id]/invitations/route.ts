@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptionsSimple } from '@/lib/auth-simple';
-import {
 import { prisma } from '@/lib/prisma';
+import {
   sendJobProfileInvitationEmail,
   type JobProfileInvitationEmailData,
 } from '@/lib/email';
