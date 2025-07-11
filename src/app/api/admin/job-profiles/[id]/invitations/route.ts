@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptionsSimple } from '@/lib/auth-simple';
-import { PrismaClient } from '@prisma/client';
 import {
+import { prisma } from '@/lib/prisma';
   sendJobProfileInvitationEmail,
   type JobProfileInvitationEmailData,
 } from '@/lib/email';
 
-const prisma = new PrismaClient();
+
 
 // POST /api/admin/job-profiles/[id]/invitations - Create single job profile invitation
 export async function POST(

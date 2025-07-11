@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { auth } from '@/lib/auth';
 import { apiCache } from '@/lib/cache';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
+
 
 interface RouteParams {
   params: Promise<{ id: string }>;

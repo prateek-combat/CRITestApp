@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import {
   sendInvitationEmail,
   sendBulkInvitations,
@@ -8,8 +7,9 @@ import {
   type InvitationEmailData,
 } from '@/lib/email';
 import { APP_URL } from '@/lib/constants';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
+
 
 /**
  * @swagger
