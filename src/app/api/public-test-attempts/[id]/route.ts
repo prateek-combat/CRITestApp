@@ -129,6 +129,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           test: {
             select: {
               id: true,
+              title: true,
               questions: true,
             },
           },
@@ -155,25 +156,30 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }));
 
         // Use a transaction to ensure atomicity
-        await prisma.$transaction([
+        await prisma.$transaction(async (tx) => {
           // Delete existing answers for this attempt
-          prisma.publicSubmittedAnswer.deleteMany({
+          await tx.publicSubmittedAnswer.deleteMany({
             where: { attemptId },
-          }),
+          });
+          
           // Create new answers
-          prisma.publicSubmittedAnswer.createMany({
+          await tx.publicSubmittedAnswer.createMany({
             data: answerRecords,
-          }),
+          });
+          
           // Update attempt with detailed score
-          prisma.publicTestAttempt.update({
+          await tx.publicTestAttempt.update({
             where: { id: attemptId },
             data: {
               rawScore: scoringResult.rawScore,
               percentile: scoringResult.percentile,
               categorySubScores: scoringResult.categorySubScores,
             },
-          }),
-        ]);
+          });
+        }, {
+          maxWait: 10000, // 10 seconds
+          timeout: 15000, // 15 seconds
+        });
 
         // Send admin email notification for public test completion (async, don't wait for completion)
         if (status === 'COMPLETED') {

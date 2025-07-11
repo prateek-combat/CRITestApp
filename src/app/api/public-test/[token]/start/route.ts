@@ -130,6 +130,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       });
 
       return testAttempt;
+    }, {
+      maxWait: 10000, // 10 seconds
+      timeout: 15000, // 15 seconds
     });
 
     return NextResponse.json({
