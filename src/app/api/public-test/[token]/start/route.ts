@@ -5,11 +5,22 @@ interface RouteParams {
   params: Promise<{ token: string }>;
 }
 
+// Increase timeout for this API route (Vercel functions)
+export const maxDuration = 60; // 60 seconds instead of default 10s
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest, { params }: RouteParams) {
+  // Set a longer timeout for this operation
+  const startTime = Date.now();
+
   try {
     const { token } = await params;
     const body = await request.json();
     const { candidateName, candidateEmail } = body;
+
+    console.log(
+      `[PUBLIC-START] Starting test for token: ${token}, candidate: ${candidateEmail}`
+    );
 
     if (!candidateName?.trim() || !candidateEmail?.trim()) {
       return NextResponse.json(
@@ -108,32 +119,37 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    console.log(`[PUBLIC-START] Creating test attempt...`);
     // Create new test attempt and increment usage count in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      // Create the test attempt
-      const testAttempt = await tx.publicTestAttempt.create({
-        data: {
-          publicLinkId: publicLink.id,
-          candidateName: candidateName.trim(),
-          candidateEmail: candidateEmail.trim().toLowerCase(),
-          ipAddress: ipAddress,
-        },
-        select: {
-          id: true,
-        },
-      });
+    const result = await prisma.$transaction(
+      async (tx) => {
+        // Create the test attempt
+        const testAttempt = await tx.publicTestAttempt.create({
+          data: {
+            publicLinkId: publicLink.id,
+            candidateName: candidateName.trim(),
+            candidateEmail: candidateEmail.trim().toLowerCase(),
+            ipAddress: ipAddress,
+          },
+          select: {
+            id: true,
+          },
+        });
 
-      // Increment usage count
-      await tx.publicTestLink.update({
-        where: { id: publicLink.id },
-        data: { usedCount: { increment: 1 } },
-      });
+        // Increment usage count
+        await tx.publicTestLink.update({
+          where: { id: publicLink.id },
+          data: { usedCount: { increment: 1 } },
+        });
 
-      return testAttempt;
-    }, {
-      maxWait: 10000, // 10 seconds
-      timeout: 15000, // 15 seconds
-    });
+        return testAttempt;
+      },
+      {
+        maxWait: 20000, // 20 seconds
+        timeout: 30000, // 30 seconds
+      }
+    );
+    console.log(`[PUBLIC-START] Created test attempt: ${result.id}`);
 
     return NextResponse.json({
       attemptId: result.id,
@@ -142,10 +158,37 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       message: 'Test started successfully',
     });
   } catch (error) {
-    console.error('Error starting public test:', error);
-    return NextResponse.json(
-      { error: 'Failed to start test' },
-      { status: 500 }
-    );
+    const duration = Date.now() - startTime;
+    console.error(`[PUBLIC-START] Error after ${duration}ms:`, error);
+
+    // Provide more specific error messages
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorCode =
+      error && typeof error === 'object' && 'code' in error ? error.code : null;
+
+    if (errorMessage.includes('timeout')) {
+      return NextResponse.json(
+        { error: 'Request timed out. Please try again.' },
+        { status: 504 }
+      );
+    } else if (errorMessage.includes('connection')) {
+      return NextResponse.json(
+        { error: 'Database connection issue. Please try again.' },
+        { status: 503 }
+      );
+    } else if (errorCode === 'P2002') {
+      return NextResponse.json(
+        {
+          error:
+            'You have already started this test. Please continue your existing attempt.',
+        },
+        { status: 409 }
+      );
+    } else {
+      return NextResponse.json(
+        { error: 'Failed to start test. Please try again.' },
+        { status: 500 }
+      );
+    }
   }
 }
