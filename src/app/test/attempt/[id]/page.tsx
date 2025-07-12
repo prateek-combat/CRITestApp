@@ -570,13 +570,18 @@ export default function TestTakingPage() {
 
       <header className="flex items-center justify-between border-b bg-military-green px-6 py-2 text-white shadow-sm">
         <h1 className="text-lg font-bold">{data.test.title}</h1>
-        <div className="relative h-2.5 w-64 rounded-full bg-white/30">
-          <div
-            className="absolute h-full rounded-full bg-green-400 transition-all"
-            style={{
-              width: `${((currentQuestionIndex + 1) / data.test.questions.length) * 100}%`,
-            }}
-          ></div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-white/90">
+            {currentQuestionIndex + 1}/{data.test.questions.length}
+          </span>
+          <div className="relative h-2.5 w-64 rounded-full bg-white/30">
+            <div
+              className="absolute h-full rounded-full bg-green-400 transition-all"
+              style={{
+                width: `${((currentQuestionIndex + 1) / data.test.questions.length) * 100}%`,
+              }}
+            ></div>
+          </div>
         </div>
       </header>
 
