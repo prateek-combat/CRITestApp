@@ -149,7 +149,7 @@ export default function LeaderboardSidebarLayout({
   const [selectedPositionId, setSelectedPositionId] = useState<string>('');
   const [selectedJobProfileId, setSelectedJobProfileId] = useState<string>('');
   const [viewMode, setViewMode] = useState<'position' | 'jobProfile'>(
-    'position'
+    'jobProfile'
   );
   const [data, setData] = useState<LeaderboardData | null>(null);
   const [availableProfiles, setAvailableProfiles] = useState<WeightProfile[]>(
@@ -300,20 +300,23 @@ export default function LeaderboardSidebarLayout({
     fetchJobProfiles();
   }, [fetchPositions, fetchProfiles, fetchJobProfiles]);
 
-  // Handle position selection from URL params
+  // Handle job profile selection from URL params
   useEffect(() => {
-    const positionIdFromUrl = urlSearchParams.get('positionId');
-    if (positionIdFromUrl && positionIdFromUrl !== selectedPositionId) {
-      setSelectedPositionId(positionIdFromUrl);
+    const jobProfileIdFromUrl = urlSearchParams.get('jobProfileId');
+    if (jobProfileIdFromUrl && jobProfileIdFromUrl !== selectedJobProfileId) {
+      setSelectedJobProfileId(jobProfileIdFromUrl);
     } else if (
-      !positionIdFromUrl &&
-      positions.length > 0 &&
-      !selectedPositionId
+      !jobProfileIdFromUrl &&
+      jobProfiles.length > 0 &&
+      !selectedJobProfileId
     ) {
-      // Auto-select first position if none selected
-      setSelectedPositionId(positions[0].id);
+      // Auto-select first active job profile if none selected
+      const firstActiveProfile = jobProfiles.find((p) => p.isActive);
+      if (firstActiveProfile) {
+        setSelectedJobProfileId(firstActiveProfile.id);
+      }
     }
-  }, [urlSearchParams, positions, selectedPositionId]);
+  }, [urlSearchParams, jobProfiles, selectedJobProfileId]);
 
   // Fetch data when position or job profile changes
   useEffect(() => {
@@ -356,6 +359,11 @@ export default function LeaderboardSidebarLayout({
   const selectedPosition = useMemo(() => {
     return positions.find((p) => p.id === selectedPositionId);
   }, [positions, selectedPositionId]);
+
+  // Get selected job profile
+  const selectedJobProfile = useMemo(() => {
+    return jobProfiles.find((p) => p.id === selectedJobProfileId);
+  }, [jobProfiles, selectedJobProfileId]);
 
   const handlePositionSelect = (positionId: string) => {
     setSelectedPositionId(positionId);
@@ -457,7 +465,7 @@ export default function LeaderboardSidebarLayout({
       setIsExportingBulkPdf(true);
 
       const attemptIds = data.rows.map((row) => row.attemptId);
-      const positionName = selectedPosition?.name;
+      const positionName = selectedJobProfile?.name;
 
       const response = await fetch('/api/admin/leaderboard/export-bulk-pdf', {
         method: 'POST',
@@ -504,10 +512,10 @@ export default function LeaderboardSidebarLayout({
           {/* Header */}
           <div className="border-b border-gray-200 p-3">
             <h2 className="text-base font-semibold text-gray-900">
-              Select Position
+              Select Job Profile
             </h2>
             <p className="text-xs text-gray-600">
-              Select a position to view candidate rankings
+              Select a job profile to view candidate rankings
             </p>
           </div>
 
@@ -518,7 +526,7 @@ export default function LeaderboardSidebarLayout({
                 <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search positions..."
+                  placeholder="Search job profiles..."
                   value={localSearch}
                   onChange={(e) => setLocalSearch(e.target.value)}
                   className="w-full rounded-md border border-gray-300 py-1.5 pl-7 pr-3 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
@@ -526,99 +534,98 @@ export default function LeaderboardSidebarLayout({
               </div>
             </form>
 
-            <div className="flex items-center gap-1">
-              <Filter className="h-3 w-3 text-gray-400" />
-              <select
-                value={departmentFilter}
-                onChange={(e) => setDepartmentFilter(e.target.value)}
-                className="flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              >
-                <option value="all">All Departments</option>
-                {departments.map((dept) => (
-                  <option key={dept || 'unknown'} value={dept || ''}>
-                    {dept}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {(localSearch || departmentFilter !== 'all') && (
+            {localSearch && (
               <button
                 onClick={clearAllFilters}
                 className="text-xs text-brand-600 hover:text-brand-800"
               >
-                Clear filters
+                Clear search
               </button>
             )}
           </div>
 
-          {/* Positions List - Compact */}
+          {/* Job Profiles List - Compact */}
           <div className="flex-1 overflow-y-auto">
             {isLoadingPositions ? (
               <div className="flex items-center justify-center py-6">
                 <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-brand-500"></div>
               </div>
-            ) : filteredPositions.length === 0 ? (
+            ) : jobProfiles.filter((profile) => profile.isActive).length ===
+              0 ? (
               <div className="p-3 text-center">
                 <Users className="mx-auto h-6 w-6 text-gray-400" />
                 <p className="mt-1 text-xs text-gray-500">
-                  {localSearch || departmentFilter !== 'all'
-                    ? 'No positions match your filters'
-                    : 'No active positions with tests found'}
+                  {localSearch
+                    ? 'No job profiles match your search'
+                    : 'No active job profiles found'}
                 </p>
               </div>
             ) : (
               <div className="space-y-1 p-1.5">
-                {filteredPositions.map((position) => (
-                  <button
-                    key={position.id}
-                    onClick={() => handlePositionSelect(position.id)}
-                    className={`w-full rounded-lg border p-2 text-left transition-colors ${
-                      selectedPositionId === position.id
-                        ? 'border-brand-500 bg-brand-50 text-brand-900'
-                        : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="min-w-0 flex-1">
-                        <h3 className="truncate text-sm font-medium">
-                          {position.name}
-                        </h3>
-                        <p className="font-mono text-xs text-gray-500">
-                          {position.code}
-                        </p>
-                        {position.description && (
-                          <p className="mt-1 line-clamp-2 text-xs text-gray-600">
-                            {position.description}
-                          </p>
-                        )}
-                      </div>
-                      <div className="ml-2 flex-shrink-0">
-                        <div className="text-right">
-                          <div className="text-xs font-medium text-brand-600">
-                            {position.activeTestCount}
+                {jobProfiles
+                  .filter((profile) => profile.isActive)
+                  .filter(
+                    (profile) =>
+                      !localSearch ||
+                      profile.name
+                        .toLowerCase()
+                        .includes(localSearch.toLowerCase()) ||
+                      (profile.description &&
+                        profile.description
+                          .toLowerCase()
+                          .includes(localSearch.toLowerCase()))
+                  )
+                  .map((profile) => (
+                    <button
+                      key={profile.id}
+                      onClick={() => handleJobProfileSelect(profile.id)}
+                      className={`w-full rounded-lg border p-2 text-left transition-colors ${
+                        selectedJobProfileId === profile.id
+                          ? 'border-brand-500 bg-brand-50 text-brand-900'
+                          : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="truncate text-sm font-medium">
+                            {profile.name}
+                          </h3>
+                          {profile.description && (
+                            <p className="mt-1 line-clamp-2 text-xs text-gray-600">
+                              {profile.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="ml-2 flex-shrink-0">
+                          <div className="text-right">
+                            <div className="text-xs font-medium text-brand-600">
+                              {profile._count.completedInvitations}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              completed
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-500">tests</div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {position.department && (
-                        <span className="inline-flex items-center rounded-md bg-brand-50 px-1.5 py-0.5 text-xs font-medium text-brand-700">
-                          <Building2 className="mr-1 h-2.5 w-2.5" />
-                          {position.department}
-                        </span>
-                      )}
-                      {position.level && (
-                        <span className="inline-flex items-center rounded-md bg-secondary-50 px-1.5 py-0.5 text-xs font-medium text-secondary-700">
-                          <Target className="mr-1 h-2.5 w-2.5" />
-                          {position.level}
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                ))}
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {profile.positions.length > 0 && (
+                          <span className="inline-flex items-center rounded-md bg-brand-50 px-1.5 py-0.5 text-xs font-medium text-brand-700">
+                            <Building2 className="mr-1 h-2.5 w-2.5" />
+                            {profile.positions.length} position
+                            {profile.positions.length > 1 ? 's' : ''}
+                          </span>
+                        )}
+                        {profile.tests.length > 0 && (
+                          <span className="inline-flex items-center rounded-md bg-secondary-50 px-1.5 py-0.5 text-xs font-medium text-secondary-700">
+                            <TestTube className="mr-1 h-2.5 w-2.5" />
+                            {profile.tests.length} test
+                            {profile.tests.length > 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
               </div>
             )}
           </div>
@@ -633,29 +640,28 @@ export default function LeaderboardSidebarLayout({
           <div className="mb-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                {selectedPosition ? (
+                {selectedJobProfile ? (
                   <div>
                     <h1 className="text-base font-semibold text-gray-900">
-                      {selectedPosition.name} Leaderboard
+                      {selectedJobProfile.name} Leaderboard
                     </h1>
                     <p className="text-xs text-gray-600">
-                      Rankings for {selectedPosition.name} (
-                      {selectedPosition.code}) position
+                      Rankings for {selectedJobProfile.name} job profile
                     </p>
                   </div>
                 ) : (
                   <div>
                     <h1 className="text-base font-semibold text-gray-900">
-                      Position Leaderboard
+                      Job Profile Leaderboard
                     </h1>
                     <p className="text-xs text-gray-600">
-                      Select a position to view candidate rankings
+                      Select a job profile to view candidate rankings
                     </p>
                   </div>
                 )}
               </div>
 
-              {selectedPosition && data && (
+              {selectedJobProfile && data && (
                 <div className="flex items-center gap-3">
                   <div className="text-right">
                     <div className="text-lg font-bold text-brand-600">
@@ -691,15 +697,16 @@ export default function LeaderboardSidebarLayout({
 
           {/* Content */}
           <div className="flex-1 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-            {!selectedPosition ? (
+            {!selectedJobProfile ? (
               <div className="flex h-full items-center justify-center">
                 <div className="text-center">
                   <Trophy className="mx-auto h-10 w-10 text-gray-400" />
                   <h3 className="mt-2 text-sm font-medium text-gray-900">
-                    Select a Position
+                    Select a Job Profile
                   </h3>
                   <p className="mt-1 text-xs text-gray-500">
-                    Choose a position from the sidebar to view the leaderboard
+                    Choose a job profile from the sidebar to view the
+                    leaderboard
                   </p>
                 </div>
               </div>
@@ -733,7 +740,7 @@ export default function LeaderboardSidebarLayout({
                     No Candidates Found
                   </h3>
                   <p className="mt-1 text-xs text-gray-500">
-                    No test attempts found for this position yet.
+                    No test attempts found for this job profile yet.
                   </p>
                 </div>
               </div>
@@ -756,7 +763,7 @@ export default function LeaderboardSidebarLayout({
             isWeightsSidebarOpen ? 'w-80' : 'w-16'
           }`}
         >
-          {selectedPosition && (
+          {selectedJobProfile && (
             <div className="flex h-full flex-col rounded-lg border border-gray-200 bg-white shadow-sm">
               <div className="flex items-center justify-between border-b border-gray-200 p-3">
                 {isWeightsSidebarOpen && (
