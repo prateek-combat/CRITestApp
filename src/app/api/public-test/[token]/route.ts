@@ -5,6 +5,10 @@ interface RouteParams {
   params: Promise<{ token: string }>;
 }
 
+// Increase timeout for this API route (Vercel functions)
+export const maxDuration = 60; // 60 seconds instead of default 10s
+export const dynamic = 'force-dynamic';
+
 // Helper function to get current time in a specific timezone as a Date object
 function getCurrentTimeInTimezone(timezone: string): Date {
   try {
@@ -60,8 +64,11 @@ function interpretDateTimeInTimezone(
 }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const startTime = Date.now();
+
   try {
     const { token } = await params;
+    console.log(`[PUBLIC-GET] Fetching public link for token: ${token}`);
 
     const publicLink = await prisma.publicTestLink.findUnique({
       where: {
@@ -98,13 +105,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         },
       },
     });
+    console.log(`[PUBLIC-GET] Database query completed for token: ${token}`);
 
     if (!publicLink) {
+      console.log(`[PUBLIC-GET] Link not found for token: ${token}`);
       return NextResponse.json({ error: 'Invalid test link' }, { status: 404 });
     }
 
     // Check if link is active
     if (!publicLink.isActive) {
+      console.log(`[PUBLIC-GET] Link inactive for token: ${token}`);
       return NextResponse.json(
         { error: 'This test link has been deactivated' },
         { status: 403 }
@@ -218,6 +228,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    console.log(
+      `[PUBLIC-GET] Returning successful response for token: ${token}`
+    );
     return NextResponse.json({
       id: publicLink.id,
       testId: publicLink.testId,
@@ -243,10 +256,27 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         : null,
     });
   } catch (error) {
-    console.error('Error fetching public test link:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch test link' },
-      { status: 500 }
-    );
+    const duration = Date.now() - startTime;
+    console.error(`[PUBLIC-GET] Error after ${duration}ms:`, error);
+
+    // Provide more specific error messages
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    if (errorMessage.includes('timeout')) {
+      return NextResponse.json(
+        { error: 'Request timed out. Please try again.' },
+        { status: 504 }
+      );
+    } else if (errorMessage.includes('connection')) {
+      return NextResponse.json(
+        { error: 'Database connection issue. Please try again.' },
+        { status: 503 }
+      );
+    } else {
+      return NextResponse.json(
+        { error: 'Failed to fetch test link. Please try again.' },
+        { status: 500 }
+      );
+    }
   }
 }
