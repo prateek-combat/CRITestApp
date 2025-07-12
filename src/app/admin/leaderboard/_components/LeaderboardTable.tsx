@@ -447,7 +447,9 @@ export default function LeaderboardTable({
             {data.rows.map((candidate) => {
               // Normalize risk score if it's on the old scale (> 10)
               const normalizedRiskScore =
-                candidate.riskScore !== null && candidate.riskScore > 10
+                candidate.riskScore !== null &&
+                candidate.riskScore !== undefined &&
+                candidate.riskScore > 10
                   ? candidate.riskScore / 10
                   : candidate.riskScore;
 
@@ -455,7 +457,9 @@ export default function LeaderboardTable({
                 <tr
                   key={candidate.attemptId}
                   className={`transition-colors ${
-                    candidate.proctoringEnabled && normalizedRiskScore !== null
+                    candidate.proctoringEnabled &&
+                    normalizedRiskScore !== null &&
+                    normalizedRiskScore !== undefined
                       ? normalizedRiskScore < 2.5
                         ? 'bg-green-50 hover:bg-green-100'
                         : normalizedRiskScore >= 2.5 && normalizedRiskScore <= 5
@@ -468,7 +472,9 @@ export default function LeaderboardTable({
                       : ''
                   }`}
                   title={
-                    candidate.proctoringEnabled && normalizedRiskScore !== null
+                    candidate.proctoringEnabled &&
+                    normalizedRiskScore !== null &&
+                    normalizedRiskScore !== undefined
                       ? `Risk Score: ${normalizedRiskScore.toFixed(1)}/10`
                       : ''
                   }
@@ -645,17 +651,109 @@ export default function LeaderboardTable({
         </table>
       </div>
 
-      {/* Summary */}
+      {/* Pagination and Summary */}
       <div className="border-t border-gray-200 bg-gray-50 px-3 py-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center text-xs text-gray-700">
             <span className="font-medium">
-              📊 Showing all {data.pagination.total} candidates • Scroll to see
-              more results
+              📊 Showing {Math.min(data.rows.length, data.pagination.pageSize)}{' '}
+              of {data.pagination.total} candidates
+              {data.pagination.totalPages > 1 &&
+                ` • Page ${data.pagination.page} of ${data.pagination.totalPages}`}
             </span>
           </div>
-          <div className="text-xs text-gray-500">
-            Results update instantly when changing weight profiles
+          <div className="flex items-center gap-2">
+            {data.pagination.totalPages > 1 && onPageChange && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => onPageChange(data.pagination.page - 1)}
+                  disabled={!data.pagination.hasPrevious}
+                  className="inline-flex items-center rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <ChevronLeft className="mr-1 h-3 w-3" />
+                  Previous
+                </button>
+
+                {/* Page numbers */}
+                <div className="flex items-center gap-1">
+                  {(() => {
+                    const currentPage = data.pagination.page;
+                    const totalPages = data.pagination.totalPages;
+                    const pages: (number | string)[] = [];
+
+                    if (totalPages <= 7) {
+                      // Show all pages if 7 or less
+                      for (let i = 1; i <= totalPages; i++) {
+                        pages.push(i);
+                      }
+                    } else {
+                      // Show first, last, current and surrounding pages
+                      pages.push(1);
+
+                      if (currentPage > 3) {
+                        pages.push('...');
+                      }
+
+                      for (
+                        let i = Math.max(2, currentPage - 1);
+                        i <= Math.min(totalPages - 1, currentPage + 1);
+                        i++
+                      ) {
+                        if (!pages.includes(i)) {
+                          pages.push(i);
+                        }
+                      }
+
+                      if (currentPage < totalPages - 2) {
+                        pages.push('...');
+                      }
+
+                      pages.push(totalPages);
+                    }
+
+                    return pages.map((page, index) => {
+                      if (page === '...') {
+                        return (
+                          <span
+                            key={`ellipsis-${index}`}
+                            className="px-2 text-xs text-gray-500"
+                          >
+                            ...
+                          </span>
+                        );
+                      }
+
+                      const pageNum = page as number;
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => onPageChange(pageNum)}
+                          className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${
+                            currentPage === pageNum
+                              ? 'bg-brand-600 text-white'
+                              : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
+
+                <button
+                  onClick={() => onPageChange(data.pagination.page + 1)}
+                  disabled={!data.pagination.hasNext}
+                  className="inline-flex items-center rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Next
+                  <ChevronRight className="ml-1 h-3 w-3" />
+                </button>
+              </div>
+            )}
+            <div className="border-l pl-2 text-xs text-gray-500">
+              Results update instantly when changing weight profiles
+            </div>
           </div>
         </div>
       </div>

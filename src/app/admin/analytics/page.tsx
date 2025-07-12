@@ -20,19 +20,35 @@ import {
   RefreshCw,
 } from 'lucide-react';
 
-interface Position {
+interface JobProfile {
   id: string;
   name: string;
-  code: string;
   description: string | null;
-  level: string | null;
   isActive: boolean;
-  testCount: number;
-  activeTestCount: number;
+  createdAt: string;
+  updatedAt: string;
+  positions?: Array<{
+    id: string;
+    name: string;
+    code: string;
+  }>;
+  testWeights?: Array<{
+    id: string;
+    testId: string;
+    weight: number;
+    test: {
+      id: string;
+      title: string;
+    };
+  }>;
+  _count: {
+    invitations: number;
+    completedInvitations?: number;
+  };
 }
 
-interface PositionAnalytics {
-  position: Position;
+interface JobProfileAnalytics {
+  jobProfile: JobProfile;
   totalAttempts: number;
   completedAttempts: number;
   averageScore: number;
@@ -80,9 +96,9 @@ export default function PositionAnalyticsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const [positions, setPositions] = useState<Position[]>([]);
-  const [selectedPositionId, setSelectedPositionId] = useState<string>('');
-  const [analytics, setAnalytics] = useState<PositionAnalytics | null>(null);
+  const [jobProfiles, setJobProfiles] = useState<JobProfile[]>([]);
+  const [selectedJobProfileId, setSelectedJobProfileId] = useState<string>('');
+  const [analytics, setAnalytics] = useState<JobProfileAnalytics | null>(null);
   const [overallStats, setOverallStats] = useState<OverallStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
@@ -101,31 +117,27 @@ export default function PositionAnalyticsPage() {
     }
   }, [session, status, router]);
 
-  // Fetch positions
-  const fetchPositions = useCallback(async () => {
+  // Fetch job profiles
+  const fetchJobProfiles = useCallback(async () => {
     try {
-      const response = await fetch(
-        '/api/admin/positions?includeTestCount=true'
-      );
-      if (!response.ok) throw new Error('Failed to fetch positions');
+      const response = await fetch('/api/admin/job-profiles');
+      if (!response.ok) throw new Error('Failed to fetch job profiles');
       const data = await response.json();
 
-      // Only show active positions with tests
-      const activePositionsWithTests = data.filter(
-        (p: Position) => p.isActive && p.activeTestCount > 0
-      );
-      setPositions(activePositionsWithTests);
+      // Only show active job profiles
+      const activeJobProfiles = data.filter((jp: JobProfile) => jp.isActive);
+      setJobProfiles(activeJobProfiles);
 
-      // Select first position by default
-      if (activePositionsWithTests.length > 0 && !selectedPositionId) {
-        setSelectedPositionId(activePositionsWithTests[0].id);
+      // Select first job profile by default
+      if (activeJobProfiles.length > 0 && !selectedJobProfileId) {
+        setSelectedJobProfileId(activeJobProfiles[0].id);
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Failed to fetch positions'
+        err instanceof Error ? err.message : 'Failed to fetch job profiles'
       );
     }
-  }, [selectedPositionId]);
+  }, [selectedJobProfileId]);
 
   // Fetch overall statistics
   const fetchOverallStats = useCallback(async () => {
@@ -139,62 +151,66 @@ export default function PositionAnalyticsPage() {
     }
   }, []);
 
-  // Fetch position analytics
-  const fetchPositionAnalytics = useCallback(async () => {
-    if (!selectedPositionId) return;
+  // Fetch job profile analytics
+  const fetchJobProfileAnalytics = useCallback(async () => {
+    if (!selectedJobProfileId) return;
 
     setLoadingAnalytics(true);
     setError(null);
 
     try {
       const response = await fetch(
-        `/api/admin/analytics/position/${selectedPositionId}`
+        `/api/admin/analytics/job-profile/${selectedJobProfileId}`
       );
-      if (!response.ok) throw new Error('Failed to fetch position analytics');
+      if (!response.ok)
+        throw new Error('Failed to fetch job profile analytics');
       const data = await response.json();
       setAnalytics(data);
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : 'Failed to fetch position analytics'
+          : 'Failed to fetch job profile analytics'
       );
     } finally {
       setLoadingAnalytics(false);
     }
-  }, [selectedPositionId]);
+  }, [selectedJobProfileId]);
 
   // Initial data fetch
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchPositions(), fetchOverallStats()]);
+      await Promise.all([fetchJobProfiles(), fetchOverallStats()]);
       setLoading(false);
     };
 
     if (session?.user) {
       loadData();
     }
-  }, [session, fetchPositions, fetchOverallStats]);
+  }, [session, fetchJobProfiles, fetchOverallStats]);
 
-  // Fetch analytics when position changes
+  // Fetch analytics when job profile changes
   useEffect(() => {
-    if (selectedPositionId) {
-      fetchPositionAnalytics();
+    if (selectedJobProfileId) {
+      fetchJobProfileAnalytics();
     }
-  }, [selectedPositionId, fetchPositionAnalytics]);
+  }, [selectedJobProfileId, fetchJobProfileAnalytics]);
 
-  // Filter positions
-  const filteredPositions = positions.filter((position) => {
+  // Filter job profiles
+  const filteredJobProfiles = jobProfiles.filter((jobProfile) => {
     const matchesSearch =
-      position.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      position.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (position.description &&
-        position.description.toLowerCase().includes(searchTerm.toLowerCase()));
+      jobProfile.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (jobProfile.description &&
+        jobProfile.description
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()));
 
     return matchesSearch;
   });
-  const selectedPosition = positions.find((p) => p.id === selectedPositionId);
+  const selectedJobProfile = jobProfiles.find(
+    (jp) => jp.id === selectedJobProfileId
+  );
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -365,25 +381,25 @@ export default function PositionAnalyticsPage() {
                 </div>
               </div>
 
-              {/* Positions List - Compact */}
+              {/* Job Profiles List - Compact */}
               <div className="max-h-80 overflow-y-auto">
-                {filteredPositions.length === 0 ? (
+                {filteredJobProfiles.length === 0 ? (
                   <div className="p-3 text-center">
                     <Target className="mx-auto h-6 w-6 text-gray-400" />
                     <p className="mt-1 text-xs text-gray-500">
                       {searchTerm
-                        ? 'No positions match your search'
-                        : 'No active positions with tests found'}
+                        ? 'No job profiles match your search'
+                        : 'No active job profiles found'}
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-1 p-1.5">
-                    {filteredPositions.map((position) => (
+                    {filteredJobProfiles.map((jobProfile) => (
                       <button
-                        key={position.id}
-                        onClick={() => setSelectedPositionId(position.id)}
+                        key={jobProfile.id}
+                        onClick={() => setSelectedJobProfileId(jobProfile.id)}
                         className={`w-full rounded-lg border p-2 text-left transition-colors ${
-                          selectedPositionId === position.id
+                          selectedJobProfileId === jobProfile.id
                             ? 'border-brand-500 bg-brand-50 text-brand-900'
                             : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50'
                         }`}
@@ -391,34 +407,34 @@ export default function PositionAnalyticsPage() {
                         <div className="flex items-start justify-between">
                           <div className="min-w-0 flex-1">
                             <h3 className="truncate text-sm font-medium">
-                              {position.name}
+                              {jobProfile.name}
                             </h3>
-                            <p className="font-mono text-xs text-gray-500">
-                              {position.code}
-                            </p>
-                            {position.description && (
+                            {jobProfile.description && (
                               <p className="mt-1 line-clamp-2 text-xs text-gray-600">
-                                {position.description}
+                                {jobProfile.description}
                               </p>
                             )}
                           </div>
                           <div className="ml-2 flex-shrink-0">
                             <div className="text-right">
                               <div className="text-xs font-medium text-brand-600">
-                                {position.activeTestCount}
+                                {jobProfile._count.invitations}
                               </div>
-                              <div className="text-xs text-gray-500">tests</div>
+                              <div className="text-xs text-gray-500">
+                                attempts
+                              </div>
                             </div>
                           </div>
                         </div>
 
                         <div className="mt-1 flex flex-wrap gap-1">
-                          {position.level && (
-                            <span className="inline-flex items-center rounded-md bg-secondary-50 px-1.5 py-0.5 text-xs font-medium text-secondary-700">
-                              <Target className="mr-1 h-2.5 w-2.5" />
-                              {position.level}
-                            </span>
-                          )}
+                          {jobProfile.testWeights &&
+                            jobProfile.testWeights.length > 0 && (
+                              <span className="inline-flex items-center rounded-md bg-secondary-50 px-1.5 py-0.5 text-xs font-medium text-secondary-700">
+                                <TestTube className="mr-1 h-2.5 w-2.5" />
+                                {jobProfile.testWeights.length} tests
+                              </span>
+                            )}
                         </div>
                       </button>
                     ))}
@@ -430,15 +446,15 @@ export default function PositionAnalyticsPage() {
 
           {/* Analytics Content - Middle and Right */}
           <div className="lg:col-span-3">
-            {!selectedPosition ? (
+            {!selectedJobProfile ? (
               <div className="flex h-80 items-center justify-center rounded-lg border border-gray-200 bg-white">
                 <div className="text-center">
                   <BarChart3 className="mx-auto h-10 w-10 text-gray-400" />
                   <h3 className="mt-2 text-sm font-medium text-gray-900">
-                    Select a Position
+                    Select a Job Profile
                   </h3>
                   <p className="mt-1 text-xs text-gray-500">
-                    Choose a position from the sidebar to view detailed
+                    Choose a job profile from the sidebar to view detailed
                     analytics
                   </p>
                 </div>
@@ -463,7 +479,7 @@ export default function PositionAnalyticsPage() {
                   </h3>
                   <p className="mt-1 text-xs text-gray-500">{error}</p>
                   <button
-                    onClick={fetchPositionAnalytics}
+                    onClick={fetchJobProfileAnalytics}
                     className="mt-3 inline-flex items-center gap-2 rounded-lg border-2 border-blue-700/50 bg-gradient-to-r from-blue-600 to-blue-700 px-3 py-1.5 text-xs font-medium text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
                   >
                     Try Again
@@ -472,19 +488,21 @@ export default function PositionAnalyticsPage() {
               </div>
             ) : analytics ? (
               <div className="space-y-3">
-                {/* Position Header - Compact */}
+                {/* Job Profile Header - Compact */}
                 <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
                       <h2 className="text-base font-semibold text-gray-900">
-                        {selectedPosition.name} Analytics
+                        {selectedJobProfile.name} Analytics
                       </h2>
-                      <p className="text-xs text-gray-600">
-                        {selectedPosition.code}
-                      </p>
+                      {selectedJobProfile.description && (
+                        <p className="text-xs text-gray-600">
+                          {selectedJobProfile.description}
+                        </p>
+                      )}
                     </div>
                     <button
-                      onClick={fetchPositionAnalytics}
+                      onClick={fetchJobProfileAnalytics}
                       className="rounded-md bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200"
                       title="Refresh analytics"
                     >

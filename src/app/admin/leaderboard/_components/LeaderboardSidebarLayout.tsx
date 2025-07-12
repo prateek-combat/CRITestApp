@@ -49,18 +49,22 @@ interface JobProfile {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
-  positions: Position[];
-  tests: Array<{
+  positions?: Position[];
+  testWeights?: Array<{
     id: string;
-    title: string;
-    description: string | null;
-    questionsCount: number;
-    isArchived: boolean;
+    testId: string;
     weight: number;
+    test: {
+      id: string;
+      title: string;
+      description: string | null;
+      questionsCount?: number;
+      isArchived?: boolean;
+    };
   }>;
   _count: {
     invitations: number;
-    completedInvitations: number;
+    completedInvitations?: number;
   };
 }
 
@@ -273,9 +277,13 @@ export default function LeaderboardSidebarLayout({
           }
         });
 
-        // Override pagination to get all results
-        params.set('pageSize', '1000');
-        params.delete('page');
+        // Set default page size if not provided
+        if (!params.has('pageSize')) {
+          params.set('pageSize', '50'); // Default to 50 items per page
+        }
+        if (!params.has('page')) {
+          params.set('page', '1');
+        }
 
         const response = await fetch(`/api/admin/leaderboard?${params}`);
         if (!response.ok) {
@@ -599,7 +607,9 @@ export default function LeaderboardSidebarLayout({
                         <div className="ml-2 flex-shrink-0">
                           <div className="text-right">
                             <div className="text-xs font-medium text-brand-600">
-                              {profile._count.completedInvitations}
+                              {profile._count.completedInvitations ||
+                                profile._count.invitations ||
+                                0}
                             </div>
                             <div className="text-xs text-gray-500">
                               completed
@@ -609,20 +619,24 @@ export default function LeaderboardSidebarLayout({
                       </div>
 
                       <div className="mt-1 flex flex-wrap gap-1">
-                        {profile.positions.length > 0 && (
+                        {profile.positions &&
+                        Array.isArray(profile.positions) &&
+                        profile.positions.length > 0 ? (
                           <span className="inline-flex items-center rounded-md bg-brand-50 px-1.5 py-0.5 text-xs font-medium text-brand-700">
                             <Building2 className="mr-1 h-2.5 w-2.5" />
                             {profile.positions.length} position
                             {profile.positions.length > 1 ? 's' : ''}
                           </span>
-                        )}
-                        {profile.tests.length > 0 && (
+                        ) : null}
+                        {profile.testWeights &&
+                        Array.isArray(profile.testWeights) &&
+                        profile.testWeights.length > 0 ? (
                           <span className="inline-flex items-center rounded-md bg-secondary-50 px-1.5 py-0.5 text-xs font-medium text-secondary-700">
                             <TestTube className="mr-1 h-2.5 w-2.5" />
-                            {profile.tests.length} test
-                            {profile.tests.length > 1 ? 's' : ''}
+                            {profile.testWeights.length} test
+                            {profile.testWeights.length > 1 ? 's' : ''}
                           </span>
-                        )}
+                        ) : null}
                       </div>
                     </button>
                   ))}
