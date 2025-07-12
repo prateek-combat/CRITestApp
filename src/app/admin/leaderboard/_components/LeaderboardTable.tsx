@@ -568,6 +568,34 @@ export default function LeaderboardTable({
                     {formatDate(candidate.completedAt)}
                   </td>
 
+                  <td className="whitespace-nowrap px-2 py-1.5 text-center text-xs">
+                    <div className="font-medium">
+                      {candidate.proctoringEnabled ? (
+                        normalizedRiskScore !== null &&
+                        normalizedRiskScore !== undefined ? (
+                          <span
+                            className={`${
+                              normalizedRiskScore < 2.5
+                                ? 'text-green-700'
+                                : normalizedRiskScore <= 5
+                                  ? 'text-yellow-700'
+                                  : 'text-red-700'
+                            }`}
+                          >
+                            {normalizedRiskScore.toFixed(1)}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )
+                      ) : (
+                        <span className="text-gray-400">N/A</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {candidate.proctoringEnabled ? 'Enabled' : 'Disabled'}
+                    </div>
+                  </td>
+
                   <td className="whitespace-nowrap px-2 py-1.5 text-center">
                     <div className="flex items-center justify-center space-x-1">
                       <LinkButton
