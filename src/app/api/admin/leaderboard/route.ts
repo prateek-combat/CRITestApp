@@ -488,10 +488,12 @@ export async function GET(request: NextRequest) {
       ) {
         const rawScorePercentage =
           (attempt.rawScore / totalTestQuestions) * 100;
-        // Use raw score percentage as composite score
-        if (!jobProfile || Object.keys(testWeights).length === 0) {
-          weightedComposite = rawScorePercentage;
-          unweightedComposite = rawScorePercentage;
+        // Use raw score percentage as composite score for all cases when no submitted answers
+        weightedComposite = rawScorePercentage;
+        unweightedComposite = rawScorePercentage;
+        // For job profile mode, also set the job profile composite
+        if (jobProfile && Object.keys(testWeights).length > 0) {
+          jobProfileComposite = rawScorePercentage;
         }
       }
 
