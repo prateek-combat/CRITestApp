@@ -186,6 +186,7 @@ export async function GET(request: NextRequest) {
           percentile: true,
           riskScore: true,
           proctoringEnabled: true,
+          testId: true, // Add testId for job profile scoring
           submittedAnswers: {
             select: {
               isCorrect: true,
@@ -210,6 +211,7 @@ export async function GET(request: NextRequest) {
           publicLink: {
             select: {
               title: true,
+              testId: true, // Add testId for job profile scoring
             },
           },
           submittedAnswers: {
@@ -393,13 +395,35 @@ export async function GET(request: NextRequest) {
       });
 
       // Count correct answers for each category
-      for (const answer of attempt.submittedAnswers) {
-        const category = answer.question.category;
-        if (!category || !categoryScores[category]) continue;
+      if (attempt.submittedAnswers && attempt.submittedAnswers.length > 0) {
+        // Normal case: calculate from submitted answers
+        for (const answer of attempt.submittedAnswers) {
+          const category = answer.question.category;
+          if (!category || !categoryScores[category]) continue;
 
-        if (answer.isCorrect) {
-          categoryScores[category].correct++;
+          if (answer.isCorrect) {
+            categoryScores[category].correct++;
+          }
         }
+      } else if (
+        attempt.rawScore !== null &&
+        attempt.rawScore !== undefined &&
+        totalTestQuestions > 0
+      ) {
+        // Fallback case: when rawScore exists but no submitted answers
+        // This handles legacy data where submitted answers weren't properly saved
+        const rawScore = attempt.rawScore; // TypeScript null check
+        const scorePercentage = (rawScore / totalTestQuestions) * 100;
+
+        // Distribute the score proportionally across categories based on question count
+        Object.entries(categoryScores).forEach(([category, score]) => {
+          if (score.total > 0) {
+            // Calculate correct answers proportionally
+            score.correct = Math.round(
+              (rawScore * score.total) / totalTestQuestions
+            );
+          }
+        });
       }
 
       // Calculate percentages based on total questions in test (not just answered)
@@ -422,13 +446,13 @@ export async function GET(request: NextRequest) {
       });
 
       // Calculate weighted composite score using configurable weights
-      const weightedComposite = calculateWeightedComposite(
+      let weightedComposite = calculateWeightedComposite(
         categoryScoresForWeighting,
         weights
       );
 
       // Calculate unweighted composite using equal weights (for consistent comparison)
-      const unweightedComposite = calculateUnweightedComposite(
+      let unweightedComposite = calculateUnweightedComposite(
         categoryScoresForWeighting
       );
 
@@ -452,6 +476,22 @@ export async function GET(request: NextRequest) {
           // This will be done at the candidate level, not individual test level
           // For now, use the individual test score with its weight
           jobProfileComposite = testScore * testWeight;
+        }
+      }
+
+      // Additional fallback: if no submitted answers but rawScore exists, use rawScore percentage
+      if (
+        (!attempt.submittedAnswers || attempt.submittedAnswers.length === 0) &&
+        attempt.rawScore !== null &&
+        attempt.rawScore !== undefined &&
+        totalTestQuestions > 0
+      ) {
+        const rawScorePercentage =
+          (attempt.rawScore / totalTestQuestions) * 100;
+        // Use raw score percentage as composite score
+        if (!jobProfile || Object.keys(testWeights).length === 0) {
+          weightedComposite = rawScorePercentage;
+          unweightedComposite = rawScorePercentage;
         }
       }
 
