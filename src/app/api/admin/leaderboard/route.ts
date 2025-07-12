@@ -238,17 +238,25 @@ export async function GET(request: NextRequest) {
     ];
 
     // Get total questions for the test(s) to calculate percentages
-    const totalTestQuestions = testId
-      ? await prisma.question.count({ where: { testId } })
-      : await prisma.question.count({
-          where: {
-            test: positionId
-              ? { positionId }
-              : positionIds && positionIds.length > 0
-                ? { positionId: { in: positionIds } }
-                : undefined,
-          },
-        });
+    let totalTestQuestions = 0;
+
+    if (testId) {
+      totalTestQuestions = await prisma.question.count({ where: { testId } });
+    } else if (jobProfileId && jobProfile) {
+      // For job profiles, count questions across all tests
+      const testIds = jobProfile.testWeights.map((tw: any) => tw.testId);
+      totalTestQuestions = await prisma.question.count({
+        where: { testId: { in: testIds } },
+      });
+    } else if (positionId) {
+      totalTestQuestions = await prisma.question.count({
+        where: { test: { positionId } },
+      });
+    } else if (positionIds && positionIds.length > 0) {
+      totalTestQuestions = await prisma.question.count({
+        where: { test: { positionId: { in: positionIds } } },
+      });
+    }
 
     // NEW: Get weight profile for configurable scoring
     let weightProfile = null;
@@ -336,6 +344,14 @@ export async function GET(request: NextRequest) {
       categoryQuestionCounts = await prisma.question.groupBy({
         by: ['category'],
         where: { testId },
+        _count: { id: true },
+      });
+    } else if (jobProfileId && jobProfile) {
+      // Job profile filter - get questions from all tests in the job profile
+      const testIds = jobProfile.testWeights.map((tw: any) => tw.testId);
+      categoryQuestionCounts = await prisma.question.groupBy({
+        by: ['category'],
+        where: { testId: { in: testIds } },
         _count: { id: true },
       });
     } else if (positionId) {
