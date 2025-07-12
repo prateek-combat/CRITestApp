@@ -195,44 +195,44 @@ export default function PublicTestPage() {
       <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
         <div className="mb-8 text-center">
           <div className="mb-4 text-6xl text-brand-600">📝</div>
-          <h1 className="mb-2 text-2xl font-bold text-gray-900">
-            {publicLink.title}
+          <h1 className="mb-6 text-2xl font-bold text-gray-900">
+            {publicLink.testTitle}
           </h1>
-          {publicLink.description && (
-            <p className="mb-4 text-gray-600">{publicLink.description}</p>
-          )}
-          <div className="rounded-lg bg-brand-50 p-4 text-sm text-brand-700">
-            <p className="font-semibold">Test: {publicLink.testTitle}</p>
-            {publicLink.isTimeRestricted && publicLink.timeSlot && (
-              <div className="mt-2 rounded-md bg-amber-100 p-2 text-amber-800">
-                <p className="font-medium">
-                  ⏰ Time Slot: {publicLink.timeSlot.name}
-                </p>
+
+          {publicLink.isTimeRestricted && publicLink.timeSlot && (
+            <div className="mb-4 rounded-md bg-amber-100 p-3 text-amber-800">
+              <p className="font-medium">
+                ⏰ Time Slot: {publicLink.timeSlot.name}
+              </p>
+              <p className="text-xs">
+                Available:{' '}
+                {new Date(publicLink.timeSlot.startDateTime).toLocaleString()} -{' '}
+                {new Date(publicLink.timeSlot.endDateTime).toLocaleString()} (
+                {publicLink.timeSlot.timezone})
+              </p>
+              {publicLink.timeSlot.maxParticipants && (
                 <p className="text-xs">
-                  Available:{' '}
-                  {new Date(publicLink.timeSlot.startDateTime).toLocaleString()}{' '}
-                  - {new Date(publicLink.timeSlot.endDateTime).toLocaleString()}{' '}
-                  ({publicLink.timeSlot.timezone})
+                  Participants: {publicLink.timeSlot.currentParticipants}/
+                  {publicLink.timeSlot.maxParticipants}
                 </p>
-                {publicLink.timeSlot.maxParticipants && (
-                  <p className="text-xs">
-                    Participants: {publicLink.timeSlot.currentParticipants}/
-                    {publicLink.timeSlot.maxParticipants}
-                  </p>
-                )}
-              </div>
-            )}
-            {publicLink.expiresAt && (
-              <p>
-                Expires: {new Date(publicLink.expiresAt).toLocaleDateString()}
-              </p>
-            )}
-            {publicLink.maxUses && (
-              <p>
-                Uses: {publicLink.usedCount} / {publicLink.maxUses}
-              </p>
-            )}
-          </div>
+              )}
+            </div>
+          )}
+
+          {(publicLink.expiresAt || publicLink.maxUses) && (
+            <div className="mb-4 rounded-lg bg-gray-50 p-3 text-sm text-gray-600">
+              {publicLink.expiresAt && (
+                <p>
+                  Expires: {new Date(publicLink.expiresAt).toLocaleDateString()}
+                </p>
+              )}
+              {publicLink.maxUses && (
+                <p>
+                  Uses: {publicLink.usedCount} / {publicLink.maxUses}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleStartTest} className="space-y-6">
