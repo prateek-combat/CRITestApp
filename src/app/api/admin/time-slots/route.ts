@@ -238,7 +238,6 @@ export async function POST(request: NextRequest) {
       const publicLink = await prisma.publicTestLink.create({
         data: {
           testId: test.id,
-          jobProfileId: jobProfile.id,
           linkToken,
           title: `${jobProfile.name} - ${test.title} (${name})`,
           description: `Time-restricted access for ${test.title} during ${name}`,
@@ -352,7 +351,17 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Delete the time slot (this will cascade delete associated public test links)
+    // First, delete all associated public test links that have no attempts
+    const deletedLinks = await prisma.publicTestLink.deleteMany({
+      where: {
+        timeSlotId: timeSlotId,
+        attempts: {
+          none: {},
+        },
+      },
+    });
+
+    // Now delete the time slot
     await prisma.timeSlot.delete({
       where: { id: timeSlotId },
     });
@@ -360,7 +369,8 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({
       message: 'Time slot deleted successfully',
       deletedTimeSlotId: timeSlotId,
-      deletedLinksCount: timeSlot._count.publicTestLinks,
+      deletedLinksCount: deletedLinks.count,
+      note: `Deleted ${deletedLinks.count} public test links that had no attempts`,
     });
   } catch (error) {
     const { searchParams } = new URL(request.url);
