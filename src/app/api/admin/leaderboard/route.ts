@@ -7,6 +7,7 @@ import {
   calculateUnweightedComposite,
   CategoryWeights,
 } from '@/types/categories';
+import { logger } from '@/lib/logger';
 
 export const revalidate = 0; // Disable caching for this route
 
@@ -115,7 +116,16 @@ export async function GET(request: NextRequest) {
           testId: { in: testIds },
         };
       } catch (error) {
-        console.error('Error fetching job profile:', error);
+        logger.error(
+          'Failed to fetch job profile for leaderboard',
+          {
+            operation: 'fetch_job_profile_leaderboard',
+            jobProfileId,
+            method: 'GET',
+            path: '/api/admin/leaderboard',
+          },
+          error as Error
+        );
         return NextResponse.json(
           { error: 'Failed to fetch job profile' },
           { status: 500 }
@@ -313,7 +323,12 @@ export async function GET(request: NextRequest) {
             };
           }
         } catch (parseError) {
-          console.warn('Error parsing custom weights:', parseError);
+          logger.warn('Failed to parse custom weights, using fallback', {
+            operation: 'parse_custom_weights',
+            customWeightsParam,
+            method: 'GET',
+            path: '/api/admin/leaderboard',
+          });
           // Fall back to profile or default weights
         }
       } else if (weightProfileId) {
@@ -331,10 +346,12 @@ export async function GET(request: NextRequest) {
         }
       }
     } catch (error) {
-      console.warn(
-        'Error fetching weight profile, using default weights:',
-        error
-      );
+      logger.warn('Failed to fetch weight profile, using default weights', {
+        operation: 'fetch_weight_profile',
+        weightProfileId,
+        method: 'GET',
+        path: '/api/admin/leaderboard',
+      });
       // Continue with default weights
     }
 
@@ -737,12 +754,25 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Leaderboard API error:', error);
-    // Vercel logs are often the only way to see this in production
-    if (error instanceof Error) {
-      console.error(error.message);
-      console.error(error.stack);
-    }
+    const { searchParams } = new URL(request.url);
+    const errorTestId = searchParams.get('testId');
+    const errorPositionId = searchParams.get('positionId');
+    const errorJobProfileId = searchParams.get('jobProfileId');
+    const errorInvitationId = searchParams.get('invitationId');
+
+    logger.error(
+      'Failed to fetch leaderboard data',
+      {
+        operation: 'fetch_leaderboard',
+        testId: errorTestId,
+        positionId: errorPositionId,
+        jobProfileId: errorJobProfileId,
+        invitationId: errorInvitationId,
+        method: 'GET',
+        path: '/api/admin/leaderboard',
+      },
+      error as Error
+    );
     return NextResponse.json(
       {
         error: 'Failed to fetch leaderboard data.',

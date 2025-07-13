@@ -4,6 +4,7 @@ import {
   sendTestCompletionCandidateEmail,
   sendTestCompletionAdminNotification,
 } from '@/lib/email';
+import { logger } from '@/lib/logger';
 
 const prisma = new PrismaClient({
   log: ['query', 'info', 'warn', 'error'],
@@ -85,9 +86,18 @@ export async function GET(request: Request) {
       invitationId && testAttempts.length > 0 ? testAttempts[0] : testAttempts
     );
   } catch (error) {
-    console.error(
-      '[API /api/test-attempts GET] Failed to fetch test attempts:',
-      error
+    const url = new URL(request.url, 'http://localhost');
+    const invitationId = url.searchParams.get('invitationId');
+
+    logger.error(
+      'Failed to fetch test attempts',
+      {
+        operation: 'get_test_attempts',
+        invitationId: invitationId || undefined,
+        method: 'GET',
+        path: '/api/test-attempts',
+      },
+      error as Error
     );
     return NextResponse.json(
       { message: 'Failed to fetch test attempts', error: String(error) },
@@ -394,8 +404,15 @@ export async function POST(request: Request) {
           ),
           testTitle: firstTest.title,
         }).catch((error: any) => {
-          console.error(
-            'Failed to send test completion email notification to admins:',
+          logger.error(
+            'Failed to send admin notification email',
+            {
+              operation: 'send_admin_notification',
+              testId: firstTest.id,
+              candidateEmail: jobProfileInvitation.candidateEmail,
+              method: 'POST',
+              path: '/api/test-attempts',
+            },
             error
           );
         });
@@ -409,8 +426,15 @@ export async function POST(request: Request) {
           completedAt: new Date(submissionTimeEpoch),
           companyName: 'Combat Robotics India',
         }).catch((error: any) => {
-          console.error(
-            'Failed to send test completion confirmation email to candidate:',
+          logger.error(
+            'Failed to send candidate confirmation email',
+            {
+              operation: 'send_candidate_confirmation',
+              testId: firstTest.id,
+              candidateEmail: jobProfileInvitation.candidateEmail,
+              method: 'POST',
+              path: '/api/test-attempts',
+            },
             error
           );
         });
@@ -533,9 +557,13 @@ export async function POST(request: Request) {
           finalCategorySubScores[category].total++;
         } else {
           // This case should ideally not happen if QuestionCategory enum and q.category are well-managed
-          console.warn(
-            `Encountered unexpected category: ${category} for question ${q.id}`
-          );
+          logger.warn('Unexpected question category encountered', {
+            operation: 'calculate_scores',
+            category,
+            questionId: q.id,
+            method: 'POST',
+            path: '/api/test-attempts',
+          });
         }
       });
 
@@ -640,8 +668,15 @@ export async function POST(request: Request) {
         ),
         testTitle: invitation.test.title,
       }).catch((error: any) => {
-        console.error(
-          'Failed to send test completion email notification to admins:',
+        logger.error(
+          'Failed to send admin notification email',
+          {
+            operation: 'send_admin_notification',
+            testId: invitation.test.id,
+            candidateEmail: invitation.candidateEmail,
+            method: 'POST',
+            path: '/api/test-attempts',
+          },
           error
         );
         // Don't fail the test submission if email fails
@@ -655,8 +690,15 @@ export async function POST(request: Request) {
         completedAt: new Date(submissionTimeEpoch),
         companyName: 'Combat Robotics India',
       }).catch((error: any) => {
-        console.error(
-          'Failed to send test completion confirmation email to candidate:',
+        logger.error(
+          'Failed to send candidate confirmation email',
+          {
+            operation: 'send_candidate_confirmation',
+            testId: invitation.test.id,
+            candidateEmail: invitation.candidateEmail,
+            method: 'POST',
+            path: '/api/test-attempts',
+          },
           error
         );
         // Don't fail the test submission if email fails
@@ -667,9 +709,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json(existingAttempt);
   } catch (error) {
-    console.error(
-      '[API /api/test-attempts POST] Failed to handle test attempt:',
-      error
+    logger.error(
+      'Failed to handle test attempt',
+      {
+        operation: 'handle_test_attempt',
+        method: 'POST',
+        path: '/api/test-attempts',
+      },
+      error as Error
     );
     return NextResponse.json(
       { message: 'Failed to handle test attempt', error: String(error) },

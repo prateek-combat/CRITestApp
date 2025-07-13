@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient, QuestionCategory } from '@prisma/client';
 import * as XLSX from 'xlsx-js-style';
 import * as Papa from 'papaparse';
+import { logger } from '@/lib/logger';
 
 const prisma = new PrismaClient({
   log:
@@ -15,14 +16,21 @@ if (process.env.NODE_ENV === 'production') {
   prisma
     .$connect()
     .then(() => {
-      console.log(
-        '[QUESTION_IMPORT_DEBUG] Prisma client connected successfully in production'
-      );
+      logger.info('Prisma client connected successfully in production', {
+        operation: 'prisma_connect',
+        environment: 'production',
+        service: 'questions_import',
+      });
     })
     .catch((error) => {
-      console.error(
-        '[QUESTION_IMPORT_DEBUG] Prisma client connection failed:',
-        error
+      logger.error(
+        'Prisma client connection failed',
+        {
+          operation: 'prisma_connect',
+          environment: 'production',
+          service: 'questions_import',
+        },
+        error as Error
       );
     });
 }
@@ -68,7 +76,11 @@ async function parseFile(file: File): Promise<any[]> {
       });
 
       if (result.errors && result.errors.length > 0) {
-        console.warn('CSV parsing warnings:', result.errors);
+        logger.warn('CSV parsing warnings detected', {
+          operation: 'parse_csv',
+          warningCount: result.errors.length,
+          service: 'questions_import',
+        });
       }
 
       return result.data as any[];
@@ -89,10 +101,11 @@ async function parseFile(file: File): Promise<any[]> {
         });
       } catch (primaryError) {
         // Fallback parsing with more permissive options
-        console.warn(
-          'Primary Excel parsing failed, trying fallback:',
-          primaryError
-        );
+        logger.warn('Primary Excel parsing failed, attempting fallback', {
+          operation: 'parse_excel',
+          attempt: 'fallback',
+          service: 'questions_import',
+        });
         workbook = XLSX.read(buffer, {
           type: 'buffer',
           raw: true,
@@ -141,7 +154,14 @@ async function parseFile(file: File): Promise<any[]> {
       return cleanedData;
     }
   } catch (error) {
-    console.error('File parsing error:', error);
+    logger.error(
+      'File parsing failed',
+      {
+        operation: 'parse_file',
+        service: 'questions_import',
+      },
+      error as Error
+    );
     throw new Error(
       `Failed to parse file: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
@@ -752,69 +772,73 @@ export async function POST(request: NextRequest) {
     try {
       // Use a transaction to ensure all questions are created or none are
       console.log('[QUESTION_IMPORT_DEBUG] Beginning Prisma transaction...');
-      await prisma.$transaction(async (tx) => {
-        console.log(
-          '[QUESTION_IMPORT_DEBUG] Inside transaction, processing questions...'
-        );
-        for (const questionData of validQuestions) {
-          // Handle personality dimension lookup for personality questions
-          let finalQuestionData = { ...questionData };
-
-          if (
-            questionData.questionType === 'PERSONALITY' &&
-            questionData.personalityDimensionCode
-          ) {
-            // Look up personality dimension by code
-            const personalityDimension =
-              await tx.personalityDimension.findFirst({
-                where: {
-                  code: questionData.personalityDimensionCode.toUpperCase(),
-                },
-              });
-
-            if (personalityDimension) {
-              finalQuestionData.personalityDimensionId =
-                personalityDimension.id;
-            } else {
-              // Create a new personality dimension if it doesn't exist
-              const newDimension = await tx.personalityDimension.create({
-                data: {
-                  code: questionData.personalityDimensionCode.toUpperCase(),
-                  name: questionData.personalityDimensionCode.toUpperCase(),
-                  description: `Auto-created dimension for ${questionData.personalityDimensionCode}`,
-                },
-              });
-              finalQuestionData.personalityDimensionId = newDimension.id;
-            }
-
-            // Remove the temporary field
-            delete finalQuestionData.personalityDimensionCode;
-          }
-
-          console.log('[QUESTION_IMPORT_DEBUG] Creating question:', {
-            questionIndex: createdQuestions.length + 1,
-            promptText: finalQuestionData.promptText?.substring(0, 50) + '...',
-            category: finalQuestionData.category,
-            questionType: finalQuestionData.questionType,
-          });
-
-          const question = await tx.question.create({
-            data: finalQuestionData,
-          });
-          createdQuestions.push(question);
-
+      await prisma.$transaction(
+        async (tx) => {
           console.log(
-            '[QUESTION_IMPORT_DEBUG] Question created successfully:',
-            {
-              questionId: question.id,
-              createdCount: createdQuestions.length,
-            }
+            '[QUESTION_IMPORT_DEBUG] Inside transaction, processing questions...'
           );
+          for (const questionData of validQuestions) {
+            // Handle personality dimension lookup for personality questions
+            let finalQuestionData = { ...questionData };
+
+            if (
+              questionData.questionType === 'PERSONALITY' &&
+              questionData.personalityDimensionCode
+            ) {
+              // Look up personality dimension by code
+              const personalityDimension =
+                await tx.personalityDimension.findFirst({
+                  where: {
+                    code: questionData.personalityDimensionCode.toUpperCase(),
+                  },
+                });
+
+              if (personalityDimension) {
+                finalQuestionData.personalityDimensionId =
+                  personalityDimension.id;
+              } else {
+                // Create a new personality dimension if it doesn't exist
+                const newDimension = await tx.personalityDimension.create({
+                  data: {
+                    code: questionData.personalityDimensionCode.toUpperCase(),
+                    name: questionData.personalityDimensionCode.toUpperCase(),
+                    description: `Auto-created dimension for ${questionData.personalityDimensionCode}`,
+                  },
+                });
+                finalQuestionData.personalityDimensionId = newDimension.id;
+              }
+
+              // Remove the temporary field
+              delete finalQuestionData.personalityDimensionCode;
+            }
+
+            console.log('[QUESTION_IMPORT_DEBUG] Creating question:', {
+              questionIndex: createdQuestions.length + 1,
+              promptText:
+                finalQuestionData.promptText?.substring(0, 50) + '...',
+              category: finalQuestionData.category,
+              questionType: finalQuestionData.questionType,
+            });
+
+            const question = await tx.question.create({
+              data: finalQuestionData,
+            });
+            createdQuestions.push(question);
+
+            console.log(
+              '[QUESTION_IMPORT_DEBUG] Question created successfully:',
+              {
+                questionId: question.id,
+                createdCount: createdQuestions.length,
+              }
+            );
+          }
+        },
+        {
+          maxWait: 10000, // 10 seconds
+          timeout: 15000, // 15 seconds
         }
-      }, {
-        maxWait: 10000, // 10 seconds
-        timeout: 15000, // 15 seconds
-      });
+      );
       console.log(
         '[QUESTION_IMPORT_DEBUG] Transaction completed successfully!'
       );

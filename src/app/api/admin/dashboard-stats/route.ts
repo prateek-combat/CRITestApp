@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -17,7 +18,16 @@ export async function GET() {
       totalInvitations,
     });
   } catch (error) {
-    console.error('Failed to fetch dashboard stats:', error);
+    logger.error(
+      'Failed to fetch dashboard stats',
+      {
+        operation: 'get_dashboard_stats',
+        service: 'admin_dashboard',
+        method: 'GET',
+        path: '/api/admin/dashboard-stats',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to fetch dashboard stats' },
       { status: 500 }

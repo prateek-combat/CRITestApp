@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 
 // GET /api/admin/users - List all admin users
 export async function GET(request: NextRequest) {
@@ -32,7 +33,16 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(users);
   } catch (error) {
-    console.error('Error fetching users:', error);
+    logger.error(
+      'Failed to fetch users',
+      {
+        operation: 'get_users',
+        service: 'admin_users',
+        method: 'GET',
+        path: '/api/admin/users',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
@@ -120,7 +130,16 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error) {
-    console.error('Error creating/updating user:', error);
+    logger.error(
+      'Failed to create/update user',
+      {
+        operation: 'create_update_user',
+        service: 'admin_users',
+        method: 'POST',
+        path: '/api/admin/users',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

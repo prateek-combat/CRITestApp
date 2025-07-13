@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptionsSimple } from '@/lib/auth-simple';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -30,7 +31,15 @@ export async function GET() {
 
     return NextResponse.json(jobProfiles);
   } catch (error) {
-    console.error('Error fetching job profiles:', error);
+    logger.error(
+      'Failed to fetch job profiles',
+      {
+        operation: 'fetch_job_profiles',
+        method: 'GET',
+        path: '/api/admin/job-profiles',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to fetch job profiles' },
       { status: 500 }
@@ -102,7 +111,15 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(jobProfile);
   } catch (error) {
-    console.error('Error creating job profile:', error);
+    logger.error(
+      'Failed to create job profile',
+      {
+        operation: 'create_job_profile',
+        method: 'POST',
+        path: '/api/admin/job-profiles',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to create job profile' },
       { status: 500 }

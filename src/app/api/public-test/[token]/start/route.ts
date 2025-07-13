@@ -18,10 +18,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const body = await request.json();
     const { candidateName, candidateEmail } = body;
 
-    console.log(
-      `[PUBLIC-START] Starting test for token: ${token}, candidate: ${candidateEmail}`
-    );
-
     if (!candidateName?.trim() || !candidateEmail?.trim()) {
       return NextResponse.json(
         { error: 'Name and email are required' },
@@ -119,7 +115,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    console.log(`[PUBLIC-START] Creating test attempt...`);
     // Create new test attempt and increment usage count in a transaction
     const result = await prisma.$transaction(
       async (tx) => {
@@ -149,7 +144,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         timeout: 30000, // 30 seconds
       }
     );
-    console.log(`[PUBLIC-START] Created test attempt: ${result.id}`);
 
     return NextResponse.json({
       attemptId: result.id,
@@ -159,7 +153,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`[PUBLIC-START] Error after ${duration}ms:`, error);
 
     // Provide more specific error messages
     const errorMessage = error instanceof Error ? error.message : String(error);

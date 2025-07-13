@@ -81,7 +81,6 @@ export async function POST(request: NextRequest) {
           uploadedFrames.push(asset.id);
         }
       } catch (error) {
-        console.error('Error processing frame:', error);
         // Continue with other frames even if one fails
       }
     }
@@ -92,7 +91,6 @@ export async function POST(request: NextRequest) {
       frameIds: uploadedFrames,
     });
   } catch (error) {
-    console.error('Error uploading frames:', error);
     return NextResponse.json(
       { error: 'Failed to upload frames' },
       { status: 500 }

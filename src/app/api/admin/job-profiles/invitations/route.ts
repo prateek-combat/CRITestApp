@@ -4,8 +4,6 @@ import { authOptionsSimple } from '@/lib/auth-simple';
 import { sendInvitationEmail, type InvitationEmailData } from '@/lib/email';
 import { prisma } from '@/lib/prisma';
 
-
-
 // GET /api/admin/job-profiles/invitations - Get all job profile invitations
 export async function GET(request: NextRequest) {
   try {
@@ -90,7 +88,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(transformedInvitations);
   } catch (error) {
-    console.error('Error fetching job profile invitations:', error);
     return NextResponse.json(
       { error: 'Failed to fetch invitations' },
       { status: 500 }
@@ -243,7 +240,6 @@ export async function POST(request: NextRequest) {
           });
           summary.totalCreated++;
         } catch (error) {
-          console.error(`Failed to create invitation for ${email}:`, error);
           results.push({
             email,
             success: false,
@@ -328,10 +324,6 @@ export async function POST(request: NextRequest) {
         });
         summary.totalCreated = 1;
       } catch (error) {
-        console.error(
-          `Failed to create invitation for ${candidateEmail}:`,
-          error
-        );
         results.push({
           email: candidateEmail,
           success: false,
@@ -355,7 +347,6 @@ export async function POST(request: NextRequest) {
         : `Invitation ${summary.totalEmailsSent > 0 ? 'sent' : 'created'} successfully`,
     });
   } catch (error) {
-    console.error('Error processing job profile invitations:', error);
     return NextResponse.json(
       { error: 'Failed to process invitations' },
       { status: 500 }

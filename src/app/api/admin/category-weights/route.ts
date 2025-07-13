@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CategoryWeightService } from '@/lib/categoryWeightService';
 import { CategoryWeights, validateCategoryWeights } from '@/types/categories';
+import { logger } from '@/lib/logger';
 
 /**
  * GET /api/admin/category-weights
@@ -15,7 +16,16 @@ export async function GET() {
       data: profiles,
     });
   } catch (error) {
-    console.error('Error fetching weight profiles:', error);
+    logger.error(
+      'Failed to fetch weight profiles',
+      {
+        operation: 'get_weight_profiles',
+        service: 'admin_category_weights',
+        method: 'GET',
+        path: '/api/admin/category-weights',
+      },
+      error as Error
+    );
     return NextResponse.json(
       {
         success: false,
@@ -71,7 +81,16 @@ export async function POST(request: NextRequest) {
       data: profile,
     });
   } catch (error) {
-    console.error('Error creating weight profile:', error);
+    logger.error(
+      'Failed to create weight profile',
+      {
+        operation: 'create_weight_profile',
+        service: 'admin_category_weights',
+        method: 'POST',
+        path: '/api/admin/category-weights',
+      },
+      error as Error
+    );
     return NextResponse.json(
       {
         success: false,
