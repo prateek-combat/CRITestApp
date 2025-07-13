@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient, Prisma, QuestionCategory } from '@prisma/client';
-import { enhancedEmailService as emailService } from '@/lib/enhancedEmailService';
-import { sendTestCompletionCandidateEmail } from '@/lib/email';
+import {
+  sendTestCompletionCandidateEmail,
+  sendTestCompletionAdminNotification,
+} from '@/lib/email';
 
 const prisma = new PrismaClient({
   log: ['query', 'info', 'warn', 'error'],
@@ -376,30 +378,27 @@ export async function POST(request: Request) {
           data: { status: 'COMPLETED' },
         });
 
-        // Send emails (async, don't wait for completion)
-        emailService
-          .sendTestCompletionNotification({
-            testId: firstTest.id,
-            testAttemptId: existingAttempt.id,
-            candidateId: existingAttempt.id,
-            candidateEmail:
-              jobProfileInvitation.candidateEmail || 'unknown@example.com',
-            candidateName:
-              jobProfileInvitation.candidateName || 'Unknown Candidate',
-            score: correctAnswers,
-            maxScore: totalQuestions,
-            completedAt: new Date(submissionTimeEpoch),
-            timeTaken: Math.floor(
-              (submissionTimeEpoch - existingAttempt.startedAt.getTime()) / 1000
-            ),
-            answers: submittedAnswersData,
-          })
-          .catch((error: any) => {
-            console.error(
-              'Failed to send test completion email notification to admins:',
-              error
-            );
-          });
+        // Send admin notification email (async, don't wait for completion)
+        sendTestCompletionAdminNotification({
+          testId: firstTest.id,
+          testAttemptId: existingAttempt.id,
+          candidateEmail:
+            jobProfileInvitation.candidateEmail || 'unknown@example.com',
+          candidateName:
+            jobProfileInvitation.candidateName || 'Unknown Candidate',
+          score: correctAnswers,
+          maxScore: totalQuestions,
+          completedAt: new Date(submissionTimeEpoch),
+          timeTaken: Math.floor(
+            (submissionTimeEpoch - existingAttempt.startedAt.getTime()) / 1000
+          ),
+          testTitle: firstTest.title,
+        }).catch((error: any) => {
+          console.error(
+            'Failed to send test completion email notification to admins:',
+            error
+          );
+        });
 
         sendTestCompletionCandidateEmail({
           candidateEmail:
@@ -627,29 +626,26 @@ export async function POST(request: Request) {
         data: { status: 'COMPLETED' },
       });
 
-      // Send admin email notification (async, don't wait for completion)
-      emailService
-        .sendTestCompletionNotification({
-          testId: invitation.test.id,
-          testAttemptId: existingAttempt.id,
-          candidateId: existingAttempt.id,
-          candidateEmail: invitation.candidateEmail || 'unknown@example.com',
-          candidateName: invitation.candidateName || 'Unknown Candidate',
-          score: correctAnswers,
-          maxScore: totalQuestions,
-          completedAt: new Date(submissionTimeEpoch),
-          timeTaken: Math.floor(
-            (submissionTimeEpoch - existingAttempt.startedAt.getTime()) / 1000
-          ),
-          answers: submittedAnswersData,
-        })
-        .catch((error: any) => {
-          console.error(
-            'Failed to send test completion email notification to admins:',
-            error
-          );
-          // Don't fail the test submission if email fails
-        });
+      // Send admin notification email (async, don't wait for completion)
+      sendTestCompletionAdminNotification({
+        testId: invitation.test.id,
+        testAttemptId: existingAttempt.id,
+        candidateEmail: invitation.candidateEmail || 'unknown@example.com',
+        candidateName: invitation.candidateName || 'Unknown Candidate',
+        score: correctAnswers,
+        maxScore: totalQuestions,
+        completedAt: new Date(submissionTimeEpoch),
+        timeTaken: Math.floor(
+          (submissionTimeEpoch - existingAttempt.startedAt.getTime()) / 1000
+        ),
+        testTitle: invitation.test.title,
+      }).catch((error: any) => {
+        console.error(
+          'Failed to send test completion email notification to admins:',
+          error
+        );
+        // Don't fail the test submission if email fails
+      });
 
       // Send candidate confirmation email (async, don't wait for completion)
       sendTestCompletionCandidateEmail({

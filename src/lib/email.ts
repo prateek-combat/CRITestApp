@@ -35,6 +35,18 @@ export interface JobProfileInvitationEmailData {
   companyName?: string;
 }
 
+export interface TestCompletionAdminNotificationData {
+  testId: string;
+  testAttemptId: string;
+  candidateEmail: string;
+  candidateName: string;
+  score: number;
+  maxScore: number;
+  completedAt: Date;
+  timeTaken: number;
+  testTitle?: string;
+}
+
 // Create Gmail transporter
 function createGmailTransporter() {
   if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
@@ -747,6 +759,291 @@ function generateJobProfileInvitationEmailHtml(
   `;
 }
 
+// Generate admin test completion notification email HTML template
+function generateTestCompletionAdminNotificationHtml(
+  data: TestCompletionAdminNotificationData
+): string {
+  const {
+    candidateEmail,
+    candidateName,
+    score,
+    maxScore,
+    completedAt,
+    timeTaken,
+    testTitle = 'Assessment',
+    testAttemptId,
+  } = data;
+
+  const percentage = Math.round((score / maxScore) * 100);
+  const timeFormatted = formatTime(timeTaken);
+
+  const completedDate = completedAt.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Test Completion Notification - ${testTitle}</title>
+      <style>
+        body {
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          line-height: 1.6;
+          margin: 0;
+          padding: 20px;
+          background: linear-gradient(135deg, #f8f9fa 0%, #e9f0e9 100%);
+        }
+        .container {
+          max-width: 700px;
+          margin: 0 auto;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+          overflow: hidden;
+        }
+        .header {
+          background: linear-gradient(135deg, #4A5D23 0%, #3e4e1d 100%);
+          color: white;
+          padding: 30px 20px;
+          text-align: center;
+        }
+        .header h1 {
+          margin: 0;
+          font-size: 28px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+        }
+        .header p {
+          margin: 10px 0 0 0;
+          font-size: 18px;
+          opacity: 0.9;
+        }
+        .content {
+          padding: 30px;
+        }
+        .candidate-info {
+          background: linear-gradient(135deg, #f0f4e8 0%, #d9e4c4 100%);
+          border-left: 5px solid #4A5D23;
+          border-radius: 10px;
+          padding: 25px;
+          margin: 25px 0;
+        }
+        .candidate-name {
+          font-size: 20px;
+          font-weight: 700;
+          color: #4A5D23;
+          margin-bottom: 15px;
+        }
+        .info-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 15px;
+          margin-top: 15px;
+        }
+        .info-item {
+          background: rgba(255,255,255,0.8);
+          padding: 15px;
+          border-radius: 8px;
+        }
+        .info-label {
+          font-weight: 600;
+          color: #4A5D23;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-bottom: 5px;
+        }
+        .info-value {
+          font-size: 16px;
+          color: #323f17;
+        }
+        .score-section {
+          text-align: center;
+          margin: 30px 0;
+          padding: 25px;
+          background: linear-gradient(135deg, ${percentage >= 80 ? '#f0fdf4' : percentage >= 60 ? '#fef7ec' : '#fef2f2'} 0%, ${percentage >= 80 ? '#dcfce7' : percentage >= 60 ? '#fed7aa' : '#fecaca'} 100%);
+          border-radius: 12px;
+          border-left: 5px solid ${percentage >= 80 ? '#10B981' : percentage >= 60 ? '#F5821F' : '#EF4444'};
+        }
+        .score-badge {
+          display: inline-block;
+          background: ${percentage >= 80 ? '#10B981' : percentage >= 60 ? '#F59E0B' : '#EF4444'};
+          color: white;
+          padding: 15px 25px;
+          border-radius: 30px;
+          font-size: 28px;
+          font-weight: bold;
+          margin: 10px 0;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .score-details {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin-top: 20px;
+        }
+        .score-item {
+          background: rgba(255,255,255,0.8);
+          padding: 15px;
+          border-radius: 8px;
+        }
+        .cta-section {
+          text-align: center;
+          margin: 30px 0;
+          padding: 25px;
+          background: linear-gradient(135deg, #4A5D23 0%, #3e4e1d 100%);
+          border-radius: 12px;
+        }
+        .cta-text {
+          color: white;
+          font-size: 16px;
+          margin-bottom: 20px;
+        }
+        .cta-button {
+          display: inline-block;
+          background: linear-gradient(135deg, #F5821F 0%, #e4751c 100%);
+          color: white;
+          padding: 15px 30px;
+          text-decoration: none;
+          border-radius: 8px;
+          font-weight: 700;
+          font-size: 16px;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 15px rgba(245, 130, 31, 0.3);
+        }
+        .cta-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(245, 130, 31, 0.4);
+        }
+        .footer {
+          margin-top: 40px;
+          padding: 25px;
+          background: #f8f9fa;
+          border-top: 3px solid #4A5D23;
+          text-align: center;
+        }
+        .footer-text {
+          color: #6b7280;
+          font-size: 14px;
+          margin: 8px 0;
+        }
+        .company-branding {
+          margin-top: 20px;
+          padding: 20px;
+          background: linear-gradient(135deg, #4A5D23 0%, #3e4e1d 100%);
+          border-radius: 10px;
+          color: white;
+          text-align: center;
+        }
+        .company-name {
+          font-size: 20px;
+          font-weight: 700;
+          color: #F5821F;
+          margin-bottom: 5px;
+        }
+        .company-tagline {
+          font-size: 14px;
+          opacity: 0.9;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>🎯 Test Completion Notification</h1>
+          <p>${testTitle}</p>
+        </div>
+        
+        <div class="content">
+          <div class="candidate-info">
+            <div class="candidate-name">📋 Candidate Information</div>
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">Candidate Name</div>
+                <div class="info-value">${candidateName}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Email Address</div>
+                <div class="info-value">${candidateEmail}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Completion Date</div>
+                <div class="info-value">${completedDate}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Time Taken</div>
+                <div class="info-value">${timeFormatted}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="score-section">
+            <h2 style="color: ${percentage >= 80 ? '#047857' : percentage >= 60 ? '#c25b16' : '#dc2626'}; margin: 0 0 20px 0;">Test Results</h2>
+            <div class="score-badge">${score}/${maxScore} (${percentage}%)</div>
+            <div class="score-details">
+              <div class="score-item">
+                <div class="info-label">Score</div>
+                <div class="info-value">${score} out of ${maxScore}</div>
+              </div>
+              <div class="score-item">
+                <div class="info-label">Percentage</div>
+                <div class="info-value">${percentage}%</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cta-section">
+            <div class="cta-text">
+              Assessment completed successfully. View detailed analytics in the admin dashboard.
+            </div>
+            <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/admin/analytics" class="cta-button">
+              View Admin Dashboard
+            </a>
+          </div>
+
+          <div class="company-branding">
+            <div class="company-name">Combat Robotics India</div>
+            <div class="company-tagline">Excellence in Technical Assessment</div>
+          </div>
+
+          <div class="footer">
+            <p class="footer-text">This is an automated notification from <strong>CRI Test Application</strong>.</p>
+            <p class="footer-text">Test Attempt ID: ${testAttemptId}</p>
+            <p class="footer-text">Generated on ${new Date().toLocaleString()}</p>
+          </div>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+// Helper function to format time
+function formatTime(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${remainingSeconds}s`;
+  } else if (minutes > 0) {
+    return `${minutes}m ${remainingSeconds}s`;
+  } else {
+    return `${remainingSeconds}s`;
+  }
+}
+
 // Generate reminder email HTML template
 // Generate candidate test completion confirmation email HTML template
 function generateTestCompletionCandidateEmailHtml(
@@ -1182,6 +1479,71 @@ Please complete this test as soon as possible.
         testTitle: data.testTitle,
         reminderType: data.reminderType,
         operation: 'send_reminder',
+      },
+      error as Error
+    );
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+// Send test completion admin notification email
+export async function sendTestCompletionAdminNotification(
+  data: TestCompletionAdminNotificationData
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  try {
+    const transporter = createGmailTransporter();
+
+    const percentage = Math.round((data.score / data.maxScore) * 100);
+    const subject = `Test Completion: ${data.testTitle || 'Assessment'} - ${data.candidateName} (${percentage}%)`;
+
+    const mailOptions = {
+      from: `Combat Robotics India <${process.env.GMAIL_USER}>`,
+      to: process.env.ADMIN_EMAIL || process.env.GMAIL_USER, // Fallback to sender email
+      subject,
+      html: generateTestCompletionAdminNotificationHtml(data),
+      text: `
+Test Completion Notification
+
+Candidate: ${data.candidateName}
+Email: ${data.candidateEmail}
+Test: ${data.testTitle || 'Assessment'}
+Score: ${data.score}/${data.maxScore} (${percentage}%)
+Time Taken: ${formatTime(data.timeTaken)}
+Completed: ${data.completedAt.toLocaleDateString()}
+
+Test Attempt ID: ${data.testAttemptId}
+
+This is an automated notification from CRI Test Application.
+      `.trim(),
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+
+    emailLogger.info('Test completion admin notification sent successfully', {
+      candidateEmail: data.candidateEmail,
+      candidateName: data.candidateName,
+      testId: data.testId,
+      score: data.score,
+      maxScore: data.maxScore,
+      operation: 'send_admin_notification',
+      messageId: result.messageId,
+    });
+
+    return {
+      success: true,
+      messageId: result.messageId,
+    };
+  } catch (error) {
+    emailLogger.error(
+      'Failed to send test completion admin notification',
+      {
+        candidateEmail: data.candidateEmail,
+        candidateName: data.candidateName,
+        testId: data.testId,
+        operation: 'send_admin_notification',
       },
       error as Error
     );
