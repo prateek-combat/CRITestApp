@@ -11,6 +11,7 @@ import {
   Briefcase,
   Users,
   Plus,
+  Trophy,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -189,9 +190,9 @@ export default function DashboardPage() {
                 icon={<Briefcase className="h-8 w-8 text-orange-500" />}
               />
               <QuickActionButton
-                href="/admin/analytics"
-                title="View Analytics"
-                icon={<BarChart2 className="h-8 w-8 text-green-500" />}
+                href="/admin/leaderboard"
+                title="Leaderboard"
+                icon={<Trophy className="h-8 w-8 text-green-500" />}
               />
               <QuickActionButton
                 href="/admin/users"
