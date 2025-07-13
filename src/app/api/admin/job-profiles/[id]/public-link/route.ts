@@ -4,8 +4,6 @@ import { authOptionsSimple } from '@/lib/auth-simple';
 import { nanoid } from 'nanoid';
 import { prisma } from '@/lib/prisma';
 
-
-
 // POST /api/admin/job-profiles/[id]/public-link - Create public links for all tests in a job profile
 export async function POST(
   request: NextRequest,
@@ -65,16 +63,17 @@ export async function POST(
     for (const testWeight of jobProfile.testWeights) {
       const test = testWeight.test;
 
-      // Check if a public link already exists for this test
+      // Check if a public link already exists for this specific job profile and test combination
       const existingLink = await prisma.publicTestLink.findFirst({
         where: {
           testId: test.id,
+          jobProfileId: jobProfileId,
           isActive: true,
         },
       });
 
       if (existingLink) {
-        // Return existing link
+        // Return existing link for this job profile
         createdLinks.push({
           id: existingLink.id,
           testId: existingLink.testId,
@@ -91,7 +90,7 @@ export async function POST(
           isExisting: true,
         });
       } else {
-        // Create new public link
+        // Create new public link - unique per job profile
         const linkToken = nanoid(12);
         const publicLink = await prisma.publicTestLink.create({
           data: {

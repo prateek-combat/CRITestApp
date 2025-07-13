@@ -245,13 +245,8 @@ export default function JobProfilesPage() {
   };
 
   const getPublicLinksForProfile = (profileId: string) => {
-    const profile = jobProfiles.find((p) => p.id === profileId);
-    if (!profile) return [];
-    const tests =
-      profile.testWeights?.map((tw) => tw.test) || profile.tests || [];
-    return publicLinks.filter((link) =>
-      tests.some((test) => test.title === link.testTitle)
-    );
+    // Filter public links by job profile ID to ensure each job profile has its own links
+    return publicLinks.filter((link: any) => link.jobProfileId === profileId);
   };
 
   const getTimeSlotsForProfile = (profileId: string) => {
@@ -721,6 +716,35 @@ export default function JobProfilesPage() {
     }
   };
 
+  const handleToggleLink = async (linkId: string) => {
+    try {
+      const response = await fetch(`/api/public-test-links/${linkId}/toggle`, {
+        method: 'PUT',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to toggle link status');
+      }
+
+      const result = await response.json();
+
+      await fetchPublicLinks();
+
+      // Force modal refresh to show updated links
+      setModalKey((prev) => prev + 1);
+
+      // Show success message
+      showSuccessNotification(
+        `Link ${result.isActive ? 'enabled' : 'disabled'} successfully!`
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Failed to toggle link status'
+      );
+    }
+  };
+
   // Form Reset Functions
   const resetForm = () => {
     setFormData({
@@ -929,6 +953,7 @@ export default function JobProfilesPage() {
           }}
           onDeleteLink={handleDeleteLink}
           onCopyLink={copyToClipboard}
+          onToggleLink={handleToggleLink}
           copiedLinkId={copiedLink}
         />
       )}
@@ -1148,7 +1173,7 @@ export default function JobProfilesPage() {
         confirmText={confirmationState.confirmText}
         cancelText={confirmationState.cancelText}
         onConfirm={confirmationState.onConfirm}
-        onCancel={hideConfirmation}
+        onClose={hideConfirmation}
       />
 
       {/* Success Notification */}
