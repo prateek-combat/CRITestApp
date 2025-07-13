@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { enhancedEmailService as emailService } from '@/lib/enhancedEmailService';
 import { sendTestCompletionCandidateEmail } from '@/lib/email';
 import {
   calculateTestScore,
@@ -174,36 +173,42 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         // Use a transaction to ensure atomicity with optimized settings
         let transactionSuccess = false;
         try {
-          await prisma.$transaction(async (tx) => {
-            // Delete existing answers for this attempt
-            await tx.publicSubmittedAnswer.deleteMany({
-              where: { attemptId },
-            });
-            
-            // Create new answers
-            await tx.publicSubmittedAnswer.createMany({
-              data: answerRecords,
-            });
-            
-            // Update attempt with detailed score
-            await tx.publicTestAttempt.update({
-              where: { id: attemptId },
-              data: {
-                rawScore: scoringResult.rawScore,
-                percentile: scoringResult.percentile,
-                categorySubScores: scoringResult.categorySubScores,
-                status: 'COMPLETED',
-                completedAt: new Date(),
-              },
-            });
-          }, {
-            maxWait: 15000, // Increased to 15 seconds
-            timeout: 45000, // Increased to 45 seconds
-          });
+          await prisma.$transaction(
+            async (tx) => {
+              // Delete existing answers for this attempt
+              await tx.publicSubmittedAnswer.deleteMany({
+                where: { attemptId },
+              });
+
+              // Create new answers
+              await tx.publicSubmittedAnswer.createMany({
+                data: answerRecords,
+              });
+
+              // Update attempt with detailed score
+              await tx.publicTestAttempt.update({
+                where: { id: attemptId },
+                data: {
+                  rawScore: scoringResult.rawScore,
+                  percentile: scoringResult.percentile,
+                  categorySubScores: scoringResult.categorySubScores,
+                  status: 'COMPLETED',
+                  completedAt: new Date(),
+                },
+              });
+            },
+            {
+              maxWait: 15000, // Increased to 15 seconds
+              timeout: 45000, // Increased to 45 seconds
+            }
+          );
           transactionSuccess = true;
         } catch (transactionError) {
-          console.error('Transaction failed, attempting fallback:', transactionError);
-          
+          console.error(
+            'Transaction failed, attempting fallback:',
+            transactionError
+          );
+
           // Fallback: At minimum, mark the attempt as completed
           try {
             await prisma.publicTestAttempt.update({
@@ -223,7 +228,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             throw fallbackError;
           }
         }
-        
+
         if (!transactionSuccess) {
           throw new Error('Failed to save test submission');
         }
@@ -233,39 +238,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           const totalQuestions = publicLink.test.questions.length;
           const submissionTimeEpoch = new Date().getTime();
 
-          emailService
-            .sendTestCompletionNotification({
+          // Email service disabled - admin notification skipped
+          console.log(
+            'Email service disabled - admin notification skipped for test completion',
+            {
               testId: publicLink.test.id,
-              testAttemptId: attemptId,
-              candidateId: attemptId,
+              attemptId,
               candidateEmail:
                 existingAttempt.candidateEmail || 'unknown@example.com',
-              candidateName:
-                existingAttempt.candidateName || 'Unknown Candidate',
-              score: scoringResult.rawScore,
-              maxScore: totalQuestions,
-              completedAt: new Date(submissionTimeEpoch),
-              timeTaken: Math.floor(
-                (submissionTimeEpoch - existingAttempt.startedAt.getTime()) /
-                  1000
-              ),
-              answers: answerRecords.map((record) => ({
-                questionId: record.questionId,
-                selectedAnswerIndex: record.selectedAnswerIndex,
-                isCorrect:
-                  publicLink.test.questions.find(
-                    (q) => q.id === record.questionId
-                  )?.correctAnswerIndex === record.selectedAnswerIndex,
-                timeTakenSeconds: record.timeTakenSeconds,
-              })),
-            })
-            .catch((error) => {
-              console.error(
-                'Failed to send public test completion email notification to admins:',
-                error
-              );
-              // Don't fail the test submission if email fails
-            });
+            }
+          );
 
           // Send candidate confirmation email (async, don't wait for completion)
           sendTestCompletionCandidateEmail({
@@ -295,7 +277,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     console.error('Error updating public test attempt:', error);
-    
+
     // Handle specific Prisma errors
     if (error instanceof Error) {
       if (error.message.includes('P2028')) {
@@ -311,7 +293,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         );
       }
     }
-    
+
     return NextResponse.json(
       { error: 'Failed to update test attempt' },
       { status: 500 }
