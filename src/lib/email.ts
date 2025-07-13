@@ -40,34 +40,43 @@ export function validateEmail(email: string): boolean {
 }
 
 /**
- * Parse multiple emails from text
+ * Validate array of email addresses
  */
-export function parseMultipleEmails(emailText: string): {
+export function validateEmailAddresses(emails: string[]): {
   valid: string[];
   invalid: string[];
 } {
-  const emails = emailText
-    .split(/[,;\n\r\t\s]+/)
-    .map((email) => email.trim())
-    .filter((email) => email.length > 0);
-
   const valid: string[] = [];
   const invalid: string[] = [];
 
-  for (const email of emails) {
+  emails.forEach((email) => {
     if (validateEmail(email)) {
-      valid.push(email);
+      valid.push(email.trim());
     } else {
       invalid.push(email);
     }
-  }
+  });
 
   return { valid, invalid };
 }
 
 /**
+ * Parse multiple emails from a text input (stub implementation)
+ */
+export function parseMultipleEmails(emailText: string): string[] {
+  if (!emailText || typeof emailText !== 'string') {
+    return [];
+  }
+
+  // Split by common delimiters and clean up
+  return emailText
+    .split(/[,;\n\r\t]+/)
+    .map((email) => email.trim())
+    .filter((email) => email.length > 0);
+}
+
+/**
  * Send invitation email (stub implementation)
- * Always returns success but logs that email service is disabled
  */
 export async function sendInvitationEmail(
   data: InvitationEmailData
@@ -89,7 +98,6 @@ export async function sendInvitationEmail(
 
 /**
  * Send bulk invitation emails (stub implementation)
- * Always returns success but logs that email service is disabled
  */
 export async function sendBulkInvitations(
   invitations: InvitationEmailData[]
@@ -152,6 +160,62 @@ export async function sendTestCompletionCandidateEmail(data: {
       candidateName: data.candidateName,
       testTitle: data.testTitle,
       operation: 'send_test_completion_candidate_email_stub',
+    }
+  );
+
+  return {
+    success: true,
+    messageId: 'stub-message-id',
+  };
+}
+
+/**
+ * Send job profile invitation email (stub implementation)
+ */
+export async function sendJobProfileInvitationEmail(data: {
+  candidateEmail: string;
+  candidateName: string;
+  jobProfileTitle: string;
+  invitationLink: string;
+  expiresAt: Date;
+  customMessage?: string;
+}): Promise<EmailResult> {
+  logger.info('Email service disabled - job profile invitation not sent', {
+    email: data.candidateEmail,
+    candidateName: data.candidateName,
+    jobProfileTitle: data.jobProfileTitle,
+    operation: 'send_job_profile_invitation_email_stub',
+  });
+
+  return {
+    success: true,
+    messageId: 'stub-message-id',
+  };
+}
+
+/**
+ * Send test completion admin notification (stub implementation)
+ */
+export async function sendTestCompletionAdminNotification(data: {
+  testId: string;
+  testAttemptId: string;
+  candidateId: string;
+  candidateEmail: string;
+  candidateName: string;
+  score: number;
+  maxScore: number;
+  completedAt: Date;
+  timeTaken: number;
+  answers: any[];
+}): Promise<EmailResult> {
+  logger.info(
+    'Email service disabled - admin notification not sent for test completion',
+    {
+      testId: data.testId,
+      candidateEmail: data.candidateEmail,
+      candidateName: data.candidateName,
+      score: data.score,
+      operation: 'send_test_completion_admin_notification_stub',
     }
   );
 
