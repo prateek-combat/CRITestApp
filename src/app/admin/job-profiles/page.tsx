@@ -60,6 +60,7 @@ interface PublicLink {
   expiresAt: string | null;
   usedCount: number;
   maxUses: number | null;
+  linkToken?: string;
 }
 
 interface TimeSlot {
@@ -718,9 +719,18 @@ export default function JobProfilesPage() {
 
   const handleToggleLink = async (linkId: string) => {
     try {
-      const response = await fetch(`/api/public-test-links/${linkId}/toggle`, {
-        method: 'PUT',
-      });
+      // Find the link to get its token
+      const link = publicLinks.find((l) => l.id === linkId);
+      if (!link) {
+        throw new Error('Link not found');
+      }
+
+      const response = await fetch(
+        `/api/public-test-links/${link.linkToken}/toggle`,
+        {
+          method: 'PUT',
+        }
+      );
 
       if (!response.ok) {
         const error = await response.json();
