@@ -187,8 +187,8 @@ export default function AdminDashboard() {
                   icon={<Briefcase className="h-8 w-8 text-orange-500" />}
                 />
                 <QuickActionButton
-                  href="/admin/analytics"
-                  title="View Analytics"
+                  href="/admin/leaderboard"
+                  title="View Leaderboard"
                   icon={<BarChart2 className="h-8 w-8 text-green-500" />}
                 />
                 <QuickActionButton
