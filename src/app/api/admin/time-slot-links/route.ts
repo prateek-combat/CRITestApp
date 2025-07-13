@@ -136,7 +136,14 @@ export async function DELETE(request: NextRequest) {
       // Delete a specific link
       const link = await prisma.publicTestLink.findUnique({
         where: { id: linkId },
-        select: { timeSlotId: true },
+        select: {
+          timeSlotId: true,
+          _count: {
+            select: {
+              attempts: true,
+            },
+          },
+        },
       });
 
       if (!link) {
@@ -160,19 +167,39 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({
         message: 'Time-restricted link deleted successfully',
         deletedLinkId: linkId,
+        attemptCount: link._count.attempts,
+        note:
+          link._count.attempts > 0
+            ? `${link._count.attempts} test attempts were preserved in the database with their publicLinkId set to NULL`
+            : 'No test attempts were associated with this link',
       });
     } else if (timeSlotId) {
-      // Delete all links for a specific time slot
+      // Delete all links for a specific time slot that have no attempts
       deleteResult = await prisma.publicTestLink.deleteMany({
         where: {
           timeSlotId: timeSlotId,
+          attempts: {
+            none: {},
+          },
         },
       });
 
+      // Count total links and links with attempts
+      const totalLinks = await prisma.publicTestLink.count({
+        where: { timeSlotId: timeSlotId },
+      });
+
+      const linksWithAttempts = totalLinks - deleteResult.count;
+
       return NextResponse.json({
-        message: `Deleted ${deleteResult.count} time-restricted links for time slot`,
+        message: `Deleted ${deleteResult.count} time-restricted links without attempts`,
         deletedCount: deleteResult.count,
+        preservedCount: linksWithAttempts,
         timeSlotId: timeSlotId,
+        note:
+          linksWithAttempts > 0
+            ? `${linksWithAttempts} links with test attempts were preserved`
+            : 'All links were deleted successfully',
       });
     }
 

@@ -16,7 +16,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import LinkManagementSection from './LinkManagementSection';
-import TimeSlotCalendar from './TimeSlotCalendar';
+import TimeSlotsList from './TimeSlotsList';
 
 interface Position {
   id: string;
@@ -357,11 +357,41 @@ export default function JobProfileDetailsModal({
               )}
 
               {activeTab === 'calendar' && (
-                <TimeSlotCalendar
+                <TimeSlotsList
                   timeSlots={profileTimeSlots}
                   onCreateTimeSlot={() => onCreateTimeSlot(profile)}
-                  onEditTimeSlot={() => {}}
-                  onDeleteTimeSlot={() => {}}
+                  onDeleteTimeSlot={async (timeSlotId) => {
+                    if (
+                      window.confirm(
+                        'Are you sure you want to delete this time slot? This will also delete all associated public links.'
+                      )
+                    ) {
+                      try {
+                        const response = await fetch(
+                          `/api/admin/time-slots?timeSlotId=${timeSlotId}`,
+                          {
+                            method: 'DELETE',
+                          }
+                        );
+
+                        if (!response.ok) {
+                          const error = await response.json();
+                          throw new Error(
+                            error.error || 'Failed to delete time slot'
+                          );
+                        }
+
+                        // Refresh the page to show updated data
+                        window.location.reload();
+                      } catch (error) {
+                        alert(
+                          error instanceof Error
+                            ? error.message
+                            : 'Failed to delete time slot'
+                        );
+                      }
+                    }
+                  }}
                   onGenerateLink={onGenerateTimeSlotLink}
                 />
               )}

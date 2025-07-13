@@ -195,12 +195,37 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
 
+    // Check if the public link has any associated attempts
+    const publicLink = await prisma.publicTestLink.findUnique({
+      where: { id },
+      include: {
+        _count: {
+          select: {
+            attempts: true,
+          },
+        },
+      },
+    });
+
+    if (!publicLink) {
+      return NextResponse.json(
+        { error: 'Public test link not found' },
+        { status: 404 }
+      );
+    }
+
+    // Delete the link - with SET NULL, attempts will be preserved but their publicLinkId will become NULL
     await prisma.publicTestLink.delete({
       where: { id },
     });
 
     return NextResponse.json({
       message: 'Public test link deleted successfully',
+      attemptCount: publicLink._count.attempts,
+      note:
+        publicLink._count.attempts > 0
+          ? `${publicLink._count.attempts} test attempts were preserved in the database with their publicLinkId set to NULL`
+          : 'No test attempts were associated with this link',
     });
   } catch (error) {
     logger.error(
