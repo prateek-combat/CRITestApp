@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 interface RouteParams {
-  params: Promise<{ linkId: string }>;
+  params: Promise<{ linkToken: string }>;
 }
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
@@ -17,12 +17,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { linkId } = await params;
+    const { linkToken } = await params;
 
-    // Get the current status
+    // Get the current status - we need to find by linkToken first
     const publicLink = await prisma.publicTestLink.findUnique({
-      where: { id: linkId },
-      select: { isActive: true },
+      where: { linkToken: linkToken },
+      select: { id: true, isActive: true },
     });
 
     if (!publicLink) {
@@ -34,7 +34,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // Toggle the status
     const updatedLink = await prisma.publicTestLink.update({
-      where: { id: linkId },
+      where: { id: publicLink.id },
       data: { isActive: !publicLink.isActive },
       include: {
         test: {
@@ -49,7 +49,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     logger.info(`Public link ${publicLink.isActive ? 'disabled' : 'enabled'}`, {
       operation: 'toggle_public_link',
       service: 'public_tests',
-      linkId: linkId,
+      linkId: publicLink.id,
       newStatus: updatedLink.isActive,
       userId: session.user.id,
       method: 'PUT',
