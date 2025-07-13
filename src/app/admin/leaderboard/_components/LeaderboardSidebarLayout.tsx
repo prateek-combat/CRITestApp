@@ -177,7 +177,7 @@ export default function LeaderboardSidebarLayout({
   const router = useRouter();
 
   // NEW: State for right sidebar visibility
-  const [isWeightsSidebarOpen, setIsWeightsSidebarOpen] = useState(true);
+  const [isWeightsSidebarOpen, setIsWeightsSidebarOpen] = useState(false);
   const [isExportingBulkPdf, setIsExportingBulkPdf] = useState(false);
 
   // Fetch weight profiles
@@ -681,13 +681,27 @@ export default function LeaderboardSidebarLayout({
                     <div className="text-lg font-bold text-brand-600">
                       {data.stats.totalCandidates || 0}
                     </div>
-                    <div className="text-xs text-gray-500">candidates</div>
+                    <div className="text-xs text-gray-500">
+                      total candidates
+                    </div>
                   </div>
                   <div className="text-right">
                     <div className="text-lg font-bold text-secondary-600">
-                      {data.stats.avgScore?.toFixed(1) || '0.0'}
+                      {data.stats.avgScore?.toFixed(1) || '0.0'}%
                     </div>
-                    <div className="text-xs text-gray-500">avg score</div>
+                    <div className="text-xs text-gray-500">average score</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-emerald-600">
+                      {data.stats.topScore?.toFixed(1) || '0.0'}%
+                    </div>
+                    <div className="text-xs text-gray-500">top score</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-lg font-bold text-orange-600">
+                      {data.stats.thisMonth || 0}
+                    </div>
+                    <div className="text-xs text-gray-500">this month</div>
                   </div>
                   <button
                     onClick={handleBulkExportPdf}
