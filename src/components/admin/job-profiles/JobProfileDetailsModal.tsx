@@ -103,6 +103,7 @@ interface JobProfileDetailsModalProps {
   onCreateTimeSlot: (profile: JobProfile) => void;
   onDeleteLink: (linkId: string, type: 'public' | 'timeSlot') => void;
   onCopyLink: (url: string, linkId: string) => void;
+  onToggleLink?: (linkId: string) => void;
   copiedLinkId: string | null;
 }
 
@@ -119,6 +120,7 @@ export default function JobProfileDetailsModal({
   onCreateTimeSlot,
   onDeleteLink,
   onCopyLink,
+  onToggleLink,
   copiedLinkId,
 }: JobProfileDetailsModalProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'links' | 'calendar'>(
@@ -134,7 +136,7 @@ export default function JobProfileDetailsModal({
   const profileTimeSlots = timeSlots;
 
   const completionRate =
-    profile._count.invitations > 0
+    profile._count.invitations > 0 && profile._count.completedInvitations
       ? Math.round(
           (profile._count.completedInvitations / profile._count.invitations) *
             100
@@ -349,6 +351,7 @@ export default function JobProfileDetailsModal({
                   onGenerateTimeSlotLink={onGenerateTimeSlotLink}
                   onDeleteLink={onDeleteLink}
                   onCopyLink={onCopyLink}
+                  onToggleLink={onToggleLink}
                   copiedLinkId={copiedLinkId}
                 />
               )}

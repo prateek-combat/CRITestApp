@@ -49,6 +49,7 @@ interface LinkManagementSectionProps {
   onGenerateTimeSlotLink: (timeSlotId: string) => void;
   onDeleteLink: (linkId: string, type: 'public' | 'timeSlot') => void;
   onCopyLink: (url: string, linkId: string) => void;
+  onToggleLink?: (linkId: string) => void;
   copiedLinkId: string | null;
 }
 
@@ -61,6 +62,7 @@ export default function LinkManagementSection({
   onGenerateTimeSlotLink,
   onDeleteLink,
   onCopyLink,
+  onToggleLink,
   copiedLinkId,
 }: LinkManagementSectionProps) {
   const [activeTab, setActiveTab] = useState<'public' | 'timeSlot'>('public');
@@ -143,13 +145,32 @@ export default function LinkManagementSection({
               </>
             )}
           </div>
-          <button
-            onClick={() => onDeleteLink(link.id, type)}
-            className="rounded p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
-            title="Delete link"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1">
+            {isPublic && onToggleLink && (
+              <button
+                onClick={() => onToggleLink(link.id)}
+                className={`rounded p-1.5 transition-colors ${
+                  publicLink.isActive
+                    ? 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+                    : 'text-gray-400 hover:bg-green-50 hover:text-green-600'
+                }`}
+                title={publicLink.isActive ? 'Disable link' : 'Enable link'}
+              >
+                {publicLink.isActive ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            )}
+            <button
+              onClick={() => onDeleteLink(link.id, type)}
+              className="rounded p-1.5 text-gray-400 transition-colors hover:bg-red-50 hover:text-red-600"
+              title="Delete link"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         <div className="space-y-2">
