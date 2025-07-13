@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptionsSimple } from '@/lib/auth-simple';
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 
 // GET /api/admin/time-slots - Get all time slots for a job profile
 export async function GET(request: NextRequest) {
@@ -73,7 +74,19 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(transformedTimeSlots);
   } catch (error) {
-    console.error('Error fetching time slots:', error);
+    const { searchParams } = new URL(request.url);
+    const jobProfileId = searchParams.get('jobProfileId');
+
+    logger.error(
+      'Failed to fetch time slots',
+      {
+        operation: 'fetch_time_slots',
+        jobProfileId: jobProfileId || 'all',
+        method: 'GET',
+        path: '/api/admin/time-slots',
+      },
+      error as Error
+    );
 
     // Check if it's a database connection error
     if (
@@ -258,7 +271,15 @@ export async function POST(request: NextRequest) {
       message: `Time slot created with ${createdLinks.length} assessment links`,
     });
   } catch (error) {
-    console.error('Error creating time slot:', error);
+    logger.error(
+      'Failed to create time slot',
+      {
+        operation: 'create_time_slot',
+        method: 'POST',
+        path: '/api/admin/time-slots',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to create time slot' },
       { status: 500 }
@@ -342,7 +363,19 @@ export async function DELETE(request: NextRequest) {
       deletedLinksCount: timeSlot._count.publicTestLinks,
     });
   } catch (error) {
-    console.error('Error deleting time slot:', error);
+    const { searchParams } = new URL(request.url);
+    const timeSlotId = searchParams.get('timeSlotId');
+
+    logger.error(
+      'Failed to delete time slot',
+      {
+        operation: 'delete_time_slot',
+        timeSlotId: timeSlotId || 'unknown',
+        method: 'DELETE',
+        path: '/api/admin/time-slots',
+      },
+      error as Error
+    );
 
     // Check if it's a database connection error
     if (

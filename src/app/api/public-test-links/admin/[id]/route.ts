@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -85,7 +86,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       })),
     });
   } catch (error) {
-    console.error('Error fetching public test link:', error);
+    logger.error(
+      'Failed to fetch public test link',
+      {
+        operation: 'get_public_test_link',
+        service: 'admin',
+        method: 'GET',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to fetch public test link' },
       { status: 500 }
@@ -158,7 +167,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       publicUrl,
     });
   } catch (error) {
-    console.error('Error updating public test link:', error);
+    logger.error(
+      'Failed to update public test link',
+      {
+        operation: 'update_public_test_link',
+        service: 'admin',
+        method: 'PUT',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to update public test link' },
       { status: 500 }
@@ -186,7 +203,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       message: 'Public test link deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting public test link:', error);
+    logger.error(
+      'Failed to delete public test link',
+      {
+        operation: 'delete_public_test_link',
+        service: 'admin',
+        method: 'DELETE',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to delete public test link' },
       { status: 500 }

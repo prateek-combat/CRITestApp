@@ -10,8 +10,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    console.log('Testing login for:', email);
-
     // Find user
     const user = await prisma.user.findUnique({
       where: { email },
@@ -43,7 +41,6 @@ export async function POST(request: Request) {
       environment: process.env.NODE_ENV,
     });
   } catch (error) {
-    console.error('Test login error:', error);
     return NextResponse.json(
       {
         success: false,

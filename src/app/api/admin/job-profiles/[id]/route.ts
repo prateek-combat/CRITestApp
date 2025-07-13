@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptionsSimple } from '@/lib/auth-simple';
+import { logger } from '@/lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -38,7 +39,16 @@ export async function GET(
 
     return NextResponse.json(jobProfile);
   } catch (error) {
-    console.error('Error fetching job profile:', error);
+    logger.error(
+      'Failed to fetch job profile',
+      {
+        operation: 'fetch_job_profile',
+        profileId: params.id,
+        method: 'GET',
+        path: '/api/admin/job-profiles/[id]',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to fetch job profile' },
       { status: 500 }
@@ -117,7 +127,16 @@ export async function PUT(
 
     return NextResponse.json(jobProfile);
   } catch (error) {
-    console.error('Error updating job profile:', error);
+    logger.error(
+      'Failed to update job profile',
+      {
+        operation: 'update_job_profile',
+        profileId: params.id,
+        method: 'PUT',
+        path: '/api/admin/job-profiles/[id]',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to update job profile' },
       { status: 500 }
@@ -161,7 +180,16 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Job profile deleted successfully' });
   } catch (error) {
-    console.error('Error deleting job profile:', error);
+    logger.error(
+      'Failed to delete job profile',
+      {
+        operation: 'delete_job_profile',
+        profileId: params.id,
+        method: 'DELETE',
+        path: '/api/admin/job-profiles/[id]',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to delete job profile' },
       { status: 500 }

@@ -2,8 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { apiCache } from '@/lib/cache';
 import { prisma } from '@/lib/prisma';
-
-
+import { logger } from '@/lib/logger';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -72,7 +71,17 @@ export async function GET(request: Request, { params }: RouteParams) {
     }
     return NextResponse.json(test);
   } catch (error) {
-    console.error(`[API /api/tests/${id} GET] Failed to fetch test:`, error);
+    logger.error(
+      'Failed to fetch test',
+      {
+        operation: 'get_test',
+        service: 'tests',
+        testId: id,
+        method: 'GET',
+        path: `/api/tests/${id}`,
+      },
+      error as Error
+    );
     return NextResponse.json(
       { message: 'Failed to fetch test', error: String(error) },
       { status: 500 }
@@ -136,7 +145,17 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
     return NextResponse.json(updatedTest);
   } catch (error) {
-    console.error(`[API /api/tests/${id} PATCH] Failed to update test:`, error);
+    logger.error(
+      'Failed to update test',
+      {
+        operation: 'update_test',
+        service: 'tests',
+        testId: id,
+        method: 'PATCH',
+        path: `/api/tests/${id}`,
+      },
+      error as Error
+    );
     return NextResponse.json(
       { message: 'Failed to update test', error: String(error) },
       { status: 500 }
@@ -232,9 +251,16 @@ export async function DELETE(request: Request, { params }: RouteParams) {
       },
     });
   } catch (error) {
-    console.error(
-      `[API /api/tests/${id} DELETE] Failed to delete test:`,
-      error
+    logger.error(
+      'Failed to delete test',
+      {
+        operation: 'delete_test',
+        service: 'tests',
+        testId: id,
+        method: 'DELETE',
+        path: `/api/tests/${id}`,
+      },
+      error as Error
     );
     return NextResponse.json(
       { message: 'Failed to delete test', error: String(error) },

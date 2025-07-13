@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 
 /**
  * @swagger
@@ -104,7 +105,15 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(archivedTests);
   } catch (error) {
-    console.error('Error fetching archived tests:', error);
+    logger.error(
+      'Failed to fetch archived tests',
+      {
+        operation: 'get_archived_tests',
+        service: 'tests',
+        method: 'GET',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to fetch archived tests' },
       { status: 500 }

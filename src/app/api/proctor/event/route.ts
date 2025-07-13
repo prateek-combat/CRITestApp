@@ -68,7 +68,6 @@ export async function POST(request: NextRequest) {
       eventsStored: events.length,
     });
   } catch (error) {
-    console.error('Error storing proctor events:', error);
     return NextResponse.json(
       { error: 'Failed to store proctor events' },
       { status: 500 }

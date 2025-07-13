@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 
 interface RouteParams {
   params: Promise<{ token: string }>;
@@ -28,7 +29,16 @@ function getCurrentTimeInTimezone(timezone: string): Date {
     // Parse the formatted time back to a Date object
     return new Date(timeInTZ);
   } catch (error) {
-    console.error('Error getting current time in timezone:', error);
+    logger.error(
+      'Failed to get current time in timezone',
+      {
+        operation: 'timezone_conversion',
+        timezone,
+        method: 'GET',
+        path: '/api/public-test/[token]',
+      },
+      error as Error
+    );
     return new Date(); // fallback to current time
   }
 }
@@ -58,7 +68,16 @@ function interpretDateTimeInTimezone(
 
     return new Date(timeInTZ);
   } catch (error) {
-    console.error('Error interpreting datetime in timezone:', error);
+    logger.error(
+      'Failed to interpret datetime in timezone',
+      {
+        operation: 'timezone_interpretation',
+        timezone,
+        method: 'GET',
+        path: '/api/public-test/[token]',
+      },
+      error as Error
+    );
     return storedDateTime; // fallback to original datetime
   }
 }
@@ -68,7 +87,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   try {
     const { token } = await params;
-    console.log(`[PUBLIC-GET] Fetching public link for token: ${token}`);
+    logger.info('Fetching public test link', {
+      operation: 'fetch_public_link',
+      token,
+      method: 'GET',
+      path: '/api/public-test/[token]',
+    });
 
     const publicLink = await prisma.publicTestLink.findUnique({
       where: {
@@ -105,16 +129,32 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         },
       },
     });
-    console.log(`[PUBLIC-GET] Database query completed for token: ${token}`);
+    logger.debug('Database query completed for public link', {
+      operation: 'db_query_complete',
+      token,
+      method: 'GET',
+      path: '/api/public-test/[token]',
+    });
 
     if (!publicLink) {
-      console.log(`[PUBLIC-GET] Link not found for token: ${token}`);
+      logger.warn('Public test link not found', {
+        operation: 'link_not_found',
+        token,
+        method: 'GET',
+        path: '/api/public-test/[token]',
+      });
       return NextResponse.json({ error: 'Invalid test link' }, { status: 404 });
     }
 
     // Check if link is active
     if (!publicLink.isActive) {
-      console.log(`[PUBLIC-GET] Link inactive for token: ${token}`);
+      logger.warn('Public test link is inactive', {
+        operation: 'link_inactive',
+        token,
+        linkId: publicLink.id,
+        method: 'GET',
+        path: '/api/public-test/[token]',
+      });
       return NextResponse.json(
         { error: 'This test link has been deactivated' },
         { status: 403 }
@@ -164,8 +204,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         timeSlotTimezone
       );
 
-      // Debug logging to help identify issues
-      console.log('Timezone validation:', {
+      // Debug logging to help identify timezone issues
+      logger.debug('Validating time slot timezone constraints', {
+        operation: 'timezone_validation',
+        token,
+        timeSlotId: publicLink.timeSlot.id,
         timezone: timeSlotTimezone,
         currentTime: now.toISOString(),
         startTime: startTime.toISOString(),
@@ -173,6 +216,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         currentTimeInTZ: currentTimeInTZ.toISOString(),
         startTimeInTZ: startTimeInTZ.toISOString(),
         endTimeInTZ: endTimeInTZ.toISOString(),
+        method: 'GET',
+        path: '/api/public-test/[token]',
       });
 
       if (currentTimeInTZ < startTimeInTZ) {
@@ -228,9 +273,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    console.log(
-      `[PUBLIC-GET] Returning successful response for token: ${token}`
-    );
+    logger.info('Public test link validation successful', {
+      operation: 'link_validation_success',
+      token,
+      testId: publicLink.testId,
+      testTitle: publicLink.test.title,
+      isTimeRestricted: publicLink.isTimeRestricted,
+      method: 'GET',
+      path: '/api/public-test/[token]',
+    });
     return NextResponse.json({
       id: publicLink.id,
       testId: publicLink.testId,
@@ -257,7 +308,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`[PUBLIC-GET] Error after ${duration}ms:`, error);
+    logger.error(
+      'Failed to process public test link request',
+      {
+        operation: 'process_public_link',
+        duration,
+        method: 'GET',
+        path: '/api/public-test/[token]',
+      },
+      error as Error
+    );
 
     // Provide more specific error messages
     const errorMessage = error instanceof Error ? error.message : String(error);

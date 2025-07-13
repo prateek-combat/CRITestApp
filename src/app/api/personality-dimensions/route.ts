@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 // Validation schemas
 const createPersonalityDimensionSchema = z.object({
@@ -78,7 +79,16 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(formattedDimensions);
   } catch (error) {
-    console.error('Error fetching personality dimensions:', error);
+    logger.error(
+      'Failed to fetch personality dimensions',
+      {
+        operation: 'get_personality_dimensions',
+        service: 'personality',
+        method: 'GET',
+        path: '/api/personality-dimensions',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
@@ -205,7 +215,16 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating personality dimension:', error);
+    logger.error(
+      'Failed to create personality dimension',
+      {
+        operation: 'create_personality_dimension',
+        service: 'personality',
+        method: 'POST',
+        path: '/api/personality-dimensions',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

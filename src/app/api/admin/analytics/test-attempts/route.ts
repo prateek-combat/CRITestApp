@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { TestAttemptStatus } from '@prisma/client';
 import { withCache, apiCache } from '@/lib/cache';
+import { logger } from '@/lib/logger';
 
 interface TestAttemptAnalytics {
   id: string;
@@ -57,7 +58,12 @@ interface TestAttemptAnalytics {
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('[API /admin/analytics/test-attempts] Function start.');
+    logger.info('Starting analytics test attempts request', {
+      operation: 'get_analytics_test_attempts',
+      service: 'analytics',
+      method: 'GET',
+      path: '/api/admin/analytics/test-attempts',
+    });
     const session = await auth();
     if (
       !session?.user ||
@@ -78,9 +84,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(cachedResult);
     }
 
-    console.log(
-      '[API /admin/analytics/test-attempts] Attempting to query database.'
-    );
+    logger.info('Querying database for test attempts analytics', {
+      operation: 'query_test_attempts',
+      service: 'analytics',
+      invitationId: invitationId || 'none',
+      cacheKey,
+    });
     const testAttempts = await prisma.testAttempt.findMany({
       where: {
         status: {
@@ -200,23 +209,25 @@ export async function GET(request: NextRequest) {
     ];
 
     apiCache.set(cacheKey, combinedData, 180);
-    console.log(
-      '[API /admin/analytics/test-attempts] Successfully processed data. Sending response.'
-    );
-    console.log(
-      '[API /admin/analytics/test-attempts] Sample data with effectiveCompletedAt:',
-      combinedData.slice(0, 3).map((d) => ({
-        id: d.id,
-        completedAt: d.completedAt,
-        startedAt: d.startedAt,
-        effectiveCompletedAt: d.effectiveCompletedAt,
-      }))
-    );
+    logger.info('Successfully processed analytics data', {
+      operation: 'process_analytics_data',
+      service: 'analytics',
+      totalRecords: combinedData.length,
+      regularAttempts: testAttempts.length,
+      publicAttempts: publicTestAttempts.length,
+      cacheExpiry: 180,
+    });
     return NextResponse.json(combinedData);
   } catch (error) {
-    console.error(
-      '[API /admin/analytics/test-attempts] CRITICAL ERROR:',
-      error
+    logger.error(
+      'Critical error in analytics test attempts',
+      {
+        operation: 'get_analytics_test_attempts',
+        service: 'analytics',
+        method: 'GET',
+        path: '/api/admin/analytics/test-attempts',
+      },
+      error as Error
     );
     return NextResponse.json(
       {

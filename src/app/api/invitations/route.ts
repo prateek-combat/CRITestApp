@@ -8,8 +8,7 @@ import {
 } from '@/lib/email';
 import { APP_URL } from '@/lib/constants';
 import { prisma } from '@/lib/prisma';
-
-
+import { logger } from '@/lib/logger';
 
 /**
  * @swagger
@@ -68,7 +67,16 @@ export async function GET() {
 
     return NextResponse.json(formattedInvitations);
   } catch (error) {
-    console.error('Error fetching invitations:', error);
+    logger.error(
+      'Failed to fetch invitations',
+      {
+        operation: 'get_invitations',
+        service: 'invitations',
+        method: 'GET',
+        path: '/api/invitations',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to fetch invitations' },
       { status: 500 }
@@ -113,7 +121,16 @@ export async function POST(request: NextRequest) {
       return await handleSingleInvitation(body);
     }
   } catch (error) {
-    console.error('Error processing invitation request:', error);
+    logger.error(
+      'Failed to process invitation request',
+      {
+        operation: 'process_invitation_request',
+        service: 'invitations',
+        method: 'POST',
+        path: '/api/invitations',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to process invitation request' },
       { status: 500 }

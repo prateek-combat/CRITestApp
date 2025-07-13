@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 
 interface RouteParams {
   params: Promise<{ linkToken: string }>;
@@ -98,7 +99,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       },
     });
   } catch (error) {
-    console.error('Error checking email for public test:', error);
+    logger.error(
+      'Failed to check email for public test',
+      {
+        operation: 'check_email',
+        service: 'public_tests',
+        method: 'POST',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to check email status' },
       { status: 500 }

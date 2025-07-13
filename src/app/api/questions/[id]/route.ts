@@ -3,6 +3,7 @@ import { PrismaClient, QuestionCategory } from '@prisma/client';
 import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { auth } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 
 const prisma = new PrismaClient({
   log: ['query', 'info', 'warn', 'error'], // Optional: configure logging
@@ -54,9 +55,16 @@ export async function GET(request: Request, { params }: RouteParams) {
     }
     return NextResponse.json(question);
   } catch (error) {
-    console.error(
-      `[API /api/questions/${id} GET] Failed to fetch question:`,
-      error
+    logger.error(
+      'Failed to fetch question',
+      {
+        operation: 'get_question',
+        service: 'questions',
+        questionId: id,
+        method: 'GET',
+        path: `/api/questions/${id}`,
+      },
+      error as Error
     );
     return NextResponse.json(
       { message: 'Failed to fetch question', error: String(error) },
@@ -179,7 +187,16 @@ export async function PUT(
 
     return NextResponse.json(updatedQuestion);
   } catch (error) {
-    console.error('Error updating question:', error);
+    logger.error(
+      'Failed to update question',
+      {
+        operation: 'update_question',
+        service: 'questions',
+        method: 'PUT',
+        path: '/api/questions/[id]',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to update question' },
       { status: 500 }
@@ -262,7 +279,16 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Question deleted successfully' });
   } catch (error) {
-    console.error('Error deleting question:', error);
+    logger.error(
+      'Failed to delete question',
+      {
+        operation: 'delete_question',
+        service: 'questions',
+        method: 'DELETE',
+        path: '/api/questions/[id]',
+      },
+      error as Error
+    );
     return NextResponse.json(
       { error: 'Failed to delete question' },
       { status: 500 }
