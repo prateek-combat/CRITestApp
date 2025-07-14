@@ -18,16 +18,27 @@ export async function GET(request: NextRequest) {
     let hasMore = true;
     const maxPageSize = 100; // API limit
 
-    // Clone the URL to modify it
-    const leaderboardUrl = new URL(request.url);
-    leaderboardUrl.pathname = '/api/admin/leaderboard';
+    // Get all original query parameters
+    const searchParams = request.nextUrl.searchParams;
+
+    // Build base URL for leaderboard API
+    const baseUrl = new URL(request.nextUrl.origin);
+    baseUrl.pathname = '/api/admin/leaderboard';
+
+    // Copy all original search params
+    searchParams.forEach((value, key) => {
+      if (key !== 'pageSize' && key !== 'page') {
+        baseUrl.searchParams.set(key, value);
+      }
+    });
 
     // Fetch data page by page - ALL data
     while (hasMore) {
-      leaderboardUrl.searchParams.set('pageSize', maxPageSize.toString());
-      leaderboardUrl.searchParams.set('page', currentPage.toString());
+      // Set pagination params for this request
+      baseUrl.searchParams.set('pageSize', maxPageSize.toString());
+      baseUrl.searchParams.set('page', currentPage.toString());
 
-      const response = await fetch(leaderboardUrl.toString(), {
+      const response = await fetch(baseUrl.toString(), {
         headers: {
           Cookie: request.headers.get('cookie') || '',
         },
