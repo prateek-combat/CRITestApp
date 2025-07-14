@@ -322,59 +322,26 @@ export default function LeaderboardTable({
         params.set(key, value);
       });
 
-      // Fetch ALL candidates from the API
+      // Fetch Excel file from the API endpoint
       const response = await fetch(
         `/api/admin/leaderboard/export-excel?${params.toString()}`
       );
+
       if (!response.ok) {
-        throw new Error('Failed to fetch data for Excel export');
+        throw new Error('Failed to generate Excel export');
       }
 
-      const allCandidates = await response.json();
-
-      // Prepare data for Excel export with only requested columns
-      const excelData = allCandidates.map((candidate: any) => ({
-        Rank: candidate.rank,
-        Name: candidate.candidateName,
-        Email: candidate.candidateEmail,
-        'Score %': candidate.composite?.toFixed(1) || 'N/A',
-        'Risk Score':
-          candidate.riskScore !== null && candidate.riskScore !== undefined
-            ? (candidate.riskScore > 10
-                ? candidate.riskScore / 10
-                : candidate.riskScore
-              ).toFixed(1)
-            : 'N/A',
-      }));
-
-      // Create workbook and worksheet
-      const ws = XLSX.utils.json_to_sheet(excelData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Leaderboard');
-
-      // Auto-size columns
-      const colWidths = Object.keys(excelData[0] || {}).map((key) => ({
-        wch: Math.max(key.length + 2, 15),
-      }));
-      ws['!cols'] = colWidths;
-
-      // Style header row
-      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const address = XLSX.utils.encode_col(C) + '1';
-        if (!ws[address]) continue;
-        ws[address].s = {
-          font: { bold: true },
-          fill: { fgColor: { rgb: 'F3F4F6' } },
-          alignment: { horizontal: 'center' },
-        };
-      }
-
-      // Generate filename with date
-      const filename = `leaderboard_${new Date().toISOString().split('T')[0]}.xlsx`;
-
-      // Write and download file
-      XLSX.writeFile(wb, filename);
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `leaderboard_top20_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error) {
       console.error('Error exporting Excel:', error);
       alert('Failed to export Excel. Please try again.');
@@ -452,7 +419,7 @@ export default function LeaderboardTable({
             title={
               data.rows.length === 0
                 ? 'No data to export'
-                : 'Export all visible data to Excel'
+                : 'Export top 20 candidates to Excel (based on current filters)'
             }
           >
             {exportingExcel ? (
@@ -463,7 +430,7 @@ export default function LeaderboardTable({
             ) : (
               <>
                 <FileSpreadsheet className="mr-2 h-4 w-4" />
-                Export All (Excel)
+                Export Leaderboard (Excel)
               </>
             )}
           </button>
