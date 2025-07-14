@@ -337,7 +337,7 @@ export default function LeaderboardTable({
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
-      a.download = `leaderboard_top20_${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.download = `leaderboard_export_${new Date().toISOString().split('T')[0]}.xlsx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -419,7 +419,7 @@ export default function LeaderboardTable({
             title={
               data.rows.length === 0
                 ? 'No data to export'
-                : 'Export top 20 candidates to Excel (based on current filters)'
+                : 'Export all candidates to Excel (based on current filters)'
             }
           >
             {exportingExcel ? (
@@ -430,7 +430,7 @@ export default function LeaderboardTable({
             ) : (
               <>
                 <FileSpreadsheet className="mr-2 h-4 w-4" />
-                Export Leaderboard (Excel)
+                Export All (Excel)
               </>
             )}
           </button>

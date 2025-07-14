@@ -22,13 +22,9 @@ export async function GET(request: NextRequest) {
     const leaderboardUrl = new URL(request.url);
     leaderboardUrl.pathname = '/api/admin/leaderboard';
 
-    // Fetch data page by page
-    while (hasMore && allRows.length < 20) {
-      // Stop after getting 20 candidates
-      leaderboardUrl.searchParams.set(
-        'pageSize',
-        Math.min(maxPageSize, 20 - allRows.length).toString()
-      );
+    // Fetch data page by page - ALL data
+    while (hasMore) {
+      leaderboardUrl.searchParams.set('pageSize', maxPageSize.toString());
       leaderboardUrl.searchParams.set('page', currentPage.toString());
 
       const response = await fetch(leaderboardUrl.toString(), {
@@ -43,16 +39,17 @@ export async function GET(request: NextRequest) {
 
       const data = await response.json();
 
-      // Add rows up to our limit of 20
-      const remainingSlots = 20 - allRows.length;
-      const rowsToAdd = data.rows.slice(0, remainingSlots);
-      allRows.push(...rowsToAdd);
+      // Add all rows from this page
+      allRows.push(...data.rows);
 
-      hasMore = data.pagination.hasNext && allRows.length < 20;
+      hasMore = data.pagination.hasNext;
       currentPage++;
 
-      // Safety limit to prevent infinite loops
-      if (currentPage > 10) {
+      // Safety limit to prevent infinite loops (1000 pages = 100,000 records max)
+      if (currentPage > 1000) {
+        console.warn(
+          'Reached maximum page limit while fetching leaderboard data'
+        );
         break;
       }
     }
@@ -99,7 +96,7 @@ export async function GET(request: NextRequest) {
     worksheet['!cols'] = colInfo;
 
     // Add worksheet to workbook
-    xlsx.utils.book_append_sheet(workbook, worksheet, 'Leaderboard Top 20');
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Leaderboard');
 
     // Generate Excel buffer
     const buffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'buffer' });
@@ -109,7 +106,7 @@ export async function GET(request: NextRequest) {
       headers: {
         'Content-Type':
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="leaderboard_top20_${new Date().toISOString().split('T')[0]}.xlsx"`,
+        'Content-Disposition': `attachment; filename=\"leaderboard_export_${new Date().toISOString().split('T')[0]}.xlsx\"`,
       },
     });
   } catch (error) {
