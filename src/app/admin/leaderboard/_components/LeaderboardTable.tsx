@@ -347,22 +347,22 @@ export default function LeaderboardTable({
         <button
           onClick={handleExportLeaderboard}
           disabled={exportingLeaderboard || data.rows.length === 0}
-          className="inline-flex items-center rounded-md bg-primary-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
           title={
             data.rows.length === 0
               ? 'No data to export'
-              : 'Export top 20 candidates to PDF'
+              : 'Export top 20 candidates to PDF (based on current filters)'
           }
         >
           {exportingLeaderboard ? (
             <>
-              <span className="mr-1.5 inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+              <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
               Exporting...
             </>
           ) : (
             <>
-              <Download className="mr-1.5 h-3 w-3" />
-              Export Top 20
+              <Download className="mr-2 h-4 w-4" />
+              Export Leaderboard
             </>
           )}
         </button>
