@@ -80,14 +80,20 @@ export class HtmlPdfReportGenerator {
   }
 
   private generateSingleReportHtml(testAttempt: TestAttemptData): string {
-    const objectiveQuestions = testAttempt.test.questions.filter(
+    // Include ALL questions, not just objective ones
+    const allQuestions = testAttempt.test.questions;
+
+    // Calculate the total number of objective questions for scoring
+    const objectiveQuestions = allQuestions.filter(
       (q) => q.questionType !== 'PERSONALITY'
     );
 
     const cognitivePercentage =
-      (testAttempt.objectiveScore / testAttempt.totalQuestions) * 100;
+      objectiveQuestions.length > 0
+        ? (testAttempt.objectiveScore / objectiveQuestions.length) * 100
+        : 0;
 
-    const questionsHtml = objectiveQuestions
+    const questionsHtml = allQuestions
       .map((question, index) => {
         const userAnswer = testAttempt.answers[question.id];
         const userAnswerIndex = userAnswer?.answerIndex;
@@ -101,19 +107,27 @@ export class HtmlPdfReportGenerator {
             let className = 'option';
             let indicator = '';
 
-            if (
-              wasAnswered &&
-              optionIndex === userAnswerIndex &&
-              optionIndex === correctIndex
-            ) {
-              className += ' correct user-answer';
-              indicator = '✓';
-            } else if (wasAnswered && optionIndex === userAnswerIndex) {
-              className += ' incorrect user-answer';
-              indicator = '✗';
-            } else if (optionIndex === correctIndex) {
-              className += ' correct';
-              indicator = '✓';
+            // Only show correct/incorrect for objective questions
+            if (question.questionType !== 'PERSONALITY') {
+              if (
+                wasAnswered &&
+                optionIndex === userAnswerIndex &&
+                optionIndex === correctIndex
+              ) {
+                className += ' correct user-answer';
+                indicator = '✓';
+              } else if (wasAnswered && optionIndex === userAnswerIndex) {
+                className += ' incorrect user-answer';
+                indicator = '✗';
+              } else if (optionIndex === correctIndex) {
+                className += ' correct';
+                indicator = '✓';
+              }
+            } else {
+              // For personality questions, just highlight selected answer
+              if (wasAnswered && optionIndex === userAnswerIndex) {
+                className += ' personality-selected';
+              }
             }
 
             const formattedOption = this.formatCodeInText(option);
@@ -130,9 +144,14 @@ export class HtmlPdfReportGenerator {
 
         const formattedQuestion = this.formatCodeInText(question.promptText);
 
+        const questionTypeLabel =
+          question.questionType === 'PERSONALITY'
+            ? '<span class="question-type personality">Personality</span>'
+            : '<span class="question-type objective">Objective</span>';
+
         return `
-        <div class="question-block">
-          <h3>Question ${index + 1} ${!wasAnswered ? '<span class="not-answered">(Not Answered)</span>' : ''}</h3>
+        <div class="question-block ${question.questionType === 'PERSONALITY' ? 'personality-question' : ''}">
+          <h3>Question ${index + 1} ${questionTypeLabel} ${!wasAnswered ? '<span class="not-answered">(Not Answered)</span>' : ''}</h3>
           <div class="question-text">${formattedQuestion}</div>
           <div class="options">
             ${optionsHtml}
@@ -294,8 +313,41 @@ export class HtmlPdfReportGenerator {
             color: #d32f2f;
         }
 
+        .option.personality-selected {
+            background: #f5f0ff;
+            border-color: #7b1fa2;
+            font-weight: bold;
+        }
+
         .option-content {
             flex: 1;
+        }
+
+        .question-type {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 9pt;
+            font-weight: normal;
+            margin-left: 10px;
+        }
+
+        .question-type.objective {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .question-type.personality {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .personality-question {
+            border-left-color: #7b1fa2 !important;
+        }
+
+        .personality-question .question-text {
+            border-left-color: #7b1fa2 !important;
         }
 
         .code-block {
@@ -386,14 +438,13 @@ export class HtmlPdfReportGenerator {
       })
       .join('');
 
-    // Get questions from the first test (assuming all have same questions)
-    const objectiveQuestions =
-      testAttempts[0]?.test.questions.filter(
-        (q) => q.questionType !== 'PERSONALITY'
-      ) || [];
+    // Get ALL questions from the first test (assuming all have same questions)
+    const allQuestions = testAttempts[0]?.test.questions || [];
 
-    const questionsAnalysisHtml = objectiveQuestions
+    const questionsAnalysisHtml = allQuestions
       .map((question, qIndex) => {
+        const isPersonality = question.questionType === 'PERSONALITY';
+
         // Group candidates by their answers
         const answerGroups: Record<number, string[]> = {};
         testAttempts.forEach((attempt) => {
@@ -415,33 +466,55 @@ export class HtmlPdfReportGenerator {
           (sum, candidates) => sum + candidates.length,
           0
         );
-        const questionCorrectCount =
-          answerGroups[question.correctAnswerIndex!]?.length || 0;
-        const questionAccuracy =
-          questionTotalAnswered > 0
-            ? ((questionCorrectCount / questionTotalAnswered) * 100).toFixed(0)
-            : '0';
+
+        let successRateHtml = '';
+        if (!isPersonality) {
+          const questionCorrectCount =
+            answerGroups[question.correctAnswerIndex!]?.length || 0;
+          const questionAccuracy =
+            questionTotalAnswered > 0
+              ? ((questionCorrectCount / questionTotalAnswered) * 100).toFixed(
+                  0
+                )
+              : '0';
+          successRateHtml = `<span class="success-rate">${questionAccuracy}% correct (${questionCorrectCount}/${questionTotalAnswered} candidates)</span>`;
+        } else {
+          successRateHtml = `<span class="success-rate personality-rate">Personality Question (${questionTotalAnswered} responded)</span>`;
+        }
 
         const optionsHtml = question.answerOptions
           .map((option, optionIndex) => {
-            const isCorrect = optionIndex === question.correctAnswerIndex;
+            const isCorrect =
+              !isPersonality && optionIndex === question.correctAnswerIndex;
             const candidatesWhoSelected = answerGroups[optionIndex] || [];
             const letter = String.fromCharCode(65 + optionIndex);
 
             const formattedOption = this.formatCodeInText(option);
 
-            const candidatesHtml =
-              candidatesWhoSelected.length > 0
-                ? candidatesWhoSelected
-                    .map(
-                      (name) =>
-                        `<span class="candidate-name ${isCorrect ? 'correct' : 'incorrect'}">${name}</span>`
-                    )
-                    .join('')
-                : '<span class="no-selection">No candidates selected this option</span>';
+            let candidatesHtml = '';
+            if (candidatesWhoSelected.length > 0) {
+              if (!isPersonality) {
+                candidatesHtml = candidatesWhoSelected
+                  .map(
+                    (name) =>
+                      `<span class="candidate-name ${isCorrect ? 'correct' : 'incorrect'}">${name}</span>`
+                  )
+                  .join('');
+              } else {
+                candidatesHtml = candidatesWhoSelected
+                  .map(
+                    (name) =>
+                      `<span class="candidate-name personality-response">${name}</span>`
+                  )
+                  .join('');
+              }
+            } else {
+              candidatesHtml =
+                '<span class="no-selection">No candidates selected this option</span>';
+            }
 
             return `
-          <div class="answer-option ${isCorrect ? 'correct-option' : ''}">
+          <div class="answer-option ${isCorrect ? 'correct-option' : ''} ${isPersonality ? 'personality-option' : ''}">
             <div class="option-header">
               <span class="option-letter">${letter})</span>
               ${isCorrect ? '<span class="correct-indicator">✓ CORRECT</span>' : ''}
@@ -456,12 +529,15 @@ export class HtmlPdfReportGenerator {
           .join('');
 
         const formattedQuestion = this.formatCodeInText(question.promptText);
+        const questionTypeLabel = isPersonality
+          ? '<span class="question-type personality">Personality</span>'
+          : '<span class="question-type objective">Objective</span>';
 
         return `
-        <div class="question-analysis">
+        <div class="question-analysis ${isPersonality ? 'personality-analysis' : ''}">
           <div class="question-header">
-            <h3>Question ${qIndex + 1}</h3>
-            <span class="success-rate">${questionAccuracy}% correct (${questionCorrectCount}/${questionTotalAnswered} candidates)</span>
+            <h3>Question ${qIndex + 1} ${questionTypeLabel}</h3>
+            ${successRateHtml}
           </div>
           <div class="question-content">${formattedQuestion}</div>
           <div class="answer-options">
@@ -677,10 +753,46 @@ export class HtmlPdfReportGenerator {
             color: #d32f2f;
         }
 
+        .candidate-name.personality-response {
+            background: #f5f0ff;
+            color: #7b1fa2;
+        }
+
         .no-selection {
             color: #888;
             font-style: italic;
             font-size: 8pt;
+        }
+
+        .question-type {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 9pt;
+            font-weight: normal;
+            margin-left: 8px;
+        }
+
+        .question-type.objective {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .question-type.personality {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .personality-analysis .question-content {
+            border-left-color: #7b1fa2 !important;
+        }
+
+        .personality-option {
+            background: #fcf9ff;
+        }
+
+        .personality-rate {
+            color: #7b1fa2 !important;
         }
 
         .code-block {
