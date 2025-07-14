@@ -313,53 +313,39 @@ export default function LeaderboardTable({
     try {
       setExportingExcel(true);
 
-      // Prepare data for Excel export
-      const excelData = data.rows.map((candidate) => {
-        const row: any = {
-          Rank: candidate.rank,
-          Name: candidate.candidateName,
-          Email: candidate.candidateEmail,
-          'Score %': candidate.composite?.toFixed(1) || 'N/A',
-          Percentile: candidate.percentile?.toFixed(1) || 'N/A',
-          'Completed Date': formatDate(candidate.completedAt),
-          'Duration (minutes)': Math.round(candidate.durationSeconds / 60),
-          'Risk Score':
-            candidate.riskScore !== null && candidate.riskScore !== undefined
-              ? (candidate.riskScore > 10
-                  ? candidate.riskScore / 10
-                  : candidate.riskScore
-                ).toFixed(1)
-              : 'N/A',
-          Proctoring: candidate.proctoringEnabled ? 'Enabled' : 'Disabled',
-          'Test Type': candidate.isPublicAttempt ? 'Public' : 'Invitation',
-        };
+      // Build URL with current filters
+      const params = new URLSearchParams();
 
-        // Add category scores if they exist
-        if (visibleColumns.scoreLogical) {
-          row['Logical %'] = candidate.scoreLogical?.toFixed(1) || '0';
-        }
-        if (visibleColumns.scoreVerbal) {
-          row['Verbal %'] = candidate.scoreVerbal?.toFixed(1) || '0';
-        }
-        if (visibleColumns.scoreNumerical) {
-          row['Numerical %'] = candidate.scoreNumerical?.toFixed(1) || '0';
-        }
-        if (visibleColumns.scoreAttention) {
-          row['Attention %'] = candidate.scoreAttention?.toFixed(1) || '0';
-        }
-        if (visibleColumns.scoreOther) {
-          row['Other %'] = candidate.scoreOther?.toFixed(1) || '0';
-        }
-
-        // Add weighted/unweighted scores if applicable
-        if (showWeightedScores && candidate.compositeUnweighted !== undefined) {
-          row['Weighted Score %'] = candidate.composite?.toFixed(1) || 'N/A';
-          row['Unweighted Score %'] =
-            candidate.compositeUnweighted?.toFixed(1) || 'N/A';
-        }
-
-        return row;
+      // Get current URL search params to forward filters
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.forEach((value, key) => {
+        params.set(key, value);
       });
+
+      // Fetch ALL candidates from the API
+      const response = await fetch(
+        `/api/admin/leaderboard/export-excel?${params.toString()}`
+      );
+      if (!response.ok) {
+        throw new Error('Failed to fetch data for Excel export');
+      }
+
+      const allCandidates = await response.json();
+
+      // Prepare data for Excel export with only requested columns
+      const excelData = allCandidates.map((candidate: any) => ({
+        Rank: candidate.rank,
+        Name: candidate.candidateName,
+        Email: candidate.candidateEmail,
+        'Score %': candidate.composite?.toFixed(1) || 'N/A',
+        'Risk Score':
+          candidate.riskScore !== null && candidate.riskScore !== undefined
+            ? (candidate.riskScore > 10
+                ? candidate.riskScore / 10
+                : candidate.riskScore
+              ).toFixed(1)
+            : 'N/A',
+      }));
 
       // Create workbook and worksheet
       const ws = XLSX.utils.json_to_sheet(excelData);
