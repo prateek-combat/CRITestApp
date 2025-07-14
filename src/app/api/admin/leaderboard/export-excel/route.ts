@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import * as xlsx from 'xlsx';
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,31 +12,106 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Fetch leaderboard data in chunks due to API limit
+    const allRows: any[] = [];
+    let currentPage = 1;
+    let hasMore = true;
+    const maxPageSize = 100; // API limit
+
     // Clone the URL to modify it
     const leaderboardUrl = new URL(request.url);
-
-    // Replace the pathname to call the main leaderboard API
     leaderboardUrl.pathname = '/api/admin/leaderboard';
 
-    // Set pageSize to a very large number to get all results
-    leaderboardUrl.searchParams.set('pageSize', '10000');
-    leaderboardUrl.searchParams.delete('page'); // Remove pagination
+    // Fetch data page by page
+    while (hasMore && allRows.length < 20) {
+      // Stop after getting 20 candidates
+      leaderboardUrl.searchParams.set(
+        'pageSize',
+        Math.min(maxPageSize, 20 - allRows.length).toString()
+      );
+      leaderboardUrl.searchParams.set('page', currentPage.toString());
 
-    // Forward the request to the main leaderboard API
-    const response = await fetch(leaderboardUrl.toString(), {
-      headers: {
-        Cookie: request.headers.get('cookie') || '',
-      },
-    });
+      const response = await fetch(leaderboardUrl.toString(), {
+        headers: {
+          Cookie: request.headers.get('cookie') || '',
+        },
+      });
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch leaderboard data');
+      if (!response.ok) {
+        throw new Error('Failed to fetch leaderboard data');
+      }
+
+      const data = await response.json();
+
+      // Add rows up to our limit of 20
+      const remainingSlots = 20 - allRows.length;
+      const rowsToAdd = data.rows.slice(0, remainingSlots);
+      allRows.push(...rowsToAdd);
+
+      hasMore = data.pagination.hasNext && allRows.length < 20;
+      currentPage++;
+
+      // Safety limit to prevent infinite loops
+      if (currentPage > 10) {
+        break;
+      }
     }
 
-    const data = await response.json();
+    // Create Excel workbook
+    const workbook = xlsx.utils.book_new();
 
-    // Return only the rows (the actual candidate data)
-    return NextResponse.json(data.rows || []);
+    // Format data for Excel
+    const excelData = allRows.map((row) => ({
+      Rank: row.rank,
+      'Candidate Name': row.candidateName,
+      Email: row.candidateEmail,
+      'Score (%)': parseFloat(row.composite.toFixed(2)),
+      'Logical (%)': parseFloat(row.scoreLogical.toFixed(2)),
+      'Verbal (%)': parseFloat(row.scoreVerbal.toFixed(2)),
+      'Numerical (%)': parseFloat(row.scoreNumerical.toFixed(2)),
+      'Attention (%)': parseFloat(row.scoreAttention.toFixed(2)),
+      'Other (%)': parseFloat(row.scoreOther.toFixed(2)),
+      Percentile: row.percentile,
+      'Risk Score': row.riskScore !== null ? row.riskScore : 'N/A',
+      Proctoring: row.proctoringEnabled ? 'Yes' : 'No',
+      'Completed At': new Date(row.completedAt).toLocaleString(),
+      'Duration (seconds)': row.durationSeconds,
+      Type: row.type === 'public' ? 'Public Link' : 'Invitation',
+    }));
+
+    // Create worksheet
+    const worksheet = xlsx.utils.json_to_sheet(excelData);
+
+    // Auto-size columns
+    const maxWidth = 50;
+    const colInfo: any[] = [];
+
+    if (excelData.length > 0) {
+      Object.keys(excelData[0]).forEach((key, index) => {
+        const maxLength = Math.max(
+          key.length,
+          ...excelData.map((row) => String(row[key as keyof typeof row]).length)
+        );
+        colInfo.push({ width: Math.min(maxLength + 2, maxWidth) });
+      });
+    }
+
+    worksheet['!cols'] = colInfo;
+
+    // Add worksheet to workbook
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Leaderboard Top 20');
+
+    // Generate Excel buffer
+    const buffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+
+    return new NextResponse(buffer, {
+      status: 200,
+      headers: {
+        'Content-Type':
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': `attachment; filename="leaderboard_top20_${new Date().toISOString().split('T')[0]}.xlsx"`,
+      },
+    });
   } catch (error) {
     console.error('Error fetching leaderboard data for Excel:', error);
     return NextResponse.json(
