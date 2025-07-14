@@ -24,61 +24,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const testAttempts = [];
+    // Limit to 20 attempts max
+    const limitedAttemptIds = attemptIds.slice(0, 20);
 
     // Fetch test attempts
-    for (const attemptId of attemptIds) {
-      // Try to fetch from regular test attempts first
-      let testAttempt = (await prisma.testAttempt.findUnique({
-        where: { id: attemptId },
-        include: {
-          test: {
-            include: {
-              questions: {
-                orderBy: {
-                  createdAt: 'asc',
-                },
-                include: {
-                  personalityDimension: true,
+    const testAttempts = await Promise.all(
+      limitedAttemptIds.map(async (attemptId) => {
+        // Try regular test attempts first
+        let testAttempt = (await prisma.testAttempt.findUnique({
+          where: { id: attemptId },
+          include: {
+            test: {
+              include: {
+                questions: {
+                  orderBy: {
+                    createdAt: 'asc',
+                  },
+                  include: {
+                    personalityDimension: true,
+                  },
                 },
               },
             },
-          },
-          invitation: {
-            select: {
-              candidateName: true,
-              candidateEmail: true,
-            },
-          },
-          submittedAnswers: {
-            include: {
-              question: true,
-            },
-          },
-        },
-      })) as any;
-
-      let isPublicAttempt = false;
-
-      // If not found in regular attempts, try public attempts
-      if (!testAttempt) {
-        testAttempt = (await prisma.publicTestAttempt.findUnique({
-          where: { id: attemptId },
-          include: {
-            publicLink: {
-              include: {
-                test: {
-                  include: {
-                    questions: {
-                      orderBy: {
-                        createdAt: 'asc',
-                      },
-                      include: {
-                        personalityDimension: true,
-                      },
-                    },
-                  },
-                },
+            invitation: {
+              select: {
+                candidateName: true,
+                candidateEmail: true,
               },
             },
             submittedAnswers: {
@@ -89,22 +60,61 @@ export async function POST(request: NextRequest) {
           },
         })) as any;
 
-        if (testAttempt) {
-          isPublicAttempt = true;
-          // Restructure public attempt to match regular attempt format
-          testAttempt.test = testAttempt.publicLink.test;
-          testAttempt.invitation = {
-            candidateName: testAttempt.candidateName,
-            candidateEmail: testAttempt.candidateEmail,
-          };
+        // If not found, try public test attempts
+        if (!testAttempt) {
+          testAttempt = (await prisma.publicTestAttempt.findUnique({
+            where: { id: attemptId },
+            include: {
+              publicLink: {
+                include: {
+                  test: {
+                    include: {
+                      questions: {
+                        orderBy: {
+                          createdAt: 'asc',
+                        },
+                        include: {
+                          personalityDimension: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+              submittedAnswers: {
+                include: {
+                  question: true,
+                },
+              },
+            },
+          })) as any;
+
+          if (testAttempt) {
+            // Restructure public attempt to match regular attempt format
+            testAttempt.test = testAttempt.publicLink.test;
+            testAttempt.invitation = {
+              candidateName: testAttempt.candidateName,
+              candidateEmail: testAttempt.candidateEmail,
+            };
+          }
         }
-      }
 
-      if (!testAttempt) {
-        console.warn(`Test attempt not found: ${attemptId}`);
-        continue;
-      }
+        return testAttempt;
+      })
+    );
 
+    // Filter out null attempts
+    const validAttempts = testAttempts.filter((attempt) => attempt !== null);
+
+    if (validAttempts.length === 0) {
+      return NextResponse.json(
+        { error: 'No valid test attempts found' },
+        { status: 404 }
+      );
+    }
+
+    // Transform attempts into the format expected by the PDF generator
+    const formattedAttempts = validAttempts.map((testAttempt) => {
       // Transform submitted answers into the expected format
       const answers: Record<
         string,
@@ -115,6 +125,16 @@ export async function POST(request: NextRequest) {
           answerIndex: submittedAnswer.selectedAnswerIndex,
           timeTaken: submittedAnswer.timeTakenSeconds,
         };
+      });
+
+      // Ensure all questions are included, even if not answered
+      testAttempt.test.questions.forEach((question: any) => {
+        if (!answers[question.id]) {
+          answers[question.id] = {
+            answerIndex: -1, // -1 indicates no answer
+            timeTaken: 0,
+          };
+        }
       });
 
       // Calculate personality scores if there are personality questions
@@ -154,8 +174,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Format the test attempt data for PDF generation
-      const testAttemptData = {
+      return {
         id: testAttempt.id,
         candidateName: testAttempt.invitation?.candidateName || 'Unknown',
         candidateEmail: testAttempt.invitation?.candidateEmail || 'Unknown',
@@ -181,35 +200,21 @@ export async function POST(request: NextRequest) {
           })),
         },
       };
-
-      testAttempts.push(testAttemptData);
-    }
-
-    if (testAttempts.length === 0) {
-      return NextResponse.json(
-        { error: 'No test attempts found' },
-        { status: 404 }
-      );
-    }
+    });
 
     // Generate bulk PDF
     const generator = new HtmlPdfReportGenerator();
     const pdfBytes = await generator.generateBulkQAReport(
-      testAttempts,
-      positionName
+      formattedAttempts,
+      positionName || 'Leaderboard Export'
     );
-
-    // Create filename
-    const filename = positionName
-      ? `${positionName.replace(/[^a-zA-Z0-9]/g, '_')}_comparison.pdf`
-      : `test_comparison_${new Date().toISOString().split('T')[0]}.pdf`;
 
     // Return PDF as downloadable file
     return new NextResponse(pdfBytes, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Disposition': `attachment; filename=\"leaderboard_export_${new Date().toISOString().split('T')[0]}.pdf\"`,
       },
     });
   } catch (error) {
