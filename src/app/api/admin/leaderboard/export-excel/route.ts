@@ -21,6 +21,13 @@ export async function GET(request: NextRequest) {
     // Get all original query parameters
     const searchParams = request.nextUrl.searchParams;
 
+    // Debug logging
+    console.log('Excel export - Original URL:', request.url);
+    console.log(
+      'Excel export - Search params:',
+      Array.from(searchParams.entries())
+    );
+
     // Build base URL for leaderboard API
     const baseUrl = new URL(request.nextUrl.origin);
     baseUrl.pathname = '/api/admin/leaderboard';
@@ -32,11 +39,19 @@ export async function GET(request: NextRequest) {
       }
     });
 
+    // Debug logging
+    console.log('Excel export - Base URL before loop:', baseUrl.toString());
+
     // Fetch data page by page - ALL data
     while (hasMore) {
       // Set pagination params for this request
       baseUrl.searchParams.set('pageSize', maxPageSize.toString());
       baseUrl.searchParams.set('page', currentPage.toString());
+
+      // Debug logging for first request
+      if (currentPage === 1) {
+        console.log('Excel export - First request URL:', baseUrl.toString());
+      }
 
       const response = await fetch(baseUrl.toString(), {
         headers: {
@@ -45,7 +60,11 @@ export async function GET(request: NextRequest) {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch leaderboard data');
+        const errorText = await response.text();
+        console.error(`Leaderboard API error (${response.status}):`, errorText);
+        throw new Error(
+          `Failed to fetch leaderboard data: ${response.status} - ${errorText}`
+        );
       }
 
       const data = await response.json();
