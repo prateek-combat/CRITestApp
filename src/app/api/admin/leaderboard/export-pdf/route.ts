@@ -113,6 +113,16 @@ export async function POST(request: NextRequest) {
       };
     });
 
+    // Ensure all questions are included, even if not answered
+    testAttempt.test.questions.forEach((question: any) => {
+      if (!answers[question.id]) {
+        answers[question.id] = {
+          answerIndex: -1, // -1 indicates no answer
+          timeTaken: 0,
+        };
+      }
+    });
+
     // Calculate personality scores if there are personality questions
     const personalityQuestions = testAttempt.test.questions.filter(
       (q: any) => q.questionType === 'PERSONALITY'

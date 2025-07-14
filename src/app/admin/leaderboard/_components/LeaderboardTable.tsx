@@ -148,6 +148,7 @@ export default function LeaderboardTable({
   );
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [exportingPdf, setExportingPdf] = useState<string | null>(null);
+  const [exportingLeaderboard, setExportingLeaderboard] = useState(false);
 
   const formatDate = (date: Date): string => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -263,6 +264,48 @@ export default function LeaderboardTable({
     }
   };
 
+  const handleExportLeaderboard = async () => {
+    try {
+      setExportingLeaderboard(true);
+
+      // Get top 20 candidates
+      const top20 = data.rows.slice(0, 20);
+      const attemptIds = top20.map((row) => row.attemptId);
+
+      const response = await fetch('/api/admin/leaderboard/export-bulk-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          attemptIds,
+          positionName: 'Top 20 Leaderboard',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate leaderboard PDF');
+      }
+
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `leaderboard_top20_${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error exporting leaderboard:', error);
+      alert('Failed to export leaderboard. Please try again.');
+    } finally {
+      setExportingLeaderboard(false);
+    }
+  };
+
   const isSuperAdmin = userRole === 'SUPER_ADMIN';
 
   return (
@@ -299,9 +342,32 @@ export default function LeaderboardTable({
         </div>
       )}
 
-      {/* Risk Score Legend */}
-      <div className="mb-3 flex items-center justify-end space-x-4 text-xs">
-        <div className="flex items-center space-x-3">
+      {/* Header with Export Button and Risk Score Legend */}
+      <div className="mb-3 flex items-center justify-between px-6 pt-4">
+        <button
+          onClick={handleExportLeaderboard}
+          disabled={exportingLeaderboard || data.rows.length === 0}
+          className="inline-flex items-center rounded-md bg-primary-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+          title={
+            data.rows.length === 0
+              ? 'No data to export'
+              : 'Export top 20 candidates to PDF'
+          }
+        >
+          {exportingLeaderboard ? (
+            <>
+              <span className="mr-1.5 inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+              Exporting...
+            </>
+          ) : (
+            <>
+              <Download className="mr-1.5 h-3 w-3" />
+              Export Top 20
+            </>
+          )}
+        </button>
+
+        <div className="flex items-center space-x-3 text-xs">
           <span className="text-gray-500">Risk Score Highlighting:</span>
           <span className="flex items-center space-x-1">
             <span className="inline-block h-3 w-6 rounded border border-green-200 bg-green-100"></span>

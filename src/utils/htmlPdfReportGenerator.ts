@@ -92,6 +92,8 @@ export class HtmlPdfReportGenerator {
         const userAnswer = testAttempt.answers[question.id];
         const userAnswerIndex = userAnswer?.answerIndex;
         const correctIndex = question.correctAnswerIndex;
+        const wasAnswered =
+          userAnswerIndex !== undefined && userAnswerIndex !== -1;
 
         const optionsHtml = question.answerOptions
           .map((option, optionIndex) => {
@@ -100,12 +102,13 @@ export class HtmlPdfReportGenerator {
             let indicator = '';
 
             if (
+              wasAnswered &&
               optionIndex === userAnswerIndex &&
               optionIndex === correctIndex
             ) {
               className += ' correct user-answer';
               indicator = '✓';
-            } else if (optionIndex === userAnswerIndex) {
+            } else if (wasAnswered && optionIndex === userAnswerIndex) {
               className += ' incorrect user-answer';
               indicator = '✗';
             } else if (optionIndex === correctIndex) {
@@ -129,7 +132,7 @@ export class HtmlPdfReportGenerator {
 
         return `
         <div class="question-block">
-          <h3>Question ${index + 1}</h3>
+          <h3>Question ${index + 1} ${!wasAnswered ? '<span class="not-answered">(Not Answered)</span>' : ''}</h3>
           <div class="question-text">${formattedQuestion}</div>
           <div class="options">
             ${optionsHtml}
@@ -224,6 +227,13 @@ export class HtmlPdfReportGenerator {
             font-size: 12pt;
             font-weight: bold;
             margin-bottom: 10px;
+        }
+
+        .not-answered {
+            color: #f57c00;
+            font-size: 10pt;
+            font-weight: normal;
+            font-style: italic;
         }
 
         .question-text {
