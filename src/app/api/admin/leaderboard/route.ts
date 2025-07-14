@@ -59,6 +59,14 @@ export async function GET(request: NextRequest) {
     const weightProfileId = searchParams.get('weightProfile');
     const customWeightsParam = searchParams.get('customWeights');
 
+    // NEW: Risk score threshold filter (0-10 scale)
+    const scoreThresholdParam = searchParams.get('scoreThreshold');
+    const scoreThreshold = scoreThresholdParam
+      ? parseFloat(scoreThresholdParam)
+      : null;
+    const scoreThresholdMode =
+      searchParams.get('scoreThresholdMode') || 'above'; // 'above' or 'below'
+
     // Build where clauses for both regular and public attempts
     const baseWhere: any = {
       status: 'COMPLETED',
@@ -623,9 +631,30 @@ export async function GET(request: NextRequest) {
       }
     });
 
+    // Apply risk score threshold filter if specified
+    let filteredAttempts = processedAttempts;
+    if (scoreThreshold !== null && scoreThreshold >= 0) {
+      if (scoreThresholdMode === 'below') {
+        filteredAttempts = processedAttempts.filter(
+          (attempt) =>
+            attempt.riskScore !== null &&
+            attempt.riskScore !== undefined &&
+            attempt.riskScore <= scoreThreshold
+        );
+      } else {
+        // Default to 'above'
+        filteredAttempts = processedAttempts.filter(
+          (attempt) =>
+            attempt.riskScore !== null &&
+            attempt.riskScore !== undefined &&
+            attempt.riskScore >= scoreThreshold
+        );
+      }
+    }
+
     // Apply pagination
-    const total = processedAttempts.length;
-    const paginatedAttempts = processedAttempts.slice(
+    const total = filteredAttempts.length;
+    const paginatedAttempts = filteredAttempts.slice(
       (page - 1) * pageSize,
       page * pageSize
     );
@@ -702,20 +731,25 @@ export async function GET(request: NextRequest) {
     ).length;
 
     // Convert raw scores to percentages for stats using the already fetched totalTestQuestions
+    // Calculate average and top scores based on FILTERED attempts (after threshold is applied)
     const avgScorePercentage =
-      validScores.length > 0 && totalTestQuestions > 0
+      filteredAttempts.length > 0
         ? Math.round(
-            (validScores.reduce((a, b) => a + b, 0) /
-              validScores.length /
-              totalTestQuestions) *
-              1000
+            (filteredAttempts.reduce(
+              (sum, attempt) => sum + attempt.composite,
+              0
+            ) /
+              filteredAttempts.length) *
+              10
           ) / 10 // Round to 1 decimal place
         : 0;
 
     const topScorePercentage =
-      validScores.length > 0 && totalTestQuestions > 0
-        ? Math.round((Math.max(...validScores) / totalTestQuestions) * 1000) /
-          10
+      filteredAttempts.length > 0
+        ? Math.round(
+            Math.max(...filteredAttempts.map((attempt) => attempt.composite)) *
+              10
+          ) / 10
         : 0;
 
     return NextResponse.json({

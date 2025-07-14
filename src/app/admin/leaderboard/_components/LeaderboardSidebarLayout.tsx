@@ -179,6 +179,10 @@ export default function LeaderboardSidebarLayout({
   // NEW: State for right sidebar visibility
   const [isWeightsSidebarOpen, setIsWeightsSidebarOpen] = useState(false);
   const [isExportingBulkPdf, setIsExportingBulkPdf] = useState(false);
+  const [scoreThreshold, setScoreThreshold] = useState<number | null>(null);
+  const [scoreThresholdMode, setScoreThresholdMode] = useState<
+    'above' | 'below'
+  >('above');
 
   // Fetch weight profiles
   const fetchProfiles = useCallback(async () => {
@@ -461,6 +465,21 @@ export default function LeaderboardSidebarLayout({
     });
 
     handleFilterChange(weightParams);
+  };
+
+  const handleScoreThresholdChange = (threshold: number | null) => {
+    setScoreThreshold(threshold);
+    handleFilterChange({
+      scoreThreshold: threshold !== null ? threshold.toString() : undefined,
+      scoreThresholdMode,
+    });
+  };
+
+  const handleScoreThresholdModeChange = (mode: 'above' | 'below') => {
+    setScoreThresholdMode(mode);
+    handleFilterChange({
+      scoreThresholdMode: mode,
+    });
   };
 
   const handleBulkExportPdf = async () => {
@@ -788,27 +807,29 @@ export default function LeaderboardSidebarLayout({
         {/* Right Sidebar - Weight Profile Selector */}
         <aside
           className={`flex-shrink-0 transition-all duration-300 ${
-            isWeightsSidebarOpen ? 'w-80' : 'w-16'
+            isWeightsSidebarOpen ? 'w-64' : 'w-10'
           }`}
         >
           {selectedJobProfile && (
-            <div className="flex h-full flex-col rounded-lg border border-gray-200 bg-white shadow-sm">
-              <div className="flex items-center justify-between border-b border-gray-200 p-3">
+            <div className="flex h-full max-h-full flex-col rounded-lg border border-gray-200 bg-white shadow-sm">
+              <div
+                className={`flex items-center ${isWeightsSidebarOpen ? 'justify-between' : 'justify-center'} border-b border-gray-200 p-2`}
+              >
                 {isWeightsSidebarOpen && (
                   <h2 className="text-sm font-semibold text-gray-900">
-                    Category Weights
+                    Filters
                   </h2>
                 )}
                 <button
                   onClick={() => setIsWeightsSidebarOpen(!isWeightsSidebarOpen)}
-                  className="text-gray-500 hover:text-gray-800"
-                  title={isWeightsSidebarOpen ? 'Collapse' : 'Expand'}
+                  className={`text-gray-500 hover:text-gray-800 ${!isWeightsSidebarOpen && 'mx-auto'}`}
+                  title={isWeightsSidebarOpen ? 'Collapse' : 'Expand filters'}
                 >
-                  <Filter className="h-5 w-5" />
+                  <Filter className="h-4 w-4" />
                 </button>
               </div>
               <div
-                className={`flex-1 overflow-auto p-3 ${
+                className={`flex-1 overflow-y-auto overflow-x-hidden p-2 ${
                   !isWeightsSidebarOpen && 'hidden'
                 }`}
               >
@@ -817,6 +838,10 @@ export default function LeaderboardSidebarLayout({
                   currentProfile={data?.weightProfile || null}
                   onProfileChange={handleWeightProfileChange}
                   onCustomWeightsChange={handleCustomWeightsChange}
+                  scoreThreshold={scoreThreshold ?? undefined}
+                  onScoreThresholdChange={handleScoreThresholdChange}
+                  scoreThresholdMode={scoreThresholdMode}
+                  onScoreThresholdModeChange={handleScoreThresholdModeChange}
                 />
               </div>
             </div>
