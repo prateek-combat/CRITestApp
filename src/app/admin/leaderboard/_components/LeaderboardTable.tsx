@@ -9,10 +9,12 @@ import {
   ChevronLeft,
   Trash2,
   Download,
+  FileSpreadsheet,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import LinkButton from '@/components/ui/LinkButton';
+import * as XLSX from 'xlsx-js-style';
 
 interface CandidateScore {
   attemptId: string;
@@ -149,6 +151,7 @@ export default function LeaderboardTable({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [exportingPdf, setExportingPdf] = useState<string | null>(null);
   const [exportingLeaderboard, setExportingLeaderboard] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
 
   const formatDate = (date: Date): string => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -306,6 +309,94 @@ export default function LeaderboardTable({
     }
   };
 
+  const handleExportExcel = async () => {
+    try {
+      setExportingExcel(true);
+
+      // Prepare data for Excel export
+      const excelData = data.rows.map((candidate) => {
+        const row: any = {
+          Rank: candidate.rank,
+          Name: candidate.candidateName,
+          Email: candidate.candidateEmail,
+          'Score %': candidate.composite?.toFixed(1) || 'N/A',
+          Percentile: candidate.percentile?.toFixed(1) || 'N/A',
+          'Completed Date': formatDate(candidate.completedAt),
+          'Duration (minutes)': Math.round(candidate.durationSeconds / 60),
+          'Risk Score':
+            candidate.riskScore !== null && candidate.riskScore !== undefined
+              ? (candidate.riskScore > 10
+                  ? candidate.riskScore / 10
+                  : candidate.riskScore
+                ).toFixed(1)
+              : 'N/A',
+          Proctoring: candidate.proctoringEnabled ? 'Enabled' : 'Disabled',
+          'Test Type': candidate.isPublicAttempt ? 'Public' : 'Invitation',
+        };
+
+        // Add category scores if they exist
+        if (visibleColumns.scoreLogical) {
+          row['Logical %'] = candidate.scoreLogical?.toFixed(1) || '0';
+        }
+        if (visibleColumns.scoreVerbal) {
+          row['Verbal %'] = candidate.scoreVerbal?.toFixed(1) || '0';
+        }
+        if (visibleColumns.scoreNumerical) {
+          row['Numerical %'] = candidate.scoreNumerical?.toFixed(1) || '0';
+        }
+        if (visibleColumns.scoreAttention) {
+          row['Attention %'] = candidate.scoreAttention?.toFixed(1) || '0';
+        }
+        if (visibleColumns.scoreOther) {
+          row['Other %'] = candidate.scoreOther?.toFixed(1) || '0';
+        }
+
+        // Add weighted/unweighted scores if applicable
+        if (showWeightedScores && candidate.compositeUnweighted !== undefined) {
+          row['Weighted Score %'] = candidate.composite?.toFixed(1) || 'N/A';
+          row['Unweighted Score %'] =
+            candidate.compositeUnweighted?.toFixed(1) || 'N/A';
+        }
+
+        return row;
+      });
+
+      // Create workbook and worksheet
+      const ws = XLSX.utils.json_to_sheet(excelData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Leaderboard');
+
+      // Auto-size columns
+      const colWidths = Object.keys(excelData[0] || {}).map((key) => ({
+        wch: Math.max(key.length + 2, 15),
+      }));
+      ws['!cols'] = colWidths;
+
+      // Style header row
+      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const address = XLSX.utils.encode_col(C) + '1';
+        if (!ws[address]) continue;
+        ws[address].s = {
+          font: { bold: true },
+          fill: { fgColor: { rgb: 'F3F4F6' } },
+          alignment: { horizontal: 'center' },
+        };
+      }
+
+      // Generate filename with date
+      const filename = `leaderboard_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+      // Write and download file
+      XLSX.writeFile(wb, filename);
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      alert('Failed to export Excel. Please try again.');
+    } finally {
+      setExportingExcel(false);
+    }
+  };
+
   const isSuperAdmin = userRole === 'SUPER_ADMIN';
 
   return (
@@ -342,30 +433,55 @@ export default function LeaderboardTable({
         </div>
       )}
 
-      {/* Header with Export Button and Risk Score Legend */}
+      {/* Header with Export Buttons and Risk Score Legend */}
       <div className="mb-3 flex items-center justify-between px-6 pt-4">
-        <button
-          onClick={handleExportLeaderboard}
-          disabled={exportingLeaderboard || data.rows.length === 0}
-          className="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
-          title={
-            data.rows.length === 0
-              ? 'No data to export'
-              : 'Export top 20 candidates to PDF (based on current filters)'
-          }
-        >
-          {exportingLeaderboard ? (
-            <>
-              <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-              Exporting...
-            </>
-          ) : (
-            <>
-              <Download className="mr-2 h-4 w-4" />
-              Export Leaderboard
-            </>
-          )}
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleExportLeaderboard}
+            disabled={exportingLeaderboard || data.rows.length === 0}
+            className="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+            title={
+              data.rows.length === 0
+                ? 'No data to export'
+                : 'Export top 20 candidates to PDF (based on current filters)'
+            }
+          >
+            {exportingLeaderboard ? (
+              <>
+                <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Export Leaderboard (PDF)
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={handleExportExcel}
+            disabled={exportingExcel || data.rows.length === 0}
+            className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+            title={
+              data.rows.length === 0
+                ? 'No data to export'
+                : 'Export all visible data to Excel'
+            }
+          >
+            {exportingExcel ? (
+              <>
+                <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                Exporting...
+              </>
+            ) : (
+              <>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Export All (Excel)
+              </>
+            )}
+          </button>
+        </div>
 
         <div className="flex items-center space-x-3 text-xs">
           <span className="text-gray-500">Risk Score Highlighting:</span>
