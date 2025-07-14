@@ -398,7 +398,11 @@ export class HtmlPdfReportGenerator {
         const answerGroups: Record<number, string[]> = {};
         testAttempts.forEach((attempt) => {
           const userAnswer = attempt.answers[question.id];
-          if (userAnswer?.answerIndex !== undefined) {
+          // Only count answered questions (answerIndex !== -1)
+          if (
+            userAnswer?.answerIndex !== undefined &&
+            userAnswer.answerIndex !== -1
+          ) {
             const answerIndex = userAnswer.answerIndex;
             if (!answerGroups[answerIndex]) {
               answerGroups[answerIndex] = [];
