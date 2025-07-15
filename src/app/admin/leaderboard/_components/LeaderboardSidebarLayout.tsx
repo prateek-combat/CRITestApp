@@ -11,7 +11,6 @@ import {
   Trophy,
   TrendingUp,
   Search,
-  Filter,
   Building2,
   Target,
   TestTube,
@@ -178,8 +177,6 @@ export default function LeaderboardSidebarLayout({
   const [departmentFilter, setDepartmentFilter] = useState('all');
   const router = useRouter();
 
-  // NEW: State for right sidebar visibility
-  const [isWeightsSidebarOpen, setIsWeightsSidebarOpen] = useState(false);
   const [isExportingBulkPdf, setIsExportingBulkPdf] = useState(false);
   const [isExportingExcel, setIsExportingExcel] = useState(false);
   const [scoreThreshold, setScoreThreshold] = useState<number | null>(null);
@@ -738,7 +735,26 @@ export default function LeaderboardSidebarLayout({
       </div>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 gap-3">
+      <div className="flex flex-1 flex-col gap-3">
+        {/* Top Filters Section */}
+        {selectedJobProfile && (
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <WeightProfileSelector
+              availableProfiles={availableProfiles}
+              currentProfile={data?.weightProfile || null}
+              onProfileChange={handleWeightProfileChange}
+              onCustomWeightsChange={handleCustomWeightsChange}
+              scoreThreshold={scoreThreshold ?? undefined}
+              onScoreThresholdChange={handleScoreThresholdChange}
+              scoreThresholdMode={scoreThresholdMode}
+              onScoreThresholdModeChange={handleScoreThresholdModeChange}
+              sortBy={data?.filters?.sortBy || 'composite'}
+              sortOrder={(data?.filters?.sortOrder || 'desc') as 'asc' | 'desc'}
+              onSortChange={handleSort}
+            />
+          </div>
+        )}
+
         {/* Center - Leaderboard Table */}
         <div className="flex flex-1 flex-col">
           {/* Header - Compact */}
@@ -888,55 +904,6 @@ export default function LeaderboardSidebarLayout({
             )}
           </div>
         </div>
-
-        {/* Right Sidebar - Weight Profile Selector */}
-        <aside
-          className={`flex-shrink-0 transition-all duration-300 ${
-            isWeightsSidebarOpen ? 'w-64' : 'w-10'
-          }`}
-        >
-          {selectedJobProfile && (
-            <div className="flex h-full max-h-full flex-col rounded-lg border border-gray-200 bg-white shadow-sm">
-              <div
-                className={`flex items-center ${isWeightsSidebarOpen ? 'justify-between' : 'justify-center'} border-b border-gray-200 p-2`}
-              >
-                {isWeightsSidebarOpen && (
-                  <h2 className="text-sm font-semibold text-gray-900">
-                    Filters
-                  </h2>
-                )}
-                <button
-                  onClick={() => setIsWeightsSidebarOpen(!isWeightsSidebarOpen)}
-                  className={`text-gray-500 hover:text-gray-800 ${!isWeightsSidebarOpen && 'mx-auto'}`}
-                  title={isWeightsSidebarOpen ? 'Collapse' : 'Expand filters'}
-                >
-                  <Filter className="h-4 w-4" />
-                </button>
-              </div>
-              <div
-                className={`flex-1 overflow-y-auto overflow-x-hidden p-2 ${
-                  !isWeightsSidebarOpen && 'hidden'
-                }`}
-              >
-                <WeightProfileSelector
-                  availableProfiles={availableProfiles}
-                  currentProfile={data?.weightProfile || null}
-                  onProfileChange={handleWeightProfileChange}
-                  onCustomWeightsChange={handleCustomWeightsChange}
-                  scoreThreshold={scoreThreshold ?? undefined}
-                  onScoreThresholdChange={handleScoreThresholdChange}
-                  scoreThresholdMode={scoreThresholdMode}
-                  onScoreThresholdModeChange={handleScoreThresholdModeChange}
-                  sortBy={data?.filters?.sortBy || 'composite'}
-                  sortOrder={
-                    (data?.filters?.sortOrder || 'desc') as 'asc' | 'desc'
-                  }
-                  onSortChange={handleSort}
-                />
-              </div>
-            </div>
-          )}
-        </aside>
       </div>
 
       {/* Compare Drawer */}
