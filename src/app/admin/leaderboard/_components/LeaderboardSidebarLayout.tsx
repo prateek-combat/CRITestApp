@@ -16,6 +16,7 @@ import {
   Target,
   TestTube,
   Download,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
 
@@ -168,6 +169,7 @@ export default function LeaderboardSidebarLayout({
   } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingPositions, setIsLoadingPositions] = useState(true);
+  const [isChangingJobProfile, setIsChangingJobProfile] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [localSearch, setLocalSearch] = useState(
     urlSearchParams.get('search') || searchParamsProp.search || ''
@@ -179,6 +181,7 @@ export default function LeaderboardSidebarLayout({
   // NEW: State for right sidebar visibility
   const [isWeightsSidebarOpen, setIsWeightsSidebarOpen] = useState(false);
   const [isExportingBulkPdf, setIsExportingBulkPdf] = useState(false);
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
   const [scoreThreshold, setScoreThreshold] = useState<number | null>(null);
   const [scoreThresholdMode, setScoreThresholdMode] = useState<
     'above' | 'below'
@@ -289,6 +292,12 @@ export default function LeaderboardSidebarLayout({
           params.set('page', '1');
         }
 
+        // Add score threshold and mode if they exist
+        if (scoreThreshold !== null && scoreThreshold !== undefined) {
+          params.set('scoreThreshold', scoreThreshold.toString());
+          params.set('scoreThresholdMode', scoreThresholdMode);
+        }
+
         const response = await fetch(`/api/admin/leaderboard?${params}`);
         if (!response.ok) {
           throw new Error('Failed to fetch leaderboard data');
@@ -302,7 +311,14 @@ export default function LeaderboardSidebarLayout({
         setIsLoading(false);
       }
     },
-    [selectedPositionId, selectedJobProfileId, viewMode, urlSearchParams]
+    [
+      selectedPositionId,
+      selectedJobProfileId,
+      viewMode,
+      urlSearchParams,
+      scoreThreshold,
+      scoreThresholdMode,
+    ]
   );
 
   // Initialize data fetch
@@ -330,7 +346,7 @@ export default function LeaderboardSidebarLayout({
     }
   }, [urlSearchParams, jobProfiles, selectedJobProfileId]);
 
-  // Fetch data when position or job profile changes
+  // Fetch data when position or job profile changes, or when filters change
   useEffect(() => {
     if (viewMode === 'position' && selectedPositionId) {
       fetchLeaderboardData(selectedPositionId, undefined);
@@ -342,6 +358,8 @@ export default function LeaderboardSidebarLayout({
     selectedJobProfileId,
     viewMode,
     fetchLeaderboardData,
+    scoreThreshold,
+    scoreThresholdMode,
   ]);
 
   // Filter positions based on search and department
@@ -388,7 +406,11 @@ export default function LeaderboardSidebarLayout({
     router.push(`/admin/leaderboard?${params.toString()}`);
   };
 
-  const handleJobProfileSelect = (jobProfileId: string) => {
+  const handleJobProfileSelect = async (jobProfileId: string) => {
+    // Set loading state to true
+    setIsChangingJobProfile(true);
+
+    // First update the selection state
     setSelectedJobProfileId(jobProfileId);
     setViewMode('jobProfile');
 
@@ -397,6 +419,13 @@ export default function LeaderboardSidebarLayout({
     params.set('jobProfileId', jobProfileId);
     params.delete('positionId');
     router.push(`/admin/leaderboard?${params.toString()}`);
+
+    // Wait for data fetch to complete
+    try {
+      await fetchLeaderboardData(undefined, jobProfileId);
+    } finally {
+      setIsChangingJobProfile(false);
+    }
   };
 
   const handleViewModeChange = (mode: 'position' | 'jobProfile') => {
@@ -440,6 +469,8 @@ export default function LeaderboardSidebarLayout({
   };
 
   const handleSort = (sortBy: string, sortOrder: 'asc' | 'desc') => {
+    // Don't apply sorting immediately - just update the URL
+    // The sorting will be applied when the user clicks "Apply" in the filter sidebar
     handleFilterChange({ sortBy, sortOrder });
   };
 
@@ -531,6 +562,46 @@ export default function LeaderboardSidebarLayout({
     }
   };
 
+  const handleExportExcel = async () => {
+    try {
+      setIsExportingExcel(true);
+
+      // Build URL with current filters
+      const params = new URLSearchParams();
+
+      // Get current URL search params to forward filters
+      urlSearchParams.forEach((value, key) => {
+        params.set(key, value);
+      });
+
+      // Fetch Excel file from the API endpoint
+      const response = await fetch(
+        `/api/admin/leaderboard/export-excel?${params.toString()}`
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to generate Excel export');
+      }
+
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `leaderboard_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Error exporting Excel:', error);
+      alert('Failed to export Excel. Please try again.');
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
+
   return (
     <div className="flex h-[calc(100vh-8rem)] gap-3">
       {/* Left Sidebar - Position Selector */}
@@ -606,11 +677,12 @@ export default function LeaderboardSidebarLayout({
                     <button
                       key={profile.id}
                       onClick={() => handleJobProfileSelect(profile.id)}
+                      disabled={isChangingJobProfile}
                       className={`w-full rounded-lg border p-2 text-left transition-colors ${
                         selectedJobProfileId === profile.id
                           ? 'border-brand-500 bg-brand-50 text-brand-900'
                           : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50'
-                      }`}
+                      } ${isChangingJobProfile ? 'cursor-not-allowed opacity-50' : ''}`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="min-w-0 flex-1">
@@ -737,6 +809,19 @@ export default function LeaderboardSidebarLayout({
                       ? 'Generating...'
                       : 'Export Comparison PDF'}
                   </button>
+                  <button
+                    onClick={handleExportExcel}
+                    disabled={isExportingExcel || !data.rows.length}
+                    className="inline-flex items-center rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-700 transition-colors hover:bg-green-100 disabled:opacity-50"
+                    title={`Export all candidates to Excel spreadsheet`}
+                  >
+                    {isExportingExcel ? (
+                      <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-green-700 border-t-transparent"></span>
+                    ) : (
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    )}
+                    {isExportingExcel ? 'Exporting...' : 'Export Excel'}
+                  </button>
                 </div>
               )}
             </div>
@@ -757,7 +842,7 @@ export default function LeaderboardSidebarLayout({
                   </p>
                 </div>
               </div>
-            ) : isLoading ? (
+            ) : isLoading || isChangingJobProfile ? (
               <div className="p-4">
                 <TableSkeleton />
               </div>
@@ -842,6 +927,11 @@ export default function LeaderboardSidebarLayout({
                   onScoreThresholdChange={handleScoreThresholdChange}
                   scoreThresholdMode={scoreThresholdMode}
                   onScoreThresholdModeChange={handleScoreThresholdModeChange}
+                  sortBy={data?.filters?.sortBy || 'composite'}
+                  sortOrder={
+                    (data?.filters?.sortOrder || 'desc') as 'asc' | 'desc'
+                  }
+                  onSortChange={handleSort}
                 />
               </div>
             </div>

@@ -25,6 +25,9 @@ interface WeightProfileSelectorProps {
   onScoreThresholdChange?: (threshold: number | null) => void;
   scoreThresholdMode?: 'above' | 'below';
   onScoreThresholdModeChange?: (mode: 'above' | 'below') => void;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  onSortChange?: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
 }
 
 export default function WeightProfileSelector({
@@ -37,6 +40,9 @@ export default function WeightProfileSelector({
   onScoreThresholdChange,
   scoreThresholdMode = 'above',
   onScoreThresholdModeChange,
+  sortBy = 'composite',
+  sortOrder = 'desc',
+  onSortChange,
 }: WeightProfileSelectorProps) {
   const [weights, setWeights] = useState<CategoryWeights>({
     LOGICAL: 20,
@@ -60,6 +66,10 @@ export default function WeightProfileSelector({
   const [pendingThresholdMode, setPendingThresholdMode] = useState<
     'above' | 'below'
   >(scoreThresholdMode);
+  const [pendingSortBy, setPendingSortBy] = useState(sortBy);
+  const [pendingSortOrder, setPendingSortOrder] = useState<'asc' | 'desc'>(
+    sortOrder
+  );
   const [hasChanges, setHasChanges] = useState(false);
 
   // Initialize with equal weights and set custom mode
@@ -79,7 +89,9 @@ export default function WeightProfileSelector({
   useEffect(() => {
     setPendingThreshold(scoreThreshold ?? null);
     setPendingThresholdMode(scoreThresholdMode);
-  }, [scoreThreshold, scoreThresholdMode]);
+    setPendingSortBy(sortBy);
+    setPendingSortOrder(sortOrder);
+  }, [scoreThreshold, scoreThresholdMode, sortBy, sortOrder]);
 
   // Check if there are any pending changes
   useEffect(() => {
@@ -87,7 +99,11 @@ export default function WeightProfileSelector({
       JSON.stringify(weights) !== JSON.stringify(pendingWeights);
     const thresholdChanged = (scoreThreshold ?? null) !== pendingThreshold;
     const modeChanged = scoreThresholdMode !== pendingThresholdMode;
-    setHasChanges(weightsChanged || thresholdChanged || modeChanged);
+    const sortChanged =
+      sortBy !== pendingSortBy || sortOrder !== pendingSortOrder;
+    setHasChanges(
+      weightsChanged || thresholdChanged || modeChanged || sortChanged
+    );
   }, [
     weights,
     pendingWeights,
@@ -95,6 +111,10 @@ export default function WeightProfileSelector({
     pendingThreshold,
     scoreThresholdMode,
     pendingThresholdMode,
+    sortBy,
+    pendingSortBy,
+    sortOrder,
+    pendingSortOrder,
   ]);
 
   // Apply all pending changes
@@ -118,6 +138,13 @@ export default function WeightProfileSelector({
       onScoreThresholdModeChange
     ) {
       onScoreThresholdModeChange(pendingThresholdMode);
+    }
+
+    if (
+      (sortBy !== pendingSortBy || sortOrder !== pendingSortOrder) &&
+      onSortChange
+    ) {
+      onSortChange(pendingSortBy, pendingSortOrder);
     }
 
     setHasChanges(false);
@@ -331,6 +358,64 @@ export default function WeightProfileSelector({
                 Clear Filter
               </button>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Sorting Options */}
+      {onSortChange && (
+        <div className="mt-3 border-t border-gray-200 pt-3">
+          <div className="mb-2">
+            <h4 className="text-xs font-semibold text-gray-900">
+              Sort Options
+            </h4>
+          </div>
+
+          <div className="space-y-2">
+            <div>
+              <label className="text-xs font-medium text-gray-700">
+                Sort By
+              </label>
+              <select
+                value={pendingSortBy}
+                onChange={(e) => setPendingSortBy(e.target.value)}
+                className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="composite">Score %</option>
+                <option value="rank">Rank</option>
+                <option value="candidateName">Name</option>
+                <option value="percentile">Percentile</option>
+                <option value="scoreLogical">Logical %</option>
+                <option value="scoreVerbal">Verbal %</option>
+                <option value="scoreNumerical">Numerical %</option>
+                <option value="scoreAttention">Attention %</option>
+                <option value="scoreOther">Other %</option>
+                <option value="completedAt">Date</option>
+              </select>
+            </div>
+
+            <div className="flex gap-1 rounded-md border border-gray-300 p-0.5">
+              <button
+                onClick={() => setPendingSortOrder('asc')}
+                className={`flex-1 rounded px-2 py-1 text-xs font-medium transition-colors ${
+                  pendingSortOrder === 'asc'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Ascending
+              </button>
+              <button
+                onClick={() => setPendingSortOrder('desc')}
+                className={`flex-1 rounded px-2 py-1 text-xs font-medium transition-colors ${
+                  pendingSortOrder === 'desc'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Descending
+              </button>
+            </div>
           </div>
         </div>
       )}
