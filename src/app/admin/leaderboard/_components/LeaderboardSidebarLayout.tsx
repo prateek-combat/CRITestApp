@@ -289,8 +289,12 @@ export default function LeaderboardSidebarLayout({
           params.set('page', '1');
         }
 
-        // Add score threshold and mode if they exist
-        if (scoreThreshold !== null && scoreThreshold !== undefined) {
+        // Add score threshold and mode if they exist and are not 0
+        if (
+          scoreThreshold !== null &&
+          scoreThreshold !== undefined &&
+          scoreThreshold > 0
+        ) {
           params.set('scoreThreshold', scoreThreshold.toString());
           params.set('scoreThresholdMode', scoreThresholdMode);
         }
@@ -738,7 +742,7 @@ export default function LeaderboardSidebarLayout({
       <div className="flex flex-1 flex-col gap-3">
         {/* Top Filters Section */}
         {selectedJobProfile && (
-          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
             <WeightProfileSelector
               availableProfiles={availableProfiles}
               currentProfile={data?.weightProfile || null}
