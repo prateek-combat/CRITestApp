@@ -91,7 +91,6 @@ const SortButton = ({
   onSort: (column: string, order: 'asc' | 'desc') => void;
 }) => {
   const isActive = currentSort === column;
-  const nextOrder = isActive && currentOrder === 'asc' ? 'desc' : 'asc';
 
   // Map column names to display labels
   const getColumnLabel = (col: string): string => {
@@ -111,10 +110,9 @@ const SortButton = ({
   };
 
   return (
-    <button
-      onClick={() => onSort(column, nextOrder)}
-      className="group -mx-2 -my-1 flex items-center space-x-1 rounded-md px-2 py-1 transition-all duration-200 hover:bg-blue-50 hover:text-blue-600"
-      title={`Sort by ${getColumnLabel(column)} (${isActive ? (currentOrder === 'asc' ? 'ascending' : 'descending') : 'click to sort'})`}
+    <div
+      className="group -mx-2 -my-1 flex cursor-default items-center space-x-1 rounded-md px-2 py-1"
+      title={`Sorted by ${getColumnLabel(column)} (${isActive ? (currentOrder === 'asc' ? 'ascending' : 'descending') : 'use filters to change sorting'})`}
     >
       <span className="font-medium">{getColumnLabel(column)}</span>
       <div className="flex flex-col">
@@ -125,13 +123,13 @@ const SortButton = ({
             <ChevronDown className="h-4 w-4 text-blue-600" />
           )
         ) : (
-          <div className="flex flex-col opacity-30 transition-opacity group-hover:opacity-60">
+          <div className="flex flex-col opacity-30">
             <ChevronUp className="-mb-1 h-3 w-3" />
             <ChevronDown className="h-3 w-3" />
           </div>
         )}
       </div>
-    </button>
+    </div>
   );
 };
 
@@ -386,56 +384,8 @@ export default function LeaderboardTable({
         </div>
       )}
 
-      {/* Header with Export Buttons and Risk Score Legend */}
-      <div className="mb-3 flex items-center justify-between px-6 pt-4">
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={handleExportLeaderboard}
-            disabled={exportingLeaderboard || data.rows.length === 0}
-            className="inline-flex items-center rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
-            title={
-              data.rows.length === 0
-                ? 'No data to export'
-                : 'Export top 20 candidates to PDF (based on current filters)'
-            }
-          >
-            {exportingLeaderboard ? (
-              <>
-                <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-                Exporting...
-              </>
-            ) : (
-              <>
-                <Download className="mr-2 h-4 w-4" />
-                Export Leaderboard (PDF)
-              </>
-            )}
-          </button>
-
-          <button
-            onClick={handleExportExcel}
-            disabled={exportingExcel || data.rows.length === 0}
-            className="inline-flex items-center rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
-            title={
-              data.rows.length === 0
-                ? 'No data to export'
-                : 'Export all candidates to Excel (based on current filters)'
-            }
-          >
-            {exportingExcel ? (
-              <>
-                <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-                Exporting...
-              </>
-            ) : (
-              <>
-                <FileSpreadsheet className="mr-2 h-4 w-4" />
-                Export All (Excel)
-              </>
-            )}
-          </button>
-        </div>
-
+      {/* Header with Risk Score Legend */}
+      <div className="mb-3 flex items-center justify-end px-6 pt-4">
         <div className="flex items-center space-x-3 text-xs">
           <span className="text-gray-500">Risk Score Highlighting:</span>
           <span className="flex items-center space-x-1">
