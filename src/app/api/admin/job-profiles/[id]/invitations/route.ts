@@ -7,8 +7,6 @@ import {
   type JobProfileInvitationEmailData,
 } from '@/lib/email';
 
-
-
 // POST /api/admin/job-profiles/[id]/invitations - Create single job profile invitation
 export async function POST(
   request: NextRequest,
@@ -26,20 +24,16 @@ export async function POST(
 
     const { id: jobProfileId } = await params;
     const body = await request.json();
-    const {
-      candidateEmail,
-      candidateName,
-      customMessage,
-      expiresInDays = 7,
-    } = body;
+    const { candidateEmail, customMessage, expiresInDays = 7 } = body;
 
     // Validate required fields
-    if (!candidateEmail || !candidateName) {
+    if (!candidateEmail) {
       return NextResponse.json(
-        { error: 'Candidate email and name are required' },
+        { error: 'Candidate email is required' },
         { status: 400 }
       );
     }
+    const candidateName = candidateEmail.split('@')[0];
 
     // Get the job profile with its tests and positions
     const jobProfile = await prisma.jobProfile.findUnique({
