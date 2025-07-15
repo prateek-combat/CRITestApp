@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import * as xlsx from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 
 export async function GET(request: NextRequest) {
   try {
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Create Excel workbook
-    const workbook = xlsx.utils.book_new();
+    const workbook = XLSX.utils.book_new();
 
     // Format data for Excel
     const excelData = allRows.map((row) => ({
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
     }));
 
     // Create worksheet
-    const worksheet = xlsx.utils.json_to_sheet(excelData);
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
 
     // Auto-size columns
     const maxWidth = 50;
@@ -126,10 +126,10 @@ export async function GET(request: NextRequest) {
     worksheet['!cols'] = colInfo;
 
     // Add worksheet to workbook
-    xlsx.utils.book_append_sheet(workbook, worksheet, 'Leaderboard');
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Leaderboard');
 
     // Generate Excel buffer
-    const buffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+    const buffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'buffer' });
 
     return new NextResponse(buffer, {
       status: 200,
