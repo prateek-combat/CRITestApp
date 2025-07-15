@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { CategoryWeights } from '@/types/categories';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface WeightProfile {
   id: string;
@@ -206,18 +207,116 @@ export default function WeightProfileSelector({
     OTHER: 'Other',
   };
 
+  // Get current status text for each filter
+  const getWeightsStatus = () => {
+    const customized = Object.entries(pendingWeights).some(
+      ([_, value]) => value !== 20
+    );
+    return customized ? 'Custom' : 'Equal (20% each)';
+  };
+
+  const getRiskScoreStatus = () => {
+    if (!pendingThreshold || pendingThreshold === 0) return 'Off';
+    return `${pendingThresholdMode === 'above' ? '≥' : '≤'} ${pendingThreshold.toFixed(1)}`;
+  };
+
+  const getSortStatus = () => {
+    const labels: Record<string, string> = {
+      composite: 'Score',
+      rank: 'Rank',
+      candidateName: 'Name',
+      percentile: 'Percentile',
+      scoreLogical: 'Logical',
+      scoreVerbal: 'Verbal',
+      scoreNumerical: 'Numerical',
+      scoreAttention: 'Attention',
+      scoreOther: 'Other',
+      completedAt: 'Date',
+    };
+    return `${labels[pendingSortBy] || pendingSortBy} (${pendingSortOrder === 'asc' ? '↑' : '↓'})`;
+  };
+
   return (
-    <div className="space-y-4">
-      {/* Filters Header with Apply Button */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-900">
-          Filters & Sorting
-        </h3>
+    <div className="space-y-3">
+      {/* Compact inline filters */}
+      <div className="flex flex-wrap items-center gap-4">
+        {/* Sort Options - Always visible */}
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-medium text-gray-700">Sort:</label>
+          <select
+            value={pendingSortBy}
+            onChange={(e) => setPendingSortBy(e.target.value)}
+            className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="composite">Score %</option>
+            <option value="rank">Rank</option>
+            <option value="candidateName">Name</option>
+            <option value="percentile">Percentile</option>
+            <option value="scoreLogical">Logical %</option>
+            <option value="scoreVerbal">Verbal %</option>
+            <option value="scoreNumerical">Numerical %</option>
+            <option value="scoreAttention">Attention %</option>
+            <option value="scoreOther">Other %</option>
+            <option value="completedAt">Date</option>
+          </select>
+          <div className="flex rounded-md border border-gray-300">
+            <button
+              onClick={() => setPendingSortOrder('asc')}
+              className={`px-2 py-1 text-xs ${
+                pendingSortOrder === 'asc'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+              title="Ascending"
+            >
+              ↑
+            </button>
+            <button
+              onClick={() => setPendingSortOrder('desc')}
+              className={`px-2 py-1 text-xs ${
+                pendingSortOrder === 'desc'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+              title="Descending"
+            >
+              ↓
+            </button>
+          </div>
+        </div>
+
+        {/* Advanced Filters Toggle */}
+        <button
+          onClick={() => setExpandedSection(expandedSection ? null : 'filters')}
+          className="flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1 text-xs hover:bg-gray-50"
+        >
+          <span>Advanced Filters</span>
+          {expandedSection === 'filters' ? (
+            <ChevronUp className="h-3 w-3" />
+          ) : (
+            <ChevronDown className="h-3 w-3" />
+          )}
+        </button>
+
+        {/* Filter Status Badges */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500">Active:</span>
+          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs">
+            Weights: {getWeightsStatus()}
+          </span>
+          {onScoreThresholdChange && (
+            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs">
+              Risk: {getRiskScoreStatus()}
+            </span>
+          )}
+        </div>
+
+        {/* Apply button */}
         {hasChanges && (
           <button
             onClick={applyChanges}
             disabled={!isValidTotal}
-            className={`rounded px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`ml-auto rounded px-3 py-1 text-xs font-medium transition-colors ${
               isValidTotal
                 ? 'bg-blue-500 text-white hover:bg-blue-600'
                 : 'cursor-not-allowed bg-gray-300 text-gray-500'
@@ -228,34 +327,37 @@ export default function WeightProfileSelector({
         )}
       </div>
 
-      {/* Filter Sections in Grid */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Category Weights */}
-        <div className="rounded-lg border border-gray-200 p-3">
-          <button
-            onClick={() =>
-              setExpandedSection(
-                expandedSection === 'weights' ? null : 'weights'
-              )
-            }
-            className="mb-2 flex w-full items-center justify-between text-left"
-          >
-            <h4 className="text-xs font-semibold text-gray-900">
-              Category Weights
-            </h4>
-            <span className="text-xs text-gray-500">
-              {expandedSection === 'weights' ? '−' : '+'}
-            </span>
-          </button>
-
-          {expandedSection === 'weights' && (
-            <div className="space-y-2">
-              <div className="grid grid-cols-5 gap-2">
+      {/* Expandable Advanced Filters */}
+      {expandedSection === 'filters' && (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {/* Category Weights */}
+            <div>
+              <h4 className="mb-3 text-sm font-semibold text-gray-900">
+                Category Weights
+              </h4>
+              <div className="space-y-2">
                 {Object.entries(pendingWeights).map(([category, value]) => (
-                  <div key={category} className="text-center">
-                    <label className="text-xs font-medium text-gray-600">
-                      {categoryLabels[category as keyof CategoryWeights]}
+                  <div key={category} className="flex items-center gap-3">
+                    <label className="w-24 text-xs font-medium text-gray-700">
+                      {categoryLabels[category as keyof CategoryWeights]}:
                     </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={value}
+                      onChange={(e) =>
+                        handleWeightChange(
+                          category as keyof CategoryWeights,
+                          parseInt(e.target.value)
+                        )
+                      }
+                      className="h-1.5 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-200"
+                      style={{
+                        background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${value}%, #e5e7eb ${value}%, #e5e7eb 100%)`,
+                      }}
+                    />
                     <input
                       type="number"
                       min="0"
@@ -267,207 +369,151 @@ export default function WeightProfileSelector({
                           parseInt(e.target.value) || 0
                         )
                       }
-                      className="mt-1 w-full rounded border border-gray-300 px-2 py-1 text-center text-xs"
+                      className="w-12 rounded border border-gray-300 px-1 py-0.5 text-center text-xs"
                     />
+                    <span className="text-xs text-gray-500">%</span>
                   </div>
                 ))}
-              </div>
-              <div className="flex items-center justify-between">
-                <span
-                  className={`text-xs ${isValidTotal ? 'text-green-600' : 'text-red-600'}`}
-                >
-                  Total: {totalWeight}%
-                </span>
-                <button
-                  onClick={() => {
-                    const equalWeights = {
-                      LOGICAL: 20,
-                      VERBAL: 20,
-                      NUMERICAL: 20,
-                      ATTENTION_TO_DETAIL: 20,
-                      OTHER: 20,
-                    };
-                    setPendingWeights(equalWeights);
-                  }}
-                  className="rounded border border-gray-300 px-2 py-0.5 text-xs text-gray-600 hover:bg-gray-50"
-                >
-                  Reset
-                </button>
+                <div className="mt-3 flex items-center justify-between border-t border-gray-200 pt-3">
+                  <span
+                    className={`text-sm font-medium ${
+                      isValidTotal ? 'text-gray-700' : 'text-red-600'
+                    }`}
+                  >
+                    Total: {totalWeight}%
+                  </span>
+                  <button
+                    onClick={() => {
+                      const equalWeights = {
+                        LOGICAL: 20,
+                        VERBAL: 20,
+                        NUMERICAL: 20,
+                        ATTENTION_TO_DETAIL: 20,
+                        OTHER: 20,
+                      };
+                      setPendingWeights(equalWeights);
+                    }}
+                    className="rounded border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                  >
+                    Reset to Equal
+                  </button>
+                </div>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* Risk Score Filter */}
-        {onScoreThresholdChange && (
-          <div className="rounded-lg border border-gray-200 p-3">
-            <button
-              onClick={() =>
-                setExpandedSection(expandedSection === 'risk' ? null : 'risk')
-              }
-              className="mb-2 flex w-full items-center justify-between text-left"
-            >
-              <h4 className="text-xs font-semibold text-gray-900">
-                Risk Score Filter
-              </h4>
-              <span className="text-xs text-gray-500">
-                {expandedSection === 'risk' ? '−' : '+'}
-              </span>
-            </button>
-
-            {expandedSection === 'risk' && (
-              <div className="space-y-2">
-                <div className="flex gap-1 rounded-md border border-gray-300 p-0.5">
-                  <button
-                    onClick={() => setPendingThresholdMode('above')}
-                    className={`flex-1 rounded px-2 py-1 text-xs font-medium transition-colors ${
-                      pendingThresholdMode === 'above'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    Above
-                  </button>
-                  <button
-                    onClick={() => setPendingThresholdMode('below')}
-                    className={`flex-1 rounded px-2 py-1 text-xs font-medium transition-colors ${
-                      pendingThresholdMode === 'below'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    Below
-                  </button>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-medium text-gray-700">
-                      {pendingThresholdMode === 'above' ? 'Minimum' : 'Maximum'}{' '}
-                      Score
-                    </label>
-                    <span className="text-xs text-gray-600">
-                      {pendingThreshold !== null
-                        ? pendingThreshold.toFixed(1)
-                        : '0.0'}
+            {/* Risk Score Filter */}
+            {onScoreThresholdChange && (
+              <div>
+                <h4 className="mb-3 text-sm font-semibold text-gray-900">
+                  Risk Score Filter
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <span className="text-xs font-medium text-gray-700">
+                      Show candidates with risk score:
                     </span>
+                    <div className="flex rounded-md border border-gray-300">
+                      <button
+                        onClick={() => setPendingThresholdMode('above')}
+                        className={`px-3 py-1 text-xs font-medium transition-colors ${
+                          pendingThresholdMode === 'above'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-white text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        Above
+                      </button>
+                      <button
+                        onClick={() => setPendingThresholdMode('below')}
+                        className={`px-3 py-1 text-xs font-medium transition-colors ${
+                          pendingThresholdMode === 'below'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-white text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        Below
+                      </button>
+                    </div>
                   </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="10"
-                    step="0.1"
-                    value={pendingThreshold ?? 0}
-                    onChange={(e) => {
-                      const value = parseFloat(e.target.value);
-                      setPendingThreshold(value > 0 ? value : null);
-                    }}
-                    className="mt-1 h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-gray-200"
-                    style={{
-                      background: `linear-gradient(to right, #f59e0b 0%, #f59e0b ${(pendingThreshold ?? 0) * 10}%, #e5e7eb ${(pendingThreshold ?? 0) * 10}%, #e5e7eb 100%)`,
-                    }}
-                  />
-                  {pendingThreshold && pendingThreshold > 0 && (
-                    <button
-                      onClick={() => setPendingThreshold(null)}
-                      className="mt-2 w-full rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
-                    >
-                      Clear Filter
-                    </button>
-                  )}
+                  <div>
+                    <div className="mb-2 flex items-center justify-between">
+                      <label className="text-xs font-medium text-gray-700">
+                        Threshold: {pendingThreshold?.toFixed(1) || '0.0'}
+                      </label>
+                      {pendingThreshold !== null && pendingThreshold > 0 && (
+                        <button
+                          onClick={() => setPendingThreshold(null)}
+                          className="text-xs text-blue-600 hover:text-blue-800"
+                        >
+                          Clear filter
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="10"
+                      step="0.1"
+                      value={pendingThreshold ?? 0}
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value);
+                        setPendingThreshold(value === 0 ? null : value);
+                      }}
+                      className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200"
+                      style={{
+                        background: `linear-gradient(to right, #f59e0b 0%, #f59e0b ${(pendingThreshold ?? 0) * 10}%, #e5e7eb ${(pendingThreshold ?? 0) * 10}%, #e5e7eb 100%)`,
+                      }}
+                    />
+                    <div className="mt-1 flex justify-between text-xs text-gray-500">
+                      <span>0</span>
+                      <span>2.5</span>
+                      <span>5</span>
+                      <span>7.5</span>
+                      <span>10</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    {pendingThreshold === null || pendingThreshold === 0
+                      ? 'No risk score filtering applied'
+                      : `Showing candidates with risk score ${
+                          pendingThresholdMode === 'above' ? '≥' : '≤'
+                        } ${pendingThreshold.toFixed(1)}`}
+                  </p>
                 </div>
               </div>
             )}
           </div>
-        )}
-
-        {/* Sort Options */}
-        {onSortChange && (
-          <div className="rounded-lg border border-gray-200 p-3">
-            <button
-              onClick={() =>
-                setExpandedSection(expandedSection === 'sort' ? null : 'sort')
-              }
-              className="mb-2 flex w-full items-center justify-between text-left"
-            >
-              <h4 className="text-xs font-semibold text-gray-900">
-                Sort Options
-              </h4>
-              <span className="text-xs text-gray-500">
-                {expandedSection === 'sort' ? '−' : '+'}
-              </span>
-            </button>
-
-            {expandedSection === 'sort' && (
-              <div className="space-y-2">
-                <div>
-                  <label className="text-xs font-medium text-gray-700">
-                    Sort By
-                  </label>
-                  <select
-                    value={pendingSortBy}
-                    onChange={(e) => setPendingSortBy(e.target.value)}
-                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    <option value="composite">Score %</option>
-                    <option value="rank">Rank</option>
-                    <option value="candidateName">Name</option>
-                    <option value="percentile">Percentile</option>
-                    <option value="scoreLogical">Logical %</option>
-                    <option value="scoreVerbal">Verbal %</option>
-                    <option value="scoreNumerical">Numerical %</option>
-                    <option value="scoreAttention">Attention %</option>
-                    <option value="scoreOther">Other %</option>
-                    <option value="completedAt">Date</option>
-                  </select>
-                </div>
-                <div className="flex gap-1 rounded-md border border-gray-300 p-0.5">
-                  <button
-                    onClick={() => setPendingSortOrder('asc')}
-                    className={`flex-1 rounded px-2 py-1 text-xs font-medium transition-colors ${
-                      pendingSortOrder === 'asc'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    Ascending
-                  </button>
-                  <button
-                    onClick={() => setPendingSortOrder('desc')}
-                    className={`flex-1 rounded px-2 py-1 text-xs font-medium transition-colors ${
-                      pendingSortOrder === 'desc'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    Descending
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <style jsx>{`
         input[type='range']::-webkit-slider-thumb {
           appearance: none;
-          height: 12px;
-          width: 12px;
+          height: 14px;
+          width: 14px;
           border-radius: 50%;
-          background: #f59e0b;
+          background: #3b82f6;
           cursor: pointer;
           border: 2px solid #ffffff;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
         }
 
         input[type='range']::-moz-range-thumb {
-          height: 12px;
-          width: 12px;
+          height: 14px;
+          width: 14px;
           border-radius: 50%;
-          background: #f59e0b;
+          background: #3b82f6;
           cursor: pointer;
           border: 2px solid #ffffff;
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type='range']:focus {
+          outline: none;
+        }
+
+        input[type='range']:focus::-webkit-slider-thumb {
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
       `}</style>
     </div>
