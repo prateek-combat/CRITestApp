@@ -66,6 +66,17 @@ logs
 test.log
 build.log
 
+# Documentation cleanup
+**/SECURITY_*.md
+**/CLEANUP_*.md
+**/PHASE*_*.md
+**/IMPLEMENTATION_*.md
+always.md
+claude.md
+
+# Test coverage
+coverage/
+
 # Runtime data
 pids
 *.pid
