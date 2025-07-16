@@ -646,11 +646,7 @@ export default function ProctorAnalysisPage() {
                                     <div className="flex items-center justify-between">
                                       <span className="flex-grow">
                                         {String.fromCharCode(65 + optionIndex)}.{' '}
-                                        <span
-                                          dangerouslySetInnerHTML={{
-                                            __html: option,
-                                          }}
-                                        />
+                                        <span>{option}</span>
                                       </span>
                                       <div className="flex items-center space-x-2">
                                         {isSelectedAnswer && (

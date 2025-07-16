@@ -1,6 +1,20 @@
 import nodemailer from 'nodemailer';
 import { logger } from './logger';
 
+// HTML escape function to prevent XSS in emails
+function escapeHtml(str: string): string {
+  const htmlEscapes: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+    '/': '&#x2F;',
+  };
+
+  return str.replace(/[&<>"'\/]/g, (match) => htmlEscapes[match]);
+}
+
 export interface JobProfileInvitationEmailData {
   candidateEmail: string;
   candidateName: string;
@@ -46,11 +60,11 @@ export async function sendJobProfileInvitationEmail(
   } = data;
 
   const html = `
-    <p>Hello ${candidateName},</p>
-    <p>You have been invited to the job profile: <strong>${jobProfileName}</strong>.</p>
-    <p>Positions: ${positions.join(', ')}</p>
-    <p>Tests: ${tests.map((t) => t.title).join(', ')}</p>
-    ${customMessage ? `<p>Message from the recruiter: ${customMessage}</p>` : ''}
+    <p>Hello ${escapeHtml(candidateName)},</p>
+    <p>You have been invited to the job profile: <strong>${escapeHtml(jobProfileName)}</strong>.</p>
+    <p>Positions: ${positions.map((p) => escapeHtml(p)).join(', ')}</p>
+    <p>Tests: ${tests.map((t) => escapeHtml(t.title)).join(', ')}</p>
+    ${customMessage ? `<p>Message from the recruiter: ${escapeHtml(customMessage)}</p>` : ''}
     <p>Please use the following link to access the test: <a href="${invitationLink}">${invitationLink}</a></p>
     <p>This link will expire on ${expiresAt.toLocaleString()}.</p>
   `;

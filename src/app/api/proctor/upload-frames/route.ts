@@ -1,10 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limit';
+
+// Configure max upload size (10MB)
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+};
 
 // POST /api/proctor/upload-frames - Store captured frames
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting for uploads
+    const rateLimitResponse = await withRateLimit(
+      request,
+      rateLimitConfigs.upload
+    );
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
     // Check authentication
     const session = await auth();
     if (!session) {
@@ -25,8 +44,29 @@ export async function POST(request: NextRequest) {
 
     // Get all frame files - they are sent as frame_0, frame_1, etc.
     const files: File[] = [];
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const maxFileSize = 5 * 1024 * 1024; // 5MB per file
+
     for (const [key, value] of formData.entries()) {
       if (key.startsWith('frame_') && value instanceof File) {
+        // Validate file type
+        if (!allowedMimeTypes.includes(value.type)) {
+          return NextResponse.json(
+            {
+              error: `Invalid file type: ${value.type}. Allowed types: ${allowedMimeTypes.join(', ')}`,
+            },
+            { status: 400 }
+          );
+        }
+
+        // Validate file size
+        if (value.size > maxFileSize) {
+          return NextResponse.json(
+            { error: `File too large: ${value.name}. Maximum size: 5MB` },
+            { status: 400 }
+          );
+        }
+
         files.push(value);
       }
     }
