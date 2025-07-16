@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptionsSimple } from '@/lib/auth-simple';
-import { sendInvitationEmail, type InvitationEmailData } from '@/lib/email';
+import {
+  sendJobProfileInvitationEmail,
+  type JobProfileJobProfileInvitationEmailData,
+} from '@/lib/email';
 import { prisma } from '@/lib/prisma';
 
 // GET /api/admin/job-profiles/invitations - Get all job profile invitations
@@ -205,18 +208,23 @@ export async function POST(request: NextRequest) {
             .map((tw) => tw.test.title)
             .join(', ');
 
-          const emailData: InvitationEmailData = {
+          const emailData: JobProfileInvitationEmailData = {
             candidateEmail: email,
-            testTitle: `${jobProfile.name} - ${positionNames}`,
-            testLink,
-            expiresAt: invitation.expiresAt,
-            companyName: 'Combat Robotics India',
+            candidateName: email.split('@')[0], // Extract name from email
+            jobProfileName: jobProfile.name,
+            positions: jobProfile.positions.map((p) => p.name),
+            tests: jobProfile.testWeights.map((tw) => ({
+              title: tw.test.title,
+              questionsCount: tw.test._count?.questions,
+            })),
             customMessage:
               customMessage ||
-              `You have been invited to complete the assessment for the ${jobProfile.name} position. This includes the following tests: ${testTitles}`,
+              `You have been invited to complete the assessment for the ${jobProfile.name} position.`,
+            invitationLink: testLink,
+            expiresAt: invitation.expiresAt,
           };
 
-          const emailResult = await sendInvitationEmail(emailData);
+          const emailResult = await sendJobProfileInvitationEmail(emailData);
 
           if (emailResult.success) {
             // Update invitation to mark email as sent
@@ -289,18 +297,23 @@ export async function POST(request: NextRequest) {
           .map((tw) => tw.test.title)
           .join(', ');
 
-        const emailData: InvitationEmailData = {
+        const emailData: JobProfileInvitationEmailData = {
           candidateEmail: candidateEmail,
-          testTitle: `${jobProfile.name} - ${positionNames}`,
-          testLink,
-          expiresAt: invitation.expiresAt,
-          companyName: 'Combat Robotics India',
+          candidateName: candidateEmail.split('@')[0], // Extract name from email
+          jobProfileName: jobProfile.name,
+          positions: jobProfile.positions.map((p) => p.name),
+          tests: jobProfile.testWeights.map((tw) => ({
+            title: tw.test.title,
+            questionsCount: tw.test._count?.questions,
+          })),
           customMessage:
             customMessage ||
-            `You have been invited to complete the assessment for the ${jobProfile.name} position. This includes the following tests: ${testTitles}`,
+            `You have been invited to complete the assessment for the ${jobProfile.name} position.`,
+          invitationLink: testLink,
+          expiresAt: invitation.expiresAt,
         };
 
-        const emailResult = await sendInvitationEmail(emailData);
+        const emailResult = await sendJobProfileInvitationEmail(emailData);
 
         if (emailResult.success) {
           // Update invitation to mark email as sent
