@@ -1,9 +1,81 @@
-/**
- * Email Service Stub
- * Minimal implementation to maintain API compatibility after removing email infrastructure
- */
-
+import nodemailer from 'nodemailer';
 import { logger } from './logger';
+
+export interface JobProfileInvitationEmailData {
+  candidateEmail: string;
+  candidateName: string;
+  jobProfileName: string;
+  positions: string[];
+  tests: {
+    title: string;
+    questionsCount?: number;
+  }[];
+  customMessage: string;
+  invitationLink: string;
+  expiresAt: Date;
+}
+
+export interface EmailResult {
+  success: boolean;
+  messageId?: string;
+  error?: string;
+}
+
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_APP_PASSWORD,
+  },
+});
+
+export async function sendJobProfileInvitationEmail(
+  data: JobProfileInvitationEmailData
+): Promise<EmailResult> {
+  const {
+    candidateEmail,
+    candidateName,
+    jobProfileName,
+    positions,
+    tests,
+    customMessage,
+    invitationLink,
+    expiresAt,
+  } = data;
+
+  const html = `
+    <p>Hello ${candidateName},</p>
+    <p>You have been invited to the job profile: <strong>${jobProfileName}</strong>.</p>
+    <p>Positions: ${positions.join(', ')}</p>
+    <p>Tests: ${tests.map((t) => t.title).join(', ')}</p>
+    ${customMessage ? `<p>Message from the recruiter: ${customMessage}</p>` : ''}
+    <p>Please use the following link to access the test: <a href="${invitationLink}">${invitationLink}</a></p>
+    <p>This link will expire on ${expiresAt.toLocaleString()}.</p>
+  `;
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"Combat Robotics" <${process.env.GMAIL_USER}>`,
+      to: candidateEmail,
+      subject: `Invitation to Job Profile: ${jobProfileName}`,
+      html,
+    });
+
+    logger.info('Invitation email sent successfully', {
+      messageId: info.messageId,
+      operation: 'send_job_profile_invitation_email',
+    });
+    return { success: true, messageId: info.messageId };
+  } catch (error: any) {
+    logger.error('Failed to send invitation email', {
+      error: error.message,
+      operation: 'send_job_profile_invitation_email',
+    });
+    return { success: false, error: error.message };
+  }
+}
 
 export interface InvitationEmailData {
   candidateEmail: string;
@@ -11,12 +83,6 @@ export interface InvitationEmailData {
   testLink: string;
   expiresAt: Date;
   customMessage?: string;
-}
-
-export interface EmailResult {
-  success: boolean;
-  messageId?: string;
-  error?: string;
 }
 
 export interface BulkEmailResult {
@@ -73,154 +139,4 @@ export function parseMultipleEmails(emailText: string): string[] {
     .split(/[,;\n\r\t]+/)
     .map((email) => email.trim())
     .filter((email) => email.length > 0);
-}
-
-/**
- * Send invitation email (stub implementation)
- */
-export async function sendInvitationEmail(
-  data: InvitationEmailData
-): Promise<EmailResult> {
-  logger.info(
-    'Email service disabled - invitation created without email notification',
-    {
-      email: data.candidateEmail,
-      testTitle: data.testTitle,
-      operation: 'send_invitation_email_stub',
-    }
-  );
-
-  return {
-    success: true,
-    messageId: 'stub-message-id',
-  };
-}
-
-/**
- * Send bulk invitation emails (stub implementation)
- */
-export async function sendBulkInvitations(
-  invitations: InvitationEmailData[]
-): Promise<BulkEmailResult> {
-  logger.info(
-    'Email service disabled - bulk invitations created without email notifications',
-    {
-      count: invitations.length,
-      emails: invitations.map((inv) => inv.candidateEmail),
-      operation: 'send_bulk_invitations_stub',
-    }
-  );
-
-  const results = invitations.map((invitation) => ({
-    email: invitation.candidateEmail,
-    success: true,
-    messageId: 'stub-message-id',
-  }));
-
-  return {
-    success: true,
-    totalSent: invitations.length,
-    totalFailed: 0,
-    results,
-  };
-}
-
-/**
- * Send reminder email (stub implementation)
- */
-export async function sendReminderEmail(
-  data: InvitationEmailData
-): Promise<EmailResult> {
-  logger.info('Email service disabled - reminder not sent', {
-    email: data.candidateEmail,
-    testTitle: data.testTitle,
-    operation: 'send_reminder_email_stub',
-  });
-
-  return {
-    success: true,
-    messageId: 'stub-message-id',
-  };
-}
-
-/**
- * Send test completion candidate email (stub implementation)
- */
-export async function sendTestCompletionCandidateEmail(data: {
-  candidateEmail: string;
-  candidateName: string;
-  testTitle: string;
-  completedAt: Date;
-  companyName: string;
-}): Promise<EmailResult> {
-  logger.info(
-    'Email service disabled - test completion confirmation not sent to candidate',
-    {
-      email: data.candidateEmail,
-      candidateName: data.candidateName,
-      testTitle: data.testTitle,
-      operation: 'send_test_completion_candidate_email_stub',
-    }
-  );
-
-  return {
-    success: true,
-    messageId: 'stub-message-id',
-  };
-}
-
-/**
- * Send job profile invitation email (stub implementation)
- */
-export async function sendJobProfileInvitationEmail(data: {
-  candidateEmail: string;
-  candidateName: string;
-  jobProfileTitle: string;
-  invitationLink: string;
-  expiresAt: Date;
-  customMessage?: string;
-}): Promise<EmailResult> {
-  logger.info('Email service disabled - job profile invitation not sent', {
-    email: data.candidateEmail,
-    candidateName: data.candidateName,
-    jobProfileTitle: data.jobProfileTitle,
-    operation: 'send_job_profile_invitation_email_stub',
-  });
-
-  return {
-    success: true,
-    messageId: 'stub-message-id',
-  };
-}
-
-/**
- * Send test completion admin notification (stub implementation)
- */
-export async function sendTestCompletionAdminNotification(data: {
-  testId: string;
-  testAttemptId: string;
-  candidateId: string;
-  candidateEmail: string;
-  candidateName: string;
-  score: number;
-  maxScore: number;
-  completedAt: Date;
-  timeTaken: number;
-  answers: any[];
-}): Promise<EmailResult> {
-  logger.info(
-    'Email service disabled - admin notification not sent for test completion',
-    {
-      testId: data.testId,
-      candidateEmail: data.candidateEmail,
-      candidateName: data.candidateName,
-      score: data.score,
-      operation: 'send_test_completion_admin_notification_stub',
-    }
-  );
-
-  return {
-    success: true,
-    messageId: 'stub-message-id',
-  };
 }
