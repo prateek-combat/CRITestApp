@@ -78,28 +78,66 @@ A modern, production-ready assessment platform built with Next.js 15, featuring 
    npm run dev
    ```
 
-## 🔧 Environment Variables
+## 🔐 Security Configuration
+
+### Environment Variables
+
+1. **Copy the example file**:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Generate secure secrets**:
+   ```bash
+   # Generate NEXTAUTH_SECRET
+   openssl rand -base64 32
+   ```
+
+3. **Configure credentials**:
+   - Never commit `.env` files to version control
+   - Use different credentials for development and production
+   - Rotate secrets regularly
+   - Store production secrets in secure environment variable services
+
+### Required Environment Variables
 
 ```env
 # Database
-DATABASE_URL="postgresql://..."
+DATABASE_URL="postgresql://username:password@host:5432/database"
 
-# Authentication
+# Authentication (Required)
 NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="generate-secret-key"
+NEXTAUTH_SECRET="your-generated-secret-key"
 GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
-# Email (Optional)
-SMTP_HOST="smtp.gmail.com"
-SMTP_PORT="587"
-SMTP_USER="your-email@gmail.com"
-SMTP_PASS="your-app-password"
-SMTP_FROM="noreply@company.com"
-
-# AI Service (Optional - falls back to simulation)
-CUSTOM_AI_SERVICE_URL="https://your-ai-service.run.app"
+# Email Configuration (Required for invitations)
+GMAIL_USER="your-email@gmail.com"
+GMAIL_APP_PASSWORD="your-app-specific-password"
 ```
+
+### Security Best Practices
+
+1. **Authentication**:
+   - All admin users must be pre-registered in the database
+   - Use Google OAuth for authentication (no hardcoded credentials)
+   - Session tokens expire after 30 days
+
+2. **Authorization**:
+   - Middleware protects all admin and API routes
+   - Role-based access control (ADMIN, SUPER_ADMIN)
+   - File access is restricted to authorized users only
+
+3. **Data Protection**:
+   - All passwords are hashed with bcrypt
+   - Database queries use parameterized statements (Prisma)
+   - File uploads are validated and access-controlled
+
+4. **Production Security**:
+   - Enable HTTPS in production
+   - Set secure cookie flags
+   - Implement rate limiting
+   - Regular security audits
 
 ## 📁 Project Structure
 

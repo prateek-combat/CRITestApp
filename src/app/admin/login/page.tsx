@@ -15,13 +15,9 @@ export default function AdminLogin() {
     setLoading(true);
     setError('');
 
-    // Demo authentication (replace with real auth)
-    if (email === 'admin@testplatform.com' && password === 'admin123') {
-      // Mock successful login
-      router.push('/admin/dashboard');
-      return;
-    }
-
+    // This page is no longer used - authentication is handled by NextAuth
+    // Redirect to the main login page
+    router.push('/login');
     setLoading(false);
   };
 
