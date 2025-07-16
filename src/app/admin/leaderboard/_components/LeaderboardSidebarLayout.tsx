@@ -363,6 +363,19 @@ export default function LeaderboardSidebarLayout({
     scoreThresholdMode,
   ]);
 
+  // Re-fetch data when URL search params change (including search)
+  useEffect(() => {
+    if (
+      (viewMode === 'position' && selectedPositionId) ||
+      (viewMode === 'jobProfile' && selectedJobProfileId)
+    ) {
+      fetchLeaderboardData(
+        viewMode === 'position' ? selectedPositionId : undefined,
+        viewMode === 'jobProfile' ? selectedJobProfileId : undefined
+      );
+    }
+  }, [urlSearchParams]); // Watch for any URL param changes
+
   // Filter positions based on search and department
   const filteredPositions = useMemo(() => {
     return positions.filter((position) => {
@@ -903,6 +916,10 @@ export default function LeaderboardSidebarLayout({
                   onSort={handleSort}
                   onPageChange={handlePageChange}
                   userRole={userRole}
+                  searchValue={urlSearchParams.get('search') || ''}
+                  onSearchChange={(value) =>
+                    handleFilterChange({ search: value || undefined })
+                  }
                 />
               </div>
             )}

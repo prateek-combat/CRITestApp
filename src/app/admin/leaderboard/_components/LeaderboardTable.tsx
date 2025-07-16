@@ -10,9 +10,10 @@ import {
   Trash2,
   Download,
   FileSpreadsheet,
+  Search,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import LinkButton from '@/components/ui/LinkButton';
 import * as XLSX from 'xlsx-js-style';
 
@@ -59,6 +60,8 @@ interface LeaderboardTableProps {
   onSort: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
   showWeightedScores?: boolean;
   userRole?: string;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
 }
 
 const InlineBar = ({ value, max = 100 }: { value: number; max?: number }) => {
@@ -139,6 +142,8 @@ export default function LeaderboardTable({
   onSort,
   showWeightedScores = false,
   userRole,
+  searchValue = '',
+  onSearchChange,
 }: LeaderboardTableProps) {
   const { toggle, isSelected, selected, startCompare, clear } =
     useCompareStore();
@@ -150,6 +155,23 @@ export default function LeaderboardTable({
   const [exportingPdf, setExportingPdf] = useState<string | null>(null);
   const [exportingLeaderboard, setExportingLeaderboard] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
+  const [localSearchValue, setLocalSearchValue] = useState(searchValue);
+
+  // Sync localSearchValue with searchValue prop
+  useEffect(() => {
+    setLocalSearchValue(searchValue);
+  }, [searchValue]);
+
+  // Debounced search implementation
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (onSearchChange && localSearchValue !== searchValue) {
+        onSearchChange(localSearchValue);
+      }
+    }, 300); // 300ms delay
+
+    return () => clearTimeout(timeoutId);
+  }, [localSearchValue]); // Removed onSearchChange and searchValue from deps to avoid infinite loops
 
   const formatDate = (date: Date): string => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -350,8 +372,53 @@ export default function LeaderboardTable({
 
   const isSuperAdmin = userRole === 'SUPER_ADMIN';
 
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onSearchChange) {
+      onSearchChange(localSearchValue);
+    }
+  };
+
   return (
     <div className="overflow-hidden rounded-lg bg-white shadow">
+      {/* Search Box */}
+      <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
+        <form onSubmit={handleSearchSubmit} className="flex gap-3">
+          <div className="relative max-w-md flex-1">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+              <Search className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search candidates by name or email..."
+              value={localSearchValue}
+              onChange={(e) => setLocalSearchValue(e.target.value)}
+              className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm leading-5 placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            />
+          </div>
+          <button
+            type="submit"
+            className="rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+          >
+            Search
+          </button>
+          {localSearchValue && (
+            <button
+              type="button"
+              onClick={() => {
+                setLocalSearchValue('');
+                if (onSearchChange) {
+                  onSearchChange('');
+                }
+              }}
+              className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            >
+              Clear
+            </button>
+          )}
+        </form>
+      </div>
+
       {/* Compare Bar */}
       {selected.length > 0 && (
         <div className="border-b border-primary-200 bg-primary-50 px-6 py-3">

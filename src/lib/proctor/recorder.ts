@@ -86,9 +86,36 @@ export function useProctoring(attemptId: string) {
 
 export async function startRecording(): Promise<RecordingSession> {
   try {
-    // TEMPORARY DISABLE: Skip media stream acquisition
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          frameRate: { ideal: 15 },
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 22050,
+        },
+      });
+    } catch (error) {
+      proctorLogger.warn(
+        'Initial stream request failed, trying with basic constraints',
+        {
+          operation: 'fallback_stream_request',
+          error: error instanceof Error ? error.message : 'Unknown error',
+        }
+      );
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+    }
 
-    // Create a dummy stream and canvas to maintain interface compatibility
+    // Create canvas for frame capture
     const canvas = document.createElement('canvas');
     canvas.width = 640;
     canvas.height = 480;
@@ -98,78 +125,52 @@ export async function startRecording(): Promise<RecordingSession> {
       throw new Error('Failed to get canvas 2D context');
     }
 
-    // Create a dummy session that doesn't actually record
+    // Create video element for frame capture (not for display)
+    const video = document.createElement('video');
+    video.srcObject = stream;
+    video.muted = true;
+    video.playsInline = true;
+
+    // Wait for video to be ready
+    await new Promise<void>((resolve) => {
+      video.onloadedmetadata = () => {
+        video.play();
+        resolve();
+      };
+    });
+
+    // Captured frames array
     const capturedFrames: Blob[] = [];
 
-    // Dummy interval that doesn't actually capture frames
-    const intervalId = window.setInterval(() => {}, 500);
+    // Start capturing frames
+    const intervalId = window.setInterval(() => {
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              capturedFrames.push(blob);
+              proctorLogger.debug('Frame captured', {
+                operation: 'capture_frame',
+                frameCount: capturedFrames.length,
+                blobSize: blob.size,
+              });
+            }
+          },
+          'image/jpeg',
+          0.7
+        );
+      }
+    }, 500); // Capture every 500ms
 
-    // Return a dummy session
     return {
-      stream: new MediaStream(), // Empty stream
+      stream,
       canvas,
       context,
       intervalId,
       capturedFrames,
       isRecording: true,
     };
-
-    // Original camera/audio code commented out:
-    // await new Promise((resolve) => setTimeout(resolve, 500));
-    // let stream: MediaStream;
-    // try {
-    //   stream = await navigator.mediaDevices.getUserMedia({
-    //     video: {
-    //       width: { ideal: 640 },
-    //       height: { ideal: 480 },
-    //       frameRate: { ideal: 15 },
-    //     },
-    //     audio: {
-    //       echoCancellation: true,
-    //       noiseSuppression: true,
-    //       sampleRate: 22050,
-    //     },
-    //   });
-    // } catch (error) {
-    //   proctorLogger.warn(
-    //     'Initial stream request failed, trying with basic constraints',
-    //     {
-    //       operation: 'fallback_stream_request',
-    //       error: error instanceof Error ? error.message : 'Unknown error',
-    //     }
-    //   );
-    //   stream = await navigator.mediaDevices.getUserMedia({
-    //     video: true,
-    //     audio: true,
-    //   });
-    // }
-    //
-    // // Create canvas for frame capture
-    // const canvas = document.createElement('canvas');
-    // canvas.width = 640;
-    // canvas.height = 480;
-    // const context = canvas.getContext('2d');
-    //
-    // if (!context) {
-    //   throw new Error('Failed to get canvas 2D context');
-    // }
-    //
-    // // Create video element for frame capture (not for display)
-    // const video = document.createElement('video');
-    // video.srcObject = stream;
-    // video.muted = true;
-    // video.playsInline = true;
-    //
-    // // ... rest of original recording logic commented out ...
-    //
-    // return {
-    //   stream,
-    //   canvas,
-    //   context,
-    //   intervalId,
-    //   capturedFrames,
-    //   isRecording: true,
-    // };
   } catch (error) {
     proctorLogger.error(
       'Failed to start recording',
