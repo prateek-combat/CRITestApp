@@ -1,6 +1,6 @@
 'use client';
 
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
@@ -23,6 +23,7 @@ import {
   Building2,
 } from 'lucide-react';
 import Button from '@/components/ui/button/Button';
+import { performSecureLogout, setupSessionMonitor } from '@/lib/auth-utils';
 
 export default function AdminLayout({
   children,
@@ -47,6 +48,15 @@ export default function AdminLayout({
     if (session && !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
       router.push('/unauthorized');
       return;
+    }
+
+    // Setup session monitor for auto-logout on inactivity
+    if (session) {
+      const cleanup = setupSessionMonitor(() => {
+        performSecureLogout();
+      });
+
+      return cleanup;
     }
   }, [session, status, router, pathname]);
 
@@ -266,7 +276,7 @@ export default function AdminLayout({
                             whileHover={{ x: 2 }}
                             onClick={() => {
                               setIsUserMenuOpen(false);
-                              signOut({ callbackUrl: '/login' });
+                              performSecureLogout();
                             }}
                             className="flex w-full items-center px-3 py-2 text-xs text-gray-700 transition-colors hover:bg-red-50 hover:text-red-700"
                           >

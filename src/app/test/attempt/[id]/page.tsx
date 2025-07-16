@@ -8,6 +8,7 @@ import Button from '@/components/ui/button/Button';
 import SystemCompatibilityChecker from '@/components/SystemCompatibilityChecker';
 import { useProctoring } from '@/lib/proctor/recorder';
 import { useLiveFlags } from '@/lib/proctor/useLiveFlags';
+import { useCSRF } from '@/hooks/useCSRF';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -45,6 +46,7 @@ export default function TestTakingPage() {
   const attemptId = params.id as string;
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { fetchWithCSRF } = useCSRF();
   const isPublicTest = searchParams.get('type') === 'public';
 
   // Determine the correct API endpoint based on test type
@@ -105,7 +107,7 @@ export default function TestTakingPage() {
         ? `/api/public-test-attempts/${attemptId}/permissions`
         : `/api/test-attempts/${attemptId}/permissions`;
 
-      const response = await fetch(permissionsEndpoint, {
+      const response = await fetchWithCSRF(permissionsEndpoint, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -157,7 +159,7 @@ export default function TestTakingPage() {
 
       // Step 3: Submit to server
       setSubmissionStep('Submitting your test...');
-      const res = await fetch(apiEndpoint, {
+      const res = await fetchWithCSRF(apiEndpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -173,7 +175,11 @@ export default function TestTakingPage() {
 
       // Step 4: Cleanup and redirect
       setSubmissionStep('Finalizing submission...');
-      localStorage.removeItem(`test-progress-${attemptId}`);
+      // Clear progress from secure storage
+      if (typeof window !== 'undefined') {
+        const { testProgressStorage } = await import('@/lib/secure-storage');
+        testProgressStorage.clearProgress(attemptId);
+      }
 
       // Brief delay to show completion
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -224,63 +230,67 @@ export default function TestTakingPage() {
 
   // Hydrate state from localStorage and initial data
   useEffect(() => {
-    if (data) {
-      const savedProgress = localStorage.getItem(`test-progress-${attemptId}`);
+    if (data && typeof window !== 'undefined') {
+      import('@/lib/secure-storage').then(({ testProgressStorage }) => {
+        const savedProgress = testProgressStorage.loadProgress(attemptId);
 
-      // Initialize answers from scratch based on test questions
-      let initialAnswers = (data.test.questions || []).map((q: any) => ({
-        questionId: q.id,
-        selectedAnswerIndex: null,
-      }));
+        // Initialize answers from scratch based on test questions
+        let initialAnswers = (data.test.questions || []).map((q: any) => ({
+          questionId: q.id,
+          selectedAnswerIndex: null,
+        }));
 
-      // Create a map of already submitted answers for quick lookup
-      const submittedAnswersMap = (data.submittedAnswers || []).reduce(
-        (acc: any, ans: any) => {
-          acc[ans.questionId] = ans.selectedAnswerIndex;
-          return acc;
-        },
-        {}
-      );
+        // Create a map of already submitted answers for quick lookup
+        const submittedAnswersMap = (data.submittedAnswers || []).reduce(
+          (acc: any, ans: any) => {
+            acc[ans.questionId] = ans.selectedAnswerIndex;
+            return acc;
+          },
+          {}
+        );
 
-      // Populate initial answers with submitted ones
-      initialAnswers.forEach((answer: any) => {
-        if (submittedAnswersMap[answer.questionId] !== undefined) {
-          answer.selectedAnswerIndex = submittedAnswersMap[answer.questionId];
-        }
-      });
-
-      if (savedProgress) {
-        const { questionIndex, answers: savedAnswers } =
-          JSON.parse(savedProgress);
-        setCurrentQuestionIndex(questionIndex);
-
-        // Sync saved local answers with the definitive list of questions
-        const syncedAnswers = initialAnswers.map((initAns: any) => {
-          const saved = savedAnswers.find(
-            (a: any) => a.questionId === initAns.questionId
-          );
-          return saved || initAns;
+        // Populate initial answers with submitted ones
+        initialAnswers.forEach((answer: any) => {
+          if (submittedAnswersMap[answer.questionId] !== undefined) {
+            answer.selectedAnswerIndex = submittedAnswersMap[answer.questionId];
+          }
         });
-        setUserAnswers(syncedAnswers);
-      } else {
-        setUserAnswers(initialAnswers);
-      }
 
-      setHasHydrated(true);
+        if (savedProgress) {
+          const { questionIndex, answers: savedAnswers } = savedProgress;
+          setCurrentQuestionIndex(questionIndex);
+
+          // Sync saved local answers with the definitive list of questions
+          const syncedAnswers = initialAnswers.map((initAns: any) => {
+            const saved = savedAnswers.find(
+              (a: any) => a.questionId === initAns.questionId
+            );
+            return saved || initAns;
+          });
+          setUserAnswers(syncedAnswers);
+        } else {
+          setUserAnswers(initialAnswers);
+        }
+
+        setHasHydrated(true);
+      });
     }
   }, [data, attemptId]);
 
-  // Persist state to localStorage
+  // Persist state to secure storage
   useEffect(() => {
-    if (hasHydrated && data?.status !== 'COMPLETED') {
-      const progress = {
-        questionIndex: currentQuestionIndex,
-        answers: userAnswers,
-      };
-      localStorage.setItem(
-        `test-progress-${attemptId}`,
-        JSON.stringify(progress)
-      );
+    if (
+      hasHydrated &&
+      data?.status !== 'COMPLETED' &&
+      typeof window !== 'undefined'
+    ) {
+      import('@/lib/secure-storage').then(({ testProgressStorage }) => {
+        const progress = {
+          questionIndex: currentQuestionIndex,
+          answers: userAnswers,
+        };
+        testProgressStorage.saveProgress(attemptId, progress);
+      });
     }
   }, [currentQuestionIndex, userAnswers, attemptId, hasHydrated, data?.status]);
 

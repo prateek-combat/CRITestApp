@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withCache, apiCache } from '@/lib/cache';
 import { apiLogger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
-
-
+import { withApiProtection, requireAdmin } from '@/lib/api-utils';
 
 /**
  * @swagger
@@ -107,9 +106,15 @@ export async function GET() {
  *       500:
  *         description: Failed to create test.
  */
-export async function POST(request: NextRequest) {
+export const POST = withApiProtection(async (request: NextRequest) => {
   let title = '';
   try {
+    // Check admin authorization
+    const { error: authError, user } = await requireAdmin(request);
+    if (authError) {
+      return NextResponse.json({ error: authError }, { status: 403 });
+    }
+
     const requestData = await request.json();
     title = requestData.title;
     const { description, allowReview } = requestData;
@@ -118,31 +123,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
-    // For now, we'll use a default admin user
-    // In a real app, you'd get this from authentication
-    let adminUser = await prisma.user.findFirst({
-      where: { role: 'ADMIN' },
-    });
-
-    // If no admin user exists, create one
-    if (!adminUser) {
-      adminUser = await prisma.user.create({
-        data: {
-          email: 'admin@testplatform.com',
-          passwordHash: 'dummy', // In real app, this would be hashed
-          firstName: 'Admin',
-          lastName: 'User',
-          role: 'ADMIN',
-        },
-      });
-    }
+    // Use the authenticated user from the token
+    const createdById = user.id;
 
     const test = await prisma.test.create({
       data: {
         title: title.trim(),
         description: description?.trim() || null,
 
-        createdById: adminUser.id,
+        createdById: createdById,
       },
     });
 
@@ -170,4 +159,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

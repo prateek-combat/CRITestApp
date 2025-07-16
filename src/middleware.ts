@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import {
+  generateCSRFToken,
+  setCSRFCookie,
+  getCSRFTokenFromCookie,
+} from './lib/csrf';
 
 // Define protected routes patterns
 const protectedRoutes = {
@@ -31,8 +36,36 @@ const publicRoutes = [
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Allow public routes
+  // Skip middleware for static assets and Next.js internals
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/static') ||
+    (pathname.includes('.') && // has file extension
+      /\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/i.test(pathname))
+  ) {
+    return NextResponse.next();
+  }
+
+  // Handle public routes
   if (publicRoutes.some((route) => pathname.startsWith(route))) {
+    // Check if user is authenticated even on public routes
+    const token = await getToken({
+      req,
+      secret: process.env.NEXTAUTH_SECRET,
+    });
+
+    if (token) {
+      // Generate CSRF token for authenticated users on public routes
+      const response = NextResponse.next();
+
+      if (!getCSRFTokenFromCookie(req)) {
+        const csrfToken = generateCSRFToken();
+        setCSRFCookie(response, csrfToken);
+      }
+
+      return response;
+    }
+
     return NextResponse.next();
   }
 
@@ -68,11 +101,16 @@ export default async function middleware(req: NextRequest) {
         }
       }
 
+      // Use cached isAdmin flag for quick check in development
+      const isAdmin =
+        process.env.NODE_ENV === 'development'
+          ? token.isAdmin || ['ADMIN', 'SUPER_ADMIN'].includes(token.role)
+          : token.role === 'ADMIN' || token.role === 'SUPER_ADMIN';
+
       // Check admin role for admin routes
       if (
         (pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) &&
-        token.role !== 'ADMIN' &&
-        token.role !== 'SUPER_ADMIN'
+        !isAdmin
       ) {
         // Redirect to unauthorized for web pages
         if (pathname.startsWith('/admin')) {
@@ -92,11 +130,22 @@ export default async function middleware(req: NextRequest) {
       requestHeaders.set('x-user-role', token.role || '');
       requestHeaders.set('x-user-email', token.email || '');
 
-      return NextResponse.next({
+      const response = NextResponse.next({
         request: {
           headers: requestHeaders,
         },
       });
+
+      // Generate CSRF token only for state-changing requests or if not present
+      if (
+        !getCSRFTokenFromCookie(req) &&
+        ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)
+      ) {
+        const csrfToken = generateCSRFToken();
+        setCSRFCookie(response, csrfToken);
+      }
+
+      return response;
     } catch (error) {
       console.error('Middleware auth error:', error);
 

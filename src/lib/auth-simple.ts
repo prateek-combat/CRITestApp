@@ -39,7 +39,48 @@ export const authOptionsSimple: NextAuthOptions = {
   ],
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 8 * 60 * 60, // 8 hours - more secure than 30 days
+    updateAge: 60 * 60, // Update session every hour if active
+  },
+  jwt: {
+    maxAge: 8 * 60 * 60, // 8 hours
+  },
+  cookies: {
+    sessionToken: {
+      name:
+        process.env.NODE_ENV === 'production'
+          ? `__Secure-next-auth.session-token`
+          : `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+    callbackUrl: {
+      name:
+        process.env.NODE_ENV === 'production'
+          ? `__Secure-next-auth.callback-url`
+          : `next-auth.callback-url`,
+      options: {
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+    csrfToken: {
+      name:
+        process.env.NODE_ENV === 'production'
+          ? `__Host-next-auth.csrf-token`
+          : `next-auth.csrf-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
   },
   pages: {
     signIn: '/login',
@@ -49,6 +90,9 @@ export const authOptionsSimple: NextAuthOptions = {
     async signIn({ user, account }: any) {
       if (account?.provider === 'google') {
         try {
+          // In development, cache admin users for faster lookups
+          const isDevelopment = process.env.NODE_ENV === 'development';
+
           // Check if user exists in database with admin role
           const dbUser = await prisma.user.findFirst({
             where: {
@@ -60,11 +104,12 @@ export const authOptionsSimple: NextAuthOptions = {
           });
 
           if (dbUser) {
-            // User is authorized admin
+            // User is authorized admin - store all data in user object
             (user as any).role = dbUser.role;
             (user as any).dbId = dbUser.id;
             (user as any).firstName = dbUser.firstName;
             (user as any).lastName = dbUser.lastName;
+            (user as any).isAdmin = true; // Cache admin status
             return true;
           }
 
@@ -89,13 +134,36 @@ export const authOptionsSimple: NextAuthOptions = {
 
       return true;
     },
-    async jwt({ token, user }: any) {
+    async jwt({ token, user, trigger }: any) {
       if (user) {
+        // Initial sign in - store all user data in token
         token.id = (user as any).dbId || user.id;
         token.role = (user as any).role || 'USER';
         token.firstName = (user as any).firstName;
         token.lastName = (user as any).lastName;
+        token.isAdmin = (user as any).isAdmin || false;
+        token.lastActivity = Date.now();
+        token.email = user.email; // Store email for quick access
       }
+
+      // Check for session timeout (2 hours of inactivity)
+      if (token.lastActivity) {
+        const inactivityTimeout = 2 * 60 * 60 * 1000; // 2 hours
+        if (Date.now() - token.lastActivity > inactivityTimeout) {
+          // Session expired due to inactivity
+          return null;
+        }
+      }
+
+      // Update last activity only periodically, not on every request
+      if (trigger === 'update' && token.lastActivity) {
+        const timeSinceLastUpdate = Date.now() - token.lastActivity;
+        // Only update if more than 5 minutes have passed
+        if (timeSinceLastUpdate > 5 * 60 * 1000) {
+          token.lastActivity = Date.now();
+        }
+      }
+
       return token;
     },
     async session({ session, token }: any) {

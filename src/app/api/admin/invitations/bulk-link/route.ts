@@ -68,7 +68,10 @@ export async function POST(request: NextRequest) {
         });
         successCount++;
       } catch (error) {
-        console.error(`Failed to send link to ${candidate.email}:`, error);
+        console.error(
+          'Failed to send link to candidate:',
+          error instanceof Error ? error.message : 'Unknown error'
+        );
         results.push({
           email: candidate.email,
           success: false,

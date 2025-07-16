@@ -10,12 +10,13 @@ const QUESTION_CATEGORIES = [
   'OTHER',
 ] as const;
 import { useRouter } from 'next/navigation';
+import { useCSRF } from '@/hooks/useCSRF';
 
 // --- Constants ---
 const ADMIN_USER_ID = '4387fa5a-2267-45c6-a68d-ad372276dcc6';
 const QUESTION_TIMERS = [15, 30, 45, 60];
 const DEFAULT_ANSWER_OPTIONS = ['', '', '', '']; // Default to 4 options
-const AUTH_KEY = 'isAdminLoggedIn_superSimple'; // Auth key
+// Auth is now handled by middleware and NextAuth
 
 // --- Interfaces ---
 interface Question {
@@ -52,6 +53,7 @@ interface NewQuestionForm {
 
 export default function ManageTestsPage() {
   const router = useRouter();
+  const { fetchWithCSRF } = useCSRF();
   const [isClient, setIsClient] = useState(false);
 
   // --- State for Tests ---
@@ -100,15 +102,9 @@ export default function ManageTestsPage() {
   // --- Effects ---
   useEffect(() => {
     setIsClient(true);
-    if (
-      typeof window !== 'undefined' &&
-      localStorage.getItem(AUTH_KEY) !== 'true'
-    ) {
-      router.replace('/admin/login');
-    } else {
-      fetchTests();
-    }
-  }, [router]);
+    // Auth is now handled by middleware - just fetch tests
+    fetchTests();
+  }, []);
 
   useEffect(() => {
     if (
@@ -185,7 +181,7 @@ export default function ManageTestsPage() {
     setIsCreatingTest(true);
     setErrorCreateTest(null);
     try {
-      const response = await fetch('/api/tests', {
+      const response = await fetchWithCSRF('/api/tests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -276,7 +272,7 @@ export default function ManageTestsPage() {
     setIsAddingQuestion(true);
     setErrorAddQuestion(null);
     try {
-      const response = await fetch('/api/questions', {
+      const response = await fetchWithCSRF('/api/questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -328,7 +324,7 @@ export default function ManageTestsPage() {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7); // Expires in 7 days
 
-      const response = await fetch('/api/invitations', {
+      const response = await fetchWithCSRF('/api/invitations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -372,7 +368,7 @@ export default function ManageTestsPage() {
     setDeletingTestId(testId);
     setErrorTests(null); // Clear previous general test errors
     try {
-      const response = await fetch(`/api/tests/${testId}`, {
+      const response = await fetchWithCSRF(`/api/tests/${testId}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -397,10 +393,7 @@ export default function ManageTestsPage() {
   };
 
   // --- Rendering ---
-  if (
-    !isClient ||
-    (typeof window !== 'undefined' && localStorage.getItem(AUTH_KEY) !== 'true')
-  ) {
+  if (!isClient) {
     // Render nothing or a loading indicator while redirecting
     return (
       <div className="flex min-h-screen items-center justify-center bg-off-white">
@@ -613,7 +606,7 @@ export default function ManageTestsPage() {
                                   )
                                 ) {
                                   try {
-                                    const response = await fetch(
+                                    const response = await fetchWithCSRF(
                                       `/api/questions/${q.id}`,
                                       {
                                         method: 'DELETE',

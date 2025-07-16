@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
-import { HtmlPdfReportGenerator } from '@/utils/htmlPdfReportGenerator';
+import { PdfReportGenerator } from '@/utils/pdfReportGenerator';
 import { calculatePersonalityScores } from '@/lib/scoring/personalityScoring';
 
 export async function POST(request: NextRequest) {
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Generate PDF
-    const generator = new HtmlPdfReportGenerator();
+    const generator = new PdfReportGenerator();
     const pdfBytes = await generator.generateQAReport(testAttemptData);
 
     // Return PDF as downloadable file
