@@ -27,18 +27,9 @@ export const authOptionsSimple: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials: any) {
-        // Local admin login for development and testing
-        if (
-          credentials?.email === 'local-admin' &&
-          credentials?.password === 'local-admin'
-        ) {
-          return {
-            id: 'local-admin-id',
-            email: 'admin@local.dev',
-            name: 'Local Admin',
-            role: 'SUPER_ADMIN',
-          };
-        }
+        // Note: For local development, create a proper admin user in the database
+        // using the setup scripts provided in the scripts/ directory
+        // Example: npm run setup:admin
 
         // All other credentials authentication is disabled
         // Users should use Google OAuth

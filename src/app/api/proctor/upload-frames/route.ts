@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
 
 // POST /api/proctor/upload-frames - Store captured frames
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
     const formData = await request.formData();
     const attemptId = formData.get('attemptId') as string;
 
@@ -32,10 +41,24 @@ export async function POST(request: NextRequest) {
     // Check if this is a regular test attempt or public test attempt
     const testAttempt = await prisma.testAttempt.findUnique({
       where: { id: attemptId },
-      select: { id: true },
+      select: {
+        id: true,
+        userId: true,
+      },
     });
 
     const isPublicAttempt = !testAttempt;
+
+    // For regular test attempts, verify the user owns this attempt
+    if (testAttempt && testAttempt.userId !== session.user.id) {
+      // Allow admins to upload frames for any attempt
+      if (
+        session.user.role !== 'ADMIN' &&
+        session.user.role !== 'SUPER_ADMIN'
+      ) {
+        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+      }
+    }
 
     if (isPublicAttempt) {
       // Check if public test attempt exists
