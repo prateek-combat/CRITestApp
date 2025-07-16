@@ -1,5 +1,9 @@
-// Import puppeteer conditionally for server-side only
-const puppeteer = typeof window === 'undefined' ? require('puppeteer') : null;
+// This file should only be imported on the server side
+if (typeof window !== 'undefined') {
+  throw new Error('htmlPdfReportGenerator can only be used on the server side');
+}
+
+const puppeteer = require('puppeteer');
 
 export interface TestAttemptData {
   id: string;
