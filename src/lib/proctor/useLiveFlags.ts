@@ -15,9 +15,20 @@ export function stopProctoringGlobally() {
   isProctoringStopped = true;
 }
 
-export function useLiveFlags(attemptId: string) {
+export function useLiveFlags(
+  attemptId: string,
+  onStrikeUpdate?: (
+    strikeCount: number,
+    maxAllowed: number,
+    strikeLevel: 'first' | 'second' | 'terminated'
+  ) => void,
+  onTermination?: (reason: string) => void,
+  onFocusEvent?: (isBlur: boolean, blurCount: number) => void
+) {
   const eventBuffer = useRef<ProctorEvent[]>([]);
   const lastActivityTime = useRef<number>(Date.now());
+  const blurCount = useRef<number>(0);
+  const lastBlurTime = useRef<number>(0);
 
   // Send event to server
   const sendEvent = (type: string, extra?: Record<string, any>) => {
@@ -39,8 +50,8 @@ export function useLiveFlags(attemptId: string) {
 
     eventBuffer.current.push(event);
 
-    // Send immediately via beacon (non-blocking)
-    if (navigator.sendBeacon) {
+    // Send immediately via beacon (non-blocking) for non-copy events
+    if (navigator.sendBeacon && type !== 'COPY_DETECTED') {
       navigator.sendBeacon(
         '/api/proctor/event',
         JSON.stringify({
@@ -49,7 +60,7 @@ export function useLiveFlags(attemptId: string) {
         })
       );
     } else {
-      // Fallback for browsers without beacon support
+      // Use fetch for copy events to get response, or as fallback
       fetch('/api/proctor/event', {
         method: 'POST',
         headers: {
@@ -59,9 +70,37 @@ export function useLiveFlags(attemptId: string) {
           attemptId,
           events: [event],
         }),
-      }).catch((error) => {
-        console.warn('Failed to send proctor event:', error);
-      });
+      })
+        .then(async (response) => {
+          if (response.ok) {
+            const data = await response.json();
+
+            // Handle strike responses
+            if (data.strikeWarning || data.terminated) {
+              const strikeCount = data.copyCount || 0;
+              const maxAllowed = data.maxAllowed || 3;
+
+              if (data.terminated) {
+                if (onTermination) {
+                  onTermination(
+                    data.reason || 'Test terminated due to policy violations'
+                  );
+                }
+              } else if (onStrikeUpdate) {
+                const strikeLevel =
+                  strikeCount === 1
+                    ? 'first'
+                    : strikeCount === 2
+                      ? 'second'
+                      : 'terminated';
+                onStrikeUpdate(strikeCount, maxAllowed, strikeLevel);
+              }
+            }
+          }
+        })
+        .catch((error) => {
+          console.warn('Failed to send proctor event:', error);
+        });
     }
   };
 
@@ -87,11 +126,35 @@ export function useLiveFlags(attemptId: string) {
 
     // Track window focus/blur
     const handleWindowBlur = () => {
-      sendEvent('WINDOW_BLUR');
+      const now = Date.now();
+      blurCount.current += 1;
+      lastBlurTime.current = now;
+
+      sendEvent('WINDOW_BLUR', {
+        blurCount: blurCount.current,
+        timestamp: now,
+      });
+
+      // Trigger focus warning callback
+      if (onFocusEvent) {
+        onFocusEvent(true, blurCount.current);
+      }
     };
 
     const handleWindowFocus = () => {
-      sendEvent('WINDOW_FOCUS');
+      const now = Date.now();
+      const blurDuration = now - lastBlurTime.current;
+
+      sendEvent('WINDOW_FOCUS', {
+        blurCount: blurCount.current,
+        blurDuration,
+        timestamp: now,
+      });
+
+      // Trigger focus return callback if blur duration > 1 second
+      if (onFocusEvent && blurDuration > 1000) {
+        onFocusEvent(false, blurCount.current);
+      }
     };
 
     // Track copy/paste events

@@ -203,6 +203,9 @@ model TestAttempt {
   permissionsGranted     Boolean               @default(false)
   riskScore              Float?
   currentQuestionIndex   Int?                  @default(0)
+  copyEventCount         Int                   @default(0)
+  maxCopyEventsAllowed   Int                   @default(3)
+  terminationReason      String?
   createdAt              DateTime              @default(now())
   updatedAt              DateTime              @updatedAt
   invitationId           String                @unique
@@ -311,6 +314,9 @@ model PublicTestAttempt {
   permissionsGranted   Boolean                 @default(false)
   riskScore            Float?
   currentQuestionIndex Int?                    @default(0)
+  copyEventCount       Int                     @default(0)
+  maxCopyEventsAllowed Int                     @default(3)
+  terminationReason    String?
   createdAt            DateTime                @default(now())
   updatedAt            DateTime                @updatedAt
   personalityProfile   Json?
@@ -431,6 +437,7 @@ enum TestAttemptStatus {
   TIMED_OUT
   ABANDONED
   ARCHIVED
+  TERMINATED
 }
 
 enum QuestionCategory {

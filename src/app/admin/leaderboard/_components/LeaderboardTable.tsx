@@ -36,6 +36,8 @@ interface CandidateScore {
   isPublicAttempt?: boolean;
   riskScore?: number | null;
   proctoringEnabled?: boolean;
+  status?: string; // Add status field
+  terminationReason?: string | null; // Add termination reason field
 }
 
 interface LeaderboardData {
@@ -187,6 +189,40 @@ export default function LeaderboardTable({
     if (rank === 3) return 'bg-orange-100 text-orange-800 border-orange-200';
     if (rank <= 10) return 'bg-primary-100 text-primary-800 border-primary-200';
     return 'bg-gray-50 text-gray-600 border-gray-200';
+  };
+
+  const getStatusBadgeColor = (status: string): string => {
+    switch (status) {
+      case 'COMPLETED':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'TERMINATED':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'TIMED_OUT':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'ABANDONED':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'IN_PROGRESS':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getStatusDisplayText = (status: string): string => {
+    switch (status) {
+      case 'COMPLETED':
+        return 'Completed';
+      case 'TERMINATED':
+        return 'Terminated';
+      case 'TIMED_OUT':
+        return 'Timed Out';
+      case 'ABANDONED':
+        return 'Abandoned';
+      case 'IN_PROGRESS':
+        return 'In Progress';
+      default:
+        return status;
+    }
   };
 
   // Determine which columns should be visible based on data
@@ -568,6 +604,9 @@ export default function LeaderboardTable({
                 />
               </th>
               <th className="px-2 py-1.5 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                Status
+              </th>
+              <th className="px-2 py-1.5 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
                 <div className="flex items-center justify-center space-x-2">
                   <span>Actions</span>
                   <button
@@ -718,6 +757,27 @@ export default function LeaderboardTable({
 
                   <td className="whitespace-nowrap px-2 py-1.5 text-center text-xs text-gray-500">
                     {formatDate(candidate.completedAt)}
+                  </td>
+
+                  <td className="whitespace-nowrap px-2 py-1.5 text-center">
+                    <div className="flex flex-col items-center space-y-1">
+                      <span
+                        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${getStatusBadgeColor(candidate.status || 'COMPLETED')}`}
+                      >
+                        {getStatusDisplayText(candidate.status || 'COMPLETED')}
+                      </span>
+                      {candidate.status === 'TERMINATED' &&
+                        candidate.terminationReason && (
+                          <div
+                            className="text-xs text-gray-500"
+                            title={candidate.terminationReason}
+                          >
+                            {candidate.terminationReason.length > 20
+                              ? `${candidate.terminationReason.substring(0, 20)}...`
+                              : candidate.terminationReason}
+                          </div>
+                        )}
+                    </div>
                   </td>
 
                   <td className="whitespace-nowrap px-2 py-1.5 text-center text-xs">

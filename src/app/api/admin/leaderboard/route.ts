@@ -55,6 +55,13 @@ export async function GET(request: NextRequest) {
     const dateTo = searchParams.get('dateTo');
     const invitationId = searchParams.get('invitationId');
 
+    // NEW: Incomplete attempts filter parameters
+    const includeIncomplete = searchParams.get('includeIncomplete') === 'true';
+    const statusFilterParam = searchParams.get('statusFilter');
+    const statusFilter = statusFilterParam
+      ? statusFilterParam.split(',')
+      : null;
+
     // NEW: Weight profile parameter for configurable scoring
     const weightProfileId = searchParams.get('weightProfile');
     const customWeightsParam = searchParams.get('customWeights');
@@ -68,9 +75,21 @@ export async function GET(request: NextRequest) {
       searchParams.get('scoreThresholdMode') || 'above'; // 'above' or 'below'
 
     // Build where clauses for both regular and public attempts
-    const baseWhere: any = {
-      status: 'COMPLETED',
-    };
+    const baseWhere: any = {};
+
+    // Handle status filtering
+    if (statusFilter && statusFilter.length > 0) {
+      // Use specific status filter if provided
+      baseWhere.status = { in: statusFilter };
+    } else if (includeIncomplete) {
+      // Include common incomplete statuses along with completed
+      baseWhere.status = {
+        in: ['COMPLETED', 'TERMINATED', 'TIMED_OUT', 'ABANDONED'],
+      };
+    } else {
+      // Default: only show completed attempts
+      baseWhere.status = 'COMPLETED';
+    }
 
     if (search) {
       baseWhere.OR = [
@@ -205,6 +224,8 @@ export async function GET(request: NextRequest) {
           riskScore: true,
           proctoringEnabled: true,
           testId: true, // Add testId for job profile scoring
+          status: true, // Add status for incomplete attempts
+          terminationReason: true, // Add termination reason for terminated attempts
           submittedAnswers: {
             select: {
               isCorrect: true,
@@ -226,6 +247,8 @@ export async function GET(request: NextRequest) {
           percentile: true,
           riskScore: true,
           proctoringEnabled: true,
+          status: true, // Add status for incomplete attempts
+          terminationReason: true, // Add termination reason for terminated attempts
           publicLink: {
             select: {
               title: true,
@@ -419,6 +442,9 @@ export async function GET(request: NextRequest) {
         categoryScores[category] = { correct: 0, total, percentage: 0 };
       });
 
+      // Handle incomplete attempts - they may not have complete data
+      const isIncompleteAttempt = (attempt as any).status !== 'COMPLETED';
+
       // Count correct answers for each category
       if (attempt.submittedAnswers && attempt.submittedAnswers.length > 0) {
         // Normal case: calculate from submitted answers
@@ -448,6 +474,13 @@ export async function GET(request: NextRequest) {
               (rawScore * score.total) / totalTestQuestions
             );
           }
+        });
+      } else if (isIncompleteAttempt) {
+        // For incomplete attempts with no score data, set all scores to 0
+        // This ensures they appear in the leaderboard but with zero scores
+        Object.keys(categoryScores).forEach((category) => {
+          categoryScores[category].correct = 0;
+          categoryScores[category].percentage = 0;
         });
       }
 
@@ -690,12 +723,30 @@ export async function GET(request: NextRequest) {
             ? (attempt as any).riskScore
             : null,
         proctoringEnabled: (attempt as any).proctoringEnabled === true,
+        status: (attempt as any).status || 'COMPLETED', // Add status for incomplete attempts
+        terminationReason: (attempt as any).terminationReason || null, // Add termination reason
       };
     });
 
-    // Get stats from both tables
-    let regularStatsWhere: any = { status: 'COMPLETED' };
-    let publicStatsWhere: any = { status: 'COMPLETED' };
+    // Get stats from both tables - use same status filtering as main query
+    let regularStatsWhere: any = {};
+    let publicStatsWhere: any = {};
+
+    // Apply same status filtering logic for stats
+    if (statusFilter && statusFilter.length > 0) {
+      regularStatsWhere.status = { in: statusFilter };
+      publicStatsWhere.status = { in: statusFilter };
+    } else if (includeIncomplete) {
+      regularStatsWhere.status = {
+        in: ['COMPLETED', 'TERMINATED', 'TIMED_OUT', 'ABANDONED'],
+      };
+      publicStatsWhere.status = {
+        in: ['COMPLETED', 'TERMINATED', 'TIMED_OUT', 'ABANDONED'],
+      };
+    } else {
+      regularStatsWhere.status = 'COMPLETED';
+      publicStatsWhere.status = 'COMPLETED';
+    }
 
     if (testId) {
       regularStatsWhere.testId = testId;
@@ -771,6 +822,8 @@ export async function GET(request: NextRequest) {
         sortBy,
         sortOrder,
         weightProfile: weightProfileId,
+        includeIncomplete,
+        statusFilter,
       },
       weightProfile: weightProfile
         ? {

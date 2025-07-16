@@ -103,6 +103,8 @@ interface CandidateScore {
   percentile: number;
   rank: number;
   isPublicAttempt?: boolean;
+  status?: string;
+  terminationReason?: string | null;
 }
 
 interface LeaderboardData {
@@ -125,6 +127,8 @@ interface LeaderboardData {
     sortBy: string;
     sortOrder: string;
     weightProfile?: string;
+    includeIncomplete?: boolean;
+    statusFilter?: string;
   };
   weightProfile?: WeightProfile | null;
   stats: {
@@ -183,6 +187,8 @@ export default function LeaderboardSidebarLayout({
   const [scoreThresholdMode, setScoreThresholdMode] = useState<
     'above' | 'below'
   >('above');
+  const [includeIncomplete, setIncludeIncomplete] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
   // Fetch weight profiles
   const fetchProfiles = useCallback(async () => {
@@ -299,6 +305,14 @@ export default function LeaderboardSidebarLayout({
           params.set('scoreThresholdMode', scoreThresholdMode);
         }
 
+        // Add incomplete attempts filter parameters
+        if (includeIncomplete) {
+          params.set('includeIncomplete', 'true');
+        }
+        if (statusFilter) {
+          params.set('statusFilter', statusFilter);
+        }
+
         const response = await fetch(`/api/admin/leaderboard?${params}`);
         if (!response.ok) {
           throw new Error('Failed to fetch leaderboard data');
@@ -319,6 +333,8 @@ export default function LeaderboardSidebarLayout({
       urlSearchParams,
       scoreThreshold,
       scoreThresholdMode,
+      includeIncomplete,
+      statusFilter,
     ]
   );
 
@@ -361,6 +377,8 @@ export default function LeaderboardSidebarLayout({
     fetchLeaderboardData,
     scoreThreshold,
     scoreThresholdMode,
+    includeIncomplete,
+    statusFilter,
   ]);
 
   // Re-fetch data when URL search params change (including search)
@@ -524,6 +542,32 @@ export default function LeaderboardSidebarLayout({
     setScoreThresholdMode(mode);
     handleFilterChange({
       scoreThresholdMode: mode,
+    });
+  };
+
+  const handleIncludeIncompleteChange = (include: boolean) => {
+    setIncludeIncomplete(include);
+    if (!include) {
+      setStatusFilter(null); // Clear status filter when unchecking
+    }
+    handleFilterChange({
+      includeIncomplete: include ? 'true' : undefined,
+      statusFilter: include ? statusFilter || undefined : undefined,
+    });
+  };
+
+  const handleStatusFilterChange = (status: string | null) => {
+    setStatusFilter(status);
+    if (status) {
+      setIncludeIncomplete(false); // Clear include incomplete when selecting specific status
+    }
+    handleFilterChange({
+      statusFilter: status || undefined,
+      includeIncomplete: status
+        ? undefined
+        : includeIncomplete
+          ? 'true'
+          : undefined,
     });
   };
 
@@ -769,6 +813,64 @@ export default function LeaderboardSidebarLayout({
               sortOrder={(data?.filters?.sortOrder || 'desc') as 'asc' | 'desc'}
               onSortChange={handleSort}
             />
+
+            {/* Incomplete Attempts Filter */}
+            <div className="mt-3 border-t pt-3">
+              <div className="flex items-start gap-4">
+                <div className="flex-1">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                    Attempt Status Filter
+                  </label>
+                  <div className="space-y-2">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={includeIncomplete}
+                        onChange={(e) =>
+                          handleIncludeIncompleteChange(e.target.checked)
+                        }
+                        className="mr-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">
+                        Include incomplete attempts
+                      </span>
+                    </label>
+                    <div className="text-xs text-gray-500">
+                      Shows terminated, timed out, and abandoned attempts
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-1">
+                  <label
+                    htmlFor="statusFilter"
+                    className="mb-1 block text-sm font-medium text-gray-700"
+                  >
+                    Specific Status
+                  </label>
+                  <select
+                    id="statusFilter"
+                    value={statusFilter || ''}
+                    onChange={(e) =>
+                      handleStatusFilterChange(e.target.value || null)
+                    }
+                    className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="COMPLETED">Completed Only</option>
+                    <option value="TERMINATED">Terminated Only</option>
+                    <option value="TIMED_OUT">Timed Out Only</option>
+                    <option value="ABANDONED">Abandoned Only</option>
+                    <option value="COMPLETED,TERMINATED">
+                      Completed & Terminated
+                    </option>
+                    <option value="COMPLETED,TERMINATED,TIMED_OUT,ABANDONED">
+                      All Including Incomplete
+                    </option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

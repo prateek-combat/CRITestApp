@@ -6,6 +6,10 @@ import useSWR from 'swr';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import Button from '@/components/ui/button/Button';
 import SystemCompatibilityChecker from '@/components/SystemCompatibilityChecker';
+import StrikeIndicator from '@/components/StrikeIndicator';
+import StrikeWarningModal from '@/components/StrikeWarningModal';
+import TestTerminationPage from '@/components/TestTerminationPage';
+import FocusWarningModal from '@/components/FocusWarningModal';
 import { useProctoring } from '@/lib/proctor/recorder';
 import { useLiveFlags } from '@/lib/proctor/useLiveFlags';
 
@@ -74,8 +78,86 @@ export default function TestTakingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionStep, setSubmissionStep] = useState<string>('');
   const [proctoringError, setProctoringError] = useState<string | null>(null);
+  const [showStrikeWarning, setShowStrikeWarning] = useState(false);
+  const [strikeCount, setStrikeCount] = useState(0);
+  const [maxAllowed, setMaxAllowed] = useState(3);
+  const [strikeLevel, setStrikeLevel] = useState<'first' | 'second'>('first');
+  const [isTerminated, setIsTerminated] = useState(false);
+  const [terminationReason, setTerminationReason] = useState<string>('');
+  const [showFocusWarning, setShowFocusWarning] = useState(false);
+  const [blurCount, setBlurCount] = useState(0);
+  const [isReturningFocus, setIsReturningFocus] = useState(false);
 
-  useLiveFlags(attemptId);
+  const handleTestTermination = (reason: string) => {
+    setIsTerminated(true);
+    setTerminationReason(reason);
+  };
+
+  const handleStrikeUpdateFromLiveFlags = (
+    strikeCount: number,
+    maxAllowed: number,
+    strikeLevel: 'first' | 'second' | 'terminated'
+  ) => {
+    setStrikeCount(strikeCount);
+    setMaxAllowed(maxAllowed);
+
+    if (strikeLevel === 'terminated') {
+      setIsTerminated(true);
+      setTerminationReason(
+        `Test terminated due to ${strikeCount} copy violations`
+      );
+    } else {
+      // Always update strike level and show warning - don't block on existing modal
+      setStrikeLevel(strikeLevel);
+      setShowStrikeWarning(true);
+    }
+  };
+
+  const handleStrikeUpdate = (
+    newStrikeCount: number,
+    newMaxAllowed: number
+  ) => {
+    setStrikeCount(newStrikeCount);
+    setMaxAllowed(newMaxAllowed);
+
+    // Show warning modal for first and second strikes
+    if (newStrikeCount === 1 && !showStrikeWarning) {
+      setStrikeLevel('first');
+      setShowStrikeWarning(true);
+    } else if (newStrikeCount === 2 && !showStrikeWarning) {
+      setStrikeLevel('second');
+      setShowStrikeWarning(true);
+    }
+  };
+
+  const handleFocusEvent = (isBlur: boolean, currentBlurCount: number) => {
+    setBlurCount(currentBlurCount);
+
+    if (isBlur) {
+      // Window lost focus - show warning immediately
+      setIsReturningFocus(false);
+      setShowFocusWarning(true);
+    } else {
+      // Window regained focus - show "welcome back" message
+      setIsReturningFocus(true);
+      setShowFocusWarning(true);
+    }
+  };
+
+  const handleCloseFocusWarning = () => {
+    setShowFocusWarning(false);
+  };
+
+  useLiveFlags(
+    attemptId,
+    handleStrikeUpdateFromLiveFlags,
+    handleTestTermination,
+    handleFocusEvent
+  );
+
+  const handleCloseStrikeWarning = () => {
+    setShowStrikeWarning(false);
+  };
 
   const handleSystemCheckComplete = (
     passed: boolean,
@@ -122,7 +204,7 @@ export default function TestTakingPage() {
 
       setTestReady(true);
     } catch (error) {
-      console.error('Error updating permissions:', error);
+      // Error updating permissions
       alert('Failed to initialize proctoring. Please try again.');
     }
   };
@@ -193,7 +275,7 @@ export default function TestTakingPage() {
         router.push(`/test/results/${attemptId}`);
       }
     } catch (e) {
-      console.error(e);
+      // Error occurred while submitting test
       setIsSubmitting(false);
       setSubmissionStep('');
       alert('An error occurred while submitting your test. Please try again.');
@@ -309,7 +391,7 @@ export default function TestTakingPage() {
   useEffect(() => {
     if (testReady && attemptId && !isRecording) {
       startRecording().catch((error) => {
-        console.error('Failed to start proctoring:', error);
+        // Failed to start proctoring
         setProctoringError(error.message || 'Failed to start proctoring');
         setTestReady(false); // Prevent test from continuing
       });
@@ -544,6 +626,20 @@ export default function TestTakingPage() {
     );
   }
 
+  if (data.status === 'TERMINATED' || isTerminated) {
+    return (
+      <TestTerminationPage
+        reason={
+          terminationReason ||
+          data.terminationReason ||
+          'Test terminated due to policy violations'
+        }
+        strikeCount={strikeCount}
+        maxAllowed={maxAllowed}
+      />
+    );
+  }
+
   const currentQuestion = data.test.questions[currentQuestionIndex];
 
   if (!currentQuestion) {
@@ -567,6 +663,35 @@ export default function TestTakingPage() {
           REC
         </div>
       )}
+
+      <StrikeIndicator
+        strikeCount={strikeCount}
+        maxAllowed={maxAllowed}
+        strikeLevel={
+          strikeCount === 0
+            ? 'none'
+            : strikeCount === 1
+              ? 'first'
+              : strikeCount === 2
+                ? 'second'
+                : 'terminated'
+        }
+      />
+
+      <StrikeWarningModal
+        isOpen={showStrikeWarning}
+        onClose={handleCloseStrikeWarning}
+        strikeCount={strikeCount}
+        maxAllowed={maxAllowed}
+        strikeLevel={strikeLevel}
+      />
+
+      <FocusWarningModal
+        isOpen={showFocusWarning}
+        onClose={handleCloseFocusWarning}
+        blurCount={blurCount}
+        isReturning={isReturningFocus}
+      />
 
       <header className="flex items-center justify-between border-b bg-military-green px-6 py-2 text-white shadow-sm">
         <h1 className="text-lg font-bold">{data.test.title}</h1>
