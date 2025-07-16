@@ -250,6 +250,10 @@ export default function LeaderboardContent({
         data={data}
         onSort={handleSort}
         showWeightedScores={true}
+        searchValue={data.filters.search || ''}
+        onSearchChange={(value) =>
+          handleFilterChange({ search: value || undefined, page: '1' })
+        }
       />
 
       <CompareDrawer />

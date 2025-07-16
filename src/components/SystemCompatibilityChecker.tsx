@@ -156,22 +156,51 @@ export default function SystemCompatibilityChecker({
     updateResult('camera', 'checking', 'Testing camera access...');
 
     try {
-      // TEMPORARY DISABLE: Skip actual camera check, mark as passed
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate check delay
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+      });
+
+      // Test that we can actually get video from the stream
+      const videoTrack = stream.getVideoTracks()[0];
+      if (!videoTrack) {
+        throw new Error('No video track found');
+      }
+
+      const settings = videoTrack.getSettings();
+      const deviceName = videoTrack.label || 'Default Camera';
+
+      // Display the video feed to verify it's working
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+
       updateResult(
         'camera',
         'pass',
-        'Camera check temporarily disabled',
-        'Proctoring continues without camera requirement'
+        `Camera ready - ${deviceName}`,
+        `Resolution: ${settings.width}x${settings.height}`
       );
+
+      // Clean up - we'll start a new stream when the test begins
+      setTimeout(() => {
+        stream.getTracks().forEach((track) => track.stop());
+        if (videoRef.current) {
+          videoRef.current.srcObject = null;
+        }
+      }, 2000);
+
+      streamRef.current = stream;
     } catch (error: any) {
-      // TEMPORARY: Force pass even on error
-      updateResult(
-        'camera',
-        'pass',
-        'Camera check temporarily disabled',
-        'Proctoring continues without camera requirement'
-      );
+      const errorMessage =
+        error.name === 'NotAllowedError'
+          ? 'Camera access denied. Please allow camera access and refresh.'
+          : error.name === 'NotFoundError'
+            ? 'No camera found. Please connect a camera.'
+            : error.name === 'NotReadableError'
+              ? 'Camera is being used by another application.'
+              : `Camera error: ${error.message}`;
+
+      updateResult('camera', 'fail', 'Camera access failed', errorMessage);
     }
   };
 
@@ -179,21 +208,69 @@ export default function SystemCompatibilityChecker({
     updateResult('microphone', 'checking', 'Testing microphone access...');
 
     try {
-      // TEMPORARY DISABLE: Skip actual microphone check, mark as passed
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate check delay
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+      });
+
+      // Test that we can actually get audio from the stream
+      const audioTrack = stream.getAudioTracks()[0];
+      if (!audioTrack) {
+        throw new Error('No audio track found');
+      }
+
+      const deviceName = audioTrack.label || 'Default Microphone';
+
+      // Create audio context to test microphone levels
+      const audioContext = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(stream);
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      microphone.connect(analyser);
+
+      // Check audio levels
+      let maxLevel = 0;
+      const checkLevels = setInterval(() => {
+        analyser.getByteFrequencyData(dataArray);
+        const level = Math.max(...dataArray);
+        maxLevel = Math.max(maxLevel, level);
+      }, 100);
+
+      // Wait a bit to collect audio levels
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      clearInterval(checkLevels);
+
+      // Clean up audio context
+      microphone.disconnect();
+      audioContext.close();
+
       updateResult(
         'microphone',
         'pass',
-        'Microphone check temporarily disabled',
-        'Proctoring continues without microphone requirement'
+        `Microphone ready - ${deviceName}`,
+        maxLevel > 0
+          ? 'Audio input detected'
+          : 'No audio detected - ensure you speak during the test'
       );
+
+      // Clean up
+      stream.getTracks().forEach((track) => track.stop());
     } catch (error: any) {
-      // TEMPORARY: Force pass even on error
+      const errorMessage =
+        error.name === 'NotAllowedError'
+          ? 'Microphone access denied. Please allow microphone access and refresh.'
+          : error.name === 'NotFoundError'
+            ? 'No microphone found. Please connect a microphone.'
+            : error.name === 'NotReadableError'
+              ? 'Microphone is being used by another application.'
+              : `Microphone error: ${error.message}`;
+
       updateResult(
         'microphone',
-        'pass',
-        'Microphone check temporarily disabled',
-        'Proctoring continues without microphone requirement'
+        'fail',
+        'Microphone access failed',
+        errorMessage
       );
     }
   };
