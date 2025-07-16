@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptionsSimple } from '@/lib/auth-simple';
 import {
   sendJobProfileInvitationEmail,
-  type JobProfileJobProfileInvitationEmailData,
+  type JobProfileInvitationEmailData,
 } from '@/lib/email';
 import { prisma } from '@/lib/prisma';
 
