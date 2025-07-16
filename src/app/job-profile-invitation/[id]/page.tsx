@@ -191,7 +191,8 @@ export default function JobProfileInvitationPage() {
               <div>
                 <p className="font-medium text-gray-900">Secure Environment</p>
                 <p className="text-sm text-gray-600">
-                  Ensure you're in a quiet, private space with stable internet
+                  Ensure you&apos;re in a quiet, private space with stable
+                  internet
                 </p>
               </div>
             </div>

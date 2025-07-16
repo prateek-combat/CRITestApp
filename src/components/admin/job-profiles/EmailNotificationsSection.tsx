@@ -414,10 +414,10 @@ CRI Test Platform`,
             </h5>
             <div className="space-y-1 text-sm text-blue-800">
               <p>
-                <code>{'{{candidateName}}'}</code> - Candidate's name
+                <code>{'{{candidateName}}'}</code> - Candidate&apos;s name
               </p>
               <p>
-                <code>{'{{candidateEmail}}'}</code> - Candidate's email
+                <code>{'{{candidateEmail}}'}</code> - Candidate&apos;s email
               </p>
               <p>
                 <code>{'{{jobProfileTitle}}'}</code> - Job profile name

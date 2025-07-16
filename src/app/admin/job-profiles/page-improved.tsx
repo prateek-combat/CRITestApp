@@ -1,7 +1,15 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Filter, X, AlertCircle, Loader2 } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  Filter,
+  X,
+  AlertCircle,
+  Loader2,
+  Building2,
+} from 'lucide-react';
 import { parseMultipleEmails } from '@/lib/validation-utils';
 import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog';
 import { useConfirmation } from '@/hooks/useConfirmation';

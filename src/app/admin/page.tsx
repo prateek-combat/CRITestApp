@@ -126,7 +126,7 @@ export default function AdminDashboard() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-sm text-gray-600">
-            Welcome back! Here's an overview of your test platform.
+            Welcome back! Here&apos;s an overview of your test platform.
           </p>
         </div>
 
@@ -136,7 +136,7 @@ export default function AdminDashboard() {
           dismissible={true}
         >
           <p>
-            Use this dashboard to get a quick glance at your platform's
+            Use this dashboard to get a quick glance at your platform&apos;s
             activity. You can create new tests, manage job profiles, and view
             detailed analytics all from one place.
           </p>
