@@ -17,6 +17,7 @@ export function stopProctoringGlobally() {
 
 export function useLiveFlags(
   attemptId: string,
+  isActive: boolean = true, // Controls when monitoring is active - set to false during permission phase
   onStrikeUpdate?: (
     strikeCount: number,
     maxAllowed: number,
@@ -32,8 +33,8 @@ export function useLiveFlags(
 
   // Send event to server
   const sendEvent = (type: string, extra?: Record<string, any>) => {
-    // Don't send events if proctoring is stopped
-    if (isProctoringStopped) {
+    // Don't send events if proctoring is stopped or not active
+    if (isProctoringStopped || !isActive) {
       return;
     }
 
@@ -110,8 +111,8 @@ export function useLiveFlags(
       return;
     }
 
-    // Don't set up event listeners if proctoring is already stopped
-    if (isProctoringStopped) {
+    // Don't set up event listeners if proctoring is stopped or not active
+    if (isProctoringStopped || !isActive) {
       return;
     }
 
@@ -288,7 +289,7 @@ export function useLiveFlags(
 
       sendEvent('PROCTORING_ENDED');
     };
-  }, [attemptId, sendEvent]);
+  }, [attemptId, isActive, sendEvent]);
 
   // Return current buffer for debugging
   return eventBuffer.current;

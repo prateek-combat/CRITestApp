@@ -88,6 +88,11 @@ export default function TestTakingPage() {
   const [blurCount, setBlurCount] = useState(0);
   const [isReturningFocus, setIsReturningFocus] = useState(false);
 
+  // Control when full monitoring (focus detection, etc.) becomes active
+  // Only start after question 1 to avoid issues during permission granting
+  // This allows users to grant camera/microphone permissions without triggering focus warnings
+  const isMonitoringActive = testReady && currentQuestionIndex >= 1;
+
   const handleTestTermination = (reason: string) => {
     setIsTerminated(true);
     setTerminationReason(reason);
@@ -150,6 +155,7 @@ export default function TestTakingPage() {
 
   useLiveFlags(
     attemptId,
+    isMonitoringActive, // Only start monitoring after question 1
     handleStrikeUpdateFromLiveFlags,
     handleTestTermination,
     handleFocusEvent
