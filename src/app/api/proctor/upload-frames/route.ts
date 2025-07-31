@@ -5,14 +5,8 @@ import { auth } from '@/lib/auth';
 // POST /api/proctor/upload-frames - Store captured frames
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
+    // Authentication is optional for public test attempts
     const session = await auth();
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
     const formData = await request.formData();
     const attemptId = formData.get('attemptId') as string;
 
@@ -43,21 +37,17 @@ export async function POST(request: NextRequest) {
       where: { id: attemptId },
       select: {
         id: true,
-        userId: true,
       },
     });
 
     const isPublicAttempt = !testAttempt;
 
-    // For regular test attempts, verify the user owns this attempt
-    if (testAttempt && testAttempt.userId !== session.user.id) {
-      // Allow admins to upload frames for any attempt
-      if (
-        session.user.role !== 'ADMIN' &&
-        session.user.role !== 'SUPER_ADMIN'
-      ) {
-        return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-      }
+    // For regular test attempts, require authentication
+    if (!isPublicAttempt && !session) {
+      return NextResponse.json(
+        { error: 'Authentication required for regular tests' },
+        { status: 401 }
+      );
     }
 
     if (isPublicAttempt) {
@@ -105,6 +95,7 @@ export async function POST(request: NextRequest) {
         }
       } catch (error) {
         // Continue with other frames even if one fails
+        console.error('Failed to process frame:', error);
       }
     }
 
@@ -114,6 +105,7 @@ export async function POST(request: NextRequest) {
       frameIds: uploadedFrames,
     });
   } catch (error) {
+    console.error('Upload frames error:', error);
     return NextResponse.json(
       { error: 'Failed to upload frames' },
       { status: 500 }
