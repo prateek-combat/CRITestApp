@@ -88,6 +88,12 @@ export default function TestTakingPage() {
   const [blurCount, setBlurCount] = useState(0);
   const [isReturningFocus, setIsReturningFocus] = useState(false);
 
+  // Time tracking for individual questions
+  const [questionStartTime, setQuestionStartTime] = useState<number | null>(
+    null
+  );
+  const [savingAnswer, setSavingAnswer] = useState(false);
+
   // Control when full monitoring (focus detection, etc.) becomes active
   // Only start after question 1 to avoid issues during permission granting
   // This allows users to grant camera/microphone permissions without triggering focus warnings
@@ -298,17 +304,117 @@ export default function TestTakingPage() {
     router,
   ]);
 
+  // Save individual answer as user progresses
+  const saveCurrentAnswer = useCallback(async () => {
+    if (!data || savingAnswer) return;
+
+    const currentQuestion = data.test.questions[currentQuestionIndex];
+    const currentAnswer = userAnswers.find(
+      (ans) => ans.questionId === currentQuestion.id
+    );
+
+    // Only save if user has selected an answer
+    if (!currentAnswer || currentAnswer.selectedAnswerIndex === null) {
+      return;
+    }
+
+    setSavingAnswer(true);
+
+    try {
+      // Calculate time taken for this question
+      const timeTaken = questionStartTime
+        ? Math.max(0, Math.floor((Date.now() - questionStartTime) / 1000))
+        : 0;
+
+      // Determine the correct API endpoint
+      const answerEndpoint = isPublicTest
+        ? `/api/public-test-attempts/${attemptId}/answer`
+        : `/api/test-attempts/${attemptId}/answer`;
+
+      const response = await fetch(answerEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          questionId: currentQuestion.id,
+          selectedAnswerIndex: currentAnswer.selectedAnswerIndex,
+          timeTakenSeconds: timeTaken,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to save answer:', await response.text());
+      }
+    } catch (error) {
+      console.error('Error saving answer:', error);
+    } finally {
+      setSavingAnswer(false);
+    }
+  }, [
+    data,
+    currentQuestionIndex,
+    userAnswers,
+    questionStartTime,
+    isPublicTest,
+    attemptId,
+    savingAnswer,
+  ]);
+
+  // Save progress to server
+  const saveProgress = useCallback(
+    async (questionIndex: number) => {
+      try {
+        const progressEndpoint = isPublicTest
+          ? `/api/public-test-attempts/${attemptId}/progress`
+          : `/api/test-attempts/${attemptId}/progress`;
+
+        await fetch(progressEndpoint, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            currentQuestionIndex: questionIndex,
+          }),
+        });
+      } catch (error) {
+        console.error('Error saving progress:', error);
+      }
+    },
+    [isPublicTest, attemptId]
+  );
+
   // Define handleNextQuestion after handleSubmitTest
-  const handleNextQuestion = useCallback(() => {
+  const handleNextQuestion = useCallback(async () => {
     if (!data) return;
+
+    // Save current answer before moving to next question
+    await saveCurrentAnswer();
+
     const isLastQuestion =
       currentQuestionIndex === data.test.questions.length - 1;
     if (isLastQuestion) {
       handleSubmitTest();
     } else {
-      setCurrentQuestionIndex((prev) => prev + 1);
+      const nextIndex = currentQuestionIndex + 1;
+
+      // Save progress to server
+      await saveProgress(nextIndex);
+
+      // Update local state
+      setCurrentQuestionIndex(nextIndex);
+
+      // Reset timer for next question
+      setQuestionStartTime(Date.now());
     }
-  }, [currentQuestionIndex, data, handleSubmitTest]);
+  }, [
+    currentQuestionIndex,
+    data,
+    handleSubmitTest,
+    saveCurrentAnswer,
+    saveProgress,
+  ]);
 
   // Hydrate state from localStorage and initial data
   useEffect(() => {
@@ -376,6 +482,8 @@ export default function TestTakingPage() {
   useEffect(() => {
     if (testReady && data?.test?.questions[currentQuestionIndex]) {
       setTimeLeft(data.test.questions[currentQuestionIndex].timerSeconds);
+      // Start timing for this question
+      setQuestionStartTime(Date.now());
     }
   }, [currentQuestionIndex, data, testReady]);
 
@@ -422,6 +530,11 @@ export default function TestTakingPage() {
           : ans
       )
     );
+
+    // Auto-save the answer immediately when selected
+    setTimeout(() => {
+      saveCurrentAnswer();
+    }, 100); // Small delay to ensure state is updated
   };
 
   if (!systemCheckComplete) {
