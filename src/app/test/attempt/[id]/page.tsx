@@ -306,61 +306,75 @@ export default function TestTakingPage() {
   ]);
 
   // Save individual answer as user progresses
-  const saveCurrentAnswer = useCallback(async () => {
-    if (!data || savingAnswer) return;
+  const saveCurrentAnswer = useCallback(
+    async (forQuestionIndex?: number) => {
+      if (!data || savingAnswer) return;
 
-    const currentQuestion = data.test.questions[currentQuestionIndex];
-    const currentAnswer = userAnswers.find(
-      (ans) => ans.questionId === currentQuestion.id
-    );
+      // Use provided index or fall back to current index
+      const questionIndex = forQuestionIndex ?? currentQuestionIndex;
+      const currentQuestion = data.test.questions[questionIndex];
+      const currentAnswer = userAnswers.find(
+        (ans) => ans.questionId === currentQuestion.id
+      );
 
-    // Only save if user has selected an answer
-    if (!currentAnswer || currentAnswer.selectedAnswerIndex === null) {
-      return;
-    }
-
-    setSavingAnswer(true);
-
-    try {
-      // Calculate time taken for this question
-      const timeTaken = questionStartTime
-        ? Math.max(0, Math.floor((Date.now() - questionStartTime) / 1000))
-        : 0;
-
-      // Determine the correct API endpoint
-      const answerEndpoint = isPublicTest
-        ? `/api/public-test-attempts/${attemptId}/answer`
-        : `/api/test-attempts/${attemptId}/answer`;
-
-      const response = await fetch(answerEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          questionId: currentQuestion.id,
-          selectedAnswerIndex: currentAnswer.selectedAnswerIndex,
-          timeTakenSeconds: timeTaken,
-        }),
-      });
-
-      if (!response.ok) {
-        console.error('Failed to save answer:', await response.text());
+      // Only save if user has selected an answer
+      if (!currentAnswer || currentAnswer.selectedAnswerIndex === null) {
+        return;
       }
-    } catch (error) {
-      console.error('Error saving answer:', error);
-    } finally {
-      setSavingAnswer(false);
-    }
-  }, [
-    data,
-    currentQuestionIndex,
-    userAnswers,
-    questionStartTime,
-    isPublicTest,
-    attemptId,
-    savingAnswer,
-  ]);
+
+      setSavingAnswer(true);
+
+      try {
+        // Calculate time taken for this question
+        let timeTaken = 0;
+        if (questionStartTime) {
+          timeTaken = Math.max(
+            0,
+            Math.floor((Date.now() - questionStartTime) / 1000)
+          );
+        } else {
+          // Fallback: If questionStartTime is null, set it now and use minimum time
+          console.warn('questionStartTime was null, using fallback timing');
+          setQuestionStartTime(Date.now());
+          timeTaken = 1; // Minimum 1 second to indicate answer was timed
+        }
+
+        // Determine the correct API endpoint
+        const answerEndpoint = isPublicTest
+          ? `/api/public-test-attempts/${attemptId}/answer`
+          : `/api/test-attempts/${attemptId}/answer`;
+
+        const response = await fetch(answerEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            questionId: currentQuestion.id,
+            selectedAnswerIndex: currentAnswer.selectedAnswerIndex,
+            timeTakenSeconds: timeTaken,
+          }),
+        });
+
+        if (!response.ok) {
+          console.error('Failed to save answer:', await response.text());
+        }
+      } catch (error) {
+        console.error('Error saving answer:', error);
+      } finally {
+        setSavingAnswer(false);
+      }
+    },
+    [
+      data,
+      currentQuestionIndex,
+      userAnswers,
+      questionStartTime,
+      isPublicTest,
+      attemptId,
+      savingAnswer,
+    ]
+  );
 
   // Save progress to server
   const saveProgress = useCallback(
@@ -397,8 +411,8 @@ export default function TestTakingPage() {
         currentQuestionIndex === data.test.questions.length - 1;
 
       if (isLastQuestion) {
-        // Save current answer before submitting
-        await saveCurrentAnswer();
+        // Save current answer before submitting (use current index)
+        await saveCurrentAnswer(currentQuestionIndex);
         handleSubmitTest();
       } else {
         const nextIndex = currentQuestionIndex + 1;
@@ -408,12 +422,14 @@ export default function TestTakingPage() {
         setQuestionStartTime(Date.now());
 
         // Save current answer and progress in background (non-blocking)
-        Promise.all([saveCurrentAnswer(), saveProgress(nextIndex)]).catch(
-          (error) => {
-            console.error('Error saving progress:', error);
-            // Don't block navigation on save errors
-          }
-        );
+        // CRITICAL: Pass currentQuestionIndex explicitly to avoid race condition
+        Promise.all([
+          saveCurrentAnswer(currentQuestionIndex), // Save answer for the question we're leaving
+          saveProgress(nextIndex), // Save progress for the question we're going to
+        ]).catch((error) => {
+          console.error('Error saving progress:', error);
+          // Don't block navigation on save errors
+        });
       }
     } finally {
       setIsNavigating(false);
