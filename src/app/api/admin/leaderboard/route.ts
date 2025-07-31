@@ -8,6 +8,7 @@ import {
   CategoryWeights,
 } from '@/types/categories';
 import { logger } from '@/lib/logger';
+import { TestAttemptStatus } from '@prisma/client';
 
 export const revalidate = 0; // Disable caching for this route
 
@@ -84,11 +85,16 @@ export async function GET(request: NextRequest) {
     } else if (includeIncomplete) {
       // Include common incomplete statuses along with completed
       baseWhere.status = {
-        in: ['COMPLETED', 'TERMINATED', 'TIMED_OUT', 'ABANDONED'],
+        in: [
+          TestAttemptStatus.COMPLETED,
+          TestAttemptStatus.TERMINATED,
+          TestAttemptStatus.TIMED_OUT,
+          TestAttemptStatus.ABANDONED,
+        ],
       };
     } else {
       // Default: only show completed attempts
-      baseWhere.status = 'COMPLETED';
+      baseWhere.status = TestAttemptStatus.COMPLETED;
     }
 
     if (search) {
@@ -184,8 +190,9 @@ export async function GET(request: NextRequest) {
     // Public test attempts where clause (need to join through publicLink)
     const publicWhere = {
       ...baseWhere,
-      publicLink:
-        testId || jobProfileId
+      publicLink: jobProfileId
+        ? { jobProfileId: jobProfileId }
+        : testId
           ? testFilterCondition
           : { test: testFilterCondition.test },
     };
@@ -225,7 +232,6 @@ export async function GET(request: NextRequest) {
           proctoringEnabled: true,
           testId: true, // Add testId for job profile scoring
           status: true, // Add status for incomplete attempts
-          terminationReason: true, // Add termination reason for terminated attempts
           submittedAnswers: {
             select: {
               isCorrect: true,
@@ -248,7 +254,6 @@ export async function GET(request: NextRequest) {
           riskScore: true,
           proctoringEnabled: true,
           status: true, // Add status for incomplete attempts
-          terminationReason: true, // Add termination reason for terminated attempts
           publicLink: {
             select: {
               title: true,
