@@ -93,6 +93,7 @@ export default function TestTakingPage() {
     null
   );
   const [savingAnswer, setSavingAnswer] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Control when full monitoring (focus detection, etc.) becomes active
   // Only start after question 1 to avoid issues during permission granting
@@ -387,30 +388,40 @@ export default function TestTakingPage() {
 
   // Define handleNextQuestion after handleSubmitTest
   const handleNextQuestion = useCallback(async () => {
-    if (!data) return;
+    if (!data || isNavigating) return; // Prevent multiple clicks
 
-    // Save current answer before moving to next question
-    await saveCurrentAnswer();
+    setIsNavigating(true);
 
-    const isLastQuestion =
-      currentQuestionIndex === data.test.questions.length - 1;
-    if (isLastQuestion) {
-      handleSubmitTest();
-    } else {
-      const nextIndex = currentQuestionIndex + 1;
+    try {
+      const isLastQuestion =
+        currentQuestionIndex === data.test.questions.length - 1;
 
-      // Save progress to server
-      await saveProgress(nextIndex);
+      if (isLastQuestion) {
+        // Save current answer before submitting
+        await saveCurrentAnswer();
+        handleSubmitTest();
+      } else {
+        const nextIndex = currentQuestionIndex + 1;
 
-      // Update local state
-      setCurrentQuestionIndex(nextIndex);
+        // Update UI immediately for better user experience
+        setCurrentQuestionIndex(nextIndex);
+        setQuestionStartTime(Date.now());
 
-      // Reset timer for next question
-      setQuestionStartTime(Date.now());
+        // Save current answer and progress in background (non-blocking)
+        Promise.all([saveCurrentAnswer(), saveProgress(nextIndex)]).catch(
+          (error) => {
+            console.error('Error saving progress:', error);
+            // Don't block navigation on save errors
+          }
+        );
+      }
+    } finally {
+      setIsNavigating(false);
     }
   }, [
     currentQuestionIndex,
     data,
+    isNavigating,
     handleSubmitTest,
     saveCurrentAnswer,
     saveProgress,
@@ -531,9 +542,12 @@ export default function TestTakingPage() {
       )
     );
 
-    // Auto-save the answer immediately when selected
+    // Auto-save the answer in background (non-blocking)
     setTimeout(() => {
-      saveCurrentAnswer();
+      saveCurrentAnswer().catch((error) => {
+        console.error('Error auto-saving answer:', error);
+        // Don't block user interaction on save errors
+      });
     }, 100); // Small delay to ensure state is updated
   };
 
@@ -907,11 +921,37 @@ export default function TestTakingPage() {
 
           <Button
             onClick={handleNextQuestion}
-            disabled={currentAnswer?.selectedAnswerIndex === null}
+            disabled={
+              currentAnswer?.selectedAnswerIndex === null || isNavigating
+            }
           >
-            {currentQuestionIndex === data.test.questions.length - 1
-              ? 'Finish & Submit'
-              : 'Next'}
+            {isNavigating ? (
+              <div className="flex items-center gap-2">
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                {currentQuestionIndex === data.test.questions.length - 1
+                  ? 'Submitting...'
+                  : 'Next...'}
+              </div>
+            ) : currentQuestionIndex === data.test.questions.length - 1 ? (
+              'Finish & Submit'
+            ) : (
+              'Next'
+            )}
           </Button>
         </div>
       </footer>
