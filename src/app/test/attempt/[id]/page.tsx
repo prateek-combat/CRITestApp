@@ -344,6 +344,13 @@ export default function TestTakingPage() {
           ? `/api/public-test-attempts/${attemptId}/answer`
           : `/api/test-attempts/${attemptId}/answer`;
 
+        console.log(`🔄 Saving answer for question ${questionIndex + 1}:`, {
+          questionId: currentQuestion.id,
+          selectedAnswerIndex: currentAnswer.selectedAnswerIndex,
+          timeTakenSeconds: timeTaken,
+          endpoint: answerEndpoint,
+        });
+
         const response = await fetch(answerEndpoint, {
           method: 'POST',
           headers: {
@@ -357,7 +364,19 @@ export default function TestTakingPage() {
         });
 
         if (!response.ok) {
-          console.error('Failed to save answer:', await response.text());
+          const errorText = await response.text();
+          console.error(
+            `❌ Failed to save answer for question ${questionIndex + 1}:`,
+            {
+              status: response.status,
+              error: errorText,
+              questionId: currentQuestion.id,
+            }
+          );
+        } else {
+          console.log(
+            `✅ Successfully saved answer for question ${questionIndex + 1}`
+          );
         }
       } catch (error) {
         console.error('Error saving answer:', error);
@@ -549,6 +568,10 @@ export default function TestTakingPage() {
   }, [recordingSession, stopRecording]);
 
   const handleAnswerSelect = (optionIndex: number) => {
+    console.log(
+      `🎯 Answer selected for question ${currentQuestionIndex + 1}: Option ${optionIndex + 1}`
+    );
+
     const currentQuestionId = data.test.questions[currentQuestionIndex].id;
     setUserAnswers((prev) =>
       prev.map((ans) =>
@@ -560,8 +583,14 @@ export default function TestTakingPage() {
 
     // Auto-save the answer in background (non-blocking)
     setTimeout(() => {
+      console.log(
+        `🔄 Triggering auto-save for question ${currentQuestionIndex + 1}`
+      );
       saveCurrentAnswer().catch((error) => {
-        console.error('Error auto-saving answer:', error);
+        console.error(
+          `❌ Error auto-saving answer for question ${currentQuestionIndex + 1}:`,
+          error
+        );
         // Don't block user interaction on save errors
       });
     }, 100); // Small delay to ensure state is updated
