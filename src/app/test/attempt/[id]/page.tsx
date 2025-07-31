@@ -317,8 +317,14 @@ export default function TestTakingPage() {
         (ans) => ans.questionId === currentQuestion.id
       );
 
+      // DIAGNOSTIC: Save operation started
+      // providedIndex: forQuestionIndex
+      // currentStateIndex: currentQuestionIndex
+      // usedIndex: questionIndex
+
       // Only save if user has selected an answer
       if (!currentAnswer || currentAnswer.selectedAnswerIndex === null) {
+        // No answer to save for this question
         return;
       }
 
@@ -344,12 +350,7 @@ export default function TestTakingPage() {
           ? `/api/public-test-attempts/${attemptId}/answer`
           : `/api/test-attempts/${attemptId}/answer`;
 
-        console.log(`🔄 Saving answer for question ${questionIndex + 1}:`, {
-          questionId: currentQuestion.id,
-          selectedAnswerIndex: currentAnswer.selectedAnswerIndex,
-          timeTakenSeconds: timeTaken,
-          endpoint: answerEndpoint,
-        });
+        // Saving answer for question with calculated time
 
         const response = await fetch(answerEndpoint, {
           method: 'POST',
@@ -365,18 +366,10 @@ export default function TestTakingPage() {
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(
-            `❌ Failed to save answer for question ${questionIndex + 1}:`,
-            {
-              status: response.status,
-              error: errorText,
-              questionId: currentQuestion.id,
-            }
-          );
+          console.error('Failed to save answer:', errorText);
         } else {
-          console.log(
-            `✅ Successfully saved answer for question ${questionIndex + 1}`
-          );
+          const result = await response.json();
+          // Successfully saved answer
         }
       } catch (error) {
         console.error('Error saving answer:', error);
@@ -435,6 +428,8 @@ export default function TestTakingPage() {
         handleSubmitTest();
       } else {
         const nextIndex = currentQuestionIndex + 1;
+
+        // Navigation: Moving to next question
 
         // Update UI immediately for better user experience
         setCurrentQuestionIndex(nextIndex);
@@ -568,9 +563,7 @@ export default function TestTakingPage() {
   }, [recordingSession, stopRecording]);
 
   const handleAnswerSelect = (optionIndex: number) => {
-    console.log(
-      `🎯 Answer selected for question ${currentQuestionIndex + 1}: Option ${optionIndex + 1}`
-    );
+    // Answer selected for current question
 
     const currentQuestionId = data.test.questions[currentQuestionIndex].id;
     setUserAnswers((prev) =>
@@ -582,15 +575,11 @@ export default function TestTakingPage() {
     );
 
     // Auto-save the answer in background (non-blocking)
+    // CRITICAL FIX: Pass explicit currentQuestionIndex to avoid race condition
     setTimeout(() => {
-      console.log(
-        `🔄 Triggering auto-save for question ${currentQuestionIndex + 1}`
-      );
-      saveCurrentAnswer().catch((error) => {
-        console.error(
-          `❌ Error auto-saving answer for question ${currentQuestionIndex + 1}:`,
-          error
-        );
+      // Triggering auto-save with explicit index to avoid race condition
+      saveCurrentAnswer(currentQuestionIndex).catch((error) => {
+        console.error('Error auto-saving answer:', error);
         // Don't block user interaction on save errors
       });
     }, 100); // Small delay to ensure state is updated
