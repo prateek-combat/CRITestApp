@@ -76,21 +76,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if invitation already exists for this email and job profile
-    const existingInvitation = await prisma.jobProfileInvitation.findFirst({
-      where: {
-        candidateEmail: trimmedCandidateEmail,
-        jobProfileId,
-        status: { in: ['PENDING', 'SENT', 'OPENED'] },
-      },
-    });
-
-    if (existingInvitation) {
-      return NextResponse.json(
-        { error: 'An active invitation already exists for this candidate' },
-        { status: 400 }
-      );
-    }
+    // Allow multiple invitations - no duplicate check
 
     // Calculate expiration date
     const expiresAt = new Date();

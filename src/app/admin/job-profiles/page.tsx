@@ -367,8 +367,10 @@ export default function JobProfilesPage() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to send invitation');
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || errorData.message || 'Failed to send invitation'
+        );
       }
 
       await fetchJobProfiles();
@@ -410,8 +412,10 @@ export default function JobProfilesPage() {
         });
 
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || 'Failed to send invitation');
+          const errorData = await response.json();
+          throw new Error(
+            errorData.error || errorData.message || 'Failed to send invitation'
+          );
         }
 
         await fetchJobProfiles();
