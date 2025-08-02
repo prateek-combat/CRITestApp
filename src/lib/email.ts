@@ -5,6 +5,7 @@ export interface JobProfileInvitationEmailData {
   candidateEmail: string;
   candidateName: string;
   jobProfileName: string;
+  companyName: string;
   positions: string[];
   tests: {
     title: string;
@@ -38,6 +39,7 @@ export async function sendJobProfileInvitationEmail(
     candidateEmail,
     candidateName,
     jobProfileName,
+    companyName,
     positions,
     tests,
     customMessage,
@@ -47,23 +49,63 @@ export async function sendJobProfileInvitationEmail(
 
   const html = `
     <p>Hello${candidateName ? ` ${candidateName}` : ''},</p>
-    <p>You have been invited to the job profile: <strong>${jobProfileName}</strong>.</p>
+    <p>You have been invited to apply for <strong>${jobProfileName}</strong> at <strong>${companyName}</strong>.</p>
     <p>Positions: ${positions.join(', ')}</p>
     <p>Tests to complete:</p>
     <ul>
       ${tests.map((test) => `<li>${test.title}${test.questionsCount ? ` (${test.questionsCount} questions)` : ''}</li>`).join('')}
     </ul>
     ${customMessage ? `<p>${customMessage}</p>` : ''}
-    <p>Please click the link below to start the assessment:</p>
+    
+    <h3>Important Exam Instructions:</h3>
+    <ul>
+      <li><strong>Duration:</strong> Please allocate sufficient uninterrupted time to complete all tests</li>
+      <li><strong>Format:</strong> The assessment includes multiple-choice questions, coding challenges, and problem-solving tasks</li>
+      <li><strong>Browser:</strong> Use Google Chrome or Mozilla Firefox on a desktop/laptop computer</li>
+      <li><strong>Internet:</strong> Ensure a stable internet connection throughout the assessment</li>
+    </ul>
+    
+    <h3>Proctoring Requirements:</h3>
+    <p><strong>This assessment is proctored to ensure fairness and integrity.</strong></p>
+    <ul>
+      <li><strong>Webcam Required:</strong> Your camera must remain on throughout the test</li>
+      <li><strong>Microphone Required:</strong> Audio monitoring will be active during the assessment</li>
+      <li><strong>Private Environment:</strong> Take the test in a quiet, well-lit room where you won't be disturbed</li>
+      <li><strong>No External Help:</strong> The use of external resources, other people, or additional devices is prohibited</li>
+      <li><strong>Screen Monitoring:</strong> Tab switching and window focus will be monitored</li>
+    </ul>
+    
+    <h3>What to Expect:</h3>
+    <ol>
+      <li>When you click the link, you'll be asked to grant camera and microphone permissions</li>
+      <li>The system will verify your setup before allowing you to start</li>
+      <li>During the test, your video and audio will be recorded for review</li>
+      <li>If you violate test rules (e.g., switching tabs), you'll receive warnings</li>
+      <li>Multiple violations may result in automatic test termination</li>
+    </ol>
+    
+    <h3>Before You Begin:</h3>
+    <ul>
+      <li>Ensure your device is fully charged or plugged in</li>
+      <li>Close all unnecessary applications and browser tabs</li>
+      <li>Have a valid photo ID ready if required</li>
+      <li>Use the restroom and prepare water/snacks beforehand</li>
+      <li>Inform others not to disturb you during the assessment</li>
+    </ul>
+    
+    <p><strong>Ready to start?</strong> Click the link below to begin your assessment:</p>
     <p><a href="${invitationLink}">${invitationLink}</a></p>
-    <p>This invitation expires on: ${expiresAt.toLocaleDateString()}</p>
-    <p>Best regards,<br>Combat Robotics India</p>
+    <p><em>This invitation expires on: ${expiresAt.toLocaleDateString()}</em></p>
+    
+    <p>If you have any technical difficulties or questions, please contact our support team before starting the assessment.</p>
+    
+    <p>Best regards,<br>${companyName}</p>
   `;
 
   const mailOptions = {
     from: process.env.GMAIL_USER,
     to: candidateEmail,
-    subject: `Job Profile Invitation: ${jobProfileName}`,
+    subject: `Invitation for ${jobProfileName} at ${companyName}`,
     html,
   };
 

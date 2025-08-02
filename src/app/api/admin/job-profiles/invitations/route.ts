@@ -212,6 +212,7 @@ export async function POST(request: NextRequest) {
             candidateEmail: email,
             candidateName: email.split('@')[0], // Extract name from email
             jobProfileName: jobProfile.name,
+            companyName: process.env.COMPANY_NAME || 'Our Company',
             positions: jobProfile.positions.map((p) => p.name),
             tests: jobProfile.testWeights.map((tw) => ({
               title: tw.test.title,
@@ -301,6 +302,7 @@ export async function POST(request: NextRequest) {
           candidateEmail: candidateEmail,
           candidateName: candidateEmail.split('@')[0], // Extract name from email
           jobProfileName: jobProfile.name,
+          companyName: process.env.COMPANY_NAME || 'Our Company',
           positions: jobProfile.positions.map((p) => p.name),
           tests: jobProfile.testWeights.map((tw) => ({
             title: tw.test.title,

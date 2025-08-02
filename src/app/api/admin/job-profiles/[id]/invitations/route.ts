@@ -117,6 +117,7 @@ export async function POST(
         candidateEmail,
         candidateName,
         jobProfileName: jobProfile.name,
+        companyName: process.env.COMPANY_NAME || 'Our Company',
         positions: jobProfile.positions.map((p) => p.name),
         tests: jobProfile.testWeights.map((tw) => ({
           title: tw.test.title,

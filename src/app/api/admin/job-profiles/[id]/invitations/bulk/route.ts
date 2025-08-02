@@ -7,8 +7,6 @@ import {
   type JobProfileInvitationEmailData,
 } from '@/lib/email';
 
-
-
 // POST /api/admin/job-profiles/[id]/invitations/bulk - Create bulk job profile invitations
 export async function POST(
   request: NextRequest,
@@ -116,6 +114,7 @@ export async function POST(
             candidateEmail: email,
             candidateName: email.split('@')[0], // Use email prefix as default name
             jobProfileName: jobProfile.name,
+            companyName: process.env.COMPANY_NAME || 'Our Company',
             positions: jobProfile.positions.map((p) => p.name),
             tests: jobProfile.testWeights.map((tw) => ({
               title: tw.test.title,
