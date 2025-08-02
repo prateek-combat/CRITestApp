@@ -46,7 +46,7 @@ export async function sendJobProfileInvitationEmail(
   } = data;
 
   const html = `
-    <p>Hello ${candidateName},</p>
+    <p>Hello${candidateName ? ` ${candidateName}` : ''},</p>
     <p>You have been invited to the job profile: <strong>${jobProfileName}</strong>.</p>
     <p>Positions: ${positions.join(', ')}</p>
     <p>Tests to complete:</p>
@@ -321,7 +321,7 @@ export async function sendTestCompletionCandidateEmail(
   } = data;
 
   const html = `
-    <p>Hello ${candidateName || 'Candidate'},</p>
+    <p>Hello${candidateName ? ` ${candidateName}` : ''},</p>
     <p>Thank you for completing the test: <strong>${testTitle}</strong>.</p>
     <p>Test completed on: ${completionTime.toLocaleString()}</p>
     ${

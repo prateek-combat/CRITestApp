@@ -25,18 +25,17 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields (trim to handle empty strings properly)
-    const trimmedCandidateName = candidateName?.trim();
+    const trimmedCandidateName = candidateName?.trim() || '';
     const trimmedCandidateEmail = candidateEmail?.trim();
 
-    if (!jobProfileId || !trimmedCandidateEmail || !trimmedCandidateName) {
+    if (!jobProfileId || !trimmedCandidateEmail) {
       return NextResponse.json(
         {
           error:
-            'Missing required fields: Job Profile ID, Candidate Email, and Candidate Name are required',
+            'Missing required fields: Job Profile ID and Candidate Email are required',
           missing: {
             jobProfileId: !jobProfileId,
             candidateEmail: !trimmedCandidateEmail,
-            candidateName: !trimmedCandidateName,
           },
         },
         { status: 400 }
