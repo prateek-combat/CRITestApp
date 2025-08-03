@@ -531,14 +531,14 @@ export async function GET(request: NextRequest) {
             : (attempt as any).publicLink?.testId; // Get testId from public attempt
 
         if (testId && testWeights[testId]) {
-          // Use the raw score for this specific test, weighted by job profile weight
-          const testScore = attempt.rawScore || 0;
+          // Calculate the percentage score for this test
+          const rawScore = attempt.rawScore || 0;
+          const testScorePercentage =
+            totalTestQuestions > 0 ? (rawScore / totalTestQuestions) * 100 : 0;
           const testWeight = testWeights[testId];
 
-          // For job profile mode, we'll calculate a weighted average across all tests
-          // This will be done at the candidate level, not individual test level
-          // For now, use the individual test score with its weight
-          jobProfileComposite = testScore * testWeight;
+          // For job profile mode, use the percentage score weighted by job profile weight
+          jobProfileComposite = testScorePercentage * testWeight;
         }
       }
 
