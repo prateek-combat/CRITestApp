@@ -450,8 +450,11 @@ export default function ProctorAnalysisPage() {
                 <div>
                   <dt className="font-medium text-gray-500">Score</dt>
                   <dd className="text-gray-900">
-                    {testAttempt.rawScore}% (Percentile:{' '}
-                    {testAttempt.percentile})
+                    {testAttempt.rawScore} correct{' '}
+                    {testAttempt.percentile !== null &&
+                    testAttempt.percentile !== undefined
+                      ? `(${Math.round(testAttempt.percentile)}%)`
+                      : ''}
                   </dd>
                 </div>
               </dl>

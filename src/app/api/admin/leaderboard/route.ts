@@ -542,15 +542,29 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Additional fallback: if no submitted answers but rawScore exists, use rawScore percentage
+      // Additional fallback: if no submitted answers but rawScore exists
+      // rawScore is the number of correct answers (e.g., 33)
+      // We need to calculate the percentage as (rawScore / totalQuestions) * 100
       if (
         (!attempt.submittedAnswers || attempt.submittedAnswers.length === 0) &&
         attempt.rawScore !== null &&
         attempt.rawScore !== undefined &&
         totalTestQuestions > 0
       ) {
+        // Calculate the actual percentage from rawScore
         const rawScorePercentage =
           (attempt.rawScore / totalTestQuestions) * 100;
+
+        logger.info('Calculating percentage from rawScore', {
+          operation: 'calculate_percentage',
+          attemptId: attempt.id,
+          rawScore: attempt.rawScore,
+          totalQuestions: totalTestQuestions,
+          calculatedPercentage: rawScorePercentage,
+          storedPercentile: attempt.percentile,
+          method: 'GET',
+          path: '/api/admin/leaderboard',
+        });
         // Use raw score percentage as composite score for all cases when no submitted answers
         weightedComposite = rawScorePercentage;
         unweightedComposite = rawScorePercentage;
