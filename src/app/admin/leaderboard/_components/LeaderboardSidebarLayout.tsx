@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import LeaderboardTable from './LeaderboardTable';
 import CompareDrawer from './CompareDrawer';
@@ -18,6 +18,7 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 import { TableSkeleton } from '@/components/LoadingSkeleton';
+import { fetchWithRetry } from '@/lib/utils/fetchWithRetry';
 
 interface Position {
   id: string;
@@ -190,6 +191,10 @@ export default function LeaderboardSidebarLayout({
   const [includeIncomplete, setIncludeIncomplete] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
+  // Add refs for request management
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Fetch weight profiles
   const fetchProfiles = useCallback(async () => {
     try {
@@ -259,7 +264,7 @@ export default function LeaderboardSidebarLayout({
     }
   }, []);
 
-  // Fetch leaderboard data
+  // Fetch leaderboard data with improved error handling
   const fetchLeaderboardData = useCallback(
     async (positionId?: string, jobProfileId?: string) => {
       const targetPositionId = positionId || selectedPositionId;
@@ -267,64 +272,112 @@ export default function LeaderboardSidebarLayout({
 
       if (!targetPositionId && !targetJobProfileId) return;
 
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const params = new URLSearchParams();
-
-        // Set either positionId or jobProfileId based on view mode
-        if (viewMode === 'jobProfile' && targetJobProfileId) {
-          params.set('jobProfileId', targetJobProfileId);
-        } else if (targetPositionId) {
-          params.set('positionId', targetPositionId);
-        }
-
-        // Add other search params
-        urlSearchParams.forEach((value, key) => {
-          if (key !== 'positionId' && key !== 'jobProfileId' && value) {
-            params.set(key, value);
-          }
-        });
-
-        // Set default page size if not provided
-        if (!params.has('pageSize')) {
-          params.set('pageSize', '50'); // Default to 50 items per page
-        }
-        if (!params.has('page')) {
-          params.set('page', '1');
-        }
-
-        // Add score threshold and mode if they exist and are not 0
-        if (
-          scoreThreshold !== null &&
-          scoreThreshold !== undefined &&
-          scoreThreshold > 0
-        ) {
-          params.set('scoreThreshold', scoreThreshold.toString());
-          params.set('scoreThresholdMode', scoreThresholdMode);
-        }
-
-        // Add incomplete attempts filter parameters
-        if (includeIncomplete) {
-          params.set('includeIncomplete', 'true');
-        }
-        if (statusFilter) {
-          params.set('statusFilter', statusFilter);
-        }
-
-        const response = await fetch(`/api/admin/leaderboard?${params}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch leaderboard data');
-        }
-
-        const result = await response.json();
-        setData(result);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setIsLoading(false);
+      // Cancel any pending request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
+
+      // Clear any pending timeout
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+
+      // Debounce the request to avoid rapid fire calls
+      fetchTimeoutRef.current = setTimeout(async () => {
+        setIsLoading(true);
+        setError(null);
+
+        // Create new abort controller for this request
+        abortControllerRef.current = new AbortController();
+
+        try {
+          const params = new URLSearchParams();
+
+          // Set either positionId or jobProfileId based on view mode
+          if (viewMode === 'jobProfile' && targetJobProfileId) {
+            params.set('jobProfileId', targetJobProfileId);
+          } else if (targetPositionId) {
+            params.set('positionId', targetPositionId);
+          }
+
+          // Add other search params
+          urlSearchParams.forEach((value, key) => {
+            if (key !== 'positionId' && key !== 'jobProfileId' && value) {
+              params.set(key, value);
+            }
+          });
+
+          // Set default page size if not provided
+          if (!params.has('pageSize')) {
+            params.set('pageSize', '50'); // Default to 50 items per page
+          }
+          if (!params.has('page')) {
+            params.set('page', '1');
+          }
+
+          // Add score threshold and mode if they exist and are not 0
+          if (
+            scoreThreshold !== null &&
+            scoreThreshold !== undefined &&
+            scoreThreshold > 0
+          ) {
+            params.set('scoreThreshold', scoreThreshold.toString());
+            params.set('scoreThresholdMode', scoreThresholdMode);
+          }
+
+          // Add incomplete attempts filter parameters
+          if (includeIncomplete) {
+            params.set('includeIncomplete', 'true');
+          }
+          if (statusFilter) {
+            params.set('statusFilter', statusFilter);
+          }
+
+          // Use fetchWithRetry for better network error handling
+          const response = await fetchWithRetry(
+            `/api/admin/leaderboard?${params}`,
+            {
+              signal: abortControllerRef.current.signal,
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            },
+            3, // max retries
+            1000 // initial retry delay
+          );
+
+          if (!response.ok) {
+            throw new Error(
+              `Server error: ${response.status} ${response.statusText}`
+            );
+          }
+
+          const result = await response.json();
+          setData(result);
+          setError(null);
+        } catch (err) {
+          // Only set error if the request wasn't aborted
+          if (err instanceof Error && err.name === 'AbortError') {
+            // Request was cancelled, no error to show
+          } else if (
+            err instanceof TypeError &&
+            err.message.includes('Failed to fetch')
+          ) {
+            setError(
+              'Network connection issue. Please check your internet connection and try again.'
+            );
+          } else {
+            setError(
+              err instanceof Error
+                ? err.message
+                : 'An unexpected error occurred'
+            );
+          }
+        } finally {
+          setIsLoading(false);
+          abortControllerRef.current = null;
+        }
+      }, 300); // 300ms debounce delay
     },
     [
       selectedPositionId,
@@ -344,6 +397,19 @@ export default function LeaderboardSidebarLayout({
     fetchProfiles();
     fetchJobProfiles();
   }, [fetchPositions, fetchProfiles, fetchJobProfiles]);
+
+  // Cleanup effect to cancel pending requests
+  useEffect(() => {
+    return () => {
+      // Cancel any pending requests when component unmounts
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Handle job profile selection from URL params
   useEffect(() => {
