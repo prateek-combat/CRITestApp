@@ -519,12 +519,12 @@ export async function GET(request: NextRequest) {
         categoryScoresForWeighting
       );
 
-      // NEW: Calculate job profile composite score if we're in job profile mode
+      // Calculate job profile composite score (for reference, not used in main scoring)
       let jobProfileComposite = weightedComposite; // Default to category-based score
 
       if (jobProfile && Object.keys(testWeights).length > 0) {
-        // For job profile scoring, we need to get the test-specific score
-        // and weight it according to the job profile test weights
+        // Job profile scoring based on test weights (stored separately from main composite)
+        // This is kept for reference but category weights take precedence
         const testId =
           attempt.type === 'regular'
             ? (attempt as any).testId // Get testId from regular attempt
@@ -581,8 +581,9 @@ export async function GET(request: NextRequest) {
         scoreNumerical: categoryScores['NUMERICAL']?.percentage || 0,
         scoreAttention: categoryScores['ATTENTION_TO_DETAIL']?.percentage || 0,
         scoreOther: categoryScores['OTHER']?.percentage || 0,
-        composite: jobProfile ? jobProfileComposite : weightedComposite, // Use job profile composite if available
+        composite: weightedComposite, // Always use category-based weighted composite
         compositeUnweighted: unweightedComposite, // Use consistent category-based unweighted score
+        jobProfileComposite: jobProfile ? jobProfileComposite : undefined, // Store job profile composite separately for reference
         percentile: 0, // Will be calculated after we have all scores
         testWeight:
           jobProfile && Object.keys(testWeights).length > 0
