@@ -7,6 +7,7 @@ import {
 import { logger } from '@/lib/logger';
 
 import { prisma } from '@/lib/prisma';
+import { notifyTestResultsWebhook } from '@/lib/test-webhook';
 
 /**
  * @swagger
@@ -481,6 +482,33 @@ export async function POST(request: Request) {
         );
       });
 
+      notifyTestResultsWebhook({
+        testAttemptId: updatedAttempt.id,
+        testId: currentTest.id,
+        testTitle: currentTest.title,
+        invitationId: existingAttempt.invitationId,
+        jobProfileInvitationId: targetInvitationId,
+        candidateEmail:
+          updatedAttempt.candidateEmail || jobProfileInvitation.candidateEmail,
+        candidateName:
+          updatedAttempt.candidateName || jobProfileInvitation.candidateName,
+        status: updatedAttempt.status,
+        rawScore,
+        maxScore: totalQuestions,
+        percentile,
+        categorySubScores:
+          (updatedAttempt.categorySubScores as Record<
+            string,
+            unknown
+          > | null) ?? null,
+        startedAt: updatedAttempt.startedAt,
+        completedAt: updatedAttempt.completedAt,
+        meta: {
+          type: 'job_profile',
+          proctoringEnabled: updatedAttempt.proctoringEnabled,
+        },
+      }).catch(() => {});
+
       return NextResponse.json(
         nextTestWeight
           ? {
@@ -751,6 +779,31 @@ export async function POST(request: Request) {
         );
         // Don't fail the test submission if email fails
       });
+
+      notifyTestResultsWebhook({
+        testAttemptId: updatedAttempt.id,
+        testId: invitation.test.id,
+        testTitle: invitation.test.title,
+        invitationId,
+        candidateEmail:
+          updatedAttempt.candidateEmail || invitation.candidateEmail,
+        candidateName: updatedAttempt.candidateName || invitation.candidateName,
+        status: updatedAttempt.status,
+        rawScore,
+        maxScore: totalQuestions,
+        percentile,
+        categorySubScores:
+          (updatedAttempt.categorySubScores as Record<
+            string,
+            unknown
+          > | null) ?? null,
+        startedAt: updatedAttempt.startedAt,
+        completedAt: updatedAttempt.completedAt,
+        meta: {
+          type: 'invitation',
+          proctoringEnabled: updatedAttempt.proctoringEnabled,
+        },
+      }).catch(() => {});
 
       return NextResponse.json(updatedAttempt);
     }

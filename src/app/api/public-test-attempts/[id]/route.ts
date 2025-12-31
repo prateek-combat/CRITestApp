@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { sendTestCompletionCandidateEmail } from '@/lib/email';
+import { notifyTestResultsWebhook } from '@/lib/test-webhook';
 import {
   calculateTestScore,
   prepareSubmittedAnswers,
@@ -264,6 +265,28 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             );
             // Don't fail the test submission if email fails
           });
+
+          notifyTestResultsWebhook({
+            testAttemptId: attemptId,
+            testId: publicLink.test.id,
+            testTitle: publicLink.test.title,
+            candidateEmail: existingAttempt.candidateEmail,
+            candidateName: existingAttempt.candidateName,
+            status: 'COMPLETED',
+            rawScore: scoringResult.rawScore,
+            maxScore: totalQuestions,
+            percentile: scoringResult.percentile,
+            categorySubScores: scoringResult.categorySubScores as Record<
+              string,
+              unknown
+            > | null,
+            startedAt: existingAttempt.startedAt,
+            completedAt: new Date(submissionTimeEpoch),
+            meta: {
+              type: 'public',
+              publicLinkId: existingAttempt.publicLinkId,
+            },
+          }).catch(() => {});
         }
       }
     }
