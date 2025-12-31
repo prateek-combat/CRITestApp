@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient, QuestionCategory } from '@prisma/client';
-
-const prisma = new PrismaClient({
-  log: ['query', 'info', 'warn', 'error'], // Optional: configure logging
-});
+import { QuestionCategory } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
 /**
  * @swagger

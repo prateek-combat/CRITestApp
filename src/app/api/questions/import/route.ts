@@ -1,39 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, QuestionCategory } from '@prisma/client';
+import { QuestionCategory } from '@prisma/client';
 import * as XLSX from 'xlsx-js-style';
 import * as Papa from 'papaparse';
 import { logger } from '@/lib/logger';
-
-const prisma = new PrismaClient({
-  log:
-    process.env.NODE_ENV === 'development'
-      ? ['query', 'info', 'warn', 'error']
-      : ['error'],
-});
-
-// Test database connection on module load
-if (process.env.NODE_ENV === 'production') {
-  prisma
-    .$connect()
-    .then(() => {
-      logger.info('Prisma client connected successfully in production', {
-        operation: 'prisma_connect',
-        environment: 'production',
-        service: 'questions_import',
-      });
-    })
-    .catch((error) => {
-      logger.error(
-        'Prisma client connection failed',
-        {
-          operation: 'prisma_connect',
-          environment: 'production',
-          service: 'questions_import',
-        },
-        error as Error
-      );
-    });
-}
+import { prisma } from '@/lib/prisma';
 
 interface QuestionRow {
   promptText: string;

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { User } from '@prisma/client';
 import {
   sendInvitationEmail,
   sendBulkInvitations,
@@ -9,6 +10,7 @@ import {
 import { APP_URL } from '@/lib/constants';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
+import { auth } from '@/lib/auth';
 
 /**
  * @swagger
@@ -32,6 +34,16 @@ import { logger } from '@/lib/logger';
  */
 export async function GET() {
   try {
+    const session = await auth();
+
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const invitations = await prisma.invitation.findMany({
       include: {
         test: {
@@ -112,13 +124,38 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!session.user.id) {
+      return NextResponse.json(
+        { error: 'Authenticated user is missing an identifier' },
+        { status: 400 }
+      );
+    }
+
+    const actingUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+    });
+
+    if (!actingUser) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(actingUser.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const body = await request.json();
 
     // Check if this is a bulk invitation request
     if (body.emails || body.emailText) {
-      return await handleBulkInvitations(body);
+      return await handleBulkInvitations(body, actingUser);
     } else {
-      return await handleSingleInvitation(body);
+      return await handleSingleInvitation(body, actingUser);
     }
   } catch (error) {
     logger.error(
@@ -139,7 +176,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Handle single invitation
-async function handleSingleInvitation(body: any) {
+async function handleSingleInvitation(body: any, actingUser: Pick<User, 'id'>) {
   const { email, testId, sendEmail = true, customMessage } = body;
 
   if (!email?.trim() || !testId?.trim()) {
@@ -154,23 +191,6 @@ async function handleSingleInvitation(body: any) {
       { error: 'Invalid email address' },
       { status: 400 }
     );
-  }
-
-  // Get admin user
-  let adminUser = await prisma.user.findFirst({
-    where: { role: 'ADMIN' },
-  });
-
-  if (!adminUser) {
-    adminUser = await prisma.user.create({
-      data: {
-        email: 'admin@testplatform.com',
-        passwordHash: 'dummy',
-        firstName: 'Admin',
-        lastName: 'User',
-        role: 'ADMIN',
-      },
-    });
   }
 
   // Check if test exists
@@ -205,7 +225,7 @@ async function handleSingleInvitation(body: any) {
     data: {
       candidateEmail: email.trim(),
       testId: testId,
-      createdById: adminUser.id,
+      createdById: actingUser.id,
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
     },
   });
@@ -255,7 +275,7 @@ async function handleSingleInvitation(body: any) {
 }
 
 // Handle bulk invitations
-async function handleBulkInvitations(body: any) {
+async function handleBulkInvitations(body: any, actingUser: Pick<User, 'id'>) {
   const { emails, emailText, testId, sendEmail = true, customMessage } = body;
 
   if (!testId?.trim()) {
@@ -302,23 +322,6 @@ async function handleBulkInvitations(body: any) {
     return NextResponse.json({ error: 'Test not found' }, { status: 404 });
   }
 
-  // Get admin user
-  let adminUser = await prisma.user.findFirst({
-    where: { role: 'ADMIN' },
-  });
-
-  if (!adminUser) {
-    adminUser = await prisma.user.create({
-      data: {
-        email: 'admin@testplatform.com',
-        passwordHash: 'dummy',
-        firstName: 'Admin',
-        lastName: 'User',
-        role: 'ADMIN',
-      },
-    });
-  }
-
   const results: any[] = [];
   const emailInvitations: InvitationEmailData[] = [];
 
@@ -351,7 +354,7 @@ async function handleBulkInvitations(body: any) {
         data: {
           candidateEmail: email.trim(),
           testId: testId,
-          createdById: adminUser.id,
+          createdById: actingUser.id,
           expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         },
       });

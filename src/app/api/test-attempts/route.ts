@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient, Prisma, QuestionCategory } from '@prisma/client';
+import { Prisma, QuestionCategory } from '@prisma/client';
 import {
   sendTestCompletionCandidateEmail,
   sendTestCompletionAdminNotification,
 } from '@/lib/email';
 import { logger } from '@/lib/logger';
 
-const prisma = new PrismaClient({
-  log: ['query', 'info', 'warn', 'error'],
-});
+import { prisma } from '@/lib/prisma';
 
 /**
  * @swagger
@@ -169,6 +167,7 @@ export async function POST(request: Request) {
             jobProfile: {
               include: {
                 testWeights: {
+                  orderBy: { createdAt: 'asc' },
                   include: {
                     test: {
                       include: {
@@ -185,6 +184,14 @@ export async function POST(request: Request) {
                   },
                 },
               },
+            },
+            testAttempts: {
+              select: {
+                id: true,
+                status: true,
+                testId: true,
+              },
+              orderBy: { createdAt: 'asc' },
             },
           },
         }
@@ -204,26 +211,6 @@ export async function POST(request: Request) {
         );
       }
 
-      // For now, start with the first test in the job profile
-      // TODO: Implement multi-test handling for job profiles
-      const firstTest = jobProfileInvitation.jobProfile.testWeights[0].test;
-
-      // Check if there's an existing attempt
-      const existingAttempt = await prisma.testAttempt.findFirst({
-        where: {
-          jobProfileInvitationId: targetInvitationId,
-          testId: firstTest.id,
-        },
-        orderBy: { startedAt: 'desc' },
-      });
-
-      if (existingAttempt?.status === 'COMPLETED') {
-        return NextResponse.json(
-          { message: 'This test has already been completed' },
-          { status: 400 }
-        );
-      }
-
       if (
         jobProfileInvitation.status === 'COMPLETED' ||
         jobProfileInvitation.status === 'CANCELLED'
@@ -234,215 +221,276 @@ export async function POST(request: Request) {
         );
       }
 
-      // If this is a new attempt
-      if (!existingAttempt) {
-        // Update invitation status to OPENED
-        await prisma.jobProfileInvitation.update({
-          where: { id: targetInvitationId },
-          data: { status: 'OPENED' },
+      const orderedTestWeights = jobProfileInvitation.jobProfile.testWeights;
+      const attemptStatusByTestId = new Map(
+        jobProfileInvitation.testAttempts.map((attempt) => [
+          attempt.testId,
+          attempt,
+        ])
+      );
+      const inProgressAttemptMeta = jobProfileInvitation.testAttempts.find(
+        (attempt) => attempt.status === 'IN_PROGRESS'
+      );
+      const completionRequested = status === 'COMPLETED';
+
+      // If this is a new attempt or resume request
+      if (!completionRequested) {
+        if (inProgressAttemptMeta) {
+          const activeAttempt = await prisma.testAttempt.findUnique({
+            where: { id: inProgressAttemptMeta.id },
+          });
+
+          if (activeAttempt) {
+            return NextResponse.json(activeAttempt);
+          }
+        }
+
+        const nextTestWeight = orderedTestWeights.find((weight) => {
+          const attempt = attemptStatusByTestId.get(weight.test.id);
+          return !attempt || attempt.status !== 'COMPLETED';
         });
 
-        // Create a corresponding invitation record for the job profile invitation
-        // This is needed because the TestAttempt schema requires an invitationId
-        const proxyInvitation = await prisma.invitation.create({
-          data: {
-            candidateEmail: jobProfileInvitation.candidateEmail,
-            candidateName: jobProfileInvitation.candidateName,
-            testId: firstTest.id,
-            expiresAt: jobProfileInvitation.expiresAt,
-            status: 'OPENED',
-            createdById: jobProfileInvitation.createdById,
-          },
+        if (!nextTestWeight) {
+          return NextResponse.json(
+            { message: 'All tests for this job profile are already completed' },
+            { status: 400 }
+          );
+        }
+
+        const newAttempt = await createJobProfileAttempt({
+          jobProfileInvitation,
+          targetInvitationId,
+          test: nextTestWeight.test,
+          proctoringEnabled,
+          proctoringEvents,
+          tabSwitches,
         });
 
-        // Create new test attempt
-        const newAttempt = await prisma.testAttempt.create({
-          data: {
-            invitationId: proxyInvitation.id,
-            jobProfileInvitationId: targetInvitationId,
-            testId: firstTest.id,
-            candidateEmail: jobProfileInvitation.candidateEmail,
-            candidateName: jobProfileInvitation.candidateName,
-            startedAt: new Date(),
-            status: 'IN_PROGRESS',
-            proctoringEnabled: proctoringEnabled ?? false,
-            proctoringStartedAt: proctoringEnabled ? new Date() : null,
-            proctoringEvents: proctoringEvents
-              ? JSON.stringify(proctoringEvents)
-              : undefined,
-            tabSwitches: tabSwitches ?? 0,
-          },
-        });
+        if (jobProfileInvitation.status !== 'OPENED') {
+          await prisma.jobProfileInvitation.update({
+            where: { id: targetInvitationId },
+            data: { status: 'OPENED' },
+          });
+        }
 
         return NextResponse.json(newAttempt, { status: 201 });
       }
 
-      // If this is updating an existing attempt with job profile
-      if (status === 'COMPLETED') {
-        // Calculate score using the first test's questions
-        let correctAnswers = 0;
-        const submittedAnswersData = [];
-        const submissionTimeEpoch = new Date().getTime();
+      // Completion flow: finalize the currently active test
+      const attemptToCompleteMeta =
+        inProgressAttemptMeta ||
+        [...jobProfileInvitation.testAttempts]
+          .reverse()
+          .find((attempt) => attempt.status !== 'COMPLETED');
 
-        // Initialize category scores
-        const finalCategorySubScores: Record<
-          QuestionCategory,
-          { correct: number; total: number }
-        > = {
-          LOGICAL: { correct: 0, total: 0 },
-          VERBAL: { correct: 0, total: 0 },
-          NUMERICAL: { correct: 0, total: 0 },
-          ATTENTION_TO_DETAIL: { correct: 0, total: 0 },
-          OTHER: { correct: 0, total: 0 },
-        };
-
-        // Populate total questions for each category
-        firstTest.questions.forEach((q) => {
-          const category = q.category as QuestionCategory;
-          if (finalCategorySubScores[category]) {
-            finalCategorySubScores[category].total++;
-          }
-        });
-
-        for (const question of firstTest.questions) {
-          const questionId = question.id;
-          const clientAnswerData = answers[questionId];
-          const category = question.category as QuestionCategory;
-
-          if (clientAnswerData && clientAnswerData.answerIndex !== undefined) {
-            const selectedAnswerIndexValue = clientAnswerData.answerIndex;
-            const isCorrect =
-              selectedAnswerIndexValue === question.correctAnswerIndex;
-
-            if (isCorrect) {
-              correctAnswers++;
-              if (finalCategorySubScores[category]) {
-                finalCategorySubScores[category].correct++;
-              }
-            }
-
-            let timeTakenSeconds = clientAnswerData.timeTaken ?? 0;
-
-            if (
-              questionStartTime &&
-              questionStartTime[questionId] &&
-              questionStartTime[questionId].epoch
-            ) {
-              const qStartTimeEpoch = questionStartTime[questionId].epoch;
-              const serverCalculatedTimeTaken = Math.max(
-                0,
-                Math.floor((submissionTimeEpoch - qStartTimeEpoch) / 1000)
-              );
-              if (clientAnswerData.timeTaken === undefined) {
-                timeTakenSeconds = serverCalculatedTimeTaken;
-              }
-            }
-
-            submittedAnswersData.push({
-              questionId,
-              selectedAnswerIndex: selectedAnswerIndexValue,
-              isCorrect,
-              timeTakenSeconds,
-              submittedAt: new Date(),
-            });
-          }
-        }
-
-        const totalQuestions = firstTest.questions.length;
-        const rawScore = correctAnswers;
-        const percentile =
-          totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
-
-        // Update test attempt with results
-        const updatedAttempt = await prisma.testAttempt.update({
-          where: { id: existingAttempt.id },
-          data: {
-            completedAt: new Date(submissionTimeEpoch),
-            status: 'COMPLETED',
-            rawScore,
-            percentile,
-            categorySubScores: finalCategorySubScores as Prisma.JsonObject,
-            proctoringEndedAt: new Date(),
-            proctoringEvents: proctoringEvents
-              ? JSON.stringify(proctoringEvents)
-              : undefined,
-            tabSwitches: tabSwitches ?? existingAttempt.tabSwitches,
-            submittedAnswers: {
-              createMany: {
-                data: submittedAnswersData.map((sa) => ({ ...sa })),
-              },
-            },
-          },
-          include: { submittedAnswers: true },
-        });
-
-        // Update job profile invitation status
-        await prisma.jobProfileInvitation.update({
-          where: { id: targetInvitationId },
-          data: { status: 'COMPLETED' },
-        });
-
-        // Also update the proxy invitation status
-        await prisma.invitation.update({
-          where: { id: existingAttempt.invitationId },
-          data: { status: 'COMPLETED' },
-        });
-
-        // Send admin notification email (async, don't wait for completion)
-        sendTestCompletionAdminNotification({
-          testId: firstTest.id,
-          testAttemptId: existingAttempt.id,
-          candidateEmail:
-            jobProfileInvitation.candidateEmail || 'unknown@example.com',
-          candidateName:
-            jobProfileInvitation.candidateName || 'Unknown Candidate',
-          score: correctAnswers,
-          maxScore: totalQuestions,
-          completedAt: new Date(submissionTimeEpoch),
-          timeTaken: Math.floor(
-            (submissionTimeEpoch - existingAttempt.startedAt.getTime()) / 1000
-          ),
-          testTitle: firstTest.title,
-        }).catch((error: any) => {
-          logger.error(
-            'Failed to send admin notification email',
-            {
-              operation: 'send_admin_notification',
-              testId: firstTest.id,
-              candidateEmail: jobProfileInvitation.candidateEmail,
-              method: 'POST',
-              path: '/api/test-attempts',
-            },
-            error
-          );
-        });
-
-        sendTestCompletionCandidateEmail({
-          candidateEmail:
-            jobProfileInvitation.candidateEmail || 'unknown@example.com',
-          candidateName:
-            jobProfileInvitation.candidateName || 'Unknown Candidate',
-          testTitle: firstTest.title || 'Assessment',
-          completedAt: new Date(submissionTimeEpoch),
-          companyName: 'Combat Robotics India',
-        }).catch((error: any) => {
-          logger.error(
-            'Failed to send candidate confirmation email',
-            {
-              operation: 'send_candidate_confirmation',
-              testId: firstTest.id,
-              candidateEmail: jobProfileInvitation.candidateEmail,
-              method: 'POST',
-              path: '/api/test-attempts',
-            },
-            error
-          );
-        });
-
-        return NextResponse.json(updatedAttempt);
+      if (!attemptToCompleteMeta) {
+        return NextResponse.json(
+          { message: 'No active test attempt found for this invitation' },
+          { status: 400 }
+        );
       }
 
-      return NextResponse.json(existingAttempt);
+      const existingAttempt = await prisma.testAttempt.findUnique({
+        where: { id: attemptToCompleteMeta.id },
+      });
+
+      if (!existingAttempt) {
+        return NextResponse.json(
+          { message: 'Test attempt could not be loaded' },
+          { status: 404 }
+        );
+      }
+
+      const currentTest = orderedTestWeights.find(
+        (weight) => weight.test.id === existingAttempt.testId
+      )?.test;
+
+      if (!currentTest) {
+        return NextResponse.json(
+          { message: 'Test configuration missing for this attempt' },
+          { status: 400 }
+        );
+      }
+
+      let correctAnswers = 0;
+      const submittedAnswersData = [];
+      const submissionTimeEpoch = new Date().getTime();
+
+      const finalCategorySubScores: Record<
+        QuestionCategory,
+        { correct: number; total: number }
+      > = {
+        LOGICAL: { correct: 0, total: 0 },
+        VERBAL: { correct: 0, total: 0 },
+        NUMERICAL: { correct: 0, total: 0 },
+        ATTENTION_TO_DETAIL: { correct: 0, total: 0 },
+        OTHER: { correct: 0, total: 0 },
+      };
+
+      currentTest.questions.forEach((q) => {
+        const category = q.category as QuestionCategory;
+        if (finalCategorySubScores[category]) {
+          finalCategorySubScores[category].total++;
+        }
+      });
+
+      for (const question of currentTest.questions) {
+        const questionId = question.id;
+        const clientAnswerData = answers[questionId];
+        const category = question.category as QuestionCategory;
+
+        if (clientAnswerData && clientAnswerData.answerIndex !== undefined) {
+          const selectedAnswerIndexValue = clientAnswerData.answerIndex;
+          const isCorrect =
+            selectedAnswerIndexValue === question.correctAnswerIndex;
+
+          if (isCorrect) {
+            correctAnswers++;
+            if (finalCategorySubScores[category]) {
+              finalCategorySubScores[category].correct++;
+            }
+          }
+
+          let timeTakenSeconds = clientAnswerData.timeTaken ?? 0;
+
+          if (
+            questionStartTime &&
+            questionStartTime[questionId] &&
+            questionStartTime[questionId].epoch
+          ) {
+            const qStartTimeEpoch = questionStartTime[questionId].epoch;
+            const serverCalculatedTimeTaken = Math.max(
+              0,
+              Math.floor((submissionTimeEpoch - qStartTimeEpoch) / 1000)
+            );
+            if (clientAnswerData.timeTaken === undefined) {
+              timeTakenSeconds = serverCalculatedTimeTaken;
+            }
+          }
+
+          submittedAnswersData.push({
+            questionId,
+            selectedAnswerIndex: selectedAnswerIndexValue,
+            isCorrect,
+            timeTakenSeconds,
+            submittedAt: new Date(),
+          });
+        }
+      }
+
+      const totalQuestions = currentTest.questions.length;
+      const rawScore = correctAnswers;
+      const percentile =
+        totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+
+      const updatedAttempt = await prisma.testAttempt.update({
+        where: { id: existingAttempt.id },
+        data: {
+          completedAt: new Date(submissionTimeEpoch),
+          status: 'COMPLETED',
+          rawScore,
+          percentile,
+          categorySubScores: finalCategorySubScores as Prisma.JsonObject,
+          proctoringEndedAt: new Date(),
+          proctoringEvents: proctoringEvents
+            ? JSON.stringify(proctoringEvents)
+            : undefined,
+          tabSwitches: tabSwitches ?? existingAttempt.tabSwitches,
+          submittedAnswers: {
+            createMany: {
+              data: submittedAnswersData.map((sa) => ({ ...sa })),
+            },
+          },
+        },
+        include: { submittedAnswers: true },
+      });
+
+      attemptStatusByTestId.set(existingAttempt.testId, {
+        id: existingAttempt.id,
+        status: 'COMPLETED',
+        testId: existingAttempt.testId,
+      });
+
+      const nextTestWeight = orderedTestWeights.find((weight) => {
+        if (weight.test.id === existingAttempt.testId) {
+          return false;
+        }
+        const attempt = attemptStatusByTestId.get(weight.test.id);
+        return !attempt || attempt.status !== 'COMPLETED';
+      });
+
+      const invitationStatusUpdate = nextTestWeight ? 'OPENED' : 'COMPLETED';
+
+      await prisma.jobProfileInvitation.update({
+        where: { id: targetInvitationId },
+        data: { status: invitationStatusUpdate },
+      });
+
+      await prisma.invitation.update({
+        where: { id: existingAttempt.invitationId },
+        data: { status: 'COMPLETED' },
+      });
+
+      sendTestCompletionAdminNotification({
+        testId: currentTest.id,
+        testAttemptId: existingAttempt.id,
+        candidateEmail:
+          jobProfileInvitation.candidateEmail || 'unknown@example.com',
+        candidateName:
+          jobProfileInvitation.candidateName || 'Unknown Candidate',
+        score: correctAnswers,
+        maxScore: totalQuestions,
+        completedAt: new Date(submissionTimeEpoch),
+        timeTaken: Math.floor(
+          (submissionTimeEpoch - existingAttempt.startedAt.getTime()) / 1000
+        ),
+        testTitle: currentTest.title,
+      }).catch((error: any) => {
+        logger.error(
+          'Failed to send admin notification email',
+          {
+            operation: 'send_admin_notification',
+            testId: currentTest.id,
+            candidateEmail: jobProfileInvitation.candidateEmail,
+            method: 'POST',
+            path: '/api/test-attempts',
+          },
+          error
+        );
+      });
+
+      sendTestCompletionCandidateEmail({
+        candidateEmail:
+          jobProfileInvitation.candidateEmail || 'unknown@example.com',
+        candidateName:
+          jobProfileInvitation.candidateName || 'Unknown Candidate',
+        testTitle: currentTest.title || 'Assessment',
+        completedAt: new Date(submissionTimeEpoch),
+        companyName: 'Combat Robotics India',
+      }).catch((error: any) => {
+        logger.error(
+          'Failed to send candidate confirmation email',
+          {
+            operation: 'send_candidate_confirmation',
+            testId: currentTest.id,
+            candidateEmail: jobProfileInvitation.candidateEmail,
+            method: 'POST',
+            path: '/api/test-attempts',
+          },
+          error
+        );
+      });
+
+      return NextResponse.json(
+        nextTestWeight
+          ? {
+              ...updatedAttempt,
+              nextTestReady: true,
+              nextTestId: nextTestWeight.test.id,
+              nextTestTitle: nextTestWeight.test.title,
+            }
+          : updatedAttempt
+      );
     }
 
     // Handle regular invitations (existing code)
@@ -723,4 +771,51 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+interface JobProfileAttemptOptions {
+  jobProfileInvitation: any;
+  targetInvitationId: string;
+  test: { id: string };
+  proctoringEnabled?: boolean;
+  proctoringEvents?: unknown;
+  tabSwitches?: number;
+}
+
+async function createJobProfileAttempt({
+  jobProfileInvitation,
+  targetInvitationId,
+  test,
+  proctoringEnabled,
+  proctoringEvents,
+  tabSwitches,
+}: JobProfileAttemptOptions) {
+  const proxyInvitation = await prisma.invitation.create({
+    data: {
+      candidateEmail: jobProfileInvitation.candidateEmail,
+      candidateName: jobProfileInvitation.candidateName,
+      testId: test.id,
+      expiresAt: jobProfileInvitation.expiresAt,
+      status: 'OPENED',
+      createdById: jobProfileInvitation.createdById,
+    },
+  });
+
+  return prisma.testAttempt.create({
+    data: {
+      invitationId: proxyInvitation.id,
+      jobProfileInvitationId: targetInvitationId,
+      testId: test.id,
+      candidateEmail: jobProfileInvitation.candidateEmail,
+      candidateName: jobProfileInvitation.candidateName,
+      startedAt: new Date(),
+      status: 'IN_PROGRESS',
+      proctoringEnabled: proctoringEnabled ?? false,
+      proctoringStartedAt: proctoringEnabled ? new Date() : null,
+      proctoringEvents: proctoringEvents
+        ? JSON.stringify(proctoringEvents)
+        : undefined,
+      tabSwitches: tabSwitches ?? 0,
+    },
+  });
 }

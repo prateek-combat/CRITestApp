@@ -21,8 +21,6 @@ const publicRoutes = [
   '/api/public-test',
   '/api/public-test-attempts',
   '/api/public-test-links',
-  '/api/invitations',
-  '/api/job-profile-invitations',
   '/login',
   '/public-test',
   '/',

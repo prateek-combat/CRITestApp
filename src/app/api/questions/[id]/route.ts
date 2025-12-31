@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient, QuestionCategory } from '@prisma/client';
+import { QuestionCategory } from '@prisma/client';
 import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
-
-const prisma = new PrismaClient({
-  log: ['query', 'info', 'warn', 'error'], // Optional: configure logging
-});
+import { prisma } from '@/lib/prisma';
 
 interface RouteParams {
   params: Promise<{ id: string }>;

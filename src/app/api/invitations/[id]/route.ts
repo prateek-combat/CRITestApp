@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient, Prisma, InvitationStatus } from '@prisma/client';
-
-const prisma = new PrismaClient({
-  log: ['query', 'info', 'warn', 'error'],
-});
+import { Prisma, InvitationStatus } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
 interface RouteParams {
   params: Promise<{ id: string }>;

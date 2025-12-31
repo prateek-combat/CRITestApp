@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter, useParams } from 'next/navigation';
 import useSWR from 'swr';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
@@ -822,10 +822,55 @@ export default function TestTakingPage() {
     (a) => a.questionId === currentQuestion.id
   );
 
+  const totalQuestions = data.test.questions.length;
+  const answeredCount = userAnswers.filter(
+    (ans) => ans.selectedAnswerIndex !== null
+  ).length;
+  const remainingCount = Math.max(totalQuestions - answeredCount, 0);
+  const answeredPercent =
+    totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+  const questionProgressPercent =
+    totalQuestions > 0
+      ? Math.round(((currentQuestionIndex + 1) / totalQuestions) * 100)
+      : 0;
+  const formattedTimeLeft =
+    timeLeft !== null
+      ? `${Math.floor(timeLeft / 60)
+          .toString()
+          .padStart(2, '0')}:${(timeLeft % 60).toString().padStart(2, '0')}`
+      : '00:00';
+  const timerPercent =
+    currentQuestion?.timerSeconds && timeLeft !== null
+      ? Math.max(
+          0,
+          Math.min(
+            100,
+            Math.round((timeLeft / currentQuestion.timerSeconds) * 100)
+          )
+        )
+      : currentQuestion?.timerSeconds
+        ? 100
+        : 0;
+  const lowTimeWarning =
+    Boolean(currentQuestion?.timerSeconds) &&
+    timeLeft !== null &&
+    timeLeft <= Math.ceil((currentQuestion?.timerSeconds ?? 0) * 0.2);
+  const strikesRemaining = Math.max(maxAllowed - strikeCount, 0);
+  const statusPillClasses = isRecording
+    ? 'bg-emerald-100 text-emerald-700'
+    : 'bg-amber-100 text-amber-700';
+  const statusDotClasses = isRecording ? 'bg-emerald-500' : 'bg-amber-500';
+  const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
+  const focusGuidelines = [
+    'Keep your webcam and microphone on for the entire assessment.',
+    'Stay inside this browser tab—switching windows triggers strikes.',
+    'Avoid background noise and keep notes or devices out of view.',
+  ];
+
   return (
-    <div className="relative flex h-screen flex-col bg-gray-100 font-sans">
+    <div className="relative flex min-h-screen flex-col bg-gray-100 font-sans">
       {isRecording && (
-        <div className="absolute bottom-24 right-4 z-50 flex items-center gap-2 rounded-full bg-red-600 px-3 py-1 text-xs font-medium text-white shadow-lg">
+        <div className="pointer-events-none fixed bottom-6 right-6 z-40 hidden items-center gap-2 rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white shadow-lg sm:flex">
           <div className="h-2 w-2 animate-pulse rounded-full bg-white"></div>
           REC
         </div>
@@ -860,40 +905,232 @@ export default function TestTakingPage() {
         isReturning={isReturningFocus}
       />
 
-      <header className="flex items-center justify-between border-b bg-military-green px-6 py-2 text-white shadow-sm">
-        <h1 className="text-lg font-bold">{data.test.title}</h1>
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-white/90">
-            {currentQuestionIndex + 1}/{data.test.questions.length}
-          </span>
-          <div className="relative h-2.5 w-64 rounded-full bg-white/30">
-            <div
-              className="absolute h-full rounded-full bg-green-400 transition-all"
-              style={{
-                width: `${((currentQuestionIndex + 1) / data.test.questions.length) * 100}%`,
-              }}
-            ></div>
+      <header className="border-b bg-white px-4 py-4 shadow-sm sm:px-6 lg:px-10">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Candidate
+            </p>
+            <p className="text-base font-semibold text-gray-900">
+              {data.candidateName || 'Candidate'}
+            </p>
+            {data.candidateEmail && (
+              <p className="text-sm text-gray-500">{data.candidateEmail}</p>
+            )}
+          </div>
+          <div className="flex flex-1 flex-col gap-3 lg:items-end">
+            <div className="flex flex-col gap-2 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-end">
+              <div className="flex items-center gap-3">
+                <span className="text-xs uppercase tracking-wide text-gray-400">
+                  Question progress
+                </span>
+                <span className="text-lg font-semibold text-gray-900">
+                  {currentQuestionIndex + 1}/{totalQuestions}
+                </span>
+              </div>
+              <div className="hidden h-2 w-56 rounded-full bg-gray-200 sm:block">
+                <div
+                  className="h-2 rounded-full bg-blue-500 transition-all"
+                  style={{ width: `${questionProgressPercent}%` }}
+                ></div>
+              </div>
+              <div
+                className={`flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${statusPillClasses}`}
+              >
+                <span
+                  className={`${statusDotClasses} h-2 w-2 rounded-full ${isRecording ? 'animate-pulse' : ''}`}
+                ></span>
+                {isRecording ? 'Proctoring active' : 'Initializing proctoring'}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+              <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1">
+                <span className="text-sm font-semibold text-gray-900">
+                  {answeredCount}
+                </span>
+                answered
+              </div>
+              <div className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1">
+                <span className="text-sm font-semibold text-gray-900">
+                  {strikesRemaining}
+                </span>
+                strikes left
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
       <main className="flex flex-1 overflow-hidden">
-        <div className="grid h-full min-h-0 flex-1 grid-cols-1 md:grid-cols-3">
-          <div className="flex min-h-0 flex-col border-r border-gray-200 bg-white md:col-span-2">
-            <div className="flex-1 overflow-y-auto p-4 md:p-6">
+        <aside className="hidden w-80 flex-shrink-0 flex-col border-r border-gray-200 bg-white p-5 lg:flex lg:overflow-y-auto">
+          <section className="rounded-2xl border border-gray-100 bg-slate-50 p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-gray-900">
+                Session status
+              </p>
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                Q{currentQuestionIndex + 1}
+              </span>
+            </div>
+            <div className="mt-4 text-4xl font-semibold text-gray-900">
+              {formattedTimeLeft}
+            </div>
+            <p
+              className={`text-sm ${lowTimeWarning ? 'text-red-600' : 'text-gray-500'}`}
+            >
+              {lowTimeWarning
+                ? 'Wrap up this question soon'
+                : 'Time remaining for this question'}
+            </p>
+            <div className="mt-3 h-2 rounded-full bg-white/80">
+              <span
+                className={`block h-2 rounded-full ${lowTimeWarning ? 'bg-red-500' : 'bg-emerald-500'}`}
+                style={{ width: `${timerPercent}%` }}
+              ></span>
+            </div>
+            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <dt className="text-gray-500">Answered</dt>
+                <dd className="text-lg font-semibold text-gray-900">
+                  {answeredCount}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-gray-500">Remaining</dt>
+                <dd className="text-lg font-semibold text-gray-900">
+                  {remainingCount}
+                </dd>
+              </div>
+            </dl>
+            <div className="mt-4 rounded-lg bg-white px-3 py-2 text-xs font-medium text-slate-600">
+              {strikesRemaining > 0
+                ? `${strikesRemaining} strike${strikesRemaining === 1 ? '' : 's'} left before termination`
+                : 'Any further violation will end this attempt'}
+            </div>
+          </section>
+
+          <section className="mt-5 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-gray-900">
+                Answer progress
+              </p>
+              <span className="text-xs font-semibold text-gray-500">
+                {answeredPercent}% complete
+              </span>
+            </div>
+            <div className="mt-3 h-2 rounded-full bg-gray-100">
+              <span
+                className="block h-2 rounded-full bg-blue-500"
+                style={{ width: `${answeredPercent}%` }}
+              ></span>
+            </div>
+            <div className="mt-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Question map
+              </p>
+              <div className="mt-3 grid grid-cols-5 gap-2">
+                {data.test.questions.map((question: any, index: number) => {
+                  const answered = userAnswers.some(
+                    (ans) =>
+                      ans.questionId === question.id &&
+                      ans.selectedAnswerIndex !== null
+                  );
+                  const isCurrent = index === currentQuestionIndex;
+                  return (
+                    <div
+                      key={question.id}
+                      className={`flex h-10 w-10 items-center justify-center rounded-lg text-sm font-semibold ${
+                        isCurrent
+                          ? 'border-2 border-blue-500 bg-blue-50 text-blue-600'
+                          : answered
+                            ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
+                            : 'border border-gray-200 bg-white text-gray-500'
+                      }`}
+                      aria-label={`Question ${index + 1} ${answered ? 'answered' : 'not answered'}`}
+                    >
+                      {index + 1}
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-[11px] text-gray-400">
+                Questions must be completed sequentially. Use this map as a
+                status reference.
+              </p>
+            </div>
+          </section>
+
+          <section className="mt-5 rounded-2xl border border-gray-100 bg-slate-50 p-5 shadow-sm">
+            <p className="text-sm font-semibold text-gray-900">
+              Quick guidelines
+            </p>
+            <ul className="mt-3 space-y-3 text-sm text-gray-700">
+              {focusGuidelines.map((tip) => (
+                <li key={tip} className="flex items-start gap-2">
+                  <span className="mt-1 h-2 w-2 rounded-full bg-emerald-500"></span>
+                  <span>{tip}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </aside>
+
+        <div className="flex flex-1 flex-col lg:flex-row">
+          <section className="flex min-h-0 flex-1 flex-col border-b border-gray-200 bg-white lg:border-b-0 lg:border-r">
+            <div className="border-b bg-gray-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600 lg:hidden">
+              <div className="flex items-center justify-between text-gray-900">
+                <span>
+                  Q{currentQuestionIndex + 1}/{totalQuestions}
+                </span>
+                <span
+                  className={lowTimeWarning ? 'text-red-600' : 'text-gray-500'}
+                >
+                  {formattedTimeLeft}
+                </span>
+              </div>
+              <div className="mt-2 h-2 rounded-full bg-gray-200">
+                <span
+                  className={`block h-2 rounded-full ${lowTimeWarning ? 'bg-red-500' : 'bg-blue-500'}`}
+                  style={{ width: `${timerPercent}%` }}
+                ></span>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 md:p-8">
+              <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-slate-50 p-4 text-sm text-gray-600 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Current question
+                  </p>
+                  <p className="text-base font-semibold text-gray-900">
+                    Stay focused and answer before the timer expires.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 text-xs">
+                  <span className="rounded-full bg-white px-3 py-1 font-semibold text-gray-700">
+                    {currentQuestion.timerSeconds} sec limit
+                  </span>
+                  <span className="rounded-full bg-white px-3 py-1 font-semibold text-gray-700">
+                    {answeredPercent}% overall
+                  </span>
+                </div>
+              </div>
               <div className="prose prose-lg max-w-none text-gray-900">
                 <MarkdownRenderer content={currentQuestion?.promptText || ''} />
               </div>
             </div>
-          </div>
+          </section>
 
-          <div className="flex min-h-0 flex-col bg-slate-50">
-            <div className="border-b border-gray-200 bg-white p-4 md:p-6">
-              <h3 className="text-lg font-semibold text-gray-800">
-                Choose Your Answer
+          <aside className="flex min-h-0 w-full flex-col border-t border-gray-200 bg-slate-50 lg:w-[380px] lg:border-t-0">
+            <div className="border-b border-gray-200 bg-white px-4 py-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Choose your answer
               </h3>
+              <p className="text-sm text-gray-500">
+                Select an option to auto-save your response. You can move
+                forward once an answer is locked in.
+              </p>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 md:p-6">
+            <div className="flex-1 overflow-y-auto px-4 py-6">
               <div className="space-y-3">
                 {currentQuestion.answerOptions.map(
                   (option: string, index: number) => {
@@ -903,17 +1140,17 @@ export default function TestTakingPage() {
                       <button
                         key={index}
                         onClick={() => handleAnswerSelect(index)}
-                        className={`flex w-full items-center rounded-lg border-2 p-3 text-left transition-all duration-150 ${
+                        className={`flex w-full items-center rounded-2xl border-2 p-3 text-left transition-all duration-150 ${
                           isSelected
-                            ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500'
-                            : 'border-gray-300 bg-white hover:border-blue-400'
+                            ? 'border-blue-500 bg-blue-50 shadow-sm ring-2 ring-blue-200'
+                            : 'border-gray-200 bg-white hover:border-blue-300'
                         }`}
                       >
                         <span
-                          className={`mr-4 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full font-bold ${
+                          className={`mr-4 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold ${
                             isSelected
                               ? 'bg-blue-500 text-white'
-                              : 'bg-gray-200 text-gray-600'
+                              : 'bg-gray-100 text-gray-500'
                           }`}
                         >
                           {String.fromCharCode(65 + index)}
@@ -925,16 +1162,20 @@ export default function TestTakingPage() {
                 )}
               </div>
             </div>
-          </div>
+            <div className="border-t border-gray-200 bg-white px-4 py-4 text-xs text-gray-500">
+              Answers are locked when selected. You can only move forward—no
+              backtracking.
+            </div>
+          </aside>
         </div>
       </main>
 
-      <footer className="flex items-center justify-center border-t bg-white px-6 py-3">
-        <div className="flex items-center gap-8">
-          <div className="flex w-24 items-center justify-center font-mono text-lg font-bold text-gray-700">
+      <footer className="flex flex-col gap-3 border-t bg-white px-4 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 font-mono text-xl font-semibold">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="mr-2 h-6 w-6 text-gray-500"
+              className={`h-6 w-6 ${lowTimeWarning ? 'text-red-500' : 'text-gray-500'}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -946,48 +1187,50 @@ export default function TestTakingPage() {
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span>
-              {timeLeft !== null
-                ? `${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, '0')}`
-                : '0:00'}
+            <span className={lowTimeWarning ? 'text-red-600' : 'text-gray-900'}>
+              {formattedTimeLeft}
             </span>
           </div>
-
-          <Button
-            onClick={handleNextQuestion}
-            disabled={
-              currentAnswer?.selectedAnswerIndex === null || isNavigating
-            }
-          >
-            {isNavigating ? (
-              <div className="flex items-center gap-2">
-                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  />
-                </svg>
-                {currentQuestionIndex === data.test.questions.length - 1
-                  ? 'Submitting...'
-                  : 'Next...'}
-              </div>
-            ) : currentQuestionIndex === data.test.questions.length - 1 ? (
-              'Finish & Submit'
-            ) : (
-              'Next'
-            )}
-          </Button>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-gray-400">
+              Answered
+            </p>
+            <p className="text-sm font-semibold text-gray-900">
+              {answeredCount}/{totalQuestions}
+            </p>
+          </div>
         </div>
+
+        <Button
+          onClick={handleNextQuestion}
+          disabled={currentAnswer?.selectedAnswerIndex === null || isNavigating}
+        >
+          {isNavigating ? (
+            <div className="flex items-center gap-2">
+              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  fill="none"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              {isLastQuestion ? 'Submitting...' : 'Saving...'}
+            </div>
+          ) : isLastQuestion ? (
+            'Finish & submit'
+          ) : (
+            'Next question'
+          )}
+        </Button>
       </footer>
     </div>
   );
