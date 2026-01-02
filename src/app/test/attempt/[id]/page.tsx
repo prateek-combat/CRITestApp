@@ -94,6 +94,9 @@ export default function TestTakingPage() {
   );
   const [savingAnswer, setSavingAnswer] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [navigationDirection, setNavigationDirection] = useState<
+    'next' | 'prev' | null
+  >(null);
 
   // Control when full monitoring (focus detection, etc.) becomes active
   // Only start after question 1 to avoid issues during permission granting
@@ -159,6 +162,11 @@ export default function TestTakingPage() {
   const handleCloseFocusWarning = () => {
     setShowFocusWarning(false);
   };
+
+  const totalQuestions = data?.test?.questions?.length ?? 0;
+  const isFirstQuestion = currentQuestionIndex === 0;
+  const isLastQuestion =
+    totalQuestions > 0 && currentQuestionIndex === totalQuestions - 1;
 
   useLiveFlags(
     attemptId,
@@ -416,12 +424,10 @@ export default function TestTakingPage() {
   const handleNextQuestion = useCallback(async () => {
     if (!data || isNavigating) return; // Prevent multiple clicks
 
+    setNavigationDirection('next');
     setIsNavigating(true);
 
     try {
-      const isLastQuestion =
-        currentQuestionIndex === data.test.questions.length - 1;
-
       if (isLastQuestion) {
         // Save current answer before submitting (use current index)
         await saveCurrentAnswer(currentQuestionIndex);
@@ -447,12 +453,40 @@ export default function TestTakingPage() {
       }
     } finally {
       setIsNavigating(false);
+      setNavigationDirection(null);
     }
   }, [
     currentQuestionIndex,
     data,
     isNavigating,
     handleSubmitTest,
+    saveCurrentAnswer,
+    saveProgress,
+  ]);
+
+  const handlePreviousQuestion = useCallback(async () => {
+    if (!data || isFirstQuestion || isNavigating) {
+      return;
+    }
+
+    setIsNavigating(true);
+
+    try {
+      setNavigationDirection('prev');
+      await saveCurrentAnswer(currentQuestionIndex);
+      const previousIndex = currentQuestionIndex - 1;
+      setCurrentQuestionIndex(previousIndex);
+      setQuestionStartTime(Date.now());
+      await saveProgress(previousIndex);
+    } finally {
+      setIsNavigating(false);
+      setNavigationDirection(null);
+    }
+  }, [
+    data,
+    currentQuestionIndex,
+    isFirstQuestion,
+    isNavigating,
     saveCurrentAnswer,
     saveProgress,
   ]);
@@ -822,7 +856,6 @@ export default function TestTakingPage() {
     (a) => a.questionId === currentQuestion.id
   );
 
-  const totalQuestions = data.test.questions.length;
   const answeredCount = userAnswers.filter(
     (ans) => ans.selectedAnswerIndex !== null
   ).length;
@@ -1163,14 +1196,14 @@ export default function TestTakingPage() {
               </div>
             </div>
             <div className="border-t border-gray-200 bg-white px-4 py-4 text-xs text-gray-500">
-              Answers are locked when selected. You can only move forward—no
-              backtracking.
+              Answers auto-save when selected. You can revisit any question
+              before you finish the test.
             </div>
           </aside>
         </div>
       </main>
 
-      <footer className="flex flex-col gap-3 border-t bg-white px-4 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+      <footer className="sticky bottom-0 z-30 flex flex-col gap-3 border-t border-gray-200 bg-white/95 px-4 py-4 text-sm text-gray-600 shadow-inner backdrop-blur sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2 font-mono text-xl font-semibold">
             <svg
@@ -1201,36 +1234,49 @@ export default function TestTakingPage() {
           </div>
         </div>
 
-        <Button
-          onClick={handleNextQuestion}
-          disabled={currentAnswer?.selectedAnswerIndex === null || isNavigating}
-        >
-          {isNavigating ? (
-            <div className="flex items-center gap-2">
-              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  fill="none"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-              {isLastQuestion ? 'Submitting...' : 'Saving...'}
-            </div>
-          ) : isLastQuestion ? (
-            'Finish & submit'
-          ) : (
-            'Next question'
-          )}
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            onClick={handlePreviousQuestion}
+            disabled={isFirstQuestion || isNavigating}
+          >
+            {isNavigating && navigationDirection === 'prev'
+              ? 'Going back...'
+              : 'Previous question'}
+          </Button>
+          <Button
+            onClick={handleNextQuestion}
+            disabled={
+              currentAnswer?.selectedAnswerIndex === null || isNavigating
+            }
+          >
+            {isNavigating && navigationDirection === 'next' ? (
+              <div className="flex items-center gap-2">
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                {isLastQuestion ? 'Submitting...' : 'Saving...'}
+              </div>
+            ) : isLastQuestion ? (
+              'Finish & submit'
+            ) : (
+              'Next question'
+            )}
+          </Button>
+        </div>
       </footer>
     </div>
   );
