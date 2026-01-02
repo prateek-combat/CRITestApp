@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+const STRIKE_EVENT_TYPES = new Set([
+  'COPY_DETECTED',
+  'TAB_HIDDEN',
+  'WINDOW_BLUR',
+  'MOUSE_LEFT_WINDOW',
+  'DEVTOOLS_DETECTED',
+  'DEVTOOLS_SHORTCUT',
+  'F12_PRESSED',
+]);
+
 // POST /api/proctor/event - Store proctoring events
 export async function POST(request: NextRequest) {
   try {
@@ -27,11 +37,11 @@ export async function POST(request: NextRequest) {
 
     const isPublicAttempt = !testAttempt;
 
-    // Count copy events in the current batch
-    const copyEvents = events.filter(
-      (event: any) => event.type === 'COPY_DETECTED'
+    // Count strike-worthy events in the current batch
+    const violationEvents = events.filter((event: any) =>
+      STRIKE_EVENT_TYPES.has(event.type)
     );
-    const copyCount = copyEvents.length;
+    const violationCount = violationEvents.length;
 
     if (isPublicAttempt) {
       // Check if public test attempt exists and get current copy count
@@ -60,7 +70,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const newCopyCount = publicAttempt.copyEventCount + copyCount;
+      const newCopyCount = publicAttempt.copyEventCount + violationCount;
       const maxAllowed = publicAttempt.maxCopyEventsAllowed;
       const shouldTerminate = newCopyCount >= maxAllowed;
 
@@ -79,15 +89,15 @@ export async function POST(request: NextRequest) {
           skipDuplicates: true,
         });
 
-        // Update copy count and check for termination
-        if (copyCount > 0) {
+        // Update violation count and check for termination
+        if (violationCount > 0) {
           const updatedAttempt = await tx.publicTestAttempt.update({
             where: { id: attemptId },
             data: {
               copyEventCount: newCopyCount,
               ...(shouldTerminate && {
                 status: 'TERMINATED',
-                terminationReason: `Test terminated due to ${newCopyCount} copy violations (limit: ${maxAllowed})`,
+                terminationReason: `Test terminated due to ${newCopyCount} policy violations (limit: ${maxAllowed})`,
                 completedAt: new Date(),
               }),
             },
@@ -98,7 +108,7 @@ export async function POST(request: NextRequest) {
             eventsStored: events.length,
             terminated: shouldTerminate,
             reason: shouldTerminate
-              ? `Test terminated due to ${newCopyCount} copy violations`
+              ? `Test terminated due to ${newCopyCount} policy violations`
               : null,
             copyCount: newCopyCount,
             maxAllowed,
@@ -135,7 +145,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const newCopyCount = testAttempt.copyEventCount + copyCount;
+      const newCopyCount = testAttempt.copyEventCount + violationCount;
       const maxAllowed = testAttempt.maxCopyEventsAllowed;
       const shouldTerminate = newCopyCount >= maxAllowed;
 
@@ -154,15 +164,15 @@ export async function POST(request: NextRequest) {
           skipDuplicates: true,
         });
 
-        // Update copy count and check for termination
-        if (copyCount > 0) {
+        // Update violation count and check for termination
+        if (violationCount > 0) {
           const updatedAttempt = await tx.testAttempt.update({
             where: { id: attemptId },
             data: {
               copyEventCount: newCopyCount,
               ...(shouldTerminate && {
                 status: 'TERMINATED',
-                terminationReason: `Test terminated due to ${newCopyCount} copy violations (limit: ${maxAllowed})`,
+                terminationReason: `Test terminated due to ${newCopyCount} policy violations (limit: ${maxAllowed})`,
                 completedAt: new Date(),
               }),
             },
@@ -173,7 +183,7 @@ export async function POST(request: NextRequest) {
             eventsStored: events.length,
             terminated: shouldTerminate,
             reason: shouldTerminate
-              ? `Test terminated due to ${newCopyCount} copy violations`
+              ? `Test terminated due to ${newCopyCount} policy violations`
               : null,
             copyCount: newCopyCount,
             maxAllowed,
