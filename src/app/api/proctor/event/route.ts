@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { notifyTestResultsWebhook } from '@/lib/test-webhook';
 
 const STRIKE_EVENT_TYPES = new Set([
   'COPY_DETECTED',
@@ -126,6 +127,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (result.terminated) {
+        await sendTerminationWebhook({ attemptId, isPublic: true });
         return NextResponse.json(result);
       }
 
@@ -201,6 +203,7 @@ export async function POST(request: NextRequest) {
       });
 
       if (result.terminated) {
+        await sendTerminationWebhook({ attemptId, isPublic: false });
         return NextResponse.json(result);
       }
 
@@ -219,5 +222,126 @@ export async function POST(request: NextRequest) {
     );
   } finally {
     await prisma.$disconnect();
+  }
+}
+
+async function sendTerminationWebhook({
+  attemptId,
+  isPublic,
+}: {
+  attemptId: string;
+  isPublic: boolean;
+}) {
+  try {
+    if (isPublic) {
+      const attempt = await prisma.publicTestAttempt.findUnique({
+        where: { id: attemptId },
+        select: {
+          id: true,
+          candidateEmail: true,
+          candidateName: true,
+          rawScore: true,
+          percentile: true,
+          categorySubScores: true,
+          startedAt: true,
+          completedAt: true,
+          publicLinkId: true,
+          publicLink: {
+            select: {
+              test: {
+                select: {
+                  id: true,
+                  title: true,
+                  questions: { select: { id: true } },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!attempt?.publicLink?.test) {
+        return;
+      }
+
+      await notifyTestResultsWebhook({
+        testAttemptId: attempt.id,
+        testId: attempt.publicLink.test.id,
+        testTitle: attempt.publicLink.test.title,
+        candidateEmail: attempt.candidateEmail,
+        candidateName: attempt.candidateName,
+        status: 'TERMINATED',
+        rawScore: attempt.rawScore,
+        maxScore: attempt.publicLink.test.questions?.length ?? null,
+        percentile: attempt.percentile,
+        categorySubScores:
+          (attempt.categorySubScores as Record<string, unknown> | null) ?? null,
+        startedAt: attempt.startedAt,
+        completedAt: attempt.completedAt,
+        meta: {
+          type: 'public',
+          publicLinkId: attempt.publicLinkId,
+          terminatedBy: 'proctor',
+        },
+      });
+      return;
+    }
+
+    const attempt = await prisma.testAttempt.findUnique({
+      where: { id: attemptId },
+      select: {
+        id: true,
+        testId: true,
+        test: {
+          select: {
+            title: true,
+            questions: { select: { id: true } },
+          },
+        },
+        invitationId: true,
+        jobProfileInvitationId: true,
+        candidateEmail: true,
+        candidateName: true,
+        rawScore: true,
+        percentile: true,
+        categorySubScores: true,
+        startedAt: true,
+        completedAt: true,
+        proctoringEnabled: true,
+      },
+    });
+
+    if (!attempt?.test) {
+      return;
+    }
+
+    const metaType = attempt.jobProfileInvitationId
+      ? 'job_profile'
+      : 'invitation';
+
+    await notifyTestResultsWebhook({
+      testAttemptId: attempt.id,
+      testId: attempt.test.id,
+      testTitle: attempt.test.title,
+      invitationId: attempt.invitationId,
+      jobProfileInvitationId: attempt.jobProfileInvitationId,
+      candidateEmail: attempt.candidateEmail,
+      candidateName: attempt.candidateName,
+      status: 'TERMINATED',
+      rawScore: attempt.rawScore,
+      maxScore: attempt.test.questions?.length ?? null,
+      percentile: attempt.percentile,
+      categorySubScores:
+        (attempt.categorySubScores as Record<string, unknown> | null) ?? null,
+      startedAt: attempt.startedAt,
+      completedAt: attempt.completedAt,
+      meta: {
+        type: metaType,
+        terminatedBy: 'proctor',
+        proctoringEnabled: attempt.proctoringEnabled,
+      },
+    });
+  } catch (error) {
+    console.error('Failed to send termination webhook payload', error);
   }
 }
