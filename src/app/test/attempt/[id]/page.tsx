@@ -893,7 +893,6 @@ export default function TestTakingPage() {
     ? 'bg-emerald-100 text-emerald-700'
     : 'bg-amber-100 text-amber-700';
   const statusDotClasses = isRecording ? 'bg-emerald-500' : 'bg-amber-500';
-  const isLastQuestion = currentQuestionIndex === totalQuestions - 1;
   const focusGuidelines = [
     'Keep your webcam and microphone on for the entire assessment.',
     'Stay inside this browser tab—switching windows triggers strikes.',
