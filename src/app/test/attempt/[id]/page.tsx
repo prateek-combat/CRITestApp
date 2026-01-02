@@ -97,6 +97,7 @@ export default function TestTakingPage() {
   const [navigationDirection, setNavigationDirection] = useState<
     'next' | 'prev' | null
   >(null);
+  const [hasStrikeAutoSubmit, setHasStrikeAutoSubmit] = useState(false);
 
   // Control when full monitoring (focus detection, etc.) becomes active
   // Only start after question 1 to avoid issues during permission granting
@@ -125,6 +126,10 @@ export default function TestTakingPage() {
       // Always update strike level and show warning - don't block on existing modal
       setStrikeLevel(strikeLevel);
       setShowStrikeWarning(true);
+    }
+
+    if (strikeLevel === 'terminated') {
+      setHasStrikeAutoSubmit(true);
     }
   };
 
@@ -311,6 +316,23 @@ export default function TestTakingPage() {
     apiEndpoint,
     attemptId,
     router,
+  ]);
+
+  useEffect(() => {
+    if (
+      hasStrikeAutoSubmit &&
+      !isSubmitting &&
+      testReady &&
+      data?.status !== 'COMPLETED'
+    ) {
+      handleSubmitTest();
+    }
+  }, [
+    hasStrikeAutoSubmit,
+    isSubmitting,
+    testReady,
+    data?.status,
+    handleSubmitTest,
   ]);
 
   // Save individual answer as user progresses
@@ -1036,8 +1058,8 @@ export default function TestTakingPage() {
             </dl>
             <div className="mt-4 rounded-lg bg-white px-3 py-2 text-xs font-medium text-slate-600">
               {strikesRemaining > 0
-                ? `${strikesRemaining} strike${strikesRemaining === 1 ? '' : 's'} left before termination`
-                : 'Any further violation will end this attempt'}
+                ? `${strikesRemaining} strike${strikesRemaining === 1 ? '' : 's'} left — hitting 3 ends the session automatically.`
+                : 'Strike limit reached. Further violations end the test immediately.'}
             </div>
           </section>
 
@@ -1055,40 +1077,6 @@ export default function TestTakingPage() {
                 className="block h-2 rounded-full bg-blue-500"
                 style={{ width: `${answeredPercent}%` }}
               ></span>
-            </div>
-            <div className="mt-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Question map
-              </p>
-              <div className="mt-3 grid grid-cols-5 gap-2">
-                {data.test.questions.map((question: any, index: number) => {
-                  const answered = userAnswers.some(
-                    (ans) =>
-                      ans.questionId === question.id &&
-                      ans.selectedAnswerIndex !== null
-                  );
-                  const isCurrent = index === currentQuestionIndex;
-                  return (
-                    <div
-                      key={question.id}
-                      className={`flex h-10 w-10 items-center justify-center rounded-lg text-sm font-semibold ${
-                        isCurrent
-                          ? 'border-2 border-blue-500 bg-blue-50 text-blue-600'
-                          : answered
-                            ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
-                            : 'border border-gray-200 bg-white text-gray-500'
-                      }`}
-                      aria-label={`Question ${index + 1} ${answered ? 'answered' : 'not answered'}`}
-                    >
-                      {index + 1}
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="mt-2 text-[11px] text-gray-400">
-                Questions must be completed sequentially. Use this map as a
-                status reference.
-              </p>
             </div>
           </section>
 
@@ -1128,24 +1116,6 @@ export default function TestTakingPage() {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4 md:p-8">
-              <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-gray-100 bg-slate-50 p-4 text-sm text-gray-600 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Current question
-                  </p>
-                  <p className="text-base font-semibold text-gray-900">
-                    Stay focused and answer before the timer expires.
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 text-xs">
-                  <span className="rounded-full bg-white px-3 py-1 font-semibold text-gray-700">
-                    {currentQuestion.timerSeconds} sec limit
-                  </span>
-                  <span className="rounded-full bg-white px-3 py-1 font-semibold text-gray-700">
-                    {answeredPercent}% overall
-                  </span>
-                </div>
-              </div>
               <div className="prose prose-lg max-w-none text-gray-900">
                 <MarkdownRenderer content={currentQuestion?.promptText || ''} />
               </div>
@@ -1202,8 +1172,8 @@ export default function TestTakingPage() {
         </div>
       </main>
 
-      <footer className="sticky bottom-0 z-30 flex flex-col gap-3 border-t border-gray-200 bg-white/95 px-4 py-4 text-sm text-gray-600 shadow-inner backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-6">
+      <footer className="sticky bottom-0 z-30 flex flex-col gap-4 border-t border-gray-200 bg-white/95 px-4 py-4 text-sm text-gray-600 shadow-inner backdrop-blur">
+        <div className="flex items-center justify-center gap-6">
           <div className="flex items-center gap-2 font-mono text-xl font-semibold">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -1233,8 +1203,9 @@ export default function TestTakingPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button
+            size="lg"
             variant="ghost"
             onClick={handlePreviousQuestion}
             disabled={isFirstQuestion || isNavigating}
@@ -1244,6 +1215,7 @@ export default function TestTakingPage() {
               : 'Previous question'}
           </Button>
           <Button
+            size="lg"
             onClick={handleNextQuestion}
             disabled={
               currentAnswer?.selectedAnswerIndex === null || isNavigating
