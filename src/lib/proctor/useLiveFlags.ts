@@ -31,6 +31,17 @@ export function useLiveFlags(
   const blurCount = useRef<number>(0);
   const lastBlurTime = useRef<number>(0);
 
+  // Strike event types that can trigger termination - must use fetch to get response
+  const STRIKE_EVENT_TYPES = new Set([
+    'COPY_DETECTED',
+    'TAB_HIDDEN',
+    'WINDOW_BLUR',
+    'MOUSE_LEFT_WINDOW',
+    'DEVTOOLS_DETECTED',
+    'DEVTOOLS_SHORTCUT',
+    'F12_PRESSED',
+  ]);
+
   // Send event to server
   const sendEvent = (type: string, extra?: Record<string, any>) => {
     // Don't send events if proctoring is stopped or not active
@@ -51,8 +62,8 @@ export function useLiveFlags(
 
     eventBuffer.current.push(event);
 
-    // Send immediately via beacon (non-blocking) for non-copy events
-    if (navigator.sendBeacon && type !== 'COPY_DETECTED') {
+    // Use fetch for strike events to get termination response, beacon for others
+    if (navigator.sendBeacon && !STRIKE_EVENT_TYPES.has(type)) {
       navigator.sendBeacon(
         '/api/proctor/event',
         JSON.stringify({
@@ -61,7 +72,7 @@ export function useLiveFlags(
         })
       );
     } else {
-      // Use fetch for copy events to get response, or as fallback
+      // Use fetch for strike events to handle termination response
       fetch('/api/proctor/event', {
         method: 'POST',
         headers: {
