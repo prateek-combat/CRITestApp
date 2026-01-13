@@ -117,12 +117,11 @@ export default function TestCompletePage() {
                   </div>
                   <div className="text-left">
                     <h3 className="mb-1 font-medium text-green-800">
-                      Email Confirmation Sent
+                      Submission Confirmed
                     </h3>
                     <p className="text-sm text-green-700">
-                      A confirmation email has been sent to your registered
-                      email address confirming your test submission. We will
-                      reach out with further communication regarding next steps.
+                      Your assessment has been locked in. Our team has received
+                      your responses and will review them shortly.
                     </p>
                   </div>
                 </div>

@@ -1,0 +1,25 @@
+{
+  "testAttemptId": "att_general_001",
+  "testId": "test_general_aptitude",
+  "testTitle": "General Aptitude Test",
+  "invitationId": "inv_x123",
+  "candidateEmail": "candidate@example.com",
+  "candidateName": "Sample Candidate",
+  "status": "COMPLETED",
+  "rawScore": 42,
+  "maxScore": 50,
+  "percentile": 84,
+  "categorySubScores": {
+    "LOGICAL": { "correct": 9, "total": 10 },
+    "NUMERICAL": { "correct": 8, "total": 10 },
+    "VERBAL": { "correct": 9, "total": 10 },
+    "ATTENTION_TO_DETAIL": { "correct": 8, "total": 10 },
+    "OTHER": { "correct": 8, "total": 10 }
+  },
+  "startedAt": "2024-07-01T10:00:00.000Z",
+  "completedAt": "2024-07-01T10:45:00.000Z",
+  "meta": {
+    "type": "invitation",
+    "proctoringEnabled": true
+  }
+}

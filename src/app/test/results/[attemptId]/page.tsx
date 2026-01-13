@@ -92,8 +92,8 @@ export default function TestCompletionPage() {
             </h3>
             <p className="text-sm text-blue-700">
               Our team will review your submission and may contact you regarding
-              next steps. A confirmation email has been sent to your registered
-              email address.
+              next steps. We appreciate your patience while we evaluate your
+              performance.
             </p>
           </div>
 

@@ -69,8 +69,8 @@ export default function TestSuccessPage() {
             <span className="font-medium text-blue-800">What&apos;s Next?</span>
           </div>
           <p className="text-sm text-blue-700">
-            You will receive an email confirmation shortly. Our team will review
-            your submission and contact you within 2-3 business days.
+            Our team will review your submission and contact you within 2-3
+            business days if any further steps are needed.
           </p>
         </div>
 

@@ -98,7 +98,6 @@ export default function TestTakingPage() {
     'next' | 'prev' | null
   >(null);
   const [hasStrikeAutoSubmit, setHasStrikeAutoSubmit] = useState(false);
-  const [manualFinishInProgress, setManualFinishInProgress] = useState(false);
 
   // Control when full monitoring (focus detection, etc.) becomes active
   // Only start after question 1 to avoid issues during permission granting
@@ -512,44 +511,6 @@ export default function TestTakingPage() {
     isNavigating,
     saveCurrentAnswer,
     saveProgress,
-  ]);
-
-  const handleManualFinish = useCallback(async () => {
-    if (!data || isSubmitting || manualFinishInProgress) {
-      return;
-    }
-
-    const confirmFirst = window.confirm(
-      'Are you sure you want to finish the test now? You can still review unanswered questions if you continue.'
-    );
-
-    if (!confirmFirst) {
-      return;
-    }
-
-    const confirmSecond = window.confirm(
-      'This is your final confirmation. Submitting now will lock in your answers and send them for scoring.'
-    );
-
-    if (!confirmSecond) {
-      return;
-    }
-
-    setManualFinishInProgress(true);
-
-    try {
-      await saveCurrentAnswer(currentQuestionIndex);
-      await handleSubmitTest();
-    } finally {
-      setManualFinishInProgress(false);
-    }
-  }, [
-    data,
-    isSubmitting,
-    manualFinishInProgress,
-    saveCurrentAnswer,
-    currentQuestionIndex,
-    handleSubmitTest,
   ]);
 
   // Hydrate state from localStorage and initial data
@@ -1285,26 +1246,6 @@ export default function TestTakingPage() {
             ) : (
               'Next question'
             )}
-          </Button>
-        </div>
-
-        <div className="mt-2 w-full rounded-xl border border-red-200 bg-red-50/70 p-4 text-center shadow-sm">
-          <p className="text-sm font-semibold text-red-700">
-            Need to finish early?
-          </p>
-          <p className="mt-1 text-xs text-red-600">
-            You can submit anytime. We will ask twice to confirm before locking
-            your answers.
-          </p>
-          <Button
-            size="md"
-            variant="outline"
-            className="mt-3 w-full border-red-500 text-red-700 hover:bg-red-100"
-            onClick={handleManualFinish}
-            disabled={isSubmitting || manualFinishInProgress}
-            loading={manualFinishInProgress}
-          >
-            Finish test now
           </Button>
         </div>
       </footer>
