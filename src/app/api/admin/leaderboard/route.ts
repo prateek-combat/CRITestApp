@@ -83,13 +83,15 @@ export async function GET(request: NextRequest) {
       // Use specific status filter if provided
       baseWhere.status = { in: statusFilter };
     } else if (includeIncomplete) {
-      // Include common incomplete statuses along with completed
+      // Include all relevant attempt statuses
       baseWhere.status = {
         in: [
           TestAttemptStatus.COMPLETED,
           TestAttemptStatus.TERMINATED,
           TestAttemptStatus.TIMED_OUT,
           TestAttemptStatus.ABANDONED,
+          TestAttemptStatus.IN_PROGRESS,
+          TestAttemptStatus.ARCHIVED,
         ],
       };
     } else {

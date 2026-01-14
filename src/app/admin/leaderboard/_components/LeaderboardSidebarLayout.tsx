@@ -191,6 +191,19 @@ export default function LeaderboardSidebarLayout({
   const [includeIncomplete, setIncludeIncomplete] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
 
+  useEffect(() => {
+    const initialInclude = urlSearchParams.get('includeIncomplete') === 'true';
+    setIncludeIncomplete(initialInclude);
+    const initialStatus = urlSearchParams.get('statusFilter');
+    if (initialStatus) {
+      setStatusFilter(initialStatus);
+    } else if (initialInclude) {
+      setStatusFilter(
+        'COMPLETED,TERMINATED,TIMED_OUT,ABANDONED,IN_PROGRESS,ARCHIVED'
+      );
+    }
+  }, []);
+
   // Add refs for request management
   const abortControllerRef = useRef<AbortController | null>(null);
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -613,27 +626,22 @@ export default function LeaderboardSidebarLayout({
 
   const handleIncludeIncompleteChange = (include: boolean) => {
     setIncludeIncomplete(include);
-    if (!include) {
-      setStatusFilter(null); // Clear status filter when unchecking
-    }
+    const defaultStatuses =
+      'COMPLETED,TERMINATED,TIMED_OUT,ABANDONED,IN_PROGRESS,ARCHIVED';
+    const nextStatus = include ? statusFilter || defaultStatuses : null;
+    setStatusFilter(include ? nextStatus : null);
     handleFilterChange({
       includeIncomplete: include ? 'true' : undefined,
-      statusFilter: include ? statusFilter || undefined : undefined,
+      statusFilter: include ? nextStatus : undefined,
     });
   };
 
   const handleStatusFilterChange = (status: string | null) => {
     setStatusFilter(status);
-    if (status) {
-      setIncludeIncomplete(false); // Clear include incomplete when selecting specific status
-    }
+    setIncludeIncomplete(!!status);
     handleFilterChange({
       statusFilter: status || undefined,
-      includeIncomplete: status
-        ? undefined
-        : includeIncomplete
-          ? 'true'
-          : undefined,
+      includeIncomplete: status ? 'true' : undefined,
     });
   };
 
