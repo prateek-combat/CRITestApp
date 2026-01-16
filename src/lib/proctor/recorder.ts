@@ -11,6 +11,20 @@ export interface RecordingSession {
   uploadIntervalId?: number;
   isUploading: boolean;
   uploadedFrameCount: number;
+  screenCapture?: ScreenCaptureSession | null;
+  screenUploadIntervalId?: number;
+}
+
+export interface ScreenCaptureSession {
+  stream: MediaStream;
+  video: HTMLVideoElement;
+  canvas: HTMLCanvasElement;
+  context: CanvasRenderingContext2D;
+  captureIntervalId: number;
+  pendingScreens: Blob[];
+  isUploading: boolean;
+  uploadIntervalId?: number;
+  uploadedCount: number;
 }
 
 export function useProctoring(attemptId: string) {
@@ -26,6 +40,12 @@ export function useProctoring(attemptId: string) {
         recordingSession,
         attemptId
       );
+      if (recordingSession.screenCapture) {
+        recordingSession.screenUploadIntervalId = startScreenUploadLoop(
+          recordingSession.screenCapture,
+          attemptId
+        );
+      }
       setSession(recordingSession);
       setIsRecording(true);
       if (videoRef.current) {
@@ -67,6 +87,9 @@ export function useProctoring(attemptId: string) {
           attemptId,
           session.uploadedFrameCount
         );
+        if (session.screenCapture) {
+          uploadScreenshotsInBackground(session.screenCapture, attemptId);
+        }
       } catch (error) {
         proctorLogger.error(
           'Failed to stop proctoring session',
@@ -177,6 +200,8 @@ export async function startRecording(): Promise<RecordingSession> {
       }
     }, FRAME_CAPTURE_INTERVAL_MS); // Capture every 10 seconds
 
+    const screenCapture = await tryStartScreenCapture();
+
     return {
       stream,
       canvas,
@@ -186,6 +211,7 @@ export async function startRecording(): Promise<RecordingSession> {
       isRecording: true,
       isUploading: false,
       uploadedFrameCount: 0,
+      screenCapture,
     };
   } catch (error) {
     proctorLogger.error(
@@ -378,6 +404,22 @@ export function destroyRecording(session: RecordingSession): void {
       clearInterval(session.uploadIntervalId);
     }
 
+    if (session.screenCapture) {
+      clearInterval(session.screenCapture.captureIntervalId);
+      if (session.screenCapture.uploadIntervalId) {
+        clearInterval(session.screenCapture.uploadIntervalId);
+      }
+      const screenTracks = session.screenCapture.stream.getTracks();
+      screenTracks.forEach((track) => {
+        if (track.readyState === 'live') {
+          track.stop();
+        }
+      });
+      screenTracks.forEach((track) => {
+        session.screenCapture?.stream.removeTrack(track);
+      });
+    }
+
     // Step 3: Stop all tracks in the media stream IMMEDIATELY
     if (session.stream) {
       const tracks = session.stream.getTracks();
@@ -488,6 +530,250 @@ function uploadPendingFrames(session: RecordingSession, attemptId: string) {
       session.isUploading = false;
     }
   })();
+}
+
+function startScreenUploadLoop(
+  screenSession: ScreenCaptureSession,
+  attemptId: string
+): number {
+  const UPLOAD_INTERVAL_MS = 15_000;
+  return window.setInterval(() => {
+    if (!screenSession.pendingScreens.length || screenSession.isUploading) {
+      return;
+    }
+    uploadPendingScreenshots(screenSession, attemptId);
+  }, UPLOAD_INTERVAL_MS);
+}
+
+function uploadPendingScreenshots(
+  screenSession: ScreenCaptureSession,
+  attemptId: string
+) {
+  const shotsToUpload = screenSession.pendingScreens.splice(
+    0,
+    screenSession.pendingScreens.length
+  );
+
+  if (!shotsToUpload.length) {
+    return;
+  }
+
+  screenSession.isUploading = true;
+
+  (async () => {
+    try {
+      const formData = new FormData();
+      formData.append('attemptId', attemptId);
+      formData.append('assetKind', 'SCREENSHOT');
+      formData.append('batchIndex', 'screens');
+      formData.append('totalBatches', 'screens');
+
+      shotsToUpload.forEach((shot, index) => {
+        const globalIndex = screenSession.uploadedCount + index;
+        formData.append(
+          `frame_${globalIndex}`,
+          shot,
+          `screen_${globalIndex}.jpg`
+        );
+      });
+
+      const response = await fetch('/api/proctor/upload-frames', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Screen upload failed: ${response.statusText}`);
+      }
+
+      screenSession.uploadedCount += shotsToUpload.length;
+      proctorLogger.info('Screen capture batch uploaded', {
+        operation: 'screen_upload_batch',
+        attemptId,
+        uploadedScreens: shotsToUpload.length,
+        totalUploaded: screenSession.uploadedCount,
+      });
+    } catch (error) {
+      proctorLogger.error(
+        'Screen capture batch upload failed',
+        {
+          operation: 'screen_upload_batch',
+          attemptId,
+          pendingScreens: shotsToUpload.length,
+        },
+        error as Error
+      );
+      screenSession.pendingScreens.unshift(...shotsToUpload);
+    } finally {
+      screenSession.isUploading = false;
+    }
+  })();
+}
+
+function uploadScreenshotsInBackground(
+  screenSession: ScreenCaptureSession,
+  attemptId: string
+) {
+  const pendingScreens = [...screenSession.pendingScreens];
+  if (!pendingScreens.length) {
+    return;
+  }
+
+  (async () => {
+    try {
+      proctorLogger.info('Uploading remaining screen captures in background', {
+        operation: 'background_screen_upload_start',
+        attemptId,
+        totalScreens: pendingScreens.length,
+      });
+
+      const batchSize = 5;
+      const totalBatches = Math.ceil(pendingScreens.length / batchSize);
+
+      for (let i = 0; i < totalBatches; i++) {
+        const batchScreens = pendingScreens.slice(
+          i * batchSize,
+          (i + 1) * batchSize
+        );
+
+        const formData = new FormData();
+        formData.append('attemptId', attemptId);
+        formData.append('assetKind', 'SCREENSHOT');
+        formData.append('batchIndex', `screens_${i + 1}`);
+        formData.append('totalBatches', totalBatches.toString());
+
+        batchScreens.forEach((shot, index) => {
+          const globalIndex =
+            screenSession.uploadedCount + i * batchSize + index;
+          formData.append(
+            `frame_${globalIndex}`,
+            shot,
+            `screen_${globalIndex}.jpg`
+          );
+        });
+
+        await fetch('/api/proctor/upload-frames', {
+          method: 'POST',
+          body: formData,
+        });
+      }
+
+      proctorLogger.info('Background screen capture upload finished', {
+        operation: 'background_screen_upload_complete',
+        attemptId,
+        totalScreens: pendingScreens.length,
+      });
+    } catch (error) {
+      proctorLogger.error(
+        'Background screen capture upload failed',
+        {
+          operation: 'background_screen_upload',
+          attemptId,
+          totalScreens: pendingScreens.length,
+        },
+        error as Error
+      );
+    }
+  })();
+}
+
+async function tryStartScreenCapture(): Promise<ScreenCaptureSession | null> {
+  if (!navigator.mediaDevices?.getDisplayMedia) {
+    proctorLogger.warn('Screen capture API is not available in this browser', {
+      operation: 'screen_capture_unavailable',
+      userAgent: navigator.userAgent,
+    });
+    return null;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video: {
+        frameRate: 1,
+      },
+      audio: false,
+    });
+
+    const track = stream.getVideoTracks()[0];
+    if (!track) {
+      stream.getTracks().forEach((t) => t.stop());
+      return null;
+    }
+
+    const settings = track.getSettings();
+    const canvas = document.createElement('canvas');
+    canvas.width = settings.width || window.screen.width || 1280;
+    canvas.height = settings.height || window.screen.height || 720;
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      stream.getTracks().forEach((t) => t.stop());
+      throw new Error('Failed to initialize screen capture canvas context');
+    }
+
+    const video = document.createElement('video');
+    video.srcObject = stream;
+    video.muted = true;
+    video.playsInline = true;
+
+    await new Promise<void>((resolve) => {
+      video.onloadedmetadata = () => {
+        video.play();
+        resolve();
+      };
+    });
+
+    const pendingScreens: Blob[] = [];
+    const SCREEN_CAPTURE_INTERVAL_MS = 30_000;
+
+    const captureIntervalId = window.setInterval(() => {
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              pendingScreens.push(blob);
+              proctorLogger.debug('Screen capture saved for upload', {
+                operation: 'screen_capture_snapshot',
+                pendingScreens: pendingScreens.length,
+              });
+            }
+          },
+          'image/jpeg',
+          0.7
+        );
+      }
+    }, SCREEN_CAPTURE_INTERVAL_MS);
+
+    track.addEventListener('ended', () => {
+      clearInterval(captureIntervalId);
+    });
+
+    proctorLogger.info('Screen capture session initialized', {
+      operation: 'screen_capture_start',
+    });
+
+    return {
+      stream,
+      video,
+      canvas,
+      context,
+      captureIntervalId,
+      pendingScreens,
+      isUploading: false,
+      uploadedCount: 0,
+    };
+  } catch (error) {
+    proctorLogger.warn(
+      'Screen capture permission denied or failed',
+      {
+        operation: 'screen_capture_failed',
+        userAgent: navigator.userAgent,
+      },
+      error as Error
+    );
+    return null;
+  }
 }
 
 export async function forceStopAllCameraAccess(): Promise<void> {
