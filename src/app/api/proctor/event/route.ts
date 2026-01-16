@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Prisma, QuestionCategory } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { notifyTestResultsWebhook } from '@/lib/test-webhook';
 
@@ -128,16 +127,8 @@ export async function POST(request: NextRequest) {
       });
 
       if (result.terminated) {
-        const scoreSummary = await finalizeTerminatedAttemptScore({
-          attemptId,
-          isPublic: true,
-        });
         await sendTerminationWebhook({ attemptId, isPublic: true });
-        return NextResponse.json({
-          ...result,
-          rawScore: scoreSummary?.rawScore ?? null,
-          percentile: scoreSummary?.percentile ?? null,
-        });
+        return NextResponse.json(result);
       }
 
       return NextResponse.json({
@@ -212,16 +203,8 @@ export async function POST(request: NextRequest) {
       });
 
       if (result.terminated) {
-        const scoreSummary = await finalizeTerminatedAttemptScore({
-          attemptId,
-          isPublic: false,
-        });
         await sendTerminationWebhook({ attemptId, isPublic: false });
-        return NextResponse.json({
-          ...result,
-          rawScore: scoreSummary?.rawScore ?? null,
-          percentile: scoreSummary?.percentile ?? null,
-        });
+        return NextResponse.json(result);
       }
 
       return NextResponse.json({
@@ -361,164 +344,4 @@ async function sendTerminationWebhook({
   } catch (error) {
     console.error('Failed to send termination webhook payload', error);
   }
-}
-
-async function finalizeTerminatedAttemptScore({
-  attemptId,
-  isPublic,
-}: {
-  attemptId: string;
-  isPublic: boolean;
-}) {
-  try {
-    if (isPublic) {
-      const attempt = await prisma.publicTestAttempt.findUnique({
-        where: { id: attemptId },
-        select: {
-          id: true,
-          rawScore: true,
-          submittedAnswers: {
-            select: {
-              questionId: true,
-              isCorrect: true,
-            },
-          },
-          publicLink: {
-            select: {
-              test: {
-                select: {
-                  id: true,
-                  questions: {
-                    select: {
-                      id: true,
-                      category: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      });
-
-      const questions = attempt?.publicLink?.test?.questions ?? [];
-      if (!attempt || questions.length === 0) {
-        return null;
-      }
-
-      const summary = buildScoreSummary(questions, attempt.submittedAnswers);
-
-      await prisma.publicTestAttempt.update({
-        where: { id: attemptId },
-        data: {
-          rawScore: summary.rawScore,
-          percentile: summary.percentile,
-          categorySubScores: summary.categorySubScores as Prisma.JsonObject,
-        },
-      });
-
-      return summary;
-    }
-
-    const attempt = await prisma.testAttempt.findUnique({
-      where: { id: attemptId },
-      select: {
-        id: true,
-        submittedAnswers: {
-          select: {
-            questionId: true,
-            isCorrect: true,
-          },
-        },
-        test: {
-          select: {
-            questions: {
-              select: {
-                id: true,
-                category: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!attempt?.test?.questions?.length) {
-      return null;
-    }
-
-    const summary = buildScoreSummary(
-      attempt.test.questions,
-      attempt.submittedAnswers
-    );
-
-    await prisma.testAttempt.update({
-      where: { id: attemptId },
-      data: {
-        rawScore: summary.rawScore,
-        percentile: summary.percentile,
-        categorySubScores: summary.categorySubScores as Prisma.JsonObject,
-      },
-    });
-
-    return summary;
-  } catch (error) {
-    console.error('Failed to finalize terminated attempt score', {
-      attemptId,
-      isPublic,
-      error,
-    });
-    return null;
-  }
-}
-
-function buildScoreSummary(
-  questions: Array<{ id: string; category: QuestionCategory }>,
-  submittedAnswers: Array<{ questionId: string; isCorrect: boolean | null }>
-) {
-  const answersMap = new Map<string, boolean>(
-    submittedAnswers.map((answer) => [
-      answer.questionId,
-      Boolean(answer.isCorrect),
-    ])
-  );
-
-  const categoryScores = initializeCategoryScoreMap();
-  let rawScore = 0;
-
-  questions.forEach((question) => {
-    const category = (question.category || 'OTHER') as QuestionCategory;
-    if (!categoryScores[category]) {
-      categoryScores[category] = { correct: 0, total: 0 };
-    }
-
-    categoryScores[category].total += 1;
-
-    if (answersMap.get(question.id)) {
-      rawScore += 1;
-      categoryScores[category].correct += 1;
-    }
-  });
-
-  const totalQuestions = questions.length;
-  const percentile = totalQuestions > 0 ? (rawScore / totalQuestions) * 100 : 0;
-
-  return {
-    rawScore,
-    percentile,
-    categorySubScores: categoryScores,
-  };
-}
-
-function initializeCategoryScoreMap(): Record<
-  QuestionCategory,
-  { correct: number; total: number }
-> {
-  return {
-    LOGICAL: { correct: 0, total: 0 },
-    VERBAL: { correct: 0, total: 0 },
-    NUMERICAL: { correct: 0, total: 0 },
-    ATTENTION_TO_DETAIL: { correct: 0, total: 0 },
-    OTHER: { correct: 0, total: 0 },
-  };
 }

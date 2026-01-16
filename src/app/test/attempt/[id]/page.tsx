@@ -75,8 +75,6 @@ export default function TestTakingPage() {
   const [systemCheckResults, setSystemCheckResults] =
     useState<CompatibilityResult | null>(null);
   const [testReady, setTestReady] = useState(false);
-  const [hasStartedRecordingSession, setHasStartedRecordingSession] =
-    useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionStep, setSubmissionStep] = useState<string>('');
   const [proctoringError, setProctoringError] = useState<string | null>(null);
@@ -210,17 +208,6 @@ export default function TestTakingPage() {
     }
 
     try {
-      await startRecording();
-      setHasStartedRecordingSession(true);
-    } catch (error: any) {
-      setProctoringError(error?.message || 'Failed to start proctoring');
-      alert(
-        'Unable to start proctoring session. Please allow camera, microphone, and screen capture access to continue.'
-      );
-      return;
-    }
-
-    try {
       // Update permission status in database using the correct endpoint
       const permissionsEndpoint = isPublicTest
         ? `/api/public-test-attempts/${attemptId}/permissions`
@@ -244,8 +231,6 @@ export default function TestTakingPage() {
       setTestReady(true);
     } catch (error) {
       // Error updating permissions
-      stopRecording().catch(() => {});
-      setHasStartedRecordingSession(false);
       alert('Failed to initialize proctoring. Please try again.');
     }
   };
@@ -615,24 +600,14 @@ export default function TestTakingPage() {
 
   // Start/Stop proctoring - only after test is ready (proctoring is mandatory)
   useEffect(() => {
-    if (testReady && attemptId && !isRecording && !hasStartedRecordingSession) {
-      startRecording()
-        .then(() => {
-          setHasStartedRecordingSession(true);
-        })
-        .catch((error) => {
-          // Failed to start proctoring
-          setProctoringError(error.message || 'Failed to start proctoring');
-          setTestReady(false); // Prevent test from continuing
-        });
+    if (testReady && attemptId && !isRecording) {
+      startRecording().catch((error) => {
+        // Failed to start proctoring
+        setProctoringError(error.message || 'Failed to start proctoring');
+        setTestReady(false); // Prevent test from continuing
+      });
     }
-  }, [
-    testReady,
-    attemptId,
-    isRecording,
-    hasStartedRecordingSession,
-    startRecording,
-  ]);
+  }, [testReady, attemptId, isRecording, startRecording]);
 
   // Separate cleanup effect for proctoring
   useEffect(() => {

@@ -9,9 +9,6 @@ export async function POST(request: NextRequest) {
     const session = await auth();
     const formData = await request.formData();
     const attemptId = formData.get('attemptId') as string;
-    const assetKindInput = (formData.get('assetKind') as string)?.toUpperCase();
-    const assetKind =
-      assetKindInput === 'SCREENSHOT' ? 'SCREENSHOT' : 'FRAME_CAPTURE';
 
     if (!attemptId) {
       return NextResponse.json(
@@ -77,7 +74,7 @@ export async function POST(request: NextRequest) {
 
         const frameData = {
           attemptId,
-          kind: assetKind,
+          kind: 'FRAME_CAPTURE',
           fileName: file.name,
           mimeType: file.type,
           fileSize: buffer.length,
