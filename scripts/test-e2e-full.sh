@@ -15,22 +15,26 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# Check if port 3000 is already in use
-if lsof -Pi :3000 -sTCP:LISTEN -t >/dev/null ; then
-    echo -e "${YELLOW}⚠️  Port 3000 is already in use. Using existing server.${NC}"
+E2E_HOST="${E2E_HOST:-127.0.0.1}"
+E2E_PORT="${E2E_PORT:-3001}"
+E2E_BASE_URL="http://${E2E_HOST}:${E2E_PORT}"
+
+# Check if port is already in use
+if lsof -Pi :"$E2E_PORT" -sTCP:LISTEN -t >/dev/null ; then
+    echo -e "${YELLOW}⚠️  Port ${E2E_PORT} is already in use. Using existing server.${NC}"
     SERVER_RUNNING=true
 else
     echo -e "${BLUE}🚀 Starting development server...${NC}"
     SERVER_RUNNING=false
     
     # Start dev server in background
-    npm run dev &
+    npm run dev -- -H "$E2E_HOST" -p "$E2E_PORT" &
     DEV_PID=$!
     
     # Wait for server to start
     echo "Waiting for server to start..."
     for i in {1..30}; do
-        if curl -s http://localhost:3000/api/health > /dev/null 2>&1; then
+        if curl -s "${E2E_BASE_URL}/api/health" > /dev/null 2>&1; then
             echo -e "${GREEN}✅ Server is running!${NC}"
             break
         fi
@@ -47,7 +51,7 @@ fi
 
 # Test health endpoint
 echo -e "\n${BLUE}🏥 Testing Health Endpoint...${NC}"
-HEALTH_RESPONSE=$(curl -s http://localhost:3000/api/health)
+HEALTH_RESPONSE=$(curl -s "${E2E_BASE_URL}/api/health")
 echo "Health Response: $HEALTH_RESPONSE"
 
 if echo "$HEALTH_RESPONSE" | grep -q "healthy"; then
@@ -63,7 +67,7 @@ echo -e "\n${BLUE}🎭 Running Playwright E2E Tests...${NC}"
 npx playwright install chromium --with-deps
 
 # Run tests
-if npx playwright test -c config/playwright/playwright.config.ts --reporter=list; then
+if PW_HOST="$E2E_HOST" PW_PORT="$E2E_PORT" npx playwright test -c config/playwright/playwright.config.ts --reporter=list; then
     echo -e "\n${GREEN}✅ E2E Tests Completed Successfully!${NC}"
     E2E_SUCCESS=true
 else

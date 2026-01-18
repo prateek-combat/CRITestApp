@@ -155,6 +155,7 @@ NEXTAUTH_URL=http://localhost:3000
 - **Config**: `config/playwright/playwright.config.ts`
 - **Tests**: `e2e/` directory
 - **Browsers**: Chromium, Firefox, WebKit, Mobile
+- **Defaults**: Uses `127.0.0.1:3001` for E2E; override with `PW_HOST`/`PW_PORT`
 
 ### **Database Testing**
 
