@@ -20,15 +20,17 @@ test.describe('Application E2E Tests', () => {
     expect(response?.status()).toBe(200);
 
     const text = await page.textContent('body');
-    expect(text).toContain('healthy');
+    const payload = JSON.parse(text ?? '{}') as { status?: string };
+    expect(payload.status).toBe('ok');
   });
 
-  test('should handle non-existent pages', async ({ page }) => {
-    // Next.js handles 404s by redirecting to not-found page with 200 status
+  test('should handle invalid link routes', async ({ page }) => {
+    // App routes unknown slugs to the legacy redirect page
     const response = await page.goto('/non-existent-page');
     expect(response?.status()).toBe(200);
 
-    // Check for 404 content instead of status code
-    await expect(page.locator('text=404')).toBeVisible({ timeout: 5000 });
+    await expect(
+      page.getByRole('heading', { name: 'Invalid Link' })
+    ).toBeVisible({ timeout: 5000 });
   });
 });
