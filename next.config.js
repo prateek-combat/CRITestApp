@@ -2,7 +2,7 @@
 
 const nextConfig = {
   output: 'standalone',
-  serverExternalPackages: ['@prisma/client', 'bcryptjs'],
+  serverExternalPackages: ['@prisma/client'],
   eslint: {
     ignoreDuringBuilds: true,
   },

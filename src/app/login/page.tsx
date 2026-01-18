@@ -1,65 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn, getSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import {
-  Eye,
-  EyeOff,
-  Lock,
-  Mail,
-  Sparkles,
-  ArrowRight,
-  Loader2,
-} from 'lucide-react';
+import { Lock } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/button/Button';
 import Link from 'next/link';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const router = useRouter();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        setError(`Login failed: ${result.error}`);
-      } else if (result?.ok) {
-        const session = await getSession();
-        if (session) {
-          const urlParams = new URLSearchParams(window.location.search);
-          const callbackUrl =
-            urlParams.get('callbackUrl') || '/admin/dashboard';
-          window.location.href = callbackUrl;
-        } else {
-          setError('Login succeeded but no session created');
-        }
-      } else {
-        setError('Unexpected login result');
-      }
-    } catch (error) {
-      setError(
-        `An error occurred during login: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -73,46 +24,19 @@ export default function LoginPage() {
 
       if (result?.error) {
         setError('Google sign-in failed');
-      } else if (result?.ok) {
-        const session = await getSession();
-        if (session) {
-          const urlParams = new URLSearchParams(window.location.search);
-          const callbackUrl =
-            urlParams.get('callbackUrl') || '/admin/dashboard';
-          window.location.href = callbackUrl;
-        }
+        return;
       }
-    } catch (error) {
+
+      if (result?.ok) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const callbackUrl = urlParams.get('callbackUrl') || result?.url;
+        window.location.href = callbackUrl || '/admin/dashboard';
+        return;
+      }
+
+      setError('Unable to sign in with Google');
+    } catch {
       setError('Failed to initiate Google sign-in');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLocalAdminLogin = async () => {
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const result = await signIn('credentials', {
-        email: 'local-admin',
-        password: 'local-admin',
-        redirect: false,
-      });
-
-      if (result?.error) {
-        setError('Local admin login failed');
-      } else {
-        const session = await getSession();
-        if (session) {
-          const urlParams = new URLSearchParams(window.location.search);
-          const callbackUrl =
-            urlParams.get('callbackUrl') || '/admin/dashboard';
-          window.location.href = callbackUrl;
-        }
-      }
-    } catch (error) {
-      setError('An error occurred with local admin login');
     } finally {
       setIsLoading(false);
     }
@@ -196,123 +120,19 @@ export default function LoginPage() {
             </motion.div>
           )}
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            {/* Email Input */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <label
-                htmlFor="email"
-                className="mb-1 block text-sm font-medium text-gray-700"
-              >
-                Email address
-              </label>
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Mail className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full rounded-lg border border-gray-300 py-2 pl-10 pr-3 text-sm transition-all focus:border-military-green focus:ring-2 focus:ring-military-green/50"
-                  placeholder="Enter your email"
-                />
-              </div>
-            </motion.div>
-
-            {/* Password Input */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <label
-                htmlFor="password"
-                className="mb-1 block text-sm font-medium text-gray-700"
-              >
-                Password
-              </label>
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Lock className="h-4 w-4 text-gray-400" />
-                </div>
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full rounded-lg border border-gray-300 py-2 pl-10 pr-10 text-sm transition-all focus:border-military-green focus:ring-2 focus:ring-military-green/50"
-                  placeholder="Enter your password"
-                />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 transition-opacity hover:opacity-70"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-gray-400" />
-                  )}
-                </button>
-              </div>
-            </motion.div>
-
-            {/* Submit Button */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <Button
-                type="submit"
-                disabled={isLoading}
-                loading={isLoading}
-                fullWidth
-                size="md"
-                variant="primary"
-                endIcon={!isLoading && <ArrowRight className="h-4 w-4" />}
-              >
-                {isLoading ? 'Signing in...' : 'Sign in'}
-              </Button>
-            </motion.div>
-          </form>
-
-          {/* Divider */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="relative my-6"
-          >
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
-            </div>
-            <div className="relative flex justify-center text-xs">
-              <span className="bg-white px-2 text-gray-500">OR</span>
-            </div>
-          </motion.div>
-
-          {/* Google Sign In */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="space-y-3"
+            transition={{ delay: 0.3 }}
+            className="space-y-4"
           >
+            <p className="text-sm text-gray-600">
+              Access is restricted to pre-registered admin accounts.
+            </p>
             <Button
               onClick={handleGoogleSignIn}
               disabled={isLoading}
+              loading={isLoading}
               fullWidth
               size="md"
               variant="outline"
@@ -339,20 +159,6 @@ export default function LoginPage() {
             >
               Continue with Google
             </Button>
-
-            {process.env.NODE_ENV === 'development' && (
-              <Button
-                onClick={handleLocalAdminLogin}
-                disabled={isLoading}
-                fullWidth
-                size="sm"
-                variant="ghost"
-                className="text-xs"
-                startIcon={<Sparkles className="h-3 w-3" />}
-              >
-                Local Admin (Dev)
-              </Button>
-            )}
           </motion.div>
         </Card>
 

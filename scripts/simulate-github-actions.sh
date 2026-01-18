@@ -100,7 +100,7 @@ simulate_job \
     "e2e-setup" \
     "End-to-end testing setup validation" \
     "npx playwright install chromium --with-deps" \
-    "test -f playwright.config.ts" \
+    "test -f config/playwright/playwright.config.ts" \
     "test -f e2e/example.spec.ts"
 
 # JOB 6: Health Check

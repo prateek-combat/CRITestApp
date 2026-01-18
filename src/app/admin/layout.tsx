@@ -39,7 +39,7 @@ export default function AdminLayout({
   useEffect(() => {
     if (status === 'loading') return;
 
-    if (!session && pathname !== '/admin/login') {
+    if (!session) {
       router.push('/login');
       return;
     }
@@ -82,7 +82,7 @@ export default function AdminLayout({
     );
   }
 
-  if (!session && pathname !== '/admin/login') {
+  if (!session) {
     return null;
   }
 

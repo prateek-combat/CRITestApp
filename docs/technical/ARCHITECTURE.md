@@ -168,7 +168,6 @@ Frontend captures and reports:
 - **Prisma 5**: Type-safe database ORM
 - **NextAuth.js**: Authentication framework
 - **pg-boss**: PostgreSQL job queue
-- **bcryptjs**: Password hashing
 
 ### Database
 

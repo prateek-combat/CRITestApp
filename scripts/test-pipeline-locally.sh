@@ -78,7 +78,7 @@ run_test "Health Endpoint Implementation" "test -f src/app/api/health/route.ts"
 # 6. E2E TEST PREPARATION
 print_section "STEP 6: E2E FRAMEWORK VALIDATION"
 
-run_test "Playwright Config Check" "test -f playwright.config.ts"
+run_test "Playwright Config Check" "test -f config/playwright/playwright.config.ts"
 run_test "E2E Test Files Check" "test -f e2e/example.spec.ts"
 
 # SUMMARY

@@ -9,13 +9,10 @@ const QUESTION_CATEGORIES = [
   'ATTENTION_TO_DETAIL',
   'OTHER',
 ] as const;
-import { useRouter } from 'next/navigation';
 
 // --- Constants ---
-const ADMIN_USER_ID = '4387fa5a-2267-45c6-a68d-ad372276dcc6';
 const QUESTION_TIMERS = [15, 30, 45, 60];
 const DEFAULT_ANSWER_OPTIONS = ['', '', '', '']; // Default to 4 options
-const AUTH_KEY = 'isAdminLoggedIn_superSimple'; // Auth key
 
 // --- Interfaces ---
 interface Question {
@@ -51,9 +48,6 @@ interface NewQuestionForm {
 }
 
 export default function ManageTestsPage() {
-  const router = useRouter();
-  const [isClient, setIsClient] = useState(false);
-
   // --- State for Tests ---
   const [tests, setTests] = useState<Test[]>([]);
   const [isLoadingTests, setIsLoadingTests] = useState(true);
@@ -99,16 +93,8 @@ export default function ManageTestsPage() {
 
   // --- Effects ---
   useEffect(() => {
-    setIsClient(true);
-    if (
-      typeof window !== 'undefined' &&
-      localStorage.getItem(AUTH_KEY) !== 'true'
-    ) {
-      router.replace('/admin/login');
-    } else {
-      fetchTests();
-    }
-  }, [router]);
+    fetchTests();
+  }, []);
 
   useEffect(() => {
     if (
@@ -191,8 +177,6 @@ export default function ManageTestsPage() {
         body: JSON.stringify({
           title: newTestTitle,
           description: newTestDescription,
-          createdById: ADMIN_USER_ID,
-
           lockOrder: false,
           allowReview: allowReview,
         }),
@@ -333,7 +317,6 @@ export default function ManageTestsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           testId: selectedTest.id,
-          createdById: ADMIN_USER_ID,
           expiresAt: expiresAt.toISOString(),
           candidateEmail: invitationCandidateEmail.trim(),
           candidateName: invitationCandidateName.trim(),
@@ -397,18 +380,6 @@ export default function ManageTestsPage() {
   };
 
   // --- Rendering ---
-  if (
-    !isClient ||
-    (typeof window !== 'undefined' && localStorage.getItem(AUTH_KEY) !== 'true')
-  ) {
-    // Render nothing or a loading indicator while redirecting
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-off-white">
-        <p className="text-lg text-text-light">Loading...</p>
-      </div>
-    );
-  }
-
   // Helper for input classes
   const inputClasses =
     'block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-accent-orange focus:border-accent-orange sm:text-sm text-text-dark';

@@ -1,5 +1,4 @@
 import { NextAuthOptions } from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import { UserRole } from '@prisma/client';
 import { prisma } from './prisma';
@@ -18,22 +17,6 @@ export const authOptionsSimple: NextAuthOptions = {
           access_type: 'offline',
           response_type: 'code',
         },
-      },
-    }),
-    CredentialsProvider({
-      name: 'credentials',
-      credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
-      },
-      async authorize(credentials: any) {
-        // Note: For local development, create a proper admin user in the database
-        // using the setup scripts provided in the scripts/ directory
-        // Example: npm run setup:admin
-
-        // All other credentials authentication is disabled
-        // Users should use Google OAuth
-        return null;
       },
     }),
   ],

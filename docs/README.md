@@ -30,11 +30,3 @@
 ## 📖 Guides
 
 - [Markdown Guide](guides/MARKDOWN_GUIDE.md) - Markdown formatting guide for questions
-
-## 🧹 Cleanup Documentation
-
-- [Cleanup Summary](cleanup/CLEANUP_SUMMARY.md) - Overview of cleanup phases
-- [Phase 1: Quick Wins](cleanup/PHASE1_CLEANUP_COMPLETE.md) - Dependency and file cleanup
-- [Phase 2: Code Cleanup](cleanup/PHASE2_CLEANUP_COMPLETE.md) - Dead code removal
-- [Phase 3: Database Optimization](cleanup/PHASE3_CLEANUP_COMPLETE.md) - Query optimization
-- [Phase 4: API Consolidation](cleanup/PHASE4_CLEANUP_COMPLETE.md) - API endpoint cleanup

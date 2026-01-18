@@ -17,6 +17,9 @@ npx tsc --noEmit
 # Unit Tests
 npm test
 
+# Integration Tests
+npm run test:integration
+
 # Build Process
 npm run build
 
@@ -142,14 +145,14 @@ NEXTAUTH_URL=http://localhost:3000
 
 ### **Jest Configuration**
 
-- **Config**: `jest.config.js`
-- **Setup**: `jest.setup.js`
-- **Environment**: `jest.env.js`
+- **Config**: `config/jest/jest.config.js`
+- **Setup**: `config/jest/jest.setup.js`
+- **Environment**: `config/jest/jest.env.js`
 - **Coverage**: 50% threshold for all metrics
 
 ### **Playwright Configuration**
 
-- **Config**: `playwright.config.ts`
+- **Config**: `config/playwright/playwright.config.ts`
 - **Tests**: `e2e/` directory
 - **Browsers**: Chromium, Firefox, WebKit, Mobile
 
@@ -173,18 +176,6 @@ NEXTAUTH_URL=http://localhost:3000
 ✅ Database: Schema valid
 ✅ E2E: All tests passing
 ```
-
-### **Current Status**
-
-Based on the latest test run:
-
-- ✅ **Unit Tests**: 4/4 passing
-- ✅ **Build Process**: Working
-- ✅ **Database Schema**: Valid
-- ✅ **Health Endpoint**: Implemented
-- ⚠️ **Code Quality**: Some ESLint/Prettier issues
-- ⚠️ **Security**: 2 vulnerabilities found
-- ⚠️ **TypeScript**: Some compilation errors
 
 ## 🐛 Common Issues & Solutions
 
@@ -242,7 +233,7 @@ npx playwright install
 npx playwright test example.spec.ts
 
 # Debug mode
-npx playwright test --debug
+npx playwright test -c config/playwright/playwright.config.ts --debug
 ```
 
 ## 📈 Performance Benchmarks
@@ -296,7 +287,7 @@ Required secrets in GitHub:
 
 1. Create test files in `src/__tests__/`
 2. Follow naming: `*.test.tsx` or `*.spec.tsx`
-3. Import test utilities from `jest.setup.js`
+3. Import test utilities from `config/jest/jest.setup.js`
 
 ### **E2E Tests**
 

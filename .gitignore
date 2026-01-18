@@ -12,6 +12,8 @@ node_modules/
 
 # testing
 /coverage
+playwright-report/
+test-results/
 
 # next.js
 /.next/
@@ -54,6 +56,10 @@ next-env.d.ts
 
 # OS
 Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
 
 # Build artifacts
 dist/

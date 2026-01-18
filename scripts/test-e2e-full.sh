@@ -63,7 +63,7 @@ echo -e "\n${BLUE}🎭 Running Playwright E2E Tests...${NC}"
 npx playwright install chromium --with-deps
 
 # Run tests
-if npx playwright test --reporter=list; then
+if npx playwright test -c config/playwright/playwright.config.ts --reporter=list; then
     echo -e "\n${GREEN}✅ E2E Tests Completed Successfully!${NC}"
     E2E_SUCCESS=true
 else

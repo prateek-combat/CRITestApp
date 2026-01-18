@@ -129,7 +129,7 @@ GMAIL_APP_PASSWORD="your-app-specific-password"
    - File access is restricted to authorized users only
 
 3. **Data Protection**:
-   - All passwords are hashed with bcrypt
+   - Authentication uses Google OAuth with pre-registered admins
    - Database queries use parameterized statements (Prisma)
    - File uploads are validated and access-controlled
 
@@ -187,6 +187,9 @@ The project maintains high code quality through:
 ```bash
 # Unit tests
 npm test
+
+# Integration tests
+npm run test:integration
 
 # Test coverage
 npm run test:coverage
