@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withCache, apiCache } from '@/lib/cache';
 import { apiLogger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
-
-
+import { auth } from '@/lib/auth';
 
 /**
  * @swagger
@@ -27,6 +26,14 @@ import { prisma } from '@/lib/prisma';
  */
 export async function GET() {
   try {
+    const session = await auth();
+    if (
+      !session?.user ||
+      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
+    ) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const cacheKey = 'tests:all';
 
     const tests = await withCache(
@@ -110,6 +117,14 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   let title = '';
   try {
+    const session = await auth();
+    if (
+      !session?.user ||
+      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
+    ) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const requestData = await request.json();
     title = requestData.title;
     const { description, allowReview } = requestData;
@@ -118,31 +133,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
-    // For now, we'll use a default admin user
-    // In a real app, you'd get this from authentication
-    let adminUser = await prisma.user.findFirst({
-      where: { role: 'ADMIN' },
-    });
-
-    // If no admin user exists, create one
-    if (!adminUser) {
-      adminUser = await prisma.user.create({
-        data: {
-          email: 'admin@testplatform.com',
-          passwordHash: 'dummy', // In real app, this would be hashed
-          firstName: 'Admin',
-          lastName: 'User',
-          role: 'ADMIN',
-        },
-      });
-    }
-
     const test = await prisma.test.create({
       data: {
         title: title.trim(),
         description: description?.trim() || null,
-
-        createdById: adminUser.id,
+        createdById: session.user.id,
       },
     });
 

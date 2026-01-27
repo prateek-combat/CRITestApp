@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import LeaderboardTable from './LeaderboardTable';
@@ -211,7 +212,7 @@ export default function LeaderboardSidebarLayout({
   // Fetch weight profiles
   const fetchProfiles = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/category-weights');
+      const response = await fetchWithCSRF('/api/admin/category-weights');
       if (response.ok) {
         const result = await response.json();
         // Extract the data array from the response
@@ -233,7 +234,7 @@ export default function LeaderboardSidebarLayout({
   const fetchPositions = useCallback(async () => {
     setIsLoadingPositions(true);
     try {
-      const response = await fetch(
+      const response = await fetchWithCSRF(
         '/api/admin/positions?includeTestCount=true'
       );
       if (response.ok) {
@@ -254,7 +255,7 @@ export default function LeaderboardSidebarLayout({
   // Fetch tests (for reference)
   const fetchTests = useCallback(async () => {
     try {
-      const response = await fetch('/api/tests');
+      const response = await fetchWithCSRF('/api/tests');
       if (response.ok) {
         const testsData = await response.json();
         setTests(testsData);
@@ -267,7 +268,7 @@ export default function LeaderboardSidebarLayout({
   // Fetch job profiles
   const fetchJobProfiles = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/job-profiles');
+      const response = await fetchWithCSRF('/api/admin/job-profiles');
       if (response.ok) {
         const jobProfilesData = await response.json();
         setJobProfiles(jobProfilesData);
@@ -657,16 +658,19 @@ export default function LeaderboardSidebarLayout({
       const attemptIds = data.rows.map((row) => row.attemptId);
       const positionName = selectedJobProfile?.name;
 
-      const response = await fetch('/api/admin/leaderboard/export-bulk-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          attemptIds,
-          positionName,
-        }),
-      });
+      const response = await fetchWithCSRF(
+        '/api/admin/leaderboard/export-bulk-pdf',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            attemptIds,
+            positionName,
+          }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error('Failed to generate bulk PDF');
@@ -707,7 +711,7 @@ export default function LeaderboardSidebarLayout({
       });
 
       // Fetch Excel file from the API endpoint
-      const response = await fetch(
+      const response = await fetchWithCSRF(
         `/api/admin/leaderboard/export-excel?${params.toString()}`
       );
 

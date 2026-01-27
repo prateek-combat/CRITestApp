@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import React, { useState, useEffect } from 'react';
 import {
   Bell,
@@ -68,7 +69,7 @@ CRI Test Platform`,
     setError(null);
 
     try {
-      const response = await fetch(
+      const response = await fetchWithCSRF(
         `/api/admin/job-profiles/${jobProfileId}/email-notifications`
       );
       if (response.ok) {
@@ -98,7 +99,7 @@ CRI Test Platform`,
     setSuccess(null);
 
     try {
-      const response = await fetch(
+      const response = await fetchWithCSRF(
         `/api/admin/job-profiles/${jobProfileId}/email-notifications`,
         {
           method: 'POST',
@@ -138,7 +139,7 @@ CRI Test Platform`,
     setSuccess(null);
 
     try {
-      const response = await fetch(
+      const response = await fetchWithCSRF(
         `/api/admin/job-profiles/${jobProfileId}/email-notifications/test`,
         {
           method: 'POST',

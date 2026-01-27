@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx-js-style';
 import * as Papa from 'papaparse';
 import { logger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
 
 interface QuestionRow {
   promptText: string;
@@ -479,6 +480,11 @@ function validateRow(row: any, rowNumber: number): ValidationError[] {
  *         description: Failed to import questions
  */
 export async function POST(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user || !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const debugInfo = {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,

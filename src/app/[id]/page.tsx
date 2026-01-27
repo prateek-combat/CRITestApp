@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -16,7 +17,7 @@ export default function LegacyRedirectPage() {
     const checkAndRedirect = async () => {
       try {
         // First, check if it's an invitation ID
-        const invitationRes = await fetch(`/api/invitations/${id}`);
+        const invitationRes = await fetchWithCSRF(`/api/invitations/${id}`);
         if (invitationRes.ok) {
           // It's an invitation, redirect to the test page
           router.replace(`/test/${id}`);
@@ -24,7 +25,7 @@ export default function LegacyRedirectPage() {
         }
 
         // Next, check if it's a public test link token
-        const publicTestRes = await fetch(`/api/public-test/${id}`);
+        const publicTestRes = await fetchWithCSRF(`/api/public-test/${id}`);
         if (publicTestRes.ok) {
           // It's a public test link, redirect to the public test page
           router.replace(`/public-test/${id}`);

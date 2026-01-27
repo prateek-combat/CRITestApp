@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -35,7 +36,9 @@ export default function TestStartPage() {
       setStatus('loading');
       try {
         if (isPublicAttempt) {
-          const res = await fetch(`/api/public-test-attempts/${invitationId}`);
+          const res = await fetchWithCSRF(
+            `/api/public-test-attempts/${invitationId}`
+          );
           if (!res.ok) throw new Error('Public test link not found.');
           const data = await res.json();
           setTestTitle(data.test.title);
@@ -43,7 +46,7 @@ export default function TestStartPage() {
           setCandidateEmail(data.candidateEmail);
           setStatus('ready');
         } else {
-          const res = await fetch(`/api/invitations/${invitationId}`);
+          const res = await fetchWithCSRF(`/api/invitations/${invitationId}`);
           if (!res.ok) throw new Error('Invitation not found.');
           const data = await res.json();
           setTestTitle(data.test.title);
@@ -65,7 +68,7 @@ export default function TestStartPage() {
       if (isPublicAttempt) {
         router.push(`/test/attempt/${invitationId}?type=public`);
       } else {
-        const response = await fetch('/api/test-attempts', {
+        const response = await fetchWithCSRF('/api/test-attempts', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

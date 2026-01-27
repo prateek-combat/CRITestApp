@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import {
+  generateCSRFToken,
+  getCSRFTokenFromCookie,
+  getCSRFTokenFromHeader,
+  setCSRFCookie,
+} from '@/lib/csrf';
 
 // Define protected routes patterns
 const protectedRoutes = {
@@ -40,15 +46,31 @@ export default async function middleware(req: NextRequest) {
     Object.values(protectedRoutes.api).some((pattern) =>
       pattern.test(pathname)
     );
+  const isApiRoute = pathname.startsWith('/api');
+
+  const token =
+    isApiRoute || isProtectedRoute
+      ? await getToken({
+          req,
+          secret: process.env.NEXTAUTH_SECRET,
+        })
+      : null;
+  const requiresCsrfCheck =
+    isApiRoute && token && !['GET', 'HEAD'].includes(req.method);
+  const csrfCookie = requiresCsrfCheck ? getCSRFTokenFromCookie(req) : null;
+  const csrfHeader = requiresCsrfCheck ? getCSRFTokenFromHeader(req) : null;
+  const csrfValid =
+    !requiresCsrfCheck ||
+    (csrfCookie && csrfHeader && csrfCookie === csrfHeader);
+  const withCsrfCookie = (response: NextResponse) => {
+    if (token && !csrfCookie) {
+      setCSRFCookie(response, generateCSRFToken());
+    }
+    return response;
+  };
 
   if (isProtectedRoute) {
     try {
-      // Get the token from the request
-      const token = await getToken({
-        req,
-        secret: process.env.NEXTAUTH_SECRET,
-      });
-
       if (!token) {
         // No valid session, redirect to login for admin pages
         if (pathname.startsWith('/admin')) {
@@ -90,11 +112,20 @@ export default async function middleware(req: NextRequest) {
       requestHeaders.set('x-user-role', token.role || '');
       requestHeaders.set('x-user-email', token.email || '');
 
-      return NextResponse.next({
+      const response = NextResponse.next({
         request: {
           headers: requestHeaders,
         },
       });
+
+      if (!csrfValid) {
+        return new NextResponse(
+          JSON.stringify({ error: 'Invalid CSRF token' }),
+          { status: 403, headers: { 'content-type': 'application/json' } }
+        );
+      }
+
+      return withCsrfCookie(response);
     } catch (error) {
       console.error('Middleware auth error:', error);
 
@@ -111,7 +142,15 @@ export default async function middleware(req: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  // Validate CSRF for authenticated API requests outside protected routes
+  if (!csrfValid) {
+    return new NextResponse(JSON.stringify({ error: 'Invalid CSRF token' }), {
+      status: 403,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  return withCsrfCookie(NextResponse.next());
 }
 
 export const config = {

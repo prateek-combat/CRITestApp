@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Check,
@@ -299,7 +300,7 @@ export default function SystemCompatibilityChecker({
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-          const response = await fetch(endpoint, {
+          const response = await fetchWithCSRF(endpoint, {
             method: 'HEAD', // Use HEAD to minimize data transfer
             cache: 'no-cache',
             signal: controller.signal,

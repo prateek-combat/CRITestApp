@@ -1,6 +1,6 @@
+import { fetchWithCSRF } from '@/lib/csrf';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
 import { auth } from '@/lib/auth';
 
 // Custom AI Service configuration
@@ -25,7 +25,7 @@ async function analyzeFrame(frameData: Buffer, frameId: string) {
     const base64Image = frameData.toString('base64');
 
     // Call your custom AI service
-    const response = await fetch(`${AI_SERVICE_URL}/analyze-frame`, {
+    const response = await fetchWithCSRF(`${AI_SERVICE_URL}/analyze-frame`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -102,7 +102,9 @@ function generateFrameMessage(analysis: any) {
   if (analysis.faceCount > 1) messages.push('Multiple faces detected');
   if (analysis.confidence < 0.7) messages.push('Low detection confidence');
   if (analysis.suspiciousObjects.length > 0) {
-    messages.push(`Suspicious objects: ${analysis.suspiciousObjects.join(', ')}`);
+    messages.push(
+      `Suspicious objects: ${analysis.suspiciousObjects.join(', ')}`
+    );
   }
   return messages.join('; ') || 'Frame looks normal';
 }
@@ -250,44 +252,12 @@ export async function POST(
       })
     );
 
-    // Calculate overall risk score
-    const totalRisk =
-      frameAnalysisResults.reduce((sum, result) => sum + (result.risk || 0), 0) /
-      Math.max(frameAnalysisResults.length, 1);
-
-    // Analyze events for suspicious activity
+    // Analyze events for suspicious activity (informational only)
     const suspiciousEvents = proctorEvents.filter((event) =>
       ['TAB_SWITCH', 'WINDOW_BLUR', 'COPY_ATTEMPT', 'PASTE_ATTEMPT'].includes(
         event.type
       )
     );
-
-    const eventRisk = Math.min(suspiciousEvents.length * 5, 30);
-    const overallRisk = Math.min(totalRisk + eventRisk, 100);
-
-    // Update the test attempt with risk score
-    const updateData = {
-      riskScore: overallRisk,
-      riskScoreBreakdown: {
-        frameRisk: totalRisk,
-        eventRisk: eventRisk,
-        suspiciousEvents: suspiciousEvents.length,
-        framesAnalyzed: frameAnalysisResults.length,
-        analysisTimestamp: new Date().toISOString(),
-      },
-    };
-
-    if (isPublicAttempt) {
-      await prisma.publicTestAttempt.update({
-        where: { id: attemptId },
-        data: updateData,
-      });
-    } else {
-      await prisma.testAttempt.update({
-        where: { id: attemptId },
-        data: updateData,
-      });
-    }
 
     // Queue video analysis if video URL exists
     if (testAttempt.videoRecordingUrl) {
@@ -297,12 +267,20 @@ export async function POST(
     return NextResponse.json({
       success: true,
       attemptId,
-      overallRisk,
+      analysisPreview: {
+        averageFrameRisk:
+          frameAnalysisResults.reduce(
+            (sum, result) => sum + (result.risk || 0),
+            0
+          ) / Math.max(frameAnalysisResults.length, 1),
+        suspiciousEvents: suspiciousEvents.length,
+        framesAnalyzed: frameAnalysisResults.length,
+        analysisTimestamp: new Date().toISOString(),
+      },
       frameAnalysisResults,
       suspiciousEvents: suspiciousEvents.length,
-      message: `Analysis completed. Risk level: ${
-        overallRisk > 70 ? 'High' : overallRisk > 40 ? 'Medium' : 'Low'
-      }`,
+      message:
+        'Analysis completed. Risk scoring is handled by the proctoring worker.',
     });
   } catch (error) {
     console.error('Analysis error:', error);

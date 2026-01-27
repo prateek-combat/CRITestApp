@@ -102,8 +102,6 @@ export async function GET(request: NextRequest) {
       { error: 'Failed to fetch time-restricted links' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -210,7 +208,5 @@ export async function DELETE(request: NextRequest) {
       { error: 'Failed to delete time-restricted links' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

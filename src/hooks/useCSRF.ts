@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { CSRF_COOKIE_NAME } from '@/lib/csrf';
 
 interface CSRFHook {
   token: string | null;
@@ -25,12 +26,12 @@ export function useCSRF(): CSRFHook {
       return null;
     };
 
-    const csrfToken = getCookieValue('__Host-csrf-token');
+    const csrfToken = getCookieValue(CSRF_COOKIE_NAME);
     setToken(csrfToken);
 
     // Listen for cookie changes
     const interval = setInterval(() => {
-      const newToken = getCookieValue('__Host-csrf-token');
+      const newToken = getCookieValue(CSRF_COOKIE_NAME);
       if (newToken !== token) {
         setToken(newToken);
       }

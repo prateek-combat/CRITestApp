@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import React, { useState } from 'react';
 import {
   X,
@@ -367,7 +368,7 @@ export default function JobProfileDetailsModal({
                       )
                     ) {
                       try {
-                        const response = await fetch(
+                        const response = await fetchWithCSRF(
                           `/api/admin/time-slots?timeSlotId=${timeSlotId}`,
                           {
                             method: 'DELETE',

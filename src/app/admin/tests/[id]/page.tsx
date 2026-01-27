@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -92,7 +93,7 @@ export default function TestEditPage({
 
   const fetchPersonalityDimensions = async () => {
     try {
-      const response = await fetch('/api/personality-dimensions');
+      const response = await fetchWithCSRF('/api/personality-dimensions');
       if (response.ok) {
         const dimensions = await response.json();
         setPersonalityDimensions(dimensions);
@@ -104,7 +105,7 @@ export default function TestEditPage({
 
   const fetchTest = async () => {
     try {
-      const response = await fetch(`/api/tests/${id}`);
+      const response = await fetchWithCSRF(`/api/tests/${id}`);
       if (!response.ok) throw new Error('Failed to fetch test');
       const data = await response.json();
       setTest(data);
@@ -149,7 +150,7 @@ export default function TestEditPage({
     }
 
     try {
-      const response = await fetch('/api/questions', {
+      const response = await fetchWithCSRF('/api/questions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -334,7 +335,7 @@ export default function TestEditPage({
       formData.append('file', importFile);
       formData.append('testId', id);
 
-      const response = await fetch('/api/questions/import', {
+      const response = await fetchWithCSRF('/api/questions/import', {
         method: 'POST',
         body: formData,
       });
@@ -430,13 +431,16 @@ export default function TestEditPage({
     }
 
     try {
-      const response = await fetch(`/api/questions/${editingQuestion.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(questionData),
-      });
+      const response = await fetchWithCSRF(
+        `/api/questions/${editingQuestion.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(questionData),
+        }
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -465,7 +469,7 @@ export default function TestEditPage({
     }
 
     try {
-      const response = await fetch(`/api/questions/${questionId}`, {
+      const response = await fetchWithCSRF(`/api/questions/${questionId}`, {
         method: 'DELETE',
       });
 
@@ -493,7 +497,7 @@ export default function TestEditPage({
 
     setIsDeletingTest(true);
     try {
-      const response = await fetch(`/api/tests/${id}/archive`, {
+      const response = await fetchWithCSRF(`/api/tests/${id}/archive`, {
         method: 'POST',
       });
 
@@ -535,7 +539,7 @@ export default function TestEditPage({
 
     setIsDeletingTest(true);
     try {
-      const response = await fetch(`/api/tests/${id}`, {
+      const response = await fetchWithCSRF(`/api/tests/${id}`, {
         method: 'DELETE',
       });
 

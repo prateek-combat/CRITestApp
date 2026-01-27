@@ -4,8 +4,6 @@ import { authOptionsSimple } from '@/lib/auth-simple';
 import { nanoid } from 'nanoid';
 import { prisma } from '@/lib/prisma';
 
-
-
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptionsSimple);
@@ -122,7 +120,5 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to send bulk invitations' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

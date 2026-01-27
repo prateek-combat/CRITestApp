@@ -175,7 +175,5 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to store proctor events' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

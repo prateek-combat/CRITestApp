@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import InfoPanel from '@/components/ui/InfoPanel';
@@ -38,8 +39,8 @@ export default function AdminDashboard() {
     const fetchData = async () => {
       try {
         const [statsRes, activityRes] = await Promise.all([
-          fetch('/api/admin/dashboard-stats'),
-          fetch('/api/admin/activity-feed'),
+          fetchWithCSRF('/api/admin/dashboard-stats'),
+          fetchWithCSRF('/api/admin/activity-feed'),
         ]);
 
         if (statsRes.ok) {

@@ -4,8 +4,6 @@ import { authOptionsSimple } from '@/lib/auth-simple';
 import { nanoid } from 'nanoid';
 import { prisma } from '@/lib/prisma';
 
-
-
 type RouteParams = {
   params: Promise<{ id: string }>;
 };
@@ -203,7 +201,5 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       { error: 'Failed to create time-restricted public links' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

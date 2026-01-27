@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
@@ -57,7 +58,7 @@ export default function JobProfileInvitationPage() {
 
   const fetchInvitation = async () => {
     try {
-      const response = await fetch(
+      const response = await fetchWithCSRF(
         `/api/job-profile-invitations/${invitationId}`
       );
 
@@ -83,7 +84,7 @@ export default function JobProfileInvitationPage() {
     setError('');
 
     try {
-      const response = await fetch('/api/test-attempts', {
+      const response = await fetchWithCSRF('/api/test-attempts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

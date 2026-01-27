@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
@@ -45,7 +46,7 @@ export default function PublicTestPage() {
 
   const fetchPublicLink = async () => {
     try {
-      const response = await fetch(`/api/public-test/${token}`);
+      const response = await fetchWithCSRF(`/api/public-test/${token}`);
 
       if (response.ok) {
         const data = await response.json();
@@ -82,7 +83,7 @@ export default function PublicTestPage() {
     setError('');
 
     try {
-      const response = await fetch(`/api/public-test/${token}/start`, {
+      const response = await fetchWithCSRF(`/api/public-test/${token}/start`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

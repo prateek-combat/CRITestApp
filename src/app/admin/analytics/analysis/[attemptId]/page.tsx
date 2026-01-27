@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -186,7 +187,7 @@ export default function ProctorAnalysisPage() {
     const fetchData = async () => {
       try {
         // Fetch proctoring data
-        const response = await fetch(
+        const response = await fetchWithCSRF(
           `/api/admin/proctor/analysis/${attemptId}`
         );
         if (!response.ok) {
@@ -197,7 +198,7 @@ export default function ProctorAnalysisPage() {
 
         // Fetch questions and answers data separately
         try {
-          const questionsResponse = await fetch(
+          const questionsResponse = await fetchWithCSRF(
             `/api/admin/test-analysis/${attemptId}`
           );
           if (questionsResponse.ok) {
@@ -323,9 +324,12 @@ export default function ProctorAnalysisPage() {
 
     setDeletingAttempt(true);
     try {
-      const response = await fetch(`/api/admin/test-attempts/${attemptId}`, {
-        method: 'DELETE',
-      });
+      const response = await fetchWithCSRF(
+        `/api/admin/test-attempts/${attemptId}`,
+        {
+          method: 'DELETE',
+        }
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -887,7 +891,7 @@ export default function ProctorAnalysisPage() {
                 onClick={async () => {
                   try {
                     setLoading(true);
-                    const response = await fetch(
+                    const response = await fetchWithCSRF(
                       `/api/admin/proctor/trigger-analysis/${attemptId}`,
                       {
                         method: 'POST',
@@ -895,7 +899,7 @@ export default function ProctorAnalysisPage() {
                     );
                     if (response.ok) {
                       // Reload data to get the analysis results
-                      const dataResponse = await fetch(
+                      const dataResponse = await fetchWithCSRF(
                         `/api/admin/proctor/analysis/${attemptId}`
                       );
                       if (dataResponse.ok) {

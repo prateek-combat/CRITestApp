@@ -72,7 +72,5 @@ export async function GET(request: NextRequest) {
       { error: 'Failed to fetch public test links' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

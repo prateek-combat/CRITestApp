@@ -1,3 +1,4 @@
+import { fetchWithCSRF } from '@/lib/csrf';
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import * as XLSX from 'xlsx-js-style';
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
         console.log('Excel export - First request URL:', baseUrl.toString());
       }
 
-      const response = await fetch(baseUrl.toString(), {
+      const response = await fetchWithCSRF(baseUrl.toString(), {
         headers: {
           Cookie: request.headers.get('cookie') || '',
         },

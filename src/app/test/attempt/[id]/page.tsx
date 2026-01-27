@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter, useParams } from 'next/navigation';
 import useSWR from 'swr';
@@ -13,7 +14,7 @@ import FocusWarningModal from '@/components/FocusWarningModal';
 import { useProctoring } from '@/lib/proctor/recorder';
 import { useLiveFlags } from '@/lib/proctor/useLiveFlags';
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (url: string) => fetchWithCSRF(url).then((res) => res.json());
 
 interface UserAnswer {
   questionId: string;
@@ -213,7 +214,7 @@ export default function TestTakingPage() {
         ? `/api/public-test-attempts/${attemptId}/permissions`
         : `/api/test-attempts/${attemptId}/permissions`;
 
-      const response = await fetch(permissionsEndpoint, {
+      const response = await fetchWithCSRF(permissionsEndpoint, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -265,7 +266,7 @@ export default function TestTakingPage() {
 
       // Step 3: Submit to server
       setSubmissionStep('Submitting your test...');
-      const res = await fetch(apiEndpoint, {
+      const res = await fetchWithCSRF(apiEndpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -382,7 +383,7 @@ export default function TestTakingPage() {
 
         // Saving answer for question with calculated time
 
-        const response = await fetch(answerEndpoint, {
+        const response = await fetchWithCSRF(answerEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -426,7 +427,7 @@ export default function TestTakingPage() {
           ? `/api/public-test-attempts/${attemptId}/progress`
           : `/api/test-attempts/${attemptId}/progress`;
 
-        await fetch(progressEndpoint, {
+        await fetchWithCSRF(progressEndpoint, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

@@ -28,6 +28,10 @@ NODE_ENV="development"
 # AI Service (optional)
 CUSTOM_AI_SERVICE_URL=https://ai-service-561500498824.us-central1.run.app
 
+# Worker Queue API (recommended for proctoring worker)
+WORKER_API_URL="http://localhost:3000"
+WORKER_API_TOKEN="your_internal_worker_token"
+
 # Email Configuration
 GMAIL_USER=your_email@yourdomain.com
 GMAIL_APP_PASSWORD=your_gmail_app_password

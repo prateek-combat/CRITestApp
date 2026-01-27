@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -20,7 +21,7 @@ export default function CreateTestPage() {
     setError('');
 
     try {
-      const response = await fetch('/api/tests', {
+      const response = await fetchWithCSRF('/api/tests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

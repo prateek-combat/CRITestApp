@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -148,7 +149,7 @@ export default function TestsPage() {
 
   const fetchTests = async () => {
     try {
-      const response = await fetch('/api/tests');
+      const response = await fetchWithCSRF('/api/tests');
       if (response.ok) {
         const data = await response.json();
         setTests(data);
@@ -162,7 +163,7 @@ export default function TestsPage() {
 
   const fetchInvitations = async () => {
     try {
-      const response = await fetch('/api/invitations/combined');
+      const response = await fetchWithCSRF('/api/invitations/combined');
       if (response.ok) {
         const data = await response.json();
         setInvitations(data);
@@ -177,7 +178,7 @@ export default function TestsPage() {
   const fetchPublicLinks = async () => {
     try {
       setPublicLinksLoading(true);
-      const response = await fetch('/api/public-test-links');
+      const response = await fetchWithCSRF('/api/public-test-links');
       if (!response.ok) {
         throw new Error('Failed to fetch public links');
       }
@@ -195,13 +196,16 @@ export default function TestsPage() {
 
   const toggleLinkStatus = async (linkId: string, isActive: boolean) => {
     try {
-      const response = await fetch(`/api/public-test-links/admin/${linkId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ isActive: !isActive }),
-      });
+      const response = await fetchWithCSRF(
+        `/api/public-test-links/admin/${linkId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ isActive: !isActive }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error('Failed to update link status');
@@ -226,9 +230,12 @@ export default function TestsPage() {
     }
 
     try {
-      const response = await fetch(`/api/public-test-links/admin/${linkId}`, {
-        method: 'DELETE',
-      });
+      const response = await fetchWithCSRF(
+        `/api/public-test-links/admin/${linkId}`,
+        {
+          method: 'DELETE',
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -304,7 +311,7 @@ export default function TestsPage() {
 
     setArchivingTestId(testId);
     try {
-      const response = await fetch(`/api/tests/${testId}/archive`, {
+      const response = await fetchWithCSRF(`/api/tests/${testId}/archive`, {
         method: 'POST',
       });
 
@@ -335,7 +342,7 @@ export default function TestsPage() {
 
     setDeletingTestId(testId);
     try {
-      const response = await fetch(`/api/tests/${testId}`, {
+      const response = await fetchWithCSRF(`/api/tests/${testId}`, {
         method: 'DELETE',
       });
 
@@ -360,7 +367,7 @@ export default function TestsPage() {
 
     setSendingInvite(true);
     try {
-      const response = await fetch('/api/invitations', {
+      const response = await fetchWithCSRF('/api/invitations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -406,7 +413,7 @@ export default function TestsPage() {
 
     setSendingBulk(true);
     try {
-      const response = await fetch('/api/invitations', {
+      const response = await fetchWithCSRF('/api/invitations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -447,7 +454,7 @@ export default function TestsPage() {
 
     setGeneratingPublicLink(true);
     try {
-      const response = await fetch('/api/public-test-links', {
+      const response = await fetchWithCSRF('/api/public-test-links', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -534,7 +541,7 @@ export default function TestsPage() {
 
     setProcessingInvitation(invitationId);
     try {
-      const response = await fetch(`/api/invitations/${invitationId}`, {
+      const response = await fetchWithCSRF(`/api/invitations/${invitationId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -572,7 +579,7 @@ export default function TestsPage() {
 
     setProcessingInvitation(invitationId);
     try {
-      const response = await fetch(`/api/invitations/${invitationId}`, {
+      const response = await fetchWithCSRF(`/api/invitations/${invitationId}`, {
         method: 'DELETE',
       });
 
@@ -772,7 +779,7 @@ export default function TestsPage() {
                           <button
                             onClick={async () => {
                               try {
-                                const response = await fetch(
+                                const response = await fetchWithCSRF(
                                   `/api/admin/tests/${test.id}/preview`,
                                   {
                                     method: 'POST',

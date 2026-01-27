@@ -98,7 +98,5 @@ export async function GET(
       { error: 'Failed to get strike status' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

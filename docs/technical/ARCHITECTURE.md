@@ -135,7 +135,7 @@ Frontend captures and reports:
 ### AI Analysis Pipeline
 
 1. **Job Creation**: Video upload triggers pg-boss job
-2. **Worker Processing**: Python worker polls for jobs
+2. **Worker Processing**: Python worker claims jobs via internal queue API (token-protected)
 3. **Video Download**: Worker fetches video from database
 4. **Multi-Modal Analysis**:
    - Face detection and head pose estimation
@@ -143,6 +143,14 @@ Frontend captures and reports:
    - Audio analysis (speaker changes, voice activity)
 5. **Risk Scoring**: Weighted algorithm calculates 0-100 score
 6. **Result Storage**: Events and scores saved to database
+
+**Queue Contract**:
+- Job payloads are versioned (`schemaVersion`) to allow safe evolution.
+- Worker queue access is encapsulated behind internal API endpoints.
+
+**Authoritative Scoring**:
+- Risk scoring is performed by the Python worker and stored in the database.
+- API routes and UI treat the stored score as the source of truth.
 
 ### Risk Categories
 

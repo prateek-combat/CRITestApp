@@ -1,3 +1,4 @@
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useEffect, useRef } from 'react';
 import detect from 'devtools-detect';
 
@@ -73,7 +74,7 @@ export function useLiveFlags(
       );
     } else {
       // Use fetch for strike events to handle termination response
-      fetch('/api/proctor/event', {
+      fetchWithCSRF('/api/proctor/event', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

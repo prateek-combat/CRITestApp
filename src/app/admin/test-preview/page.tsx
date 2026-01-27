@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -66,7 +67,7 @@ export default function TestPreviewPage() {
 
     try {
       setLoading(true);
-      const response = await fetch(`/api/admin/preview?token=${token}`);
+      const response = await fetchWithCSRF(`/api/admin/preview?token=${token}`);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to load preview');

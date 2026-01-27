@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useState, useEffect } from 'react';
 import Button from '@/components/ui/button/Button';
 import {
@@ -23,7 +24,7 @@ export default function WeightProfilesPage({}: WeightProfilesPageProps) {
   const fetchProfiles = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/category-weights');
+      const response = await fetchWithCSRF('/api/admin/category-weights');
       const data = await response.json();
 
       if (data.success) {
@@ -45,7 +46,7 @@ export default function WeightProfilesPage({}: WeightProfilesPageProps) {
   // Set default profile
   const handleSetDefault = async (profileId: string) => {
     try {
-      const response = await fetch(
+      const response = await fetchWithCSRF(
         `/api/admin/category-weights/${profileId}/set-default`,
         {
           method: 'POST',
@@ -70,9 +71,12 @@ export default function WeightProfilesPage({}: WeightProfilesPageProps) {
     }
 
     try {
-      const response = await fetch(`/api/admin/category-weights/${profileId}`, {
-        method: 'DELETE',
-      });
+      const response = await fetchWithCSRF(
+        `/api/admin/category-weights/${profileId}`,
+        {
+          method: 'DELETE',
+        }
+      );
 
       const data = await response.json();
       if (data.success) {
@@ -318,7 +322,7 @@ function WeightProfileForm({
 
       const method = profile ? 'PUT' : 'POST';
 
-      const response = await fetch(url, {
+      const response = await fetchWithCSRF(url, {
         method,
         headers: {
           'Content-Type': 'application/json',

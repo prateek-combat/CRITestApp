@@ -15,6 +15,8 @@ export interface RequiredEnvVars {
   GOOGLE_VISION_API_KEY?: string;
   CUSTOM_AI_SERVICE_URL?: string;
   CUSTOM_AI_API_KEY?: string;
+  WORKER_API_URL?: string;
+  WORKER_API_TOKEN?: string;
 }
 
 export function validateEnv(): RequiredEnvVars {
@@ -63,6 +65,18 @@ export function validateEnv(): RequiredEnvVars {
     }
   }
 
+  // Validate worker API configuration if any worker variable is set
+  const workerVars = ['WORKER_API_URL', 'WORKER_API_TOKEN'];
+  const hasAnyWorker = workerVars.some((v) => process.env[v]);
+  if (hasAnyWorker) {
+    const missingWorker = workerVars.filter((v) => !process.env[v]);
+    if (missingWorker.length > 0) {
+      console.warn(
+        `Warning: Partial worker API configuration detected. Missing: ${missingWorker.join(', ')}`
+      );
+    }
+  }
+
   return {
     DATABASE_URL: process.env.DATABASE_URL!,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET!,
@@ -75,6 +89,8 @@ export function validateEnv(): RequiredEnvVars {
     GOOGLE_VISION_API_KEY: process.env.GOOGLE_VISION_API_KEY,
     CUSTOM_AI_SERVICE_URL: process.env.CUSTOM_AI_SERVICE_URL,
     CUSTOM_AI_API_KEY: process.env.CUSTOM_AI_API_KEY,
+    WORKER_API_URL: process.env.WORKER_API_URL,
+    WORKER_API_TOKEN: process.env.WORKER_API_TOKEN,
   };
 }
 

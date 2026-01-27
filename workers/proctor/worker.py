@@ -20,6 +20,7 @@ import logging
 import time
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Tuple, Any
+import requests
 import psycopg2
 import psycopg2.extras
 from dotenv import load_dotenv
@@ -38,6 +39,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+PROCTOR_ANALYSIS_JOB_SCHEMA_VERSION = 1
 
 class ProctorWorker:
     """Main worker class for proctoring analysis"""
@@ -45,13 +47,18 @@ class ProctorWorker:
     def __init__(self, db_params):
         self.db_params = db_params
         self.db_connection = psycopg2.connect(**self.db_params)
+        self.worker_api_url = os.getenv("WORKER_API_URL")
+        self.worker_api_token = os.getenv("WORKER_API_TOKEN")
         
         # Analysis components
         self.video_analyzer = VideoAnalyzer()
         self.audio_analyzer = AudioAnalyzer()
         self.risk_calculator = RiskCalculator()
         
-        logger.info("ProctorWorker initialized")
+        if self.worker_api_url and self.worker_api_token:
+            logger.info("ProctorWorker initialized with internal queue API")
+        else:
+            logger.warning("WORKER_API_URL or WORKER_API_TOKEN not set; falling back to direct DB queue access")
     
     def download_video_from_database(self, asset_id: str, output_path: str) -> bool:
         """Download video data from database and save to file"""
@@ -77,8 +84,8 @@ class ProctorWorker:
             logger.error(f"Failed to download video from database: {e}")
             return False
     
-    def get_next_job(self) -> Optional[Dict]:
-        """Fetch the next job from pg-boss queue"""
+    def _get_next_job_from_db(self) -> Optional[Dict]:
+        """Fetch the next job from pg-boss queue (legacy fallback)"""
         try:
             with self.db_connection.cursor() as cursor:
                 # Fetch and claim a job from pgboss.job table
@@ -101,7 +108,36 @@ class ProctorWorker:
                 
                 result = cursor.fetchone()
                 if not result:
-                    return None
+                return None
+
+    def _get_next_job_via_api(self) -> Optional[Dict]:
+        """Fetch the next job from internal queue API"""
+        try:
+            response = requests.post(
+                f"{self.worker_api_url}/api/internal/queue/claim",
+                headers={"x-worker-token": self.worker_api_token},
+                timeout=10,
+            )
+            if response.status_code == 204:
+                return None
+            response.raise_for_status()
+            payload = response.json()
+            job = payload.get("job")
+            if not job:
+                return None
+            return {
+                "id": job.get("id"),
+                "data": job.get("data"),
+            }
+        except Exception as e:
+            logger.error(f"Failed to fetch job via API: {e}")
+            return None
+
+    def get_next_job(self) -> Optional[Dict]:
+        """Fetch the next job from pg-boss queue via API when configured"""
+        if self.worker_api_url and self.worker_api_token:
+            return self._get_next_job_via_api()
+        return self._get_next_job_from_db()
                 
                 self.db_connection.commit()
                 
@@ -118,8 +154,8 @@ class ProctorWorker:
             self.db_connection.rollback()
             return None
     
-    def complete_job(self, job_id: str, success: bool = True) -> bool:
-        """Mark job as completed or failed"""
+    def _complete_job_in_db(self, job_id: str, success: bool = True) -> bool:
+        """Mark job as completed or failed (legacy fallback)"""
         try:
             with self.db_connection.cursor() as cursor:
                 if success:
@@ -143,6 +179,29 @@ class ProctorWorker:
             logger.error(f"Failed to update job status: {e}")
             self.db_connection.rollback()
             return False
+
+    def _complete_job_via_api(self, job_id: str, success: bool = True) -> bool:
+        """Mark job as completed or failed via internal queue API"""
+        try:
+            endpoint = "complete" if success else "fail"
+            response = requests.post(
+                f"{self.worker_api_url}/api/internal/queue/{endpoint}",
+                headers={"x-worker-token": self.worker_api_token},
+                json={"jobId": job_id},
+                timeout=10,
+            )
+            response.raise_for_status()
+            logger.info(f"Job {job_id} marked as {'completed' if success else 'failed'} via API")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to update job status via API: {e}")
+            return False
+
+    def complete_job(self, job_id: str, success: bool = True) -> bool:
+        """Mark job as completed or failed"""
+        if self.worker_api_url and self.worker_api_token:
+            return self._complete_job_via_api(job_id, success)
+        return self._complete_job_in_db(job_id, success)
     
     def save_proctor_events(self, attempt_id: str, events: List[Dict]) -> bool:
         """Save detected proctor events to database"""
@@ -242,6 +301,10 @@ class ProctorWorker:
     def process_video(self, job_data: Dict) -> bool:
         """Main video processing pipeline"""
         data = job_data['data']
+        schema_version = data.get('schemaVersion', PROCTOR_ANALYSIS_JOB_SCHEMA_VERSION)
+        if schema_version != PROCTOR_ANALYSIS_JOB_SCHEMA_VERSION:
+            logger.error(f"Unsupported job schema version: {schema_version}")
+            return False
         asset_id = data['assetId']
         attempt_id = data['attemptId']
         database_stored = data.get('databaseStored', True)  # Default to database storage

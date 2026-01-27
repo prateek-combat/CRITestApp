@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Plus,
@@ -153,7 +154,7 @@ export default function JobProfilesPage() {
   // Data Fetching
   const fetchJobProfiles = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/job-profiles');
+      const response = await fetchWithCSRF('/api/admin/job-profiles');
       if (!response.ok) throw new Error('Failed to fetch job profiles');
       const data = await response.json();
       setJobProfiles(data);
@@ -166,7 +167,7 @@ export default function JobProfilesPage() {
 
   const fetchTests = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/tests');
+      const response = await fetchWithCSRF('/api/admin/tests');
       if (!response.ok) throw new Error('Failed to fetch tests');
       const data = await response.json();
       setTests(data.filter((test: Test) => !test.isArchived));
@@ -177,7 +178,7 @@ export default function JobProfilesPage() {
 
   const fetchPublicLinks = useCallback(async () => {
     try {
-      const response = await fetch('/api/public-test-links');
+      const response = await fetchWithCSRF('/api/public-test-links');
       if (!response.ok) throw new Error('Failed to fetch public links');
       const data = await response.json();
       setPublicLinks(data);
@@ -190,7 +191,7 @@ export default function JobProfilesPage() {
 
   const fetchTimeSlots = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/time-slots');
+      const response = await fetchWithCSRF('/api/admin/time-slots');
       if (!response.ok) throw new Error('Failed to fetch time slots');
       const data = await response.json();
       setTimeSlots(data);
@@ -203,7 +204,7 @@ export default function JobProfilesPage() {
 
   const fetchAllTimeSlotLinks = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/time-slot-links');
+      const response = await fetchWithCSRF('/api/admin/time-slot-links');
       if (!response.ok) throw new Error('Failed to fetch time slot links');
       const data = await response.json();
       setAllTimeSlotLinks(data);
@@ -269,7 +270,7 @@ export default function JobProfilesPage() {
   const handleCreateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/admin/job-profiles', {
+      const response = await fetchWithCSRF('/api/admin/job-profiles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -295,7 +296,7 @@ export default function JobProfilesPage() {
     if (!selectedProfile) return;
 
     try {
-      const response = await fetch(
+      const response = await fetchWithCSRF(
         `/api/admin/job-profiles/${selectedProfile.id}`,
         {
           method: 'PUT',
@@ -330,7 +331,7 @@ export default function JobProfilesPage() {
       },
       async () => {
         try {
-          const response = await fetch(
+          const response = await fetchWithCSRF(
             `/api/admin/job-profiles/${profile.id}`,
             {
               method: 'DELETE',
@@ -357,7 +358,7 @@ export default function JobProfilesPage() {
     if (!selectedProfile) return;
 
     try {
-      const response = await fetch('/api/admin/invitations/send', {
+      const response = await fetchWithCSRF('/api/admin/invitations/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -402,7 +403,7 @@ export default function JobProfilesPage() {
     if (emails.length === 1) {
       // Single invitation
       try {
-        const response = await fetch('/api/admin/invitations/send', {
+        const response = await fetchWithCSRF('/api/admin/invitations/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -438,7 +439,7 @@ export default function JobProfilesPage() {
       }));
 
       try {
-        const response = await fetch('/api/admin/invitations/bulk', {
+        const response = await fetchWithCSRF('/api/admin/invitations/bulk', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -493,14 +494,17 @@ export default function JobProfilesPage() {
     if (emails.length === 1) {
       // Single invitation
       try {
-        const response = await fetch('/api/admin/invitations/send-link', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...data,
-            jobProfileName: selectedProfile.name,
-          }),
-        });
+        const response = await fetchWithCSRF(
+          '/api/admin/invitations/send-link',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...data,
+              jobProfileName: selectedProfile.name,
+            }),
+          }
+        );
 
         if (!response.ok) {
           const error = await response.json();
@@ -531,18 +535,21 @@ export default function JobProfilesPage() {
       }));
 
       try {
-        const response = await fetch('/api/admin/invitations/bulk-link', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jobProfileName: selectedProfile.name,
-            candidates,
-            linkUrl: data.linkUrl,
-            linkType: data.linkType,
-            customMessage: data.customMessage,
-            timeSlotInfo: data.timeSlotInfo,
-          }),
-        });
+        const response = await fetchWithCSRF(
+          '/api/admin/invitations/bulk-link',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              jobProfileName: selectedProfile.name,
+              candidates,
+              linkUrl: data.linkUrl,
+              linkType: data.linkType,
+              customMessage: data.customMessage,
+              timeSlotInfo: data.timeSlotInfo,
+            }),
+          }
+        );
 
         if (!response.ok) {
           const error = await response.json();
@@ -567,7 +574,7 @@ export default function JobProfilesPage() {
 
   const handleGeneratePublicLink = async (profileId: string) => {
     try {
-      const response = await fetch(
+      const response = await fetchWithCSRF(
         `/api/admin/job-profiles/${profileId}/public-link`,
         {
           method: 'POST',
@@ -615,7 +622,7 @@ export default function JobProfilesPage() {
     timeSlotId: string
   ) => {
     try {
-      const response = await fetch(
+      const response = await fetchWithCSRF(
         `/api/admin/job-profiles/${profileId}/time-slot-link`,
         {
           method: 'POST',
@@ -657,7 +664,7 @@ export default function JobProfilesPage() {
     if (!selectedProfile) return;
 
     try {
-      const response = await fetch('/api/admin/time-slots', {
+      const response = await fetchWithCSRF('/api/admin/time-slots', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -699,7 +706,7 @@ export default function JobProfilesPage() {
           ? `/api/public-test-links/admin/${linkId}`
           : `/api/admin/time-slot-links?linkId=${linkId}`;
 
-      const response = await fetch(endpoint, { method: 'DELETE' });
+      const response = await fetchWithCSRF(endpoint, { method: 'DELETE' });
 
       if (!response.ok) {
         const error = await response.json();
@@ -729,7 +736,7 @@ export default function JobProfilesPage() {
         throw new Error('Link not found');
       }
 
-      const response = await fetch(
+      const response = await fetchWithCSRF(
         `/api/public-test-links/${link.linkToken}/toggle`,
         {
           method: 'PUT',

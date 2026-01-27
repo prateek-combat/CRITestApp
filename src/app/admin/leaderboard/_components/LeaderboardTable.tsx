@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useCompareStore } from '@/lib/compareStore';
 import {
   ChevronUp,
@@ -267,9 +268,12 @@ export default function LeaderboardTable({
 
     setDeletingAttemptId(attemptId);
     try {
-      const response = await fetch(`/api/admin/test-attempts/${attemptId}`, {
-        method: 'DELETE',
-      });
+      const response = await fetchWithCSRF(
+        `/api/admin/test-attempts/${attemptId}`,
+        {
+          method: 'DELETE',
+        }
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -292,13 +296,16 @@ export default function LeaderboardTable({
     try {
       setExportingPdf(attemptId);
 
-      const response = await fetch('/api/admin/leaderboard/export-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ attemptId }),
-      });
+      const response = await fetchWithCSRF(
+        '/api/admin/leaderboard/export-pdf',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ attemptId }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error('Failed to generate PDF');
@@ -331,16 +338,19 @@ export default function LeaderboardTable({
       const top20 = data.rows.slice(0, 20);
       const attemptIds = top20.map((row) => row.attemptId);
 
-      const response = await fetch('/api/admin/leaderboard/export-bulk-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          attemptIds,
-          positionName: 'Top 20 Leaderboard',
-        }),
-      });
+      const response = await fetchWithCSRF(
+        '/api/admin/leaderboard/export-bulk-pdf',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            attemptIds,
+            positionName: 'Top 20 Leaderboard',
+          }),
+        }
+      );
 
       if (!response.ok) {
         throw new Error('Failed to generate leaderboard PDF');
@@ -379,7 +389,7 @@ export default function LeaderboardTable({
       });
 
       // Fetch Excel file from the API endpoint
-      const response = await fetch(
+      const response = await fetchWithCSRF(
         `/api/admin/leaderboard/export-excel?${params.toString()}`
       );
 

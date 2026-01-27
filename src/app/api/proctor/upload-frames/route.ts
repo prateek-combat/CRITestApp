@@ -110,7 +110,5 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to upload frames' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

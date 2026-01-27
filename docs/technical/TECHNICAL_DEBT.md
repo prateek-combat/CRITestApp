@@ -6,8 +6,8 @@ This document tracks technical debt, TODOs, and areas for improvement in the cod
 
 ### High Priority
 1. **Admin Authentication** - `src/app/api/admin/analytics/personality/route.ts` ✅ COMPLETED
-   - Implemented proper admin authentication using reusable middleware
-   - Created `src/lib/auth-middleware.ts` for consistent auth checks across all admin routes
+   - Implemented proper admin authentication using middleware and per-route checks
+   - CSRF validation now enforced for protected API routes
 
 ### Medium Priority
 2. **Image Display Feature** - `src/app/test/attempt/[id]/page.tsx` ✅ COMPLETED
@@ -31,8 +31,8 @@ This document tracks technical debt, TODOs, and areas for improvement in the cod
 
 ### Refactoring Opportunities
 1. **Risk Calculation Logic** - Duplicated in multiple files
-   - Create shared utility: `src/lib/risk-calculator.ts`
-   - Affected files: Multiple proctoring-related files
+   - Centralize on worker-only scoring and remove app-side scoring logic
+   - Affected files: Proctoring analysis endpoints and worker
 
 2. **Email Template Generation** - Repeated HTML generation
    - Extract to template system
@@ -75,7 +75,7 @@ This document tracks technical debt, TODOs, and areas for improvement in the cod
 ## Action Items
 - [x] Implement admin authentication for all admin routes - Created reusable middleware
 - [ ] Add missing edit/delete functionality
-- [x] Refactor duplicated code into shared utilities - Created risk calculator and email templates
+- [x] Refactor duplicated code into shared utilities - Email templates centralized; risk scoring now worker-only
 - [x] Update all localhost references to use constants - Partially complete
 - [ ] Add comprehensive test coverage
 - [ ] Implement proper error tracking
@@ -106,9 +106,7 @@ This document tracks technical debt, TODOs, and areas for improvement in the cod
 - ✅ Created environment variable validation
 - ✅ Created constants file for centralized configuration
 - ✅ Enhanced pre-commit hooks with quality checks
-- ✅ Created shared risk calculator utility
 - ✅ Created email template system
-- ✅ Implemented admin authentication middleware
 - ✅ Updated package.json with utility scripts
 - ✅ Cleaned up dependencies (reduced package-lock.json size)
 

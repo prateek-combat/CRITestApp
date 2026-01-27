@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -46,7 +47,7 @@ export default function ArchivedTestsPage() {
 
   const fetchArchivedTests = async () => {
     try {
-      const response = await fetch('/api/tests/archived');
+      const response = await fetchWithCSRF('/api/tests/archived');
       if (response.ok) {
         const data = await response.json();
         setArchivedTests(data);
@@ -71,7 +72,7 @@ export default function ArchivedTestsPage() {
 
     setRestoringTestId(testId);
     try {
-      const response = await fetch(`/api/tests/${testId}/restore`, {
+      const response = await fetchWithCSRF(`/api/tests/${testId}/restore`, {
         method: 'POST',
       });
 
@@ -116,7 +117,7 @@ export default function ArchivedTestsPage() {
 
     setDeletingTestId(testId);
     try {
-      const response = await fetch(`/api/tests/${testId}`, {
+      const response = await fetchWithCSRF(`/api/tests/${testId}`, {
         method: 'DELETE',
       });
 

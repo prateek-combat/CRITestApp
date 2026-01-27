@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useState, useEffect } from 'react';
 import { useCompareStore } from '@/lib/compareStore';
 import { X } from 'lucide-react';
@@ -49,7 +50,7 @@ export default function CompareDrawer() {
       setError(null);
 
       try {
-        const response = await fetch('/api/admin/compare', {
+        const response = await fetchWithCSRF('/api/admin/compare', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

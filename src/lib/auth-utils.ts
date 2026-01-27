@@ -1,3 +1,4 @@
+import { fetchWithCSRF } from '@/lib/csrf';
 import { signOut } from 'next-auth/react';
 import { clearAllClientStorage } from './secure-storage';
 
@@ -10,7 +11,7 @@ export async function performSecureLogout() {
     clearAllClientStorage();
 
     // Call custom logout endpoint to clear server-side cookies
-    await fetch('/api/auth/logout', {
+    await fetchWithCSRF('/api/auth/logout', {
       method: 'POST',
       credentials: 'include',
     });

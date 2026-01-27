@@ -1,3 +1,4 @@
+import { fetchWithCSRF } from '@/lib/csrf';
 import { proctorLogger } from '../logger';
 import { useState, useRef, useCallback, useEffect } from 'react';
 
@@ -246,7 +247,7 @@ export async function stopAndUpload(
         );
       });
 
-      const response = await fetch('/api/proctor/upload-frames', {
+      const response = await fetchWithCSRF('/api/proctor/upload-frames', {
         method: 'POST',
         body: formData,
       });
@@ -321,7 +322,7 @@ export function uploadFramesInBackground(
           );
         });
 
-        const response = await fetch('/api/proctor/upload-frames', {
+        const response = await fetchWithCSRF('/api/proctor/upload-frames', {
           method: 'POST',
           body: formData,
         });
@@ -456,7 +457,7 @@ function uploadPendingFrames(session: RecordingSession, attemptId: string) {
         );
       });
 
-      const response = await fetch('/api/proctor/upload-frames', {
+      const response = await fetchWithCSRF('/api/proctor/upload-frames', {
         method: 'POST',
         body: formData,
       });

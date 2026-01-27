@@ -1,3 +1,4 @@
+import { fetchWithCSRF } from '@/lib/csrf';
 import { logger } from '@/lib/logger';
 
 const WEBHOOK_URL = process.env.TEST_RESULTS_WEBHOOK_URL;
@@ -29,7 +30,7 @@ export async function notifyTestResultsWebhook(
   }
 
   try {
-    const response = await fetch(WEBHOOK_URL, {
+    const response = await fetchWithCSRF(WEBHOOK_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

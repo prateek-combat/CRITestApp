@@ -1,3 +1,4 @@
+import { fetchWithCSRF } from '@/lib/csrf';
 /**
  * Fetch with automatic retry logic for network failures
  */
@@ -15,7 +16,7 @@ export async function fetchWithRetry(
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-      const response = await fetch(url, {
+      const response = await fetchWithCSRF(url, {
         ...options,
         signal: controller.signal,
       });

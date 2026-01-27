@@ -7,7 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
 const CSRF_TOKEN_LENGTH = 32;
-const CSRF_COOKIE_NAME = '__Host-csrf-token';
+export const CSRF_COOKIE_NAME =
+  process.env.NODE_ENV === 'production' ? '__Host-csrf-token' : 'csrf-token';
 const CSRF_HEADER_NAME = 'x-csrf-token';
 const CSRF_TOKEN_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -41,7 +42,7 @@ export function setCSRFCookie(response: NextResponse, token: string): void {
   response.cookies.set({
     name: CSRF_COOKIE_NAME,
     value: token,
-    httpOnly: true,
+    httpOnly: false,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
     path: '/',

@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -86,7 +87,7 @@ export default function PositionsPage() {
   // Fetch data
   const fetchPositions = useCallback(async () => {
     try {
-      const response = await fetch(
+      const response = await fetchWithCSRF(
         '/api/admin/positions?includeTestCount=true'
       );
       if (!response.ok) throw new Error('Failed to fetch positions');
@@ -101,7 +102,7 @@ export default function PositionsPage() {
 
   const fetchTests = useCallback(async () => {
     try {
-      const response = await fetch('/api/tests');
+      const response = await fetchWithCSRF('/api/tests');
       if (!response.ok) throw new Error('Failed to fetch tests');
       const data = await response.json();
       setTests(data);
@@ -128,7 +129,7 @@ export default function PositionsPage() {
     setProcessing(true);
 
     try {
-      const response = await fetch('/api/admin/positions', {
+      const response = await fetchWithCSRF('/api/admin/positions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -158,7 +159,7 @@ export default function PositionsPage() {
     setProcessing(true);
 
     try {
-      const response = await fetch(
+      const response = await fetchWithCSRF(
         `/api/admin/positions/${selectedPosition.id}`,
         {
           method: 'PUT',
@@ -196,9 +197,12 @@ export default function PositionsPage() {
     setProcessing(true);
 
     try {
-      const response = await fetch(`/api/admin/positions/${position.id}`, {
-        method: 'DELETE',
-      });
+      const response = await fetchWithCSRF(
+        `/api/admin/positions/${position.id}`,
+        {
+          method: 'DELETE',
+        }
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -224,7 +228,7 @@ export default function PositionsPage() {
       // Update each selected test
       await Promise.all(
         selectedTestIds.map((testId) =>
-          fetch(`/api/tests/${testId}`, {
+          fetchWithCSRF(`/api/tests/${testId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ positionId: selectedPosition.id }),

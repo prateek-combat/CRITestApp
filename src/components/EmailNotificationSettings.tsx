@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useState, useEffect } from 'react';
 import { X, Plus, Mail, Settings, Users, BarChart3 } from 'lucide-react';
 
@@ -47,7 +48,9 @@ export default function EmailNotificationSettings({
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/tests/${testId}/notifications`);
+      const response = await fetchWithCSRF(
+        `/api/tests/${testId}/notifications`
+      );
       if (response.ok) {
         const data = await response.json();
         setSettings(data);
@@ -65,13 +68,16 @@ export default function EmailNotificationSettings({
     setSaving(true);
     setError(null);
     try {
-      const response = await fetch(`/api/tests/${testId}/notifications`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(settings),
-      });
+      const response = await fetchWithCSRF(
+        `/api/tests/${testId}/notifications`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(settings),
+        }
+      );
 
       if (response.ok) {
         onSave?.();

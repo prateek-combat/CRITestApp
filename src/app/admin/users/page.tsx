@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -48,7 +49,7 @@ export default function AdminUsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/admin/users');
+      const response = await fetchWithCSRF('/api/admin/users');
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
@@ -74,7 +75,7 @@ export default function AdminUsersPage() {
     setMessage('');
 
     try {
-      const response = await fetch('/api/admin/users', {
+      const response = await fetchWithCSRF('/api/admin/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -101,7 +102,7 @@ export default function AdminUsersPage() {
 
   const handleRoleChange = async (userId: string, newRole: string) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      const response = await fetchWithCSRF(`/api/admin/users/${userId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -124,7 +125,7 @@ export default function AdminUsersPage() {
   const handleDeleteUser = async (userId: string) => {
     setDeletingUserId(userId);
     try {
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      const response = await fetchWithCSRF(`/api/admin/users/${userId}`, {
         method: 'DELETE',
       });
 

@@ -133,7 +133,5 @@ export async function POST(
       { error: 'Failed to create public links' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

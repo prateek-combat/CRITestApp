@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useState, useEffect } from 'react';
 // Define question categories locally to avoid Prisma client issues
 const QUESTION_CATEGORIES = [
@@ -117,7 +118,7 @@ export default function ManageTestsPage() {
     setIsLoadingTests(true);
     setErrorTests(null);
     try {
-      const response = await fetch('/api/tests'); // This endpoint returns _count.questions
+      const response = await fetchWithCSRF('/api/tests'); // This endpoint returns _count.questions
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to fetch tests');
@@ -137,7 +138,7 @@ export default function ManageTestsPage() {
     setIsLoadingSelectedTest(true);
     setErrorSelectedTest(null);
     try {
-      const response = await fetch(`/api/tests/${testId}`);
+      const response = await fetchWithCSRF(`/api/tests/${testId}`);
       if (!response.ok)
         throw new Error(
           (await response.json()).message || 'Failed to fetch test details'
@@ -171,7 +172,7 @@ export default function ManageTestsPage() {
     setIsCreatingTest(true);
     setErrorCreateTest(null);
     try {
-      const response = await fetch('/api/tests', {
+      const response = await fetchWithCSRF('/api/tests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -260,7 +261,7 @@ export default function ManageTestsPage() {
     setIsAddingQuestion(true);
     setErrorAddQuestion(null);
     try {
-      const response = await fetch('/api/questions', {
+      const response = await fetchWithCSRF('/api/questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -312,7 +313,7 @@ export default function ManageTestsPage() {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7); // Expires in 7 days
 
-      const response = await fetch('/api/invitations', {
+      const response = await fetchWithCSRF('/api/invitations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -355,7 +356,7 @@ export default function ManageTestsPage() {
     setDeletingTestId(testId);
     setErrorTests(null); // Clear previous general test errors
     try {
-      const response = await fetch(`/api/tests/${testId}`, {
+      const response = await fetchWithCSRF(`/api/tests/${testId}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -584,7 +585,7 @@ export default function ManageTestsPage() {
                                   )
                                 ) {
                                   try {
-                                    const response = await fetch(
+                                    const response = await fetchWithCSRF(
                                       `/api/questions/${q.id}`,
                                       {
                                         method: 'DELETE',

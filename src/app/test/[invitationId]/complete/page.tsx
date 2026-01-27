@@ -1,5 +1,6 @@
 'use client';
 
+import { fetchWithCSRF } from '@/lib/csrf';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -15,7 +16,7 @@ export default function TestCompletePage() {
     const fetchBasicInfo = async () => {
       try {
         // Only fetch basic info for personalization, no scores
-        const response = await fetch(
+        const response = await fetchWithCSRF(
           `/api/test-attempts?invitationId=${invitationId}`
         );
         if (response.ok) {

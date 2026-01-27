@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { QuestionCategory } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
 
 /**
  * @swagger
@@ -24,6 +25,14 @@ import { prisma } from '@/lib/prisma';
  */
 export async function GET() {
   try {
+    const session = await auth();
+    if (
+      !session?.user ||
+      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
+    ) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const questions = await prisma.question.findMany();
     // No mapping needed, Prisma returns timerSeconds as per schema
     return NextResponse.json(questions);
@@ -68,6 +77,14 @@ export async function GET() {
  */
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    if (
+      !session?.user ||
+      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
+    ) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       promptText,

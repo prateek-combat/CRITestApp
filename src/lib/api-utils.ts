@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateCSRFToken } from './csrf';
+import {
+  generateCSRFToken,
+  getCSRFTokenFromCookie,
+  setCSRFCookie,
+  validateCSRFToken,
+} from './csrf';
 import { getToken } from 'next-auth/jwt';
 
 export type ApiHandler = (
@@ -31,22 +36,36 @@ export function withApiProtection(handler: ApiHandler) {
       response.headers.set('X-Content-Type-Options', 'nosniff');
       response.headers.set('X-Frame-Options', 'DENY');
 
+      // Ensure authenticated users have a CSRF cookie
+      const token = await getToken({
+        req,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+      if (token && !getCSRFTokenFromCookie(req)) {
+        setCSRFCookie(response, generateCSRFToken());
+      }
+
       return response;
     } catch (error) {
       console.error('API error:', error);
 
       // Don't expose internal errors in production
-      if (process.env.NODE_ENV === 'production') {
-        return NextResponse.json(
-          { error: 'Internal server error' },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : 'Unknown error' },
+      const response = NextResponse.json(
+        {
+          error:
+            process.env.NODE_ENV === 'production'
+              ? 'Internal server error'
+              : error instanceof Error
+                ? error.message
+                : 'Unknown error',
+        },
         { status: 500 }
       );
+
+      response.headers.set('X-Content-Type-Options', 'nosniff');
+      response.headers.set('X-Frame-Options', 'DENY');
+
+      return response;
     }
   };
 }
