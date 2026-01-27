@@ -10,7 +10,7 @@ import {
 import { APP_URL } from '@/lib/constants';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 
 /**
  * @swagger
@@ -34,15 +34,11 @@ import { auth } from '@/lib/auth';
  */
 export async function GET() {
   try {
-    const session = await auth();
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
-
-    if (!['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    const session = admin.session;
 
     const invitations = await prisma.invitation.findMany({
       include: {
@@ -124,11 +120,11 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
+    const session = admin.session;
 
     if (!session.user.id) {
       return NextResponse.json(
@@ -143,10 +139,6 @@ export async function POST(request: NextRequest) {
 
     if (!actingUser) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    if (!['ADMIN', 'SUPER_ADMIN'].includes(actingUser.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await request.json();

@@ -1,19 +1,15 @@
+import { requireAdmin } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptionsSimple } from '@/lib/auth-simple';
 import { nanoid } from 'nanoid';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptionsSimple);
-
-    if (
-      !session?.user ||
-      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
+    const session = admin.session;
 
     const body = await request.json();
     const { jobProfileId, candidates, customMessage, expiresInDays } = body;

@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -10,13 +10,11 @@ export const revalidate = 0; // Disable caching
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (
-      !session?.user ||
-      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
+    const session = admin.session;
 
     const { searchParams } = new URL(request.url);
     const department = searchParams.get('department');
@@ -81,13 +79,11 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (
-      !session?.user ||
-      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
+    const session = admin.session;
 
     const body = await request.json();
     const { name, code, description, department, level } = body;

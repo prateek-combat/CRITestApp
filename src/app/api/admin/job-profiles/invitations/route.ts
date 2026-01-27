@@ -1,6 +1,5 @@
+import { requireAdmin } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptionsSimple } from '@/lib/auth-simple';
 import {
   sendJobProfileInvitationEmail,
   type JobProfileInvitationEmailData,
@@ -10,14 +9,11 @@ import { prisma } from '@/lib/prisma';
 // GET /api/admin/job-profiles/invitations - Get all job profile invitations
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptionsSimple);
-
-    if (
-      !session?.user ||
-      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
+    const session = admin.session;
 
     // Fetch all job profile invitations with related data
     const invitations = await prisma.jobProfileInvitation.findMany({
@@ -101,14 +97,11 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/job-profiles/invitations - Create job profile invitations
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptionsSimple);
-
-    if (
-      !session?.user ||
-      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
+    const session = admin.session;
 
     const body = await request.json();
     const {

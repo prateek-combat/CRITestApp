@@ -1,7 +1,6 @@
+import { requireAdmin } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptionsSimple } from '@/lib/auth-simple';
 import { logger } from '@/lib/logger';
 
 export async function GET(
@@ -9,9 +8,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptionsSimple);
-    if (!session || !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
 
     const jobProfile = await prisma.jobProfile.findUnique({
@@ -61,9 +60,9 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptionsSimple);
-    if (!session || !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
 
     const body = await request.json();
@@ -149,9 +148,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptionsSimple);
-    if (!session || !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
 
     // Check if job profile exists

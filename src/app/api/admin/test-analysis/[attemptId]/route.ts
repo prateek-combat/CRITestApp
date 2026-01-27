@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
@@ -8,7 +8,11 @@ export async function GET(
 ) {
   try {
     // Check authentication and admin access
-    const session = await auth();
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
+    }
+    const session = admin.session;
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

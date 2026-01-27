@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CategoryWeightService } from '@/lib/categoryWeightService';
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 
 /**
  * POST /api/admin/category-weights/[id]/set-default
@@ -11,12 +11,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (
-      !session?.user ||
-      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
 
     const { id } = await params;

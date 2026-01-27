@@ -1,6 +1,5 @@
+import { requireAdmin } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptionsSimple } from '@/lib/auth-simple';
 import { prisma } from '@/lib/prisma';
 
 // GET - Fetch email notification settings for a job profile
@@ -9,7 +8,11 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptionsSimple);
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
+    }
+    const session = admin.session;
 
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -71,7 +74,11 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptionsSimple);
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
+    }
+    const session = admin.session;
 
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

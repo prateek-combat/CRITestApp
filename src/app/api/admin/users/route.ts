@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 // GET /api/admin/users - List all admin users
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-
-    if (!session || !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
 
     const users = await prisma.user.findMany({
@@ -53,10 +52,14 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/users - Add new admin user
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
+    }
+    const session = admin.session;
 
     // Only SUPER_ADMIN can add new admins
-    if (!session || session.user.role !== 'SUPER_ADMIN') {
+    if (session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json(
         { message: 'Unauthorized - Super Admin required' },
         { status: 403 }

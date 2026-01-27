@@ -1,9 +1,15 @@
+import { requireAdmin } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
+    }
+
     const totalTests = await prisma.test.count();
     const activeTests = await prisma.test.count({
       where: { isArchived: false },

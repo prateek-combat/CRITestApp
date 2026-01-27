@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 interface RouteParams {
@@ -34,17 +34,14 @@ interface RouteParams {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     // Check authentication and SUPER_ADMIN access
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    const session = admin.session;
 
     // Only SUPER_ADMIN can restore tests
-    if (!user || user.role !== 'SUPER_ADMIN') {
+    if (session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json(
         { error: 'Insufficient permissions - SUPER_ADMIN required' },
         { status: 403 }

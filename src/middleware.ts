@@ -24,6 +24,7 @@ const protectedRoutes = {
 const publicRoutes = [
   '/api/auth',
   '/api/health',
+  '/api/internal/queue',
   '/api/public-test',
   '/api/public-test-attempts',
   '/api/public-test-links',

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { calculatePersonalityScores } from '@/lib/scoring/personalityScoring';
 
 export async function GET(
@@ -29,13 +29,9 @@ export async function GET(
 
     // If this is NOT a job profile invitation, require admin authentication
     if (!testAttempt.jobProfileInvitationId) {
-      const session = await auth();
-
-      if (
-        !session?.user ||
-        (session.user.role !== 'ADMIN' && session.user.role !== 'SUPER_ADMIN')
-      ) {
-        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+      const admin = await requireAdmin();
+      if ('response' in admin) {
+        return admin.response;
       }
     }
 

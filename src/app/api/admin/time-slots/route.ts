@@ -1,20 +1,16 @@
+import { requireAdmin } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptionsSimple } from '@/lib/auth-simple';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
 
 // GET /api/admin/time-slots - Get all time slots for a job profile
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptionsSimple);
-
-    if (
-      !session?.user ||
-      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
+    const session = admin.session;
 
     const { searchParams } = new URL(request.url);
     const jobProfileId = searchParams.get('jobProfileId');
@@ -112,14 +108,11 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/time-slots - Create a new time slot
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptionsSimple);
-
-    if (
-      !session?.user ||
-      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
+    const session = admin.session;
 
     const body = await request.json();
     const {
@@ -287,14 +280,11 @@ export async function POST(request: NextRequest) {
 // DELETE /api/admin/time-slots - Delete a time slot
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptionsSimple);
-
-    if (
-      !session?.user ||
-      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
+    const session = admin.session;
 
     const { searchParams } = new URL(request.url);
     const timeSlotId = searchParams.get('timeSlotId');

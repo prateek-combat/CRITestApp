@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { authLogger } from '@/lib/logger';
 
@@ -10,12 +10,16 @@ export async function PATCH(
 ) {
   let session: any = null;
   try {
-    session = await auth();
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
+    }
+    session = admin.session;
 
     // Only SUPER_ADMIN can change user roles
-    if (!session || session.user.role !== 'SUPER_ADMIN') {
+    if (session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json(
-        { message: 'Unauthorized - Super Admin required' },
+        { message: 'SUPER_ADMIN access required' },
         { status: 403 }
       );
     }
@@ -94,12 +98,16 @@ export async function DELETE(
 ) {
   let session: any = null;
   try {
-    session = await auth();
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
+    }
+    session = admin.session;
 
     // Only SUPER_ADMIN can delete users
-    if (!session || session.user.role !== 'SUPER_ADMIN') {
+    if (session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json(
-        { message: 'Unauthorized - Super Admin required' },
+        { message: 'SUPER_ADMIN access required' },
         { status: 403 }
       );
     }

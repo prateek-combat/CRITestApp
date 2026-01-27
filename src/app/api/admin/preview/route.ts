@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getPreviewToken, deletePreviewToken } from '@/lib/preview-tokens';
 
@@ -27,7 +27,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Check authentication
-    const session = await auth();
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
+    }
+    const session = admin.session;
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

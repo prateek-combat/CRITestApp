@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { randomBytes } from 'crypto';
 import { createPreviewToken } from '@/lib/preview-tokens';
@@ -14,7 +14,11 @@ interface RouteParams {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     // Check authentication and admin access
-    const session = await auth();
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
+    }
+    const session = admin.session;
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

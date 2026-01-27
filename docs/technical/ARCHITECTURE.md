@@ -145,10 +145,12 @@ Frontend captures and reports:
 6. **Result Storage**: Events and scores saved to database
 
 **Queue Contract**:
+
 - Job payloads are versioned (`schemaVersion`) to allow safe evolution.
 - Worker queue access is encapsulated behind internal API endpoints.
 
 **Authoritative Scoring**:
+
 - Risk scoring is performed by the Python worker and stored in the database.
 - API routes and UI treat the stored score as the source of truth.
 
@@ -198,6 +200,25 @@ Frontend captures and reports:
 - **Vercel**: Frontend deployment (recommended)
 - **Neon**: PostgreSQL hosting
 - **GitHub**: Source code management
+
+## 🔐 Security Boundaries
+
+### Authentication & Authorization
+
+- **Admin APIs**: `/api/admin/*` endpoints require authenticated users with `ADMIN` or `SUPER_ADMIN` roles.
+- **Public flows**: `/api/public-test*` endpoints accept unauthenticated access for candidate flows.
+- **Worker APIs**: `/api/internal/queue/*` endpoints require `WORKER_API_TOKEN` and do not use session auth.
+
+### CSRF Protection
+
+- CSRF protection applies to authenticated, non-GET requests.
+- The double-submit cookie pattern is used with an explicit CSRF header.
+- Public candidate endpoints do not require CSRF tokens.
+
+### Internal Queue Contract
+
+- Job payloads include a `schemaVersion` for forward compatibility.
+- Worker access is rate-limited and token-protected.
 
 ## 🚀 Deployment Architecture
 

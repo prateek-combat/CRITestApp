@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { HtmlPdfReportGenerator } from '@/utils/htmlPdfReportGenerator';
 import { calculatePersonalityScores } from '@/lib/scoring/personalityScoring';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-
-    if (
-      !session?.user ||
-      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
 
     const { attemptId } = await request.json();

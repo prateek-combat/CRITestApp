@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withCache, apiCache } from '@/lib/cache';
 import { apiLogger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 
 /**
  * @swagger
@@ -26,13 +26,11 @@ import { auth } from '@/lib/auth';
  */
 export async function GET() {
   try {
-    const session = await auth();
-    if (
-      !session?.user ||
-      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
+    const session = admin.session;
 
     const cacheKey = 'tests:all';
 
@@ -117,13 +115,11 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   let title = '';
   try {
-    const session = await auth();
-    if (
-      !session?.user ||
-      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
+    const session = admin.session;
 
     const requestData = await request.json();
     title = requestData.title;

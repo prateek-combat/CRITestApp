@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { randomBytes } from 'crypto';
 
 const CSRF_TOKEN_LENGTH = 32;
 export const CSRF_COOKIE_NAME =
@@ -25,14 +26,8 @@ export function generateCSRFToken(): string {
       .join('');
   }
 
-  // Fallback for older environments
-  let token = '';
-  const chars =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  for (let i = 0; i < CSRF_TOKEN_LENGTH * 2; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return token;
+  // Server-side fallback for environments without Web Crypto
+  return randomBytes(CSRF_TOKEN_LENGTH).toString('hex');
 }
 
 /**
@@ -42,6 +37,7 @@ export function setCSRFCookie(response: NextResponse, token: string): void {
   response.cookies.set({
     name: CSRF_COOKIE_NAME,
     value: token,
+    // Double-submit cookie pattern requires JS access to send token in headers.
     httpOnly: false,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',

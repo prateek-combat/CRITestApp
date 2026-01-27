@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendReminderEmail, type ReminderEmailData } from '@/lib/email';
 import { prisma } from '@/lib/prisma';
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 
 /**
  * @swagger
@@ -40,12 +40,9 @@ import { auth } from '@/lib/auth';
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (
-      !session?.user ||
-      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
 
     const {

@@ -1,15 +1,19 @@
+import { requireAdmin } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { withCache, apiCache } from '@/lib/cache';
 import { apiLogger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
-
-
 
 /**
  * Admin endpoint to retrieve tests with additional admin-specific information
  */
 export async function GET() {
   try {
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
+    }
+
     const cacheKey = 'admin:tests:all';
 
     const tests = await withCache(

@@ -1,7 +1,6 @@
-import { fetchWithCSRF } from '@/lib/csrf';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 
 // Custom AI Service configuration
 // The AI service will be deployed on Google Cloud Platform
@@ -25,7 +24,7 @@ async function analyzeFrame(frameData: Buffer, frameId: string) {
     const base64Image = frameData.toString('base64');
 
     // Call your custom AI service
-    const response = await fetchWithCSRF(`${AI_SERVICE_URL}/analyze-frame`, {
+    const response = await fetch(`${AI_SERVICE_URL}/analyze-frame`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -131,7 +130,11 @@ export async function POST(
 ) {
   try {
     // Check authentication and admin access
-    const session = await auth();
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
+    }
+    const session = admin.session;
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }

@@ -1,4 +1,4 @@
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { CategoryWeightService } from '@/lib/categoryWeightService';
@@ -14,12 +14,9 @@ export const revalidate = 0; // Disable caching for this route
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (
-      !session?.user ||
-      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
 
     const { searchParams } = new URL(request.url);

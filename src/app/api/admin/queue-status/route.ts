@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { getQueueStatus } from '@/lib/queue';
 import { withLogging } from '@/lib/logging-middleware';
 import { apiLogger, authLogger } from '@/lib/logger';
@@ -9,18 +9,11 @@ async function handleGet(request: NextRequest) {
 
   try {
     // Check authentication
-    const session = await auth();
-    if (
-      !session?.user ||
-      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
-    ) {
-      authLogger.warn('Unauthorized queue status access attempt', {
-        userEmail: session?.user?.email || 'unknown',
-        userRole: session?.user?.role || 'none',
-        userAgent: request.headers.get('user-agent'),
-      });
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
+    const session = admin.session;
 
     authLogger.info('Queue status accessed', {
       userId: session.user.email,

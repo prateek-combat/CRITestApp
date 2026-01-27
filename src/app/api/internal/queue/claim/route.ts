@@ -5,8 +5,14 @@ import {
   PROCTOR_ANALYSIS_JOB_SCHEMA_VERSION,
 } from '@/lib/queue';
 import { requireWorkerAuth } from '@/lib/worker-auth';
+import { rateLimitConfigs, withRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
+  const rateLimited = await withRateLimit(request, rateLimitConfigs.sensitive);
+  if (rateLimited) {
+    return rateLimited;
+  }
+
   const auth = requireWorkerAuth(request);
   if (!auth.authorized) {
     return auth.response;

@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { QuestionCategory } from '@prisma/client';
 import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { prisma } from '@/lib/prisma';
 
@@ -112,20 +111,9 @@ export async function PUT(
 ) {
   try {
     // Check authentication and admin access
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions' },
-        { status: 403 }
-      );
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
 
     const { id } = await params;
@@ -239,20 +227,9 @@ export async function DELETE(
 ) {
   try {
     // Check authentication and admin access
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions' },
-        { status: 403 }
-      );
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
 
     const { id } = await params;

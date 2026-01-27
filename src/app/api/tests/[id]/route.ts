@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 import { apiCache } from '@/lib/cache';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/logger';
@@ -39,20 +39,9 @@ export async function GET(request: Request, { params }: RouteParams) {
   const { id } = await params;
   try {
     // Check authentication for admin access
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN')) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions - Admin access required' },
-        { status: 403 }
-      );
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
 
     const test = await prisma.test.findUnique({
@@ -192,17 +181,14 @@ export async function DELETE(request: Request, { params }: RouteParams) {
   const { id } = await params;
   try {
     // Check authentication and SUPER_ADMIN access
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    const session = admin.session;
 
     // Only SUPER_ADMIN can permanently delete tests
-    if (!user || user.role !== 'SUPER_ADMIN') {
+    if (session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json(
         {
           error:

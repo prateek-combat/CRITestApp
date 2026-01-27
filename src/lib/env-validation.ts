@@ -71,9 +71,12 @@ export function validateEnv(): RequiredEnvVars {
   if (hasAnyWorker) {
     const missingWorker = workerVars.filter((v) => !process.env[v]);
     if (missingWorker.length > 0) {
-      console.warn(
-        `Warning: Partial worker API configuration detected. Missing: ${missingWorker.join(', ')}`
-      );
+      const message = `Partial worker API configuration detected. Missing: ${missingWorker.join(', ')}`;
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error(message);
+      } else {
+        console.warn(`Warning: ${message}`);
+      }
     }
   }
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { CategoryWeightService } from '@/lib/categoryWeightService';
 import { CategoryWeights, validateCategoryWeights } from '@/types/categories';
 import { logger } from '@/lib/logger';
-import { auth } from '@/lib/auth';
+import { requireAdmin } from '@/lib/auth';
 
 /**
  * GET /api/admin/category-weights
@@ -10,12 +10,9 @@ import { auth } from '@/lib/auth';
  */
 export async function GET() {
   try {
-    const session = await auth();
-    if (
-      !session?.user ||
-      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
 
     const profiles = await CategoryWeightService.getAllProfiles();
@@ -52,12 +49,9 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (
-      !session?.user ||
-      !['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)
-    ) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await requireAdmin();
+    if ('response' in admin) {
+      return admin.response;
     }
 
     const body = await request.json();
