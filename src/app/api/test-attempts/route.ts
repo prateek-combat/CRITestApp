@@ -8,7 +8,6 @@ import { logger } from '@/lib/logger';
 
 import { prisma } from '@/lib/prisma';
 import { notifyTestResultsWebhook } from '@/lib/test-webhook';
-import { isMaintenanceMode, maintenanceErrorPayload } from '@/lib/maintenance';
 
 /**
  * @swagger
@@ -257,10 +256,6 @@ export async function POST(request: Request) {
             { message: 'All tests for this job profile are already completed' },
             { status: 400 }
           );
-        }
-
-        if (isMaintenanceMode()) {
-          return NextResponse.json(maintenanceErrorPayload, { status: 503 });
         }
 
         const newAttempt = await createJobProfileAttempt({
@@ -584,10 +579,6 @@ export async function POST(request: Request) {
 
     // If this is a new attempt
     if (!existingAttempt) {
-      if (isMaintenanceMode()) {
-        return NextResponse.json(maintenanceErrorPayload, { status: 503 });
-      }
-
       // Update invitation status to OPENED
       await prisma.invitation.update({
         where: { id: invitationId },

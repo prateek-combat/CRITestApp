@@ -27,7 +27,6 @@ export default function TestStartPage() {
 
   const [status, setStatus] = useState('loading');
   const [error, setError] = useState<string | null>(null);
-  const [isMaintenance, setIsMaintenance] = useState(false);
   const [testTitle, setTestTitle] = useState('');
   const [candidateName, setCandidateName] = useState('');
   const [candidateEmail, setCandidateEmail] = useState('');
@@ -65,7 +64,6 @@ export default function TestStartPage() {
 
   const handleStartTest = async () => {
     setStatus('starting');
-    setIsMaintenance(false);
     setError(null);
     try {
       if (isPublicAttempt) {
@@ -80,13 +78,10 @@ export default function TestStartPage() {
         });
         if (!response.ok) {
           let errorMessage = 'Failed to start the test. Please try again.';
-          let maintenanceMode = false;
           try {
             const errorData = await response.json();
             errorMessage = errorData.error || errorMessage;
-            maintenanceMode = errorData.code === 'MAINTENANCE';
           } catch {}
-          setIsMaintenance(maintenanceMode);
           setError(errorMessage);
           setStatus('error');
           return;
@@ -95,7 +90,6 @@ export default function TestStartPage() {
         router.push(`/test/attempt/${attempt.id}`);
       }
     } catch (err: any) {
-      setIsMaintenance(false);
       setError(err.message);
       setStatus('error');
     }
@@ -127,24 +121,17 @@ export default function TestStartPage() {
         );
 
       case 'error':
-        const ErrorIcon = isMaintenance ? Info : AlertTriangle;
         return (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             className="flex flex-col items-center gap-3 text-center"
           >
-            <div
-              className={`rounded-full p-3 ${isMaintenance ? 'bg-amber-100' : 'bg-red-100'}`}
-            >
-              <ErrorIcon
-                className={`h-8 w-8 ${isMaintenance ? 'text-amber-600' : 'text-red-500'}`}
-              />
+            <div className="rounded-full bg-red-100 p-3">
+              <AlertTriangle className="h-8 w-8 text-red-500" />
             </div>
-            <h2
-              className={`text-lg font-semibold ${isMaintenance ? 'text-amber-700' : 'text-red-700'}`}
-            >
-              {isMaintenance ? 'Under Maintenance' : 'Something went wrong'}
+            <h2 className="text-lg font-semibold text-red-700">
+              Something went wrong
             </h2>
             <p className="text-sm text-gray-600">{error}</p>
             <Button
