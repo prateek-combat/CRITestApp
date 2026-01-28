@@ -49,6 +49,7 @@ export default function JobProfileInvitationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [starting, setStarting] = useState(false);
+  const [isMaintenance, setIsMaintenance] = useState(false);
 
   useEffect(() => {
     if (invitationId) {
@@ -82,6 +83,7 @@ export default function JobProfileInvitationPage() {
 
     setStarting(true);
     setError('');
+    setIsMaintenance(false);
 
     try {
       const response = await fetchWithCSRF('/api/test-attempts', {
@@ -99,11 +101,19 @@ export default function JobProfileInvitationPage() {
         const data = await response.json();
         router.push(`/test/attempt/${data.id}?type=job_profile`);
       } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to start assessment');
+        let errorMessage = 'Failed to start assessment';
+        let maintenanceMode = false;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+          maintenanceMode = errorData.code === 'MAINTENANCE';
+        } catch {}
+        setIsMaintenance(maintenanceMode);
+        setError(errorMessage);
       }
     } catch (error) {
       console.error('Error starting assessment:', error);
+      setIsMaintenance(false);
       setError('Failed to start assessment');
     } finally {
       setStarting(false);
@@ -233,8 +243,21 @@ export default function JobProfileInvitationPage() {
         </div>
 
         {error && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
-            <p className="text-sm text-red-700">{error}</p>
+          <div
+            className={`mb-4 rounded-lg border p-4 ${
+              isMaintenance
+                ? 'border-amber-200 bg-amber-50'
+                : 'border-red-200 bg-red-50'
+            }`}
+          >
+            <p
+              className={`text-sm ${
+                isMaintenance ? 'text-amber-700' : 'text-red-700'
+              }`}
+            >
+              {isMaintenance ? 'Under maintenance: ' : ''}
+              {error}
+            </p>
           </div>
         )}
 

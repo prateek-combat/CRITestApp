@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { isMaintenanceMode, maintenanceErrorPayload } from '@/lib/maintenance';
 
 interface RouteParams {
   params: Promise<{ token: string }>;
@@ -14,6 +15,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   const startTime = Date.now();
 
   try {
+    if (isMaintenanceMode()) {
+      return NextResponse.json(maintenanceErrorPayload, { status: 503 });
+    }
+
     const { token } = await params;
     const body = await request.json();
     const { candidateName, candidateEmail } = body;

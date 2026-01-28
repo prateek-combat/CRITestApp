@@ -39,6 +39,7 @@ export default function PublicTestPage() {
   const [candidateName, setCandidateName] = useState('');
   const [candidateEmail, setCandidateEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [isMaintenance, setIsMaintenance] = useState(false);
 
   useEffect(() => {
     fetchPublicLink();
@@ -100,10 +101,12 @@ export default function PublicTestPage() {
         router.push(`/test/attempt/${data.attemptId}?type=public`);
       } else {
         const error = await response.json();
+        setIsMaintenance(error.code === 'MAINTENANCE');
         setError(error.error || 'Failed to start test');
       }
     } catch (error) {
       console.error('Error starting test:', error);
+      setIsMaintenance(false);
       setError('Failed to start test');
     } finally {
       setSubmitting(false);
@@ -122,17 +125,27 @@ export default function PublicTestPage() {
   }
 
   if (error) {
+    const isMaintenanceError =
+      isMaintenance || error.toLowerCase().includes('maintenance');
     const isTimeSlotError =
       error.includes('Time slot') || error.includes('time slot');
-    const errorIcon = isTimeSlotError ? '⏰' : '❌';
-    const errorColor = isTimeSlotError ? 'text-amber-500' : 'text-red-500';
+    const errorIcon = isMaintenanceError ? '🛠️' : isTimeSlotError ? '⏰' : '❌';
+    const errorColor = isMaintenanceError
+      ? 'text-amber-600'
+      : isTimeSlotError
+        ? 'text-amber-500'
+        : 'text-red-500';
 
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="w-full max-w-md rounded-lg bg-white p-8 text-center shadow-lg">
           <div className={`mb-4 text-6xl ${errorColor}`}>{errorIcon}</div>
           <h1 className="mb-2 text-2xl font-bold text-gray-900">
-            {isTimeSlotError ? 'Time Slot Restriction' : 'Access Denied'}
+            {isMaintenanceError
+              ? 'Under Maintenance'
+              : isTimeSlotError
+                ? 'Time Slot Restriction'
+                : 'Access Denied'}
           </h1>
           <p className="mb-4 text-gray-600">{error}</p>
 
@@ -152,8 +165,9 @@ export default function PublicTestPage() {
           )}
 
           <p className="text-sm text-gray-500">
-            Please contact the test administrator if you believe this is an
-            error.
+            {isMaintenanceError
+              ? 'Please try again later. No action is required.'
+              : 'Please contact the test administrator if you believe this is an error.'}
           </p>
         </div>
       </div>

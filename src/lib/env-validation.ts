@@ -17,6 +17,7 @@ export interface RequiredEnvVars {
   CUSTOM_AI_API_KEY?: string;
   WORKER_API_URL?: string;
   WORKER_API_TOKEN?: string;
+  MAINTENANCE_MODE?: string;
 }
 
 export function validateEnv(): RequiredEnvVars {
@@ -94,6 +95,7 @@ export function validateEnv(): RequiredEnvVars {
     CUSTOM_AI_API_KEY: process.env.CUSTOM_AI_API_KEY,
     WORKER_API_URL: process.env.WORKER_API_URL,
     WORKER_API_TOKEN: process.env.WORKER_API_TOKEN,
+    MAINTENANCE_MODE: process.env.MAINTENANCE_MODE,
   };
 }
 
