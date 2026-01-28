@@ -31,13 +31,16 @@ export default function RootLayout({
         />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Newsreader:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
         />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="icon" href="/favicon.ico" type="image/x-icon" />
         <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
       </head>
-      <body className="bg-gray-50 font-sans" suppressHydrationWarning>
+      <body
+        className="bg-parchment font-sans text-ink"
+        suppressHydrationWarning
+      >
         <Providers>
           {/* 
               Navigation for admin is handled by test-app/src/app/admin/layout.tsx.

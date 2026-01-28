@@ -3,27 +3,16 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+  --color-ink: 20 24 30;
+  --color-parchment: 246 241 234;
+  --color-copper: 154 78 42;
+  --color-moss: 78 94 61;
+  --color-slateblue: 54 64 80;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  color: rgb(var(--color-ink));
+  background-color: rgb(var(--color-parchment));
 }
 
 @layer utilities {
@@ -628,6 +617,25 @@ body {
 }
 
 /* Modern UI Effects */
+
+/* Atmospheric backgrounds */
+.bg-archive-wash {
+  background:
+    radial-gradient(1200px 600px at 12% -8%, rgba(154, 78, 42, 0.14), transparent 60%),
+    radial-gradient(900px 500px at 88% 10%, rgba(78, 94, 61, 0.18), transparent 55%);
+}
+
+.bg-archive-grid {
+  background-image:
+    linear-gradient(rgba(20, 24, 30, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20, 24, 30, 0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-position: -1px -1px;
+}
+
+.noise-overlay {
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxwYXRoIGQ9Ik0wIDBoMzAwdjMwMEgweiIgZmlsdGVyPSJ1cmwoI2EpIiBvcGFjaXR5PSIuMDUiLz48L3N2Zz4=");
+}
 
 /* Glass morphism */
 .glass {

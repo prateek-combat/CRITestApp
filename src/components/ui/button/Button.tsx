@@ -35,19 +35,19 @@ const Button: React.FC<ButtonProps> = ({
     xs: 'px-2 py-1 text-xs gap-1',
     sm: 'px-2.5 py-1.5 text-sm gap-1.5',
     md: 'px-3 py-2 text-sm gap-2',
-    lg: 'px-4 py-2.5 text-base gap-2',
+    lg: 'px-5 py-3 text-base gap-2 min-h-[44px]',
   };
 
   // Enhanced modern variant classes with premium styling
   const variantClasses = {
     primary:
-      'bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 text-white shadow-lg hover:shadow-xl hover:shadow-blue-500/25 hover:from-blue-700 hover:to-blue-900 active:scale-[0.98] disabled:from-gray-400 disabled:to-gray-500 disabled:shadow-none border border-blue-700/50 hover:border-blue-600',
+      'bg-ink text-parchment shadow-lg hover:bg-ink/90 hover:shadow-xl active:scale-[0.98] disabled:bg-ink/40 disabled:shadow-none border border-ink/80',
     outline:
-      'bg-white text-blue-600 border-2 border-blue-600 shadow-sm hover:bg-blue-50 hover:shadow-md hover:border-blue-700 active:scale-[0.98] disabled:text-gray-400 disabled:border-gray-300 disabled:shadow-none',
+      'bg-transparent text-ink border border-ink/30 shadow-sm hover:bg-ink/5 hover:border-ink/50 hover:shadow-md active:scale-[0.98] disabled:text-ink/40 disabled:border-ink/20 disabled:shadow-none',
     ghost:
-      'text-gray-700 bg-gray-50 border-2 border-gray-200 shadow-sm hover:bg-gray-100 hover:border-gray-300 hover:shadow-md active:scale-[0.98] disabled:text-gray-400 disabled:bg-gray-50 disabled:border-gray-200',
+      'text-ink/80 bg-transparent border border-transparent hover:bg-ink/5 hover:border-ink/10 hover:shadow-md active:scale-[0.98] disabled:text-ink/40 disabled:bg-transparent disabled:border-transparent',
     glass:
-      'backdrop-blur-md bg-white/80 text-blue-600 border border-white/50 shadow-lg hover:bg-white/90 hover:shadow-xl active:scale-[0.98] disabled:bg-white/60 disabled:text-gray-400 disabled:shadow-none',
+      'bg-parchment/70 text-ink border border-ink/15 shadow-lg hover:bg-parchment/90 hover:shadow-xl active:scale-[0.98] disabled:bg-parchment/50 disabled:text-ink/40 disabled:shadow-none',
   };
 
   const isDisabled = disabled || loading;
@@ -55,7 +55,7 @@ const Button: React.FC<ButtonProps> = ({
   return (
     <motion.button
       type={type}
-      className={`relative inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-military-green/50 focus:ring-offset-2 ${sizeClasses[size]} ${variantClasses[variant]} ${isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} ${fullWidth ? 'w-full' : ''} ${className} `}
+      className={`relative inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-copper/40 focus:ring-offset-2 ${sizeClasses[size]} ${variantClasses[variant]} ${isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} ${fullWidth ? 'w-full' : ''} ${className} `}
       onClick={onClick}
       disabled={isDisabled}
       whileHover={!isDisabled ? { scale: 1.02 } : {}}
@@ -72,8 +72,8 @@ const Button: React.FC<ButtonProps> = ({
           style={{
             background:
               variant === 'primary'
-                ? 'radial-gradient(circle, rgba(255,255,255,0.5) 0%, transparent 70%)'
-                : 'radial-gradient(circle, rgba(74,93,35,0.2) 0%, transparent 70%)',
+                ? 'radial-gradient(circle, rgba(246,241,234,0.6) 0%, transparent 70%)'
+                : 'radial-gradient(circle, rgba(154,78,42,0.18) 0%, transparent 70%)',
           }}
         />
       )}

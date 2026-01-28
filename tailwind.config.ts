@@ -26,6 +26,13 @@ const config: Config = {
         base: ['1rem', { lineHeight: '1.5rem' }], // 16px
       },
       colors: {
+        // Core brand tokens (CSS variables for easy theming)
+        ink: 'rgb(var(--color-ink) / <alpha-value>)',
+        parchment: 'rgb(var(--color-parchment) / <alpha-value>)',
+        copper: 'rgb(var(--color-copper) / <alpha-value>)',
+        moss: 'rgb(var(--color-moss) / <alpha-value>)',
+        slateblue: 'rgb(var(--color-slateblue) / <alpha-value>)',
+
         // Military theme colors
         'military-green': '#4A5D23', // Dark olive green
         'accent-orange': '#F5821F', // Bright orange
@@ -88,7 +95,14 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['"Space Grotesk"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['"Newsreader"', 'ui-serif', 'Georgia', 'serif'],
+        mono: [
+          '"JetBrains Mono"',
+          'ui-monospace',
+          'SFMono-Regular',
+          'monospace',
+        ],
       },
     },
   },

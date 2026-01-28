@@ -1,271 +1,345 @@
 'use client';
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import Button from '@/components/ui/button/Button';
-import Card from '@/components/ui/Card';
 import {
-  Zap,
-  Users,
-  BarChart3,
-  Shield,
-  Clock,
+  ShieldCheck,
+  Radar,
+  LineChart,
   Target,
   ChevronRight,
-  Sparkles,
+  ArrowUpRight,
+  ScanEye,
+  Shield,
 } from 'lucide-react';
 
 export default function HomePage() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const shouldReduceMotion = useReducedMotion();
 
   const fadeInUp = {
-    initial: { opacity: 0, y: 20 },
+    initial: shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.5 },
+    transition: { duration: shouldReduceMotion ? 0 : 0.6, ease: 'easeOut' },
   };
 
   const staggerChildren = {
     animate: {
       transition: {
-        staggerChildren: 0.1,
+        staggerChildren: shouldReduceMotion ? 0 : 0.08,
       },
     },
   };
 
-  const features = [
+  const pillars = [
     {
-      icon: Shield,
-      title: 'Secure Testing',
-      description: 'Military-grade security for your assessments',
-      color: 'text-military-green',
+      icon: ShieldCheck,
+      title: 'Security that feels invisible',
+      description:
+        'Identity checks, browser lockdown, and audit trails without slowing candidates down.',
+      meta: 'Integrity layer',
     },
     {
-      icon: Clock,
-      title: 'Real-time Analytics',
-      description: 'Track performance with live dashboards',
-      color: 'text-accent-orange',
+      icon: LineChart,
+      title: 'Scoring you can defend',
+      description:
+        'Weighted rubrics and variance tracking keep results fair, explainable, and consistent.',
+      meta: 'Evidence based',
     },
     {
       icon: Target,
-      title: 'Precise Evaluation',
-      description: 'Advanced scoring algorithms for accuracy',
-      color: 'text-military-green',
+      title: 'Built for hiring velocity',
+      description:
+        'Invite, monitor, and decide in hours, not days, with a workflow tuned for busy teams.',
+      meta: 'Speed without risk',
     },
     {
-      icon: Users,
-      title: 'Team Management',
-      description: 'Effortlessly manage candidates and teams',
-      color: 'text-accent-orange',
+      icon: Radar,
+      title: 'Live signal clarity',
+      description:
+        'Real-time anomaly flags and cohort benchmarks surface issues before they spread.',
+      meta: 'Operational control',
     },
   ];
 
-  if (!mounted) return null;
-
   return (
-    <div className="min-h-screen overflow-hidden bg-gradient-to-br from-gray-50 via-white to-gray-100">
-      {/* Animated background elements */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="bg-archive-wash absolute inset-0" />
+        <div className="bg-archive-grid absolute inset-0 opacity-40" />
+        <div className="noise-overlay absolute inset-0 opacity-20 mix-blend-multiply" />
         <motion.div
-          className="absolute -right-40 -top-40 h-80 w-80 rounded-full bg-military-green/5 blur-3xl"
-          animate={{
-            x: [0, 30, 0],
-            y: [0, -30, 0],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
+          className="absolute -right-32 -top-24 h-72 w-72 rounded-full bg-copper/15 blur-[90px]"
+          animate={
+            shouldReduceMotion
+              ? undefined
+              : {
+                  x: [0, 30, 0],
+                  y: [0, -30, 0],
+                }
+          }
+          transition={
+            shouldReduceMotion
+              ? undefined
+              : { duration: 18, repeat: Infinity, ease: 'easeInOut' }
+          }
         />
         <motion.div
-          className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-accent-orange/5 blur-3xl"
-          animate={{
-            x: [0, -30, 0],
-            y: [0, 30, 0],
-          }}
-          transition={{
-            duration: 15,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
+          className="absolute -bottom-24 -left-28 h-80 w-80 rounded-full bg-moss/20 blur-[100px]"
+          animate={
+            shouldReduceMotion
+              ? undefined
+              : {
+                  x: [0, -25, 0],
+                  y: [0, 25, 0],
+                }
+          }
+          transition={
+            shouldReduceMotion
+              ? undefined
+              : { duration: 22, repeat: Infinity, ease: 'easeInOut' }
+          }
         />
       </div>
 
-      {/* Hero Section */}
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-16">
-        <motion.div
-          className="w-full max-w-6xl"
-          initial="initial"
-          animate="animate"
-          variants={staggerChildren}
-        >
-          {/* Main Hero Content */}
-          <div className="mb-16 text-center">
-            <motion.div variants={fadeInUp} className="mb-6 inline-flex">
-              <div className="relative">
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-military-green to-accent-orange opacity-50 blur-xl"
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    opacity: [0.5, 0.8, 0.5],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                />
-                <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-military-green to-primary-600 shadow-2xl">
-                  <Zap className="h-10 w-10 text-white" />
-                </div>
+      <motion.div
+        className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-16 pt-8"
+        initial="initial"
+        animate="animate"
+        variants={staggerChildren}
+      >
+        <header className="mb-12 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-ink/20 bg-parchment/80 shadow-sm">
+              <ScanEye className="h-6 w-6 text-ink" />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.34em] text-ink/60">
+                Assessment Control
+              </p>
+              <p className="font-display text-xl text-ink">CRITest Platform</p>
+            </div>
+          </div>
+          <div className="hidden items-center gap-3 md:flex">
+            <span className="rounded-full border border-ink/20 px-3 py-1 text-xs font-medium uppercase tracking-[0.22em] text-ink/60">
+              Admin Access Only
+            </span>
+            <Link href="/login">
+              <Button
+                size="sm"
+                variant="primary"
+                endIcon={<ChevronRight className="h-4 w-4" />}
+              >
+                Admin Login
+              </Button>
+            </Link>
+          </div>
+        </header>
+
+        <div className="grid flex-1 gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+          <motion.section variants={fadeInUp} className="space-y-8">
+            <div className="max-w-xl space-y-6">
+              <div className="inline-flex items-center gap-2 rounded-full border border-ink/20 bg-parchment/80 px-4 py-1 text-xs font-medium uppercase tracking-[0.2em] text-ink/60">
+                <Shield className="h-4 w-4 text-moss" />
+                Trusted exam security
               </div>
-            </motion.div>
+              <h1 className="font-display text-5xl leading-[1.02] text-ink md:text-6xl">
+                Make every test decision defensible, fast, and fair.
+              </h1>
+              <p className="text-lg leading-relaxed text-ink/70">
+                CRITest is the assessment command center for hiring teams that
+                need integrity without friction. Lead with evidence, not gut
+                feel, and ship results the same day.
+              </p>
+            </div>
 
-            <motion.h1
-              variants={fadeInUp}
-              className="mb-6 text-5xl font-bold tracking-tight text-gray-900 md:text-7xl"
-            >
-              Test Platform
-              <span className="gradient-text mt-2 block text-3xl md:text-4xl">
-                Next Generation Assessment
-              </span>
-            </motion.h1>
-
-            <motion.p
-              variants={fadeInUp}
-              className="mx-auto mb-12 max-w-2xl text-lg leading-relaxed text-gray-600 md:text-xl"
-            >
-              Experience the future of testing with our cutting-edge platform.
-              Secure, efficient, and designed for excellence.
-            </motion.p>
-
-            {/* CTA Buttons */}
-            <motion.div
-              variants={fadeInUp}
-              className="flex flex-col items-center justify-center gap-4 sm:flex-row"
-            >
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Link href="/login">
                 <Button
                   size="lg"
                   variant="primary"
                   endIcon={<ChevronRight className="h-5 w-5" />}
-                  className="min-w-[200px] shadow-lg"
+                  className="min-w-[220px]"
                 >
-                  Admin Login
+                  Enter Admin Console
                 </Button>
               </Link>
-
               <Button
                 size="lg"
-                variant="glass"
+                variant="outline"
                 disabled
-                startIcon={<Sparkles className="h-5 w-5" />}
-                className="min-w-[200px]"
+                endIcon={<ArrowUpRight className="h-5 w-5" />}
+                className="min-w-[220px]"
               >
-                User Portal
-                <span className="ml-2 text-xs opacity-75">Coming Soon</span>
+                Candidate Portal
+                <span className="ml-2 text-xs text-ink/50">Soon</span>
               </Button>
-            </motion.div>
-          </div>
+            </div>
 
-          {/* Features Grid */}
-          <motion.div
-            variants={staggerChildren}
-            className="mb-16 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4"
-          >
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                variants={fadeInUp}
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-              >
-                <Card variant="glass" className="h-full">
-                  <div className="flex flex-col items-center p-4 text-center">
-                    <div
-                      className={`mb-3 rounded-xl bg-white/50 p-3 ${feature.color}`}
-                    >
-                      <feature.icon className="h-6 w-6" />
+            <div className="grid gap-6 md:grid-cols-3">
+              {[
+                { label: 'Avg. decision time', value: '3.2 hrs' },
+                { label: 'Integrity score', value: '98.4%' },
+                { label: 'Invite completion', value: '91%' },
+              ].map((stat) => (
+                <div key={stat.label} className="space-y-2">
+                  <p className="text-xs uppercase tracking-[0.3em] text-ink/45">
+                    {stat.label}
+                  </p>
+                  <p className="font-display text-2xl text-ink">{stat.value}</p>
+                </div>
+              ))}
+            </div>
+          </motion.section>
+
+          <motion.aside variants={fadeInUp} className="space-y-6">
+            <div className="rounded-3xl border border-ink/10 bg-parchment/80 p-6 shadow-[0_20px_50px_rgba(20,24,30,0.08)]">
+              <div className="flex items-center justify-between">
+                <p className="text-xs uppercase tracking-[0.3em] text-ink/60">
+                  Integrity board
+                </p>
+                <span className="rounded-full bg-moss/15 px-3 py-1 text-xs font-semibold text-moss">
+                  Live
+                </span>
+              </div>
+              <div className="mt-6 space-y-4">
+                {[
+                  {
+                    label: 'Proctoring compliance',
+                    value: '98.7%',
+                    note: 'Stable',
+                    tone: 'text-moss',
+                  },
+                  {
+                    label: 'Anomaly flags',
+                    value: '0.6%',
+                    note: 'Below threshold',
+                    tone: 'text-copper',
+                  },
+                  {
+                    label: 'Score variance',
+                    value: '1.4 pts',
+                    note: 'Within range',
+                    tone: 'text-slateblue',
+                  },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex items-center justify-between border-b border-ink/10 pb-3 last:border-b-0 last:pb-0"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-ink">
+                        {item.label}
+                      </p>
+                      <p
+                        className={`text-xs uppercase tracking-[0.2em] ${item.tone}`}
+                      >
+                        {item.note}
+                      </p>
                     </div>
-                    <h3 className="mb-2 font-semibold text-gray-900">
-                      {feature.title}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      {feature.description}
+                    <p className="font-display text-xl text-ink">
+                      {item.value}
                     </p>
                   </div>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          {/* Stats Section */}
-          <motion.div
-            variants={fadeInUp}
-            className="gradient-border-green-orange rounded-2xl p-[1px]"
-          >
-            <div className="rounded-2xl bg-white p-8">
-              <div className="grid grid-cols-1 gap-8 text-center md:grid-cols-3">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ type: 'spring', stiffness: 300 }}
-                >
-                  <motion.div
-                    className="gradient-text mb-2 text-4xl font-bold"
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.5, duration: 0.5 }}
-                  >
-                    10K+
-                  </motion.div>
-                  <p className="text-gray-600">Tests Conducted</p>
-                </motion.div>
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ type: 'spring', stiffness: 300 }}
-                >
-                  <motion.div
-                    className="gradient-text mb-2 text-4xl font-bold"
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.7, duration: 0.5 }}
-                  >
-                    98%
-                  </motion.div>
-                  <p className="text-gray-600">Success Rate</p>
-                </motion.div>
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ type: 'spring', stiffness: 300 }}
-                >
-                  <motion.div
-                    className="gradient-text mb-2 text-4xl font-bold"
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.9, duration: 0.5 }}
-                  >
-                    500+
-                  </motion.div>
-                  <p className="text-gray-600">Organizations</p>
-                </motion.div>
+                ))}
               </div>
             </div>
-          </motion.div>
 
-          {/* Footer */}
-          <motion.div variants={fadeInUp} className="mt-16 text-center">
-            <p className="text-sm text-gray-500">
-              For administrators: Access the admin panel to manage tests,
-              invitations, and analytics
+            <div className="rounded-3xl border border-ink/10 bg-ink/95 p-6 text-parchment shadow-[0_20px_40px_rgba(20,24,30,0.18)]">
+              <p className="text-xs uppercase tracking-[0.3em] text-parchment/60">
+                Workflow map
+              </p>
+              <div className="mt-5 space-y-5">
+                {[
+                  {
+                    step: '01',
+                    title: 'Invite & verify',
+                    detail: 'ID + environment checks before launch.',
+                  },
+                  {
+                    step: '02',
+                    title: 'Monitor & annotate',
+                    detail: 'Real-time flags, notes, and reviewer swaps.',
+                  },
+                  {
+                    step: '03',
+                    title: 'Score & defend',
+                    detail: 'Weighted rubrics with audit-ready output.',
+                  },
+                ].map((item) => (
+                  <div key={item.step} className="flex items-start gap-4">
+                    <span className="font-mono text-xs text-parchment/50">
+                      {item.step}
+                    </span>
+                    <div>
+                      <p className="text-base font-semibold text-parchment">
+                        {item.title}
+                      </p>
+                      <p className="text-sm text-parchment/70">{item.detail}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.aside>
+        </div>
+
+        <motion.section
+          variants={fadeInUp}
+          className="mt-16 grid gap-8 border-t border-ink/10 pt-12 lg:grid-cols-[0.9fr_1.1fr]"
+        >
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-ink/50">
+              Why teams stick
             </p>
-          </motion.div>
+            <h2 className="mt-4 font-display text-3xl text-ink">
+              Less guesswork, more evidence.
+            </h2>
+            <p className="mt-4 text-lg text-ink/70">
+              We built CRITest for real hiring pressure: limited time, high
+              stakes, and accountability. The platform keeps attention on the
+              decision, not the tool.
+            </p>
+          </div>
+          <div className="space-y-6">
+            {pillars.map((pillar) => (
+              <div
+                key={pillar.title}
+                className="flex items-start gap-4 border-l border-ink/20 pl-5"
+              >
+                <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-parchment shadow-sm ring-1 ring-ink/10">
+                  <pillar.icon className="h-5 w-5 text-ink" />
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-ink/50">
+                    {pillar.meta}
+                  </p>
+                  <h3 className="text-lg font-semibold text-ink">
+                    {pillar.title}
+                  </h3>
+                  <p className="text-sm text-ink/70">{pillar.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.section>
+
+        <motion.div
+          variants={fadeInUp}
+          className="mt-12 flex flex-col items-start justify-between gap-4 border-t border-ink/10 pt-8 text-sm text-ink/60 md:flex-row"
+        >
+          <p>
+            For administrators: manage tests, invitations, and analytics from a
+            single console.
+          </p>
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 text-ink"
+          >
+            Go to admin login <ChevronRight className="h-4 w-4" />
+          </Link>
         </motion.div>
-      </div>
+      </motion.div>
     </div>
   );
 }
