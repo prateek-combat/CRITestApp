@@ -236,8 +236,8 @@ export default function ProctorAnalysisPage() {
     if (score >= 2.5 && score <= 5)
       return { label: 'Medium Risk', color: 'text-yellow-600 bg-yellow-100' };
     if (score < 2.5)
-      return { label: 'Low Risk', color: 'text-green-600 bg-green-100' };
-    return { label: 'Low Risk', color: 'text-green-600 bg-green-100' };
+      return { label: 'Low Risk', color: 'text-moss bg-moss/12' };
+    return { label: 'Low Risk', color: 'text-moss bg-moss/12' };
   };
 
   const getEventIcon = (type: string) => {
@@ -273,8 +273,8 @@ export default function ProctorAnalysisPage() {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-military-green"></div>
-          <p className="text-text-light">Loading proctoring analysis...</p>
+          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-moss"></div>
+          <p className="text-ink/60">Loading proctoring analysis...</p>
         </div>
       </div>
     );
@@ -285,10 +285,10 @@ export default function ProctorAnalysisPage() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <h1 className="mb-4 text-2xl font-bold text-red-600">Error</h1>
-          <p className="text-text-light">{error || 'No data found'}</p>
+          <p className="text-ink/60">{error || 'No data found'}</p>
           <Link
             href="/admin/analytics"
-            className="mt-4 inline-block text-military-green hover:underline"
+            className="mt-4 inline-block text-moss hover:underline"
           >
             ← Back to Analytics
           </Link>
@@ -350,16 +350,16 @@ export default function ProctorAnalysisPage() {
   const isSuperAdmin = session?.user?.role === 'SUPER_ADMIN';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-parchment">
       {/* Header */}
-      <div className="bg-white shadow-sm">
+      <div className="bg-parchment/80 shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-ink">
                 Proctoring Analysis
               </h1>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-ink/50">
                 {testAttempt.test.title} - {testAttempt.candidateName}
               </p>
             </div>
@@ -383,7 +383,7 @@ export default function ProctorAnalysisPage() {
               )}
               <Link
                 href="/admin/analytics"
-                className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+                className="rounded-md bg-parchment/90 px-4 py-2 text-sm font-medium text-ink/70 hover:bg-ink/10"
               >
                 ← Back to Analytics
               </Link>
@@ -394,7 +394,7 @@ export default function ProctorAnalysisPage() {
 
       {/* Tabs */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="border-b border-gray-200">
+        <div className="border-b border-ink/10">
           <nav className="-mb-px flex space-x-8">
             {[
               { id: 'overview', label: 'Overview' },
@@ -408,8 +408,8 @@ export default function ProctorAnalysisPage() {
                 onClick={() => setSelectedTab(tab.id as any)}
                 className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
                   selectedTab === tab.id
-                    ? 'border-military-green text-military-green'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    ? 'border-moss text-moss'
+                    : 'border-transparent text-ink/50 hover:border-ink/20 hover:text-ink/70'
                 }`}
               >
                 {tab.label}
@@ -424,24 +424,22 @@ export default function ProctorAnalysisPage() {
         {selectedTab === 'overview' && (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Test Information */}
-            <div className="rounded-lg bg-white p-6 shadow">
-              <h3 className="mb-4 text-lg font-medium text-gray-900">
+            <div className="rounded-lg bg-parchment/80 p-6 shadow">
+              <h3 className="mb-4 text-lg font-medium text-ink">
                 Test Information
               </h3>
               <dl className="space-y-3 text-sm">
                 <div>
-                  <dt className="font-medium text-gray-500">Candidate</dt>
-                  <dd className="text-gray-900">{testAttempt.candidateName}</dd>
+                  <dt className="font-medium text-ink/50">Candidate</dt>
+                  <dd className="text-ink">{testAttempt.candidateName}</dd>
                 </div>
                 <div>
-                  <dt className="font-medium text-gray-500">Email</dt>
-                  <dd className="text-gray-900">
-                    {testAttempt.candidateEmail}
-                  </dd>
+                  <dt className="font-medium text-ink/50">Email</dt>
+                  <dd className="text-ink">{testAttempt.candidateEmail}</dd>
                 </div>
                 <div>
-                  <dt className="font-medium text-gray-500">Test Duration</dt>
-                  <dd className="text-gray-900">
+                  <dt className="font-medium text-ink/50">Test Duration</dt>
+                  <dd className="text-ink">
                     {testAttempt.proctoringStartedAt &&
                     testAttempt.proctoringEndedAt
                       ? formatDuration(
@@ -452,8 +450,8 @@ export default function ProctorAnalysisPage() {
                   </dd>
                 </div>
                 <div>
-                  <dt className="font-medium text-gray-500">Score</dt>
-                  <dd className="text-gray-900">
+                  <dt className="font-medium text-ink/50">Score</dt>
+                  <dd className="text-ink">
                     {testAttempt.rawScore} correct{' '}
                     {testAttempt.percentile !== null &&
                     testAttempt.percentile !== undefined
@@ -465,8 +463,8 @@ export default function ProctorAnalysisPage() {
             </div>
 
             {/* Risk Assessment */}
-            <div className="rounded-lg bg-white p-6 shadow">
-              <h3 className="mb-4 text-lg font-medium text-gray-900">
+            <div className="rounded-lg bg-parchment/80 p-6 shadow">
+              <h3 className="mb-4 text-lg font-medium text-ink">
                 Risk Assessment
               </h3>
               <div className="text-center">
@@ -475,13 +473,13 @@ export default function ProctorAnalysisPage() {
                 >
                   {riskInfo.label}
                 </div>
-                <p className="mt-2 text-3xl font-bold text-gray-900">
+                <p className="mt-2 text-3xl font-bold text-ink">
                   {calculatedRiskScore.toFixed(1)}/10
                 </p>
-                <p className="text-sm text-gray-500">Risk Score</p>
+                <p className="text-sm text-ink/50">Risk Score</p>
               </div>
               <div className="mt-4">
-                <div className="space-y-1 text-sm text-gray-600">
+                <div className="space-y-1 text-sm text-ink/60">
                   <p>
                     Tab Switches (Hidden):{' '}
                     <span className="font-medium">{tabHiddenCount}</span>
@@ -499,19 +497,19 @@ export default function ProctorAnalysisPage() {
                     <span className="font-medium">{windowBlurCount}</span>
                   </p>
                   <hr className="my-2" />
-                  <p className="font-medium text-gray-700">Risk Factors:</p>
+                  <p className="font-medium text-ink/70">Risk Factors:</p>
                   {copyDetectedCount > 1 && (
-                    <p className="text-xs text-orange-600">
+                    <p className="text-xs text-copper">
                       • Multiple copy events detected
                     </p>
                   )}
                   {tabHiddenCount > 3 && (
-                    <p className="text-xs text-orange-600">
+                    <p className="text-xs text-copper">
                       • Excessive tab switching
                     </p>
                   )}
                   {windowBlurCount > 1 && (
-                    <p className="text-xs text-orange-600">
+                    <p className="text-xs text-copper">
                       • Multiple window focus losses
                     </p>
                   )}
@@ -536,10 +534,8 @@ export default function ProctorAnalysisPage() {
             </div>
 
             {/* Quick Stats */}
-            <div className="rounded-lg bg-white p-6 shadow">
-              <h3 className="mb-4 text-lg font-medium text-gray-900">
-                Quick Stats
-              </h3>
+            <div className="rounded-lg bg-parchment/80 p-6 shadow">
+              <h3 className="mb-4 text-lg font-medium text-ink">Quick Stats</h3>
               <div className="space-y-3">
                 {proctorEvents
                   .filter((event) => RELEVANT_EVENT_TYPES.includes(event.type))
@@ -547,10 +543,10 @@ export default function ProctorAnalysisPage() {
                   .map((event, index) => (
                     <div key={index} className="flex items-center text-sm">
                       <span className="mr-2">{getEventIcon(event.type)}</span>
-                      <span className="text-gray-600">
+                      <span className="text-ink/60">
                         {event.type.replace(/_/g, ' ')}
                       </span>
-                      <span className="ml-auto text-gray-400">
+                      <span className="ml-auto text-ink/40">
                         {new Date(event.ts).toLocaleTimeString()}
                       </span>
                     </div>
@@ -560,7 +556,7 @@ export default function ProctorAnalysisPage() {
                     RELEVANT_EVENT_TYPES.includes(event.type)
                   ).length;
                   return relevantEventCount > 5 ? (
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-ink/50">
                       +{relevantEventCount - 5} more events...
                     </p>
                   ) : null;
@@ -571,8 +567,8 @@ export default function ProctorAnalysisPage() {
         )}
 
         {selectedTab === 'questions' && (
-          <div className="rounded-lg bg-white p-6 shadow">
-            <h3 className="mb-4 text-lg font-medium text-gray-900">
+          <div className="rounded-lg bg-parchment/80 p-6 shadow">
+            <h3 className="mb-4 text-lg font-medium text-ink">
               Questions & Answers
             </h3>
             {questionsData?.attempt?.test?.questions &&
@@ -591,16 +587,16 @@ export default function ProctorAnalysisPage() {
                     return (
                       <div
                         key={question.id}
-                        className="border-b border-gray-200 pb-6 last:border-b-0"
+                        className="border-b border-ink/10 pb-6 last:border-b-0"
                       >
                         <div className="mb-3 flex items-start justify-between">
-                          <h4 className="text-lg font-semibold text-gray-800">
+                          <h4 className="text-lg font-semibold text-ink">
                             Question {index + 1}
                           </h4>
                           <div
                             className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
                               isCorrect
-                                ? 'bg-green-100 text-green-800'
+                                ? 'bg-moss/12 text-green-800'
                                 : 'bg-red-100 text-red-800'
                             }`}
                           >
@@ -611,7 +607,7 @@ export default function ProctorAnalysisPage() {
                         <div className="mb-4">
                           <MarkdownRenderer
                             content={question.promptText}
-                            className="text-gray-700"
+                            className="text-ink/70"
                           />
                         </div>
 
@@ -626,7 +622,7 @@ export default function ProctorAnalysisPage() {
                         )}
 
                         <div className="space-y-2">
-                          <p className="text-sm font-medium text-gray-600">
+                          <p className="text-sm font-medium text-ink/60">
                             Answer Options:
                           </p>
                           <ul className="space-y-2">
@@ -642,12 +638,12 @@ export default function ProctorAnalysisPage() {
                                     key={optionIndex}
                                     className={`rounded-md p-3 text-sm ${
                                       isSelectedAnswer && isCorrectAnswer
-                                        ? 'border border-green-300 bg-green-100' // Selected and correct
+                                        ? 'bg-moss/12 border border-moss/40' // Selected and correct
                                         : isSelectedAnswer && !isCorrectAnswer
                                           ? 'border border-red-300 bg-red-100' // Selected but wrong
                                           : isCorrectAnswer
-                                            ? 'border border-green-200 bg-green-50' // Not selected but correct
-                                            : 'border border-gray-200 bg-gray-50' // Not selected and not correct
+                                            ? 'border border-moss/30 bg-moss/10' // Not selected but correct
+                                            : 'border border-ink/10 bg-parchment' // Not selected and not correct
                                     }`}
                                   >
                                     <div className="flex items-center justify-between">
@@ -661,12 +657,12 @@ export default function ProctorAnalysisPage() {
                                       </span>
                                       <div className="flex items-center space-x-2">
                                         {isSelectedAnswer && (
-                                          <span className="font-medium text-blue-600">
+                                          <span className="font-medium text-slateblue">
                                             👤 Selected
                                           </span>
                                         )}
                                         {isCorrectAnswer && (
-                                          <span className="font-medium text-green-600">
+                                          <span className="font-medium text-moss">
                                             ✓ Correct
                                           </span>
                                         )}
@@ -680,7 +676,7 @@ export default function ProctorAnalysisPage() {
                         </div>
 
                         {submittedAnswer && (
-                          <div className="mt-4 text-sm text-gray-600">
+                          <div className="mt-4 text-sm text-ink/60">
                             <p>
                               <span className="font-medium">Time taken:</span>{' '}
                               {submittedAnswer.timeTakenSeconds} seconds
@@ -699,19 +695,19 @@ export default function ProctorAnalysisPage() {
                 )}
               </div>
             ) : (
-              <p className="text-gray-500">No question data available.</p>
+              <p className="text-ink/50">No question data available.</p>
             )}
           </div>
         )}
 
         {selectedTab === 'video' && (
-          <div className="rounded-lg bg-white p-6 shadow">
-            <h3 className="mb-4 text-lg font-medium text-gray-900">
+          <div className="rounded-lg bg-parchment/80 p-6 shadow">
+            <h3 className="mb-4 text-lg font-medium text-ink">
               Captured Frames
             </h3>
             {proctorAssets.length > 0 ? (
               <div className="space-y-6">
-                <div className="mb-4 text-sm text-gray-600">
+                <div className="mb-4 text-sm text-ink/60">
                   <p>
                     📸 {proctorAssets.length} frames captured during test
                     session
@@ -738,7 +734,7 @@ export default function ProctorAnalysisPage() {
                       key={asset.id}
                       className="group relative overflow-hidden rounded-lg border transition-shadow hover:shadow-md"
                     >
-                      <div className="relative aspect-video bg-gray-100">
+                      <div className="relative aspect-video bg-parchment/90">
                         <img
                           src={`/api/admin/proctor/stream/${asset.id}`}
                           alt={`Frame ${index + 1}`}
@@ -751,15 +747,15 @@ export default function ProctorAnalysisPage() {
                       </div>
                       <div className="p-2">
                         <p
-                          className="truncate text-xs text-gray-600"
+                          className="truncate text-xs text-ink/60"
                           title={asset.fileName}
                         >
                           {asset.fileName}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-ink/50">
                           {new Date(asset.ts).toLocaleTimeString()}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-ink/50">
                           {(asset.fileSize / 1024).toFixed(1)} KB
                         </p>
                       </div>
@@ -768,7 +764,7 @@ export default function ProctorAnalysisPage() {
                       <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 opacity-0 transition-opacity group-hover:opacity-100">
                         <a
                           href={`/api/admin/proctor/download/${asset.id}`}
-                          className="rounded bg-white px-3 py-1 text-sm font-medium text-gray-900 hover:bg-gray-100"
+                          className="rounded bg-parchment/80 px-3 py-1 text-sm font-medium text-ink hover:bg-parchment/90"
                           download
                         >
                           Download
@@ -780,16 +776,14 @@ export default function ProctorAnalysisPage() {
 
                 {/* Timeline View Toggle */}
                 <div className="border-t pt-4">
-                  <h4 className="mb-3 font-medium text-gray-900">
-                    Timeline View
-                  </h4>
+                  <h4 className="mb-3 font-medium text-ink">Timeline View</h4>
                   <div className="max-h-64 space-y-2 overflow-y-auto">
                     {proctorAssets.map((asset, index) => (
                       <div
                         key={asset.id}
-                        className="flex items-center space-x-3 rounded p-2 hover:bg-gray-50"
+                        className="flex items-center space-x-3 rounded p-2 hover:bg-parchment"
                       >
-                        <div className="h-12 w-16 flex-shrink-0 overflow-hidden rounded bg-gray-100">
+                        <div className="h-12 w-16 flex-shrink-0 overflow-hidden rounded bg-parchment/90">
                           <img
                             src={`/api/admin/proctor/stream/${asset.id}`}
                             alt={`Frame ${index + 1}`}
@@ -798,19 +792,19 @@ export default function ProctorAnalysisPage() {
                           />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm font-medium text-ink">
                             Frame #{index + 1}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-ink/50">
                             {new Date(asset.ts).toLocaleString()}
                           </p>
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-ink/50">
                           {(asset.fileSize / 1024).toFixed(1)} KB
                         </div>
                         <a
                           href={`/api/admin/proctor/download/${asset.id}`}
-                          className="hover:text-military-green-dark text-sm text-military-green"
+                          className="text-sm text-moss hover:text-ink"
                           download
                         >
                           ↓
@@ -822,11 +816,11 @@ export default function ProctorAnalysisPage() {
               </div>
             ) : (
               <div className="py-8 text-center">
-                <div className="mb-4 text-6xl text-gray-400">📸</div>
-                <p className="text-gray-500">
+                <div className="mb-4 text-6xl text-ink/40">📸</div>
+                <p className="text-ink/50">
                   No frames captured during this test session.
                 </p>
-                <p className="mt-2 text-sm text-gray-400">
+                <p className="mt-2 text-sm text-ink/40">
                   Frames are automatically captured when proctoring is enabled.
                 </p>
               </div>
@@ -835,9 +829,9 @@ export default function ProctorAnalysisPage() {
         )}
 
         {selectedTab === 'events' && (
-          <div className="rounded-lg bg-white shadow">
+          <div className="rounded-lg bg-parchment/80 shadow">
             <div className="border-b p-6">
-              <h3 className="text-lg font-medium text-gray-900">
+              <h3 className="text-lg font-medium text-ink">
                 Proctoring Events Timeline
               </h3>
             </div>
@@ -848,22 +842,22 @@ export default function ProctorAnalysisPage() {
                 );
                 return filteredEvents.length > 0 ? (
                   filteredEvents.map((event) => (
-                    <div key={event.id} className="p-4 hover:bg-gray-50">
+                    <div key={event.id} className="p-4 hover:bg-parchment">
                       <div className="flex items-start">
                         <span className="mr-3 text-lg">
                           {getEventIcon(event.type)}
                         </span>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between">
-                            <h4 className="text-sm font-medium text-gray-900">
+                            <h4 className="text-sm font-medium text-ink">
                               {event.type.replace(/_/g, ' ')}
                             </h4>
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-ink/50">
                               {new Date(event.ts).toLocaleString()}
                             </span>
                           </div>
                           {event.extra && (
-                            <pre className="mt-2 rounded bg-gray-100 p-2 text-xs text-gray-600">
+                            <pre className="mt-2 rounded bg-parchment/90 p-2 text-xs text-ink/60">
                               {JSON.stringify(event.extra, null, 2)}
                             </pre>
                           )}
@@ -872,7 +866,7 @@ export default function ProctorAnalysisPage() {
                     </div>
                   ))
                 ) : (
-                  <div className="p-6 text-center text-gray-500">
+                  <div className="p-6 text-center text-ink/50">
                     No relevant proctoring events recorded.
                   </div>
                 );
@@ -882,9 +876,9 @@ export default function ProctorAnalysisPage() {
         )}
 
         {selectedTab === 'analysis' && (
-          <div className="rounded-lg bg-white p-6 shadow">
+          <div className="rounded-lg bg-parchment/80 p-6 shadow">
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">
+              <h3 className="text-lg font-medium text-ink">
                 AI Analysis Results
               </h3>
               <button
@@ -914,7 +908,7 @@ export default function ProctorAnalysisPage() {
                   }
                 }}
                 disabled={loading}
-                className="relative inline-flex items-center justify-center rounded-md border border-transparent bg-military-green px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-opacity-90 disabled:opacity-50"
+                className="relative inline-flex items-center justify-center rounded-md border border-transparent bg-ink px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-ink/90 disabled:opacity-50"
               >
                 {/* Loading spinner */}
                 {loading && (
@@ -939,10 +933,10 @@ export default function ProctorAnalysisPage() {
               <div className="space-y-6">
                 {analysisResults.faceDetection && (
                   <div>
-                    <h4 className="mb-2 font-medium text-gray-900">
+                    <h4 className="mb-2 font-medium text-ink">
                       Face Detection
                     </h4>
-                    <div className="rounded bg-gray-100 p-4">
+                    <div className="rounded bg-parchment/90 p-4">
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <span className="font-medium">Detection Rate:</span>{' '}
@@ -989,10 +983,10 @@ export default function ProctorAnalysisPage() {
                 )}
                 {analysisResults.objectDetection && (
                   <div>
-                    <h4 className="mb-2 font-medium text-gray-900">
+                    <h4 className="mb-2 font-medium text-ink">
                       Object Detection
                     </h4>
-                    <div className="rounded bg-gray-100 p-4">
+                    <div className="rounded bg-parchment/90 p-4">
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <span className="font-medium">Phone Detected:</span>{' '}
@@ -1028,10 +1022,10 @@ export default function ProctorAnalysisPage() {
                 )}
                 {analysisResults.audioAnalysis && (
                   <div>
-                    <h4 className="mb-2 font-medium text-gray-900">
+                    <h4 className="mb-2 font-medium text-ink">
                       Audio Analysis
                     </h4>
-                    <div className="rounded bg-gray-100 p-4">
+                    <div className="rounded bg-parchment/90 p-4">
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <span className="font-medium">Total Duration:</span>{' '}
@@ -1060,10 +1054,10 @@ export default function ProctorAnalysisPage() {
                 )}
                 {analysisResults.riskAssessment && (
                   <div>
-                    <h4 className="mb-2 font-medium text-gray-900">
+                    <h4 className="mb-2 font-medium text-ink">
                       Risk Assessment
                     </h4>
-                    <div className="rounded bg-gray-100 p-4">
+                    <div className="rounded bg-parchment/90 p-4">
                       <div className="mb-4 flex items-center justify-between">
                         <span className="text-lg font-medium">
                           Overall Risk Score:
@@ -1075,7 +1069,7 @@ export default function ProctorAnalysisPage() {
                               : analysisResults.riskAssessment
                                     .overallRiskScore >= 5
                                 ? 'text-yellow-600'
-                                : 'text-green-600'
+                                : 'text-moss'
                           }`}
                         >
                           {analysisResults.riskAssessment.overallRiskScore.toFixed(
@@ -1105,7 +1099,7 @@ export default function ProctorAnalysisPage() {
                           <ul className="space-y-1 text-sm">
                             {analysisResults.riskAssessment.recommendations.map(
                               (rec, index) => (
-                                <li key={index} className="text-gray-700">
+                                <li key={index} className="text-ink/70">
                                   • {rec}
                                 </li>
                               )
@@ -1119,9 +1113,9 @@ export default function ProctorAnalysisPage() {
               </div>
             ) : (
               <div className="py-8 text-center">
-                <div className="mb-2 text-blue-600">🤖</div>
-                <p className="text-gray-600">No AI analysis available yet</p>
-                <p className="mt-1 text-sm text-gray-500">
+                <div className="mb-2 text-slateblue">🤖</div>
+                <p className="text-ink/60">No AI analysis available yet</p>
+                <p className="mt-1 text-sm text-ink/50">
                   Click &quot;Run AI Analysis&quot; to generate detailed
                   analysis results.
                 </p>

@@ -21,24 +21,20 @@ const Alert: React.FC<AlertProps> = ({
   // Tailwind classes for each variant
   const variantClasses = {
     success: {
-      container:
-        'border-success-500 bg-success-50 dark:border-success-500/30 dark:bg-success-500/15',
-      icon: 'text-success-500',
+      container: 'border-moss/30 bg-moss/10',
+      icon: 'text-moss',
     },
     error: {
-      container:
-        'border-error-500 bg-error-50 dark:border-error-500/30 dark:bg-error-500/15',
-      icon: 'text-error-500',
+      container: 'border-red-300 bg-red-50',
+      icon: 'text-red-600',
     },
     warning: {
-      container:
-        'border-warning-500 bg-warning-50 dark:border-warning-500/30 dark:bg-warning-500/15',
-      icon: 'text-warning-500',
+      container: 'border-copper/30 bg-copper/10',
+      icon: 'text-copper',
     },
     info: {
-      container:
-        'border-blue-light-500 bg-blue-light-50 dark:border-blue-light-500/30 dark:bg-blue-light-500/15',
-      icon: 'text-blue-light-500',
+      container: 'border-slateblue/30 bg-slateblue/10',
+      icon: 'text-slateblue',
     },
   };
 
@@ -122,16 +118,14 @@ const Alert: React.FC<AlertProps> = ({
         </div>
 
         <div>
-          <h4 className="mb-1 text-sm font-semibold text-gray-800 dark:text-white/90">
-            {title}
-          </h4>
+          <h4 className="mb-1 text-sm font-semibold text-ink">{title}</h4>
 
-          <p className="text-sm text-gray-500 dark:text-gray-400">{message}</p>
+          <p className="text-sm text-ink/60">{message}</p>
 
           {showLink && (
             <Link
               href={linkHref}
-              className="mt-3 inline-block text-sm font-medium text-gray-500 underline dark:text-gray-400"
+              className="mt-3 inline-block text-sm font-medium text-ink/60 underline"
             >
               {linkText}
             </Link>

@@ -74,7 +74,7 @@ export default function RadarCompare({ candidates }: RadarCompareProps) {
   if (validCandidates.length === 0) {
     return (
       <div className="flex h-96 w-full items-center justify-center">
-        <div className="text-center text-gray-500">
+        <div className="text-center text-ink/50">
           <div className="mb-4 text-4xl">📊</div>
           <p>No valid candidate data to display</p>
         </div>

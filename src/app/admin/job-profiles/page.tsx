@@ -800,8 +800,8 @@ export default function JobProfilesPage() {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-blue-600" />
-          <p className="text-gray-600">Loading job profiles...</p>
+          <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin text-slateblue" />
+          <p className="text-ink/60">Loading job profiles...</p>
         </div>
       </div>
     );
@@ -811,8 +811,8 @@ export default function JobProfilesPage() {
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold text-gray-900">Job Profiles</h1>
-        <p className="text-gray-600">
+        <h1 className="mb-2 text-3xl font-bold text-ink">Job Profiles</h1>
+        <p className="text-ink/60">
           Manage job profiles, assessments, and candidate invitations
         </p>
       </div>
@@ -837,21 +837,21 @@ export default function JobProfilesPage() {
       <div className="mb-6 flex flex-col items-center justify-between gap-4 sm:flex-row">
         <div className="flex w-full items-center gap-3 sm:w-auto">
           <div className="relative flex-1 sm:flex-initial">
-            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-gray-400" />
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-ink/40" />
             <input
               type="text"
               placeholder="Search profiles..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:w-64"
+              className="w-full rounded-lg border border-ink/20 py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-slateblue/40 sm:w-64"
             />
           </div>
           <button
             onClick={() => setShowActiveOnly(!showActiveOnly)}
             className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 transition-colors ${
               showActiveOnly
-                ? 'border-blue-300 bg-blue-50 text-blue-700'
-                : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                ? 'border-slateblue/40 bg-slateblue/10 text-slateblue'
+                : 'border-ink/20 bg-parchment/80 text-ink/70 hover:bg-parchment'
             }`}
           >
             <Filter className="h-4 w-4" />
@@ -860,7 +860,7 @@ export default function JobProfilesPage() {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center gap-2 rounded-lg border-2 border-blue-700/50 bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
+          className="inline-flex items-center gap-2 rounded-lg border-2 border-ink/80 bg-ink px-4 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:bg-ink/90 hover:shadow-xl"
         >
           <Plus className="h-4 w-4" />
           Create Profile
@@ -910,11 +910,11 @@ export default function JobProfilesPage() {
         </div>
       ) : (
         <div className="py-16 text-center">
-          <Building2 className="mx-auto mb-4 h-12 w-12 text-gray-300" />
-          <h3 className="mb-2 text-lg font-medium text-gray-900">
+          <Building2 className="mx-auto mb-4 h-12 w-12 text-ink/30" />
+          <h3 className="mb-2 text-lg font-medium text-ink">
             {searchTerm ? 'No profiles found' : 'No job profiles yet'}
           </h3>
-          <p className="mb-4 text-gray-600">
+          <p className="mb-4 text-ink/60">
             {searchTerm
               ? 'Try adjusting your search criteria'
               : 'Create your first job profile to get started'}
@@ -922,7 +922,7 @@ export default function JobProfilesPage() {
           {!searchTerm && (
             <button
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="inline-flex items-center gap-2 rounded-lg bg-slateblue px-4 py-2 text-sm font-medium text-white hover:bg-slateblue/80"
             >
               <Plus className="h-4 w-4" />
               Create Profile
@@ -1006,20 +1006,20 @@ export default function JobProfilesPage() {
       {/* Create/Edit Modal */}
       {(showCreateModal || showEditModal) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-xl">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-parchment/80 shadow-xl">
             <form
               onSubmit={
                 showCreateModal ? handleCreateProfile : handleUpdateProfile
               }
             >
               <div className="p-6">
-                <h2 className="mb-4 text-2xl font-bold text-gray-900">
+                <h2 className="mb-4 text-2xl font-bold text-ink">
                   {showCreateModal ? 'Create Job Profile' : 'Edit Job Profile'}
                 </h2>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                    <label className="mb-1 block text-sm font-medium text-ink/70">
                       Profile Name *
                     </label>
                     <input
@@ -1028,13 +1028,13 @@ export default function JobProfilesPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, name: e.target.value })
                       }
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full rounded-lg border border-ink/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slateblue/40"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                    <label className="mb-1 block text-sm font-medium text-ink/70">
                       Description
                     </label>
                     <textarea
@@ -1046,19 +1046,19 @@ export default function JobProfilesPage() {
                         })
                       }
                       rows={3}
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full rounded-lg border border-ink/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slateblue/40"
                     />
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                    <label className="mb-1 block text-sm font-medium text-ink/70">
                       Tests *
                     </label>
-                    <div className="max-h-48 overflow-y-auto rounded-lg border border-gray-300 p-3">
+                    <div className="max-h-48 overflow-y-auto rounded-lg border border-ink/20 p-3">
                       {tests.map((test) => (
                         <label
                           key={test.id}
-                          className="flex cursor-pointer items-center gap-2 py-1 hover:bg-gray-50"
+                          className="flex cursor-pointer items-center gap-2 py-1 hover:bg-parchment"
                         >
                           <input
                             type="checkbox"
@@ -1078,9 +1078,9 @@ export default function JobProfilesPage() {
                                 });
                               }
                             }}
-                            className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                            className="h-4 w-4 rounded border-ink/20 text-slateblue"
                           />
-                          <span className="text-sm text-gray-700">
+                          <span className="text-sm text-ink/70">
                             {test.title} ({test.questionsCount || 0} questions)
                           </span>
                         </label>
@@ -1089,10 +1089,10 @@ export default function JobProfilesPage() {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                    <label className="mb-1 block text-sm font-medium text-ink/70">
                       Notification Emails
                     </label>
-                    <p className="mb-2 text-sm text-gray-500">
+                    <p className="mb-2 text-sm text-ink/50">
                       Enter email addresses (separated by commas or one per
                       line) to receive notifications when tests are completed
                       for this job profile.
@@ -1107,7 +1107,7 @@ export default function JobProfilesPage() {
                       }
                       rows={4}
                       placeholder="admin@company.com, hr@company.com&#10;manager@company.com"
-                      className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full rounded-lg border border-ink/20 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slateblue/40"
                     />
                   </div>
 
@@ -1119,11 +1119,11 @@ export default function JobProfilesPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, isActive: e.target.checked })
                       }
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                      className="h-4 w-4 rounded border-ink/20 text-slateblue"
                     />
                     <label
                       htmlFor="isActive"
-                      className="text-sm font-medium text-gray-700"
+                      className="text-sm font-medium text-ink/70"
                     >
                       Active Profile
                     </label>
@@ -1131,7 +1131,7 @@ export default function JobProfilesPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4">
+              <div className="flex justify-end gap-3 border-t border-ink/10 bg-parchment px-6 py-4">
                 <button
                   type="button"
                   onClick={() => {
@@ -1140,13 +1140,13 @@ export default function JobProfilesPage() {
                     setSelectedProfile(null);
                     resetForm();
                   }}
-                  className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="rounded-lg border border-ink/20 bg-parchment/80 px-4 py-2 text-sm font-medium text-ink/70 hover:bg-parchment"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 rounded-lg border-2 border-blue-700/50 bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
+                  className="inline-flex items-center gap-2 rounded-lg border-2 border-ink/80 bg-ink px-4 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:bg-ink/90 hover:shadow-xl"
                 >
                   {showCreateModal ? 'Create Profile' : 'Update Profile'}
                 </button>

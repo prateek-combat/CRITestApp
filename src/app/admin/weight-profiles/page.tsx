@@ -93,10 +93,10 @@ export default function WeightProfilesPage({}: WeightProfilesPageProps) {
     return (
       <div className="container mx-auto p-6">
         <div className="animate-pulse">
-          <div className="mb-6 h-8 w-1/4 rounded bg-gray-200"></div>
+          <div className="mb-6 h-8 w-1/4 rounded bg-ink/10"></div>
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 rounded bg-gray-200"></div>
+              <div key={i} className="h-20 rounded bg-ink/10"></div>
             ))}
           </div>
         </div>
@@ -107,10 +107,10 @@ export default function WeightProfilesPage({}: WeightProfilesPageProps) {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
-        <h1 className="mb-2 text-3xl font-bold text-gray-900">
+        <h1 className="mb-2 text-3xl font-bold text-ink">
           Category Weight Profiles
         </h1>
-        <p className="text-gray-600">
+        <p className="text-ink/60">
           Manage different weighting schemes for test categories to create
           customized ranking systems.
         </p>
@@ -131,7 +131,7 @@ export default function WeightProfilesPage({}: WeightProfilesPageProps) {
       <div className="mb-6">
         <Button
           onClick={() => setShowCreateForm(true)}
-          className="bg-blue-600 hover:bg-blue-700"
+          className="bg-slateblue hover:bg-slateblue/80"
         >
           Create New Profile
         </Button>
@@ -144,24 +144,24 @@ export default function WeightProfilesPage({}: WeightProfilesPageProps) {
             key={profile.id}
             className={`rounded-lg border-2 p-6 ${
               profile.isDefault
-                ? 'border-green-500 bg-green-50'
-                : 'border-gray-200 bg-white'
+                ? 'border-green-500 bg-moss/10'
+                : 'border-ink/10 bg-parchment/80'
             }`}
           >
             <div className="mb-4 flex items-start justify-between">
               <div>
                 <div className="mb-1 flex items-center gap-2">
-                  <h3 className="text-xl font-semibold text-gray-900">
+                  <h3 className="text-xl font-semibold text-ink">
                     {profile.name}
                   </h3>
                   {profile.isDefault && (
-                    <span className="rounded-full bg-green-100 px-2 py-1 text-xs text-green-800">
+                    <span className="bg-moss/12 rounded-full px-2 py-1 text-xs text-green-800">
                       Default
                     </span>
                   )}
                 </div>
                 {profile.description && (
-                  <p className="text-gray-600">{profile.description}</p>
+                  <p className="text-ink/60">{profile.description}</p>
                 )}
               </div>
               <div className="flex gap-2">
@@ -196,17 +196,17 @@ export default function WeightProfilesPage({}: WeightProfilesPageProps) {
             <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
               {Object.entries(profile.weights).map(([category, weight]) => (
                 <div key={category} className="text-center">
-                  <div className="mb-1 text-sm font-medium text-gray-700">
+                  <div className="mb-1 text-sm font-medium text-ink/70">
                     {CATEGORY_DISPLAY_NAMES[
                       category as keyof typeof CATEGORY_DISPLAY_NAMES
                     ] || category}
                   </div>
-                  <div className="text-2xl font-bold text-blue-600">
+                  <div className="text-2xl font-bold text-slateblue">
                     {weight}%
                   </div>
-                  <div className="mt-2 h-2 w-full rounded-full bg-gray-200">
+                  <div className="mt-2 h-2 w-full rounded-full bg-ink/10">
                     <div
-                      className="h-2 rounded-full bg-blue-600"
+                      className="h-2 rounded-full bg-slateblue"
                       style={{ width: `${weight}%` }}
                     ></div>
                   </div>
@@ -219,8 +219,8 @@ export default function WeightProfilesPage({}: WeightProfilesPageProps) {
 
       {profiles.length === 0 && !loading && (
         <div className="py-12 text-center">
-          <p className="text-lg text-gray-500">No weight profiles found.</p>
-          <p className="mt-2 text-gray-400">
+          <p className="text-lg text-ink/50">No weight profiles found.</p>
+          <p className="mt-2 text-ink/40">
             Create your first profile to get started.
           </p>
         </div>
@@ -350,16 +350,16 @@ function WeightProfileForm({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-parchment/80">
         <div className="p-6">
-          <h2 className="mb-4 text-2xl font-bold text-gray-900">
+          <h2 className="mb-4 text-2xl font-bold text-ink">
             {profile ? 'Edit Weight Profile' : 'Create New Weight Profile'}
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Name */}
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
+              <label className="mb-2 block text-sm font-medium text-ink/70">
                 Profile Name
               </label>
               <input
@@ -368,7 +368,7 @@ function WeightProfileForm({
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, name: e.target.value }))
                 }
-                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-md border border-ink/20 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-slateblue/40"
                 placeholder="e.g., Verbal Focused"
               />
               {errors.name && (
@@ -378,7 +378,7 @@ function WeightProfileForm({
 
             {/* Description */}
             <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
+              <label className="mb-2 block text-sm font-medium text-ink/70">
                 Description (Optional)
               </label>
               <textarea
@@ -389,7 +389,7 @@ function WeightProfileForm({
                     description: e.target.value,
                   }))
                 }
-                className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-md border border-ink/20 px-3 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-slateblue/40"
                 rows={3}
                 placeholder="Brief description of when to use this profile..."
               />
@@ -397,7 +397,7 @@ function WeightProfileForm({
 
             {/* Weights */}
             <div>
-              <label className="mb-4 block text-sm font-medium text-gray-700">
+              <label className="mb-4 block text-sm font-medium text-ink/70">
                 Category Weights
               </label>
               <div className="space-y-4">
@@ -407,7 +407,7 @@ function WeightProfileForm({
                     className="flex items-center justify-between"
                   >
                     <div className="flex-1">
-                      <label className="text-sm font-medium text-gray-700">
+                      <label className="text-sm font-medium text-ink/70">
                         {CATEGORY_DISPLAY_NAMES[
                           category as keyof typeof CATEGORY_DISPLAY_NAMES
                         ] || category}
@@ -426,9 +426,9 @@ function WeightProfileForm({
                             parseFloat(e.target.value) || 0
                           )
                         }
-                        className="w-20 rounded border border-gray-300 px-2 py-1 text-center"
+                        className="w-20 rounded border border-ink/20 px-2 py-1 text-center"
                       />
-                      <span className="text-sm text-gray-500">%</span>
+                      <span className="text-sm text-ink/50">%</span>
                     </div>
                     {errors[category] && (
                       <p className="text-sm text-red-600">{errors[category]}</p>
@@ -437,11 +437,11 @@ function WeightProfileForm({
                 ))}
               </div>
 
-              <div className="mt-4 rounded-lg bg-gray-50 p-3">
+              <div className="mt-4 rounded-lg bg-parchment p-3">
                 <div className="flex items-center justify-between">
                   <span className="font-medium">Total:</span>
                   <span
-                    className={`font-bold ${Math.abs(totalWeight - 100) > 0.01 ? 'text-red-600' : 'text-green-600'}`}
+                    className={`font-bold ${Math.abs(totalWeight - 100) > 0.01 ? 'text-red-600' : 'text-moss'}`}
                   >
                     {totalWeight.toFixed(1)}%
                   </span>
@@ -467,7 +467,7 @@ function WeightProfileForm({
               <button
                 type="submit"
                 disabled={saving || Math.abs(totalWeight - 100) > 0.01}
-                className="shadow-theme-xs inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 py-3.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300 disabled:opacity-50"
+                className="shadow-theme-xs inline-flex items-center justify-center gap-2 rounded-lg bg-slateblue px-5 py-3.5 text-sm font-medium text-white transition hover:bg-slateblue/80 disabled:cursor-not-allowed disabled:bg-slateblue/40 disabled:opacity-50"
               >
                 {saving
                   ? 'Saving...'

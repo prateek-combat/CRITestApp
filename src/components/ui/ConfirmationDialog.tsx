@@ -47,9 +47,9 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
         };
       case 'info':
         return {
-          iconBg: 'bg-blue-100',
-          iconColor: 'text-blue-600',
-          confirmButton: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500',
+          iconBg: 'bg-slateblue/12',
+          iconColor: 'text-slateblue',
+          confirmButton: 'bg-ink hover:bg-ink/90 focus:ring-copper/40',
           defaultIcon: <AlertTriangle className="h-6 w-6" />,
         };
       default:
@@ -91,11 +91,9 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
             <div className={styles.iconColor}>{icon || styles.defaultIcon}</div>
           </div>
           <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-            <h3 className="text-lg font-medium leading-6 text-gray-900">
-              {title}
-            </h3>
+            <h3 className="text-lg font-medium leading-6 text-ink">{title}</h3>
             <div className="mt-2">
-              <p className="whitespace-pre-line text-sm text-gray-500">
+              <p className="whitespace-pre-line text-sm text-ink/60">
                 {message}
               </p>
             </div>
@@ -123,7 +121,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
             type="button"
             onClick={handleCancel}
             disabled={isLoading}
-            className={`mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:mt-0 sm:w-auto sm:text-sm ${
+            className={`mt-3 inline-flex w-full justify-center rounded-md border border-ink/20 bg-parchment/80 px-4 py-2 text-base font-medium text-ink/70 shadow-sm hover:bg-parchment focus:outline-none focus:ring-2 focus:ring-copper/40 focus:ring-offset-2 sm:mt-0 sm:w-auto sm:text-sm ${
               isLoading ? 'cursor-not-allowed opacity-50' : ''
             }`}
           >

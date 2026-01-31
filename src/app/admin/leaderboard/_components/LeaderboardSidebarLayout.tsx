@@ -742,28 +742,28 @@ export default function LeaderboardSidebarLayout({
     <div className="flex h-[calc(100vh-8rem)] gap-3">
       {/* Left Sidebar - Position Selector */}
       <div className="w-80 flex-shrink-0">
-        <div className="flex h-full flex-col rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div className="flex h-full flex-col rounded-lg border border-ink/10 bg-parchment/80 shadow-sm">
           {/* Header */}
-          <div className="border-b border-gray-200 p-3">
-            <h2 className="text-base font-semibold text-gray-900">
+          <div className="border-b border-ink/10 p-3">
+            <h2 className="text-base font-semibold text-ink">
               Select Job Profile
             </h2>
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-ink/60">
               Select a job profile to view candidate rankings
             </p>
           </div>
 
           {/* Search and Filters - Compact */}
-          <div className="space-y-2 border-b border-gray-200 p-2">
+          <div className="space-y-2 border-b border-ink/10 p-2">
             <form onSubmit={handleSearchSubmit}>
               <div className="relative">
-                <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-400" />
+                <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-ink/40" />
                 <input
                   type="text"
                   placeholder="Search job profiles..."
                   value={localSearch}
                   onChange={(e) => setLocalSearch(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 py-1.5 pl-7 pr-3 text-xs focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                  className="w-full rounded-md border border-ink/20 py-1.5 pl-7 pr-3 text-xs focus:border-copper/50 focus:outline-none focus:ring-1 focus:ring-copper/40"
                 />
               </div>
             </form>
@@ -771,7 +771,7 @@ export default function LeaderboardSidebarLayout({
             {localSearch && (
               <button
                 onClick={clearAllFilters}
-                className="text-xs text-brand-600 hover:text-brand-800"
+                className="text-xs text-copper hover:text-copper"
               >
                 Clear search
               </button>
@@ -782,13 +782,13 @@ export default function LeaderboardSidebarLayout({
           <div className="flex-1 overflow-y-auto">
             {isLoadingPositions ? (
               <div className="flex items-center justify-center py-6">
-                <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-brand-500"></div>
+                <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-copper/50"></div>
               </div>
             ) : jobProfiles.filter((profile) => profile.isActive).length ===
               0 ? (
               <div className="p-3 text-center">
-                <Users className="mx-auto h-6 w-6 text-gray-400" />
-                <p className="mt-1 text-xs text-gray-500">
+                <Users className="mx-auto h-6 w-6 text-ink/40" />
+                <p className="mt-1 text-xs text-ink/50">
                   {localSearch
                     ? 'No job profiles match your search'
                     : 'No active job profiles found'}
@@ -816,8 +816,8 @@ export default function LeaderboardSidebarLayout({
                       disabled={isChangingJobProfile}
                       className={`w-full rounded-lg border p-2 text-left transition-colors ${
                         selectedJobProfileId === profile.id
-                          ? 'border-brand-500 bg-brand-50 text-brand-900'
-                          : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50'
+                          ? 'border-copper/50 bg-copper/10 text-copper'
+                          : 'border-ink/10 bg-parchment/80 text-ink hover:bg-parchment'
                       } ${isChangingJobProfile ? 'cursor-not-allowed opacity-50' : ''}`}
                     >
                       <div className="flex items-start justify-between">
@@ -826,21 +826,19 @@ export default function LeaderboardSidebarLayout({
                             {profile.name}
                           </h3>
                           {profile.description && (
-                            <p className="mt-1 line-clamp-2 text-xs text-gray-600">
+                            <p className="mt-1 line-clamp-2 text-xs text-ink/60">
                               {profile.description}
                             </p>
                           )}
                         </div>
                         <div className="ml-2 flex-shrink-0">
                           <div className="text-right">
-                            <div className="text-xs font-medium text-brand-600">
+                            <div className="text-xs font-medium text-copper">
                               {profile._count.completedInvitations ||
                                 profile._count.invitations ||
                                 0}
                             </div>
-                            <div className="text-xs text-gray-500">
-                              completed
-                            </div>
+                            <div className="text-xs text-ink/50">completed</div>
                           </div>
                         </div>
                       </div>
@@ -849,7 +847,7 @@ export default function LeaderboardSidebarLayout({
                         {profile.positions &&
                         Array.isArray(profile.positions) &&
                         profile.positions.length > 0 ? (
-                          <span className="inline-flex items-center rounded-md bg-brand-50 px-1.5 py-0.5 text-xs font-medium text-brand-700">
+                          <span className="inline-flex items-center rounded-md bg-copper/10 px-1.5 py-0.5 text-xs font-medium text-copper">
                             <Building2 className="mr-1 h-2.5 w-2.5" />
                             {profile.positions.length} position
                             {profile.positions.length > 1 ? 's' : ''}
@@ -877,7 +875,7 @@ export default function LeaderboardSidebarLayout({
       <div className="flex flex-1 flex-col gap-3">
         {/* Top Filters Section */}
         {selectedJobProfile && (
-          <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+          <div className="rounded-lg border border-ink/10 bg-parchment/80 p-3 shadow-sm">
             <WeightProfileSelector
               availableProfiles={availableProfiles}
               currentProfile={data?.weightProfile || null}
@@ -896,7 +894,7 @@ export default function LeaderboardSidebarLayout({
             <div className="mt-3 border-t pt-3">
               <div className="flex items-start gap-4">
                 <div className="flex-1">
-                  <label className="mb-1 block text-sm font-medium text-gray-700">
+                  <label className="mb-1 block text-sm font-medium text-ink/70">
                     Attempt Status Filter
                   </label>
                   <div className="space-y-2">
@@ -907,13 +905,13 @@ export default function LeaderboardSidebarLayout({
                         onChange={(e) =>
                           handleIncludeIncompleteChange(e.target.checked)
                         }
-                        className="mr-2 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="mr-2 h-4 w-4 rounded border-ink/20 text-slateblue focus:ring-slateblue/40"
                       />
-                      <span className="text-sm text-gray-700">
+                      <span className="text-sm text-ink/70">
                         Include incomplete attempts
                       </span>
                     </label>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-ink/50">
                       Shows terminated, timed out, and abandoned attempts
                     </div>
                   </div>
@@ -922,7 +920,7 @@ export default function LeaderboardSidebarLayout({
                 <div className="flex-1">
                   <label
                     htmlFor="statusFilter"
-                    className="mb-1 block text-sm font-medium text-gray-700"
+                    className="mb-1 block text-sm font-medium text-ink/70"
                   >
                     Specific Status
                   </label>
@@ -932,7 +930,7 @@ export default function LeaderboardSidebarLayout({
                     onChange={(e) =>
                       handleStatusFilterChange(e.target.value || null)
                     }
-                    className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm leading-5 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="block w-full rounded-md border border-ink/20 bg-parchment/80 px-3 py-2 text-sm leading-5 focus:border-slateblue/50 focus:outline-none focus:ring-1 focus:ring-slateblue/40"
                   >
                     <option value="">All Statuses</option>
                     <option value="COMPLETED">Completed Only</option>
@@ -955,24 +953,24 @@ export default function LeaderboardSidebarLayout({
         {/* Center - Leaderboard Table */}
         <div className="flex flex-1 flex-col">
           {/* Header - Compact */}
-          <div className="mb-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+          <div className="mb-3 rounded-lg border border-ink/10 bg-parchment/80 p-3 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 {selectedJobProfile ? (
                   <div>
-                    <h1 className="text-base font-semibold text-gray-900">
+                    <h1 className="text-base font-semibold text-ink">
                       {selectedJobProfile.name} Leaderboard
                     </h1>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-ink/60">
                       Rankings for {selectedJobProfile.name} job profile
                     </p>
                   </div>
                 ) : (
                   <div>
-                    <h1 className="text-base font-semibold text-gray-900">
+                    <h1 className="text-base font-semibold text-ink">
                       Job Profile Leaderboard
                     </h1>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-ink/60">
                       Select a job profile to view candidate rankings
                     </p>
                   </div>
@@ -982,35 +980,33 @@ export default function LeaderboardSidebarLayout({
               {selectedJobProfile && data && (
                 <div className="flex items-center gap-3">
                   <div className="text-right">
-                    <div className="text-lg font-bold text-brand-600">
+                    <div className="text-lg font-bold text-copper">
                       {data.stats.totalCandidates || 0}
                     </div>
-                    <div className="text-xs text-gray-500">
-                      total candidates
-                    </div>
+                    <div className="text-xs text-ink/50">total candidates</div>
                   </div>
                   <div className="text-right">
                     <div className="text-lg font-bold text-secondary-600">
                       {data.stats.avgScore?.toFixed(1) || '0.0'}%
                     </div>
-                    <div className="text-xs text-gray-500">average score</div>
+                    <div className="text-xs text-ink/50">average score</div>
                   </div>
                   <div className="text-right">
                     <div className="text-lg font-bold text-emerald-600">
                       {data.stats.topScore?.toFixed(1) || '0.0'}%
                     </div>
-                    <div className="text-xs text-gray-500">top score</div>
+                    <div className="text-xs text-ink/50">top score</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-bold text-orange-600">
+                    <div className="text-lg font-bold text-copper">
                       {data.stats.thisMonth || 0}
                     </div>
-                    <div className="text-xs text-gray-500">this month</div>
+                    <div className="text-xs text-ink/50">this month</div>
                   </div>
                   <button
                     onClick={handleBulkExportPdf}
                     disabled={isExportingBulkPdf || !data.rows.length}
-                    className="inline-flex items-center rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-sm font-medium text-orange-700 transition-colors hover:bg-orange-100 disabled:opacity-50"
+                    className="hover:bg-copper/12 inline-flex items-center rounded-lg border border-copper/30 bg-copper/10 px-3 py-2 text-sm font-medium text-copper transition-colors disabled:opacity-50"
                     title={`Export comparison view showing who answered what for each question`}
                   >
                     {isExportingBulkPdf ? (
@@ -1025,7 +1021,7 @@ export default function LeaderboardSidebarLayout({
                   <button
                     onClick={handleExportExcel}
                     disabled={isExportingExcel || !data.rows.length}
-                    className="inline-flex items-center rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm font-medium text-green-700 transition-colors hover:bg-green-100 disabled:opacity-50"
+                    className="hover:bg-moss/12 inline-flex items-center rounded-lg border border-moss/30 bg-moss/10 px-3 py-2 text-sm font-medium text-moss transition-colors disabled:opacity-50"
                     title={`Export all candidates to Excel spreadsheet`}
                   >
                     {isExportingExcel ? (
@@ -1041,15 +1037,15 @@ export default function LeaderboardSidebarLayout({
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+          <div className="flex-1 overflow-hidden rounded-lg border border-ink/10 bg-parchment/80 shadow-sm">
             {!selectedJobProfile ? (
               <div className="flex h-full items-center justify-center">
                 <div className="text-center">
-                  <Trophy className="mx-auto h-10 w-10 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">
+                  <Trophy className="mx-auto h-10 w-10 text-ink/40" />
+                  <h3 className="mt-2 text-sm font-medium text-ink">
                     Select a Job Profile
                   </h3>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-ink/50">
                     Choose a job profile from the sidebar to view the
                     leaderboard
                   </p>
@@ -1065,13 +1061,13 @@ export default function LeaderboardSidebarLayout({
                   <div className="text-red-500">
                     <TrendingUp className="mx-auto h-10 w-10" />
                   </div>
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">
+                  <h3 className="mt-2 text-sm font-medium text-ink">
                     Error Loading Data
                   </h3>
-                  <p className="mt-1 text-xs text-gray-500">{error}</p>
+                  <p className="mt-1 text-xs text-ink/50">{error}</p>
                   <button
                     onClick={() => fetchLeaderboardData()}
-                    className="mt-3 rounded-md bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
+                    className="mt-3 rounded-md bg-ink px-3 py-1.5 text-xs font-medium text-white hover:bg-ink/90"
                   >
                     Try Again
                   </button>
@@ -1080,11 +1076,11 @@ export default function LeaderboardSidebarLayout({
             ) : !data || data.rows.length === 0 ? (
               <div className="flex h-full items-center justify-center">
                 <div className="text-center">
-                  <Users className="mx-auto h-10 w-10 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">
+                  <Users className="mx-auto h-10 w-10 text-ink/40" />
+                  <h3 className="mt-2 text-sm font-medium text-ink">
                     No Candidates Found
                   </h3>
-                  <p className="mt-1 text-xs text-gray-500">
+                  <p className="mt-1 text-xs text-ink/50">
                     No test attempts found for this job profile yet.
                   </p>
                 </div>

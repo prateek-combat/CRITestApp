@@ -76,7 +76,7 @@ const TableRow: React.FC<TableRowProps> = ({
   hover = false,
 }) => {
   const hoverClasses = hover
-    ? 'hover:bg-gray-50 transition-colors duration-150'
+    ? 'hover:bg-ink/5 transition-colors duration-150'
     : '';
   return <tr className={`${hoverClasses} ${className}`}>{children}</tr>;
 };
@@ -117,7 +117,7 @@ const TableSkeleton: React.FC<{ rows?: number; columns?: number }> = ({
         <TableRow hover={false}>
           {Array.from({ length: columns }).map((_, i) => (
             <TableCell key={i} isHeader>
-              <div className="h-4 animate-pulse rounded bg-gray-200"></div>
+              <div className="h-4 animate-pulse rounded bg-ink/10"></div>
             </TableCell>
           ))}
         </TableRow>
@@ -127,7 +127,7 @@ const TableSkeleton: React.FC<{ rows?: number; columns?: number }> = ({
           <TableRow key={rowIndex} hover={false}>
             {Array.from({ length: columns }).map((_, colIndex) => (
               <TableCell key={colIndex}>
-                <div className="h-4 animate-pulse rounded bg-gray-200"></div>
+                <div className="h-4 animate-pulse rounded bg-ink/10"></div>
               </TableCell>
             ))}
           </TableRow>
@@ -144,8 +144,8 @@ const TableEmptyState: React.FC<{
   action?: React.ReactNode;
 }> = ({ message = 'No data available', icon, action }) => (
   <div className="py-12 text-center">
-    {icon && <div className="mx-auto mb-4 h-12 w-12 text-gray-400">{icon}</div>}
-    <p className="mb-4 text-sm text-gray-500">{message}</p>
+    {icon && <div className="mx-auto mb-4 h-12 w-12 text-ink/40">{icon}</div>}
+    <p className="mb-4 text-sm text-ink/50">{message}</p>
     {action}
   </div>
 );

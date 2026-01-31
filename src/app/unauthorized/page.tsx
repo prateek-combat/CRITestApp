@@ -12,8 +12,13 @@ export default function UnauthorizedPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md space-y-8 text-center">
+    <div className="relative flex min-h-screen items-center justify-center bg-parchment text-ink">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="bg-archive-wash absolute inset-0" />
+        <div className="bg-archive-grid absolute inset-0 opacity-40" />
+        <div className="noise-overlay absolute inset-0 opacity-20 mix-blend-multiply" />
+      </div>
+      <div className="relative z-10 w-full max-w-md space-y-8 text-center">
         <div>
           <div className="mx-auto h-12 w-12 text-red-600">
             <svg
@@ -30,14 +35,14 @@ export default function UnauthorizedPage() {
               />
             </svg>
           </div>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-3xl font-extrabold text-ink">
             Access Denied
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-2 text-sm text-ink/60">
             You don&apos;t have permission to access the admin area.
           </p>
           {session && (
-            <p className="mt-2 text-xs text-gray-500">
+            <p className="mt-2 text-xs text-ink/50">
               Signed in as: {session.user.email} ({session.user.role})
             </p>
           )}
@@ -53,7 +58,7 @@ export default function UnauthorizedPage() {
 
           <Link
             href="/"
-            className="group relative flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="group relative flex w-full justify-center rounded-md border border-ink/20 bg-parchment/80 px-4 py-2 text-sm font-medium text-ink/70 hover:bg-parchment focus:outline-none focus:ring-2 focus:ring-copper/40 focus:ring-offset-2"
           >
             Go to Home Page
           </Link>

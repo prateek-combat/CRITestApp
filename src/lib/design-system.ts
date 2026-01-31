@@ -1,5 +1,5 @@
 // Centralized design system configuration for consistent UI across all pages
-// Enhanced with military theme and global border styles
+// Tuned for the archival/ink + parchment visual system
 
 export const designSystem = {
   // Spacing
@@ -20,64 +20,64 @@ export const designSystem = {
     inline: 'gap-2',
   },
 
-  // Border & Shadows - Enhanced with military theme
+  // Border & Shadows - Archival theme
   card: {
     base: 'card-military rounded-lg',
     hover: 'hover:shadow-tactical-lg transition-all duration-300',
     glass: 'glass-tactical rounded-lg',
-    gradient: 'border-gradient-military rounded-lg bg-white',
+    gradient: 'border-gradient-military rounded-lg bg-parchment/80',
   },
 
-  // Tables - Enhanced with tactical styling
+  // Tables - Archival styling
   table: {
     container: 'table-tactical overflow-hidden',
     header: 'bg-gradient-military',
     headerCell:
-      'px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500',
-    cell: 'px-3 py-2 text-sm text-gray-900',
-    row: 'hover:bg-gray-50 transition-all duration-200',
+      'px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-ink/50',
+    cell: 'px-3 py-2 text-sm text-ink',
+    row: 'hover:bg-ink/5 transition-all duration-200',
   },
 
   // Typography
   text: {
-    pageTitle: 'text-xl font-bold text-gray-900',
-    pageSubtitle: 'text-sm text-gray-600',
-    sectionTitle: 'text-base font-semibold text-gray-900',
-    label: 'text-sm font-medium text-gray-700',
-    body: 'text-sm text-gray-900',
-    muted: 'text-sm text-gray-500',
-    small: 'text-xs text-gray-500',
+    pageTitle: 'text-xl font-bold text-ink',
+    pageSubtitle: 'text-sm text-ink/60',
+    sectionTitle: 'text-base font-semibold text-ink',
+    label: 'text-sm font-medium text-ink/70',
+    body: 'text-sm text-ink',
+    muted: 'text-sm text-ink/50',
+    small: 'text-xs text-ink/50',
     gradient: 'gradient-text',
   },
 
-  // Forms - Enhanced with tactical inputs
+  // Forms - Archival inputs
   form: {
     input: 'input-tactical w-full rounded-md px-3 py-2 text-sm',
     select: 'input-tactical rounded-md px-3 py-2 text-sm',
-    label: 'block text-sm font-medium text-gray-700 mb-1',
+    label: 'block text-sm font-medium text-ink/70 mb-1',
     group: 'space-y-3',
   },
 
-  // Status badges - Enhanced with tactical styling
+  // Status badges - Archival styling
   badge: {
     base: 'badge-tactical',
     success: 'badge-success',
     warning: 'badge-warning',
     error: 'badge-error',
     info: 'badge-info',
-    neutral: 'badge-tactical bg-gray-100 text-gray-700 border-gray-200',
+    neutral: 'badge-tactical bg-ink/5 text-ink/70 border-ink/10',
   },
 
-  // Buttons - Enhanced with premium styling
+  // Buttons - Archival styling
   button: {
-    base: 'relative inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1',
+    base: 'relative inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-copper/40 focus:ring-offset-1',
     group: 'flex items-center gap-2',
     iconButton:
-      'rounded-lg p-2 text-gray-600 bg-white border-2 border-gray-200 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 hover:shadow-md transition-all duration-200',
+      'rounded-lg p-2 text-ink/70 bg-parchment/80 border border-ink/15 hover:bg-parchment hover:border-ink/25 hover:text-ink hover:shadow-md transition-all duration-200',
     primary:
-      'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 border-2 border-blue-700/50 shadow-lg hover:shadow-xl px-4 py-2 text-sm font-medium',
+      'bg-ink text-parchment hover:bg-ink/90 border border-ink/80 shadow-lg hover:shadow-xl px-4 py-2 text-sm font-medium',
     secondary:
-      'bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-50 hover:border-gray-400 shadow-sm hover:shadow-md px-4 py-2 text-sm font-medium',
+      'bg-parchment/80 text-ink border border-ink/20 hover:bg-parchment hover:border-ink/30 shadow-sm hover:shadow-md px-4 py-2 text-sm font-medium',
     danger:
       'bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 border-2 border-red-700/50 shadow-lg hover:shadow-xl px-4 py-2 text-sm font-medium',
   },
@@ -88,20 +88,20 @@ export const designSystem = {
     container: 'fixed inset-0 z-50 flex items-center justify-center p-4',
     content:
       'glass-tactical w-full max-w-md transform rounded-lg p-4 shadow-tactical-xl transition-all',
-    header: 'text-lg font-semibold text-gray-900 mb-3',
+    header: 'text-lg font-semibold text-ink mb-3',
   },
 
   // Empty states
   emptyState: {
     container: 'text-center py-8',
-    icon: 'h-8 w-8 text-gray-300 mx-auto mb-2',
-    text: 'text-sm text-gray-500',
+    icon: 'h-8 w-8 text-ink/30 mx-auto mb-2',
+    text: 'text-sm text-ink/50',
   },
 
   // Loading states
   loading: {
     spinner:
-      'h-6 w-6 animate-spin rounded-full border-2 border-brand-500 border-t-transparent',
+      'h-6 w-6 animate-spin rounded-full border-2 border-ink/60 border-t-transparent',
     container: 'flex justify-center py-8',
   },
 

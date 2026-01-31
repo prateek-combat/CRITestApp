@@ -132,17 +132,15 @@ export default function TimeSlotModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded bg-white p-3 shadow-xl">
+      <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded bg-parchment/80 p-3 shadow-xl">
         <div className="mb-3 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">
-              Create Time Slot
-            </h2>
-            <p className="text-xs text-gray-600">For {jobProfileName}</p>
+            <h2 className="text-lg font-semibold text-ink">Create Time Slot</h2>
+            <p className="text-xs text-ink/60">For {jobProfileName}</p>
           </div>
           <button
             onClick={onClose}
-            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            className="rounded p-1 text-ink/40 hover:bg-parchment/90 hover:text-ink/60"
           >
             <X className="h-4 w-4" />
           </button>
@@ -156,7 +154,7 @@ export default function TimeSlotModal({
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-700">
+            <label className="block text-xs font-medium text-ink/70">
               Name *
             </label>
             <input
@@ -166,13 +164,13 @@ export default function TimeSlotModal({
                 setFormData({ ...formData, name: e.target.value })
               }
               placeholder="e.g., Morning Session, Batch A"
-              className="mt-1 block w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="mt-1 block w-full rounded border border-ink/20 px-2 py-1 text-sm focus:border-copper/50 focus:outline-none focus:ring-1 focus:ring-copper/40"
               required
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700">
+            <label className="block text-xs font-medium text-ink/70">
               Description
             </label>
             <textarea
@@ -182,13 +180,13 @@ export default function TimeSlotModal({
               }
               placeholder="Optional description"
               rows={2}
-              className="mt-1 block w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="mt-1 block w-full rounded border border-ink/20 px-2 py-1 text-sm focus:border-copper/50 focus:outline-none focus:ring-1 focus:ring-copper/40"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs font-medium text-gray-700">
+              <label className="block text-xs font-medium text-ink/70">
                 <Calendar className="mr-1 inline h-3 w-3" />
                 Start *
               </label>
@@ -198,13 +196,13 @@ export default function TimeSlotModal({
                 onChange={(e) =>
                   setFormData({ ...formData, startDateTime: e.target.value })
                 }
-                className="mt-1 block w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 block w-full rounded border border-ink/20 px-2 py-1 text-sm focus:border-copper/50 focus:outline-none focus:ring-1 focus:ring-copper/40"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700">
+              <label className="block text-xs font-medium text-ink/70">
                 <Clock className="mr-1 inline h-3 w-3" />
                 End *
               </label>
@@ -214,7 +212,7 @@ export default function TimeSlotModal({
                 onChange={(e) =>
                   setFormData({ ...formData, endDateTime: e.target.value })
                 }
-                className="mt-1 block w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 block w-full rounded border border-ink/20 px-2 py-1 text-sm focus:border-copper/50 focus:outline-none focus:ring-1 focus:ring-copper/40"
                 required
               />
             </div>
@@ -222,7 +220,7 @@ export default function TimeSlotModal({
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs font-medium text-gray-700">
+              <label className="block text-xs font-medium text-ink/70">
                 <Globe className="mr-1 inline h-3 w-3" />
                 Timezone
               </label>
@@ -231,7 +229,7 @@ export default function TimeSlotModal({
                 onChange={(e) =>
                   setFormData({ ...formData, timezone: e.target.value })
                 }
-                className="mt-1 block w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 block w-full rounded border border-ink/20 px-2 py-1 text-sm focus:border-copper/50 focus:outline-none focus:ring-1 focus:ring-copper/40"
               >
                 {timezones.map((tz) => (
                   <option key={tz} value={tz}>
@@ -242,7 +240,7 @@ export default function TimeSlotModal({
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700">
+              <label className="block text-xs font-medium text-ink/70">
                 <Users className="mr-1 inline h-3 w-3" />
                 Max Participants
               </label>
@@ -254,7 +252,7 @@ export default function TimeSlotModal({
                 }
                 placeholder="Unlimited"
                 min="1"
-                className="mt-1 block w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="mt-1 block w-full rounded border border-ink/20 px-2 py-1 text-sm focus:border-copper/50 focus:outline-none focus:ring-1 focus:ring-copper/40"
               />
             </div>
           </div>
@@ -263,14 +261,14 @@ export default function TimeSlotModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded border border-gray-300 bg-white px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+              className="rounded border border-ink/20 bg-parchment/80 px-3 py-1 text-xs font-medium text-ink/70 hover:bg-ink/5"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="rounded bg-ink px-3 py-1 text-xs font-medium text-parchment hover:bg-ink/90 disabled:opacity-50"
             >
               {isSubmitting ? 'Creating...' : 'Create'}
             </button>

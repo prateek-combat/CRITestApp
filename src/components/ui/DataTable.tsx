@@ -14,9 +14,9 @@ export const DataTable: React.FC<DataTableProps> = ({
 }) => {
   return (
     <div
-      className={`overflow-hidden rounded-lg border border-gray-200 bg-white ${className}`}
+      className={`overflow-hidden rounded-lg border border-ink/10 bg-parchment/80 ${className}`}
     >
-      <table className="min-w-full divide-y divide-gray-200">{children}</table>
+      <table className="min-w-full divide-y divide-ink/10">{children}</table>
     </div>
   );
 };
@@ -27,7 +27,7 @@ interface TableHeaderProps {
 
 export const TableHeader: React.FC<TableHeaderProps> = ({ children }) => {
   return (
-    <thead className="bg-gray-50">
+    <thead className="bg-ink/5">
       <tr>{children}</tr>
     </thead>
   );
@@ -44,7 +44,7 @@ export const TableHeaderCell: React.FC<TableHeaderCellProps> = ({
 }) => {
   return (
     <th
-      className={`px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500 ${className}`}
+      className={`px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-ink/50 ${className}`}
     >
       {children}
     </th>
@@ -57,7 +57,7 @@ interface TableBodyProps {
 
 export const TableBody: React.FC<TableBodyProps> = ({ children }) => {
   return (
-    <tbody className="divide-y divide-gray-200 bg-white">{children}</tbody>
+    <tbody className="divide-y divide-ink/10 bg-parchment/80">{children}</tbody>
   );
 };
 
@@ -74,9 +74,9 @@ export const TableRow: React.FC<TableRowProps> = ({
 }) => {
   return (
     <motion.tr
-      className={`transition-colors hover:bg-gray-50 ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      className={`transition-colors hover:bg-ink/5 ${onClick ? 'cursor-pointer' : ''} ${className}`}
       onClick={onClick}
-      whileHover={{ backgroundColor: 'rgba(0, 0, 0, 0.02)' }}
+      whileHover={{ backgroundColor: 'rgba(20, 24, 30, 0.04)' }}
     >
       {children}
     </motion.tr>
@@ -93,9 +93,7 @@ export const TableCell: React.FC<TableCellProps> = ({
   className = '',
 }) => {
   return (
-    <td className={`px-3 py-2 text-sm text-gray-900 ${className}`}>
-      {children}
-    </td>
+    <td className={`px-3 py-2 text-sm text-ink ${className}`}>{children}</td>
   );
 };
 
@@ -109,7 +107,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ message, icon }) => {
     <tr>
       <td colSpan={100} className="px-3 py-8 text-center">
         {icon && <div className="mb-2 flex justify-center">{icon}</div>}
-        <p className="text-sm text-gray-500">{message}</p>
+        <p className="text-sm text-ink/50">{message}</p>
       </td>
     </tr>
   );

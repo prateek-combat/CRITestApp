@@ -30,17 +30,17 @@ export default function SuccessNotification({
 
   return (
     <div className="animate-slide-in-right fixed right-4 top-4 z-50">
-      <div className="max-w-md rounded-lg border-2 border-green-200 bg-white p-4 shadow-xl">
+      <div className="max-w-md rounded-lg border border-moss/30 bg-parchment/90 p-4 shadow-xl">
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0">
-            <CheckCircle className="h-6 w-6 text-green-600" />
+            <CheckCircle className="h-6 w-6 text-moss" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-gray-900">{message}</p>
+            <p className="text-sm font-medium text-ink">{message}</p>
           </div>
           <button
             onClick={onClose}
-            className="flex-shrink-0 rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            className="flex-shrink-0 rounded p-1 text-ink/40 transition-colors hover:bg-ink/5 hover:text-ink"
           >
             <X className="h-4 w-4" />
           </button>

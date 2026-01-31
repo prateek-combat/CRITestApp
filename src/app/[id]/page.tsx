@@ -11,6 +11,17 @@ export default function LegacyRedirectPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const BackgroundShell = ({ children }: { children: React.ReactNode }) => (
+    <div className="relative flex min-h-screen items-center justify-center bg-parchment p-4 text-ink">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="bg-archive-wash absolute inset-0" />
+        <div className="bg-archive-grid absolute inset-0 opacity-40" />
+        <div className="noise-overlay absolute inset-0 opacity-20 mix-blend-multiply" />
+      </div>
+      <div className="relative z-10 w-full max-w-md">{children}</div>
+    </div>
+  );
+
   useEffect(() => {
     if (!id) return;
 
@@ -47,29 +58,27 @@ export default function LegacyRedirectPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <BackgroundShell>
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-brand-600"></div>
-          <p className="mt-4 text-gray-600">Checking link...</p>
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-ink/60"></div>
+          <p className="mt-4 text-ink/60">Checking link...</p>
         </div>
-      </div>
+      </BackgroundShell>
     );
   }
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="w-full max-w-md rounded-lg bg-white p-8 text-center shadow-lg">
+      <BackgroundShell>
+        <div className="w-full rounded-lg border border-ink/10 bg-parchment/80 p-8 text-center shadow-lg">
           <div className="mb-4 text-6xl text-red-500">❌</div>
-          <h1 className="mb-2 text-2xl font-bold text-gray-900">
-            Invalid Link
-          </h1>
-          <p className="mb-6 text-gray-600">{error}</p>
-          <p className="text-sm text-gray-500">
+          <h1 className="mb-2 text-2xl font-bold text-ink">Invalid Link</h1>
+          <p className="mb-6 text-ink/60">{error}</p>
+          <p className="text-sm text-ink/50">
             Please contact the test administrator for a valid link.
           </p>
         </div>
-      </div>
+      </BackgroundShell>
     );
   }
 

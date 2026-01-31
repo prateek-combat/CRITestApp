@@ -12,7 +12,6 @@ import {
   Trophy,
   Users,
   LayoutDashboard,
-  Zap,
   Brain,
   LogOut,
   Settings,
@@ -21,6 +20,7 @@ import {
   Menu,
   X,
   Building2,
+  ScanEye,
 } from 'lucide-react';
 import Button from '@/components/ui/button/Button';
 
@@ -72,11 +72,11 @@ export default function AdminLayout({
 
   if (status === 'loading') {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-parchment">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="h-8 w-8 rounded-full border-2 border-military-green border-t-transparent"
+          className="h-8 w-8 rounded-full border-2 border-ink/40 border-t-transparent"
         />
       </div>
     );
@@ -99,13 +99,13 @@ export default function AdminLayout({
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="admin-page-container min-h-screen text-ink">
       {/* Compact Top Navigation with Glass Effect */}
       <motion.nav
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5 }}
-        className="sticky top-0 z-50 border-b border-gray-200/50 bg-white/80 shadow-sm backdrop-blur-md"
+        className="sticky top-0 z-50 border-b border-ink/10 bg-parchment/90 shadow-sm backdrop-blur-md"
       >
         <div className="mx-auto max-w-7xl px-3 sm:px-4 lg:px-6">
           <div className="flex h-12 justify-between">
@@ -120,16 +120,14 @@ export default function AdminLayout({
                 className="group flex items-center space-x-2"
               >
                 <motion.div
-                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-military-green to-primary-600 shadow-md transition-shadow group-hover:shadow-lg"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-ink/20 bg-parchment/80 shadow-sm transition-shadow group-hover:shadow-md"
                   whileHover={{ rotate: 360 }}
                   transition={{ duration: 0.5 }}
                 >
-                  <Zap className="h-3.5 w-3.5 text-white" />
+                  <ScanEye className="h-3.5 w-3.5 text-ink" />
                 </motion.div>
                 <div>
-                  <h1 className="text-sm font-bold text-gray-900">
-                    Test Platform
-                  </h1>
+                  <h1 className="text-sm font-bold text-ink">CRITest Admin</h1>
                 </div>
               </Link>
             </motion.div>
@@ -149,10 +147,10 @@ export default function AdminLayout({
                   >
                     <Link href={item.href} className="group relative">
                       <motion.div
-                        className={`flex items-center space-x-1 rounded-md px-2.5 py-1.5 text-xs font-medium transition-all duration-200 ${
+                        className={`flex items-center space-x-1 rounded-md px-2.5 py-1.5 text-xs font-medium uppercase tracking-[0.2em] transition-all duration-200 ${
                           isActive
-                            ? 'bg-gradient-to-r from-military-green/10 to-accent-orange/10 text-military-green'
-                            : 'text-gray-600 hover:text-military-green'
+                            ? 'bg-ink/5 text-ink'
+                            : 'text-ink/60 hover:text-ink'
                         }`}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -163,7 +161,7 @@ export default function AdminLayout({
                       {isActive && (
                         <motion.div
                           layoutId="activeTab"
-                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-military-green to-accent-orange"
+                          className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-copper to-moss"
                           initial={false}
                           transition={{
                             type: 'spring',
@@ -185,7 +183,7 @@ export default function AdminLayout({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="inline-flex items-center justify-center rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-500 md:hidden"
+                className="inline-flex items-center justify-center rounded-md p-1.5 text-ink/50 transition-colors hover:bg-ink/5 hover:text-ink md:hidden"
               >
                 <AnimatePresence mode="wait">
                   {isMobileMenuOpen ? (
@@ -218,20 +216,20 @@ export default function AdminLayout({
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="glass flex items-center space-x-1.5 rounded-lg px-2 py-1 text-xs font-medium text-gray-700 transition-all duration-200 hover:bg-gray-50"
+                    className="flex items-center space-x-1.5 rounded-lg border border-ink/15 bg-parchment/80 px-2 py-1 text-xs font-medium text-ink/70 transition-all duration-200 hover:bg-parchment"
                   >
                     <motion.div
-                      className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-military-green to-accent-orange shadow-sm"
+                      className="flex h-6 w-6 items-center justify-center rounded-full bg-ink text-parchment shadow-sm"
                       whileHover={{ rotate: 360 }}
                       transition={{ duration: 0.5 }}
                     >
-                      <User className="h-3 w-3 text-white" />
+                      <User className="h-3 w-3 text-parchment" />
                     </motion.div>
                     <div className="hidden text-left lg:block">
-                      <p className="text-xs font-medium text-gray-900">
+                      <p className="text-xs font-medium text-ink">
                         {session.user.name}
                       </p>
-                      <p className="text-[10px] text-gray-500">
+                      <p className="text-[10px] text-ink/50">
                         {session.user.role}
                       </p>
                     </div>
@@ -251,14 +249,14 @@ export default function AdminLayout({
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: -10, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute right-0 z-50 mt-1 w-48 overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5"
+                        className="absolute right-0 z-50 mt-1 w-48 overflow-hidden rounded-lg border border-ink/10 bg-parchment shadow-lg"
                       >
                         <div className="py-1">
-                          <div className="border-b border-gray-100 px-3 py-2 lg:hidden">
-                            <p className="text-xs font-medium text-gray-900">
+                          <div className="border-b border-ink/10 px-3 py-2 lg:hidden">
+                            <p className="text-xs font-medium text-ink">
                               {session.user.name}
                             </p>
-                            <p className="text-[10px] text-gray-500">
+                            <p className="text-[10px] text-ink/50">
                               {session.user.email}
                             </p>
                           </div>
@@ -268,7 +266,7 @@ export default function AdminLayout({
                               setIsUserMenuOpen(false);
                               signOut({ callbackUrl: '/login' });
                             }}
-                            className="flex w-full items-center px-3 py-2 text-xs text-gray-700 transition-colors hover:bg-red-50 hover:text-red-700"
+                            className="flex w-full items-center px-3 py-2 text-xs text-ink/70 transition-colors hover:bg-red-50 hover:text-red-700"
                           >
                             <LogOut className="mr-2 h-3.5 w-3.5" />
                             Logout
@@ -291,7 +289,7 @@ export default function AdminLayout({
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="overflow-hidden border-t border-gray-200 md:hidden"
+              className="overflow-hidden border-t border-ink/10 md:hidden"
             >
               <div className="space-y-0.5 px-2 pb-2 pt-2">
                 {navigation.map((item, index) => {
@@ -309,8 +307,8 @@ export default function AdminLayout({
                         href={item.href}
                         className={`flex items-center space-x-2.5 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 ${
                           isActive
-                            ? 'bg-gradient-to-r from-military-green/10 to-accent-orange/10 text-military-green'
-                            : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                            ? 'bg-ink/5 text-ink'
+                            : 'text-ink/60 hover:bg-ink/5 hover:text-ink'
                         }`}
                       >
                         <item.icon className="h-4 w-4" />
@@ -330,7 +328,7 @@ export default function AdminLayout({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="mx-auto max-w-7xl px-3 py-3 sm:px-4 lg:px-6"
+        className="mx-auto max-w-7xl px-3 py-4 sm:px-4 lg:px-6"
       >
         {children}
       </motion.main>

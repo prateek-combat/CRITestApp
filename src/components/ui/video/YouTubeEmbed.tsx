@@ -23,9 +23,9 @@ const YouTubeEmbed: React.FC<YouTubeEmbedProps> = ({
     console.error('Invalid YouTube video ID:', videoId);
     return (
       <div
-        className={`flex items-center justify-center overflow-hidden rounded-lg bg-gray-100 ${className}`}
+        className={`flex items-center justify-center overflow-hidden rounded-lg bg-parchment/90 ${className}`}
       >
-        <p className="text-gray-500">Invalid video ID</p>
+        <p className="text-ink/50">Invalid video ID</p>
       </div>
     );
   }

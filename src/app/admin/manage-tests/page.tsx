@@ -383,27 +383,25 @@ export default function ManageTestsPage() {
   // --- Rendering ---
   // Helper for input classes
   const inputClasses =
-    'block w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-accent-orange focus:border-accent-orange sm:text-sm text-text-dark';
-  const labelClasses = 'block text-sm font-medium text-text-light mb-1';
+    'block w-full px-4 py-3 border border-ink/20 rounded-md shadow-sm placeholder-ink/40 focus:outline-none focus:ring-copper/40 focus:border-copper/50 sm:text-sm text-ink';
+  const labelClasses = 'block text-sm font-medium text-ink/60 mb-1';
   const buttonClasses = (color: 'green' | 'orange' | 'blue') =>
-    `px-6 py-2.5 font-semibold rounded-md shadow-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 transition duration-150 text-primary-white ${
+    `px-6 py-2.5 font-semibold rounded-md shadow-md hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 transition duration-150 text-parchment ${
       {
-        green:
-          'bg-military-green hover:bg-military-green/90 focus:ring-military-green',
-        orange:
-          'bg-accent-orange hover:bg-accent-orange/90 focus:ring-accent-orange',
-        blue: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500', // Keeping blue for invite for now
+        green: 'bg-ink hover:bg-ink/90 focus:ring-copper/40',
+        orange: 'bg-copper hover:bg-copper/90 focus:ring-copper/40',
+        blue: 'bg-slateblue hover:bg-slateblue/80 focus:ring-slateblue/40', // Keeping blue for invite for now
       }[color]
     } disabled:opacity-50 disabled:cursor-not-allowed`;
 
   return (
     <div className="min-h-screen bg-off-white p-3 md:p-4 lg:p-6">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Manage Tests</h1>
+        <h1 className="text-2xl font-bold text-ink">Manage Tests</h1>
       </header>
 
-      <section className="mb-8 rounded-lg bg-primary-white p-4 shadow-xl">
-        <h2 className="mb-4 border-b pb-2 text-lg font-semibold text-text-dark">
+      <section className="mb-8 rounded-lg bg-parchment/80 p-4 shadow-xl">
+        <h2 className="mb-4 border-b pb-2 text-lg font-semibold text-ink">
           Create New Test
         </h2>
         <form onSubmit={handleCreateTestSubmit} className="space-y-4">
@@ -440,7 +438,7 @@ export default function ManageTestsPage() {
               id="allowReview"
               checked={allowReview}
               onChange={(e) => setAllowReview(e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-accent-orange focus:ring-accent-orange"
+              className="h-4 w-4 rounded border-ink/20 text-copper focus:ring-copper/40"
             />
             <label htmlFor="allowReview" className={labelClasses + ' mb-0'}>
               Allow review functionality (candidates can review their answers)
@@ -459,34 +457,34 @@ export default function ManageTestsPage() {
         </form>
       </section>
 
-      <section className="mb-8 rounded-lg bg-primary-white p-4 shadow-xl">
-        <h2 className="mb-4 border-b pb-2 text-lg font-semibold text-text-dark">
+      <section className="mb-8 rounded-lg bg-parchment/80 p-4 shadow-xl">
+        <h2 className="mb-4 border-b pb-2 text-lg font-semibold text-ink">
           Existing Tests
         </h2>
-        {isLoadingTests && <p className="text-text-light">Loading tests...</p>}
+        {isLoadingTests && <p className="text-ink/60">Loading tests...</p>}
         {errorTests && <p className="text-red-500">Error: {errorTests}</p>}
         {!isLoadingTests && !errorTests && tests.length === 0 && (
-          <p className="text-text-light">No tests found. Create one above.</p>
+          <p className="text-ink/60">No tests found. Create one above.</p>
         )}
         {!isLoadingTests && !errorTests && tests.length > 0 && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {tests.map((test) => (
               <div
                 key={test.id}
-                className={`rounded-lg border p-4 shadow-lg transition-all duration-200 ease-in-out hover:shadow-2xl ${selectedTest?.id === test.id ? 'bg-orange-50 ring-2 ring-accent-orange' : 'border-gray-200 bg-primary-white'}`}
+                className={`rounded-lg border p-4 shadow-lg transition-all duration-200 ease-in-out hover:shadow-2xl ${selectedTest?.id === test.id ? 'bg-copper/10 ring-2 ring-copper/40' : 'border-ink/10 bg-parchment/80'}`}
               >
                 <div
                   onClick={() => handleSelectTest(test)}
                   className="cursor-pointer"
                 >
-                  <h3 className="mb-2 text-lg font-semibold text-military-green">
+                  <h3 className="mb-2 text-lg font-semibold text-moss">
                     {test.title}
                   </h3>
-                  <p className="mb-1 truncate text-sm text-text-light">
+                  <p className="mb-1 truncate text-sm text-ink/60">
                     {test.description || 'No description'}
                   </p>
-                  <p className="text-xs text-gray-400">ID: {test.id}</p>
-                  <p className="mt-2 text-sm font-medium text-accent-orange">
+                  <p className="text-xs text-ink/40">ID: {test.id}</p>
+                  <p className="mt-2 text-sm font-medium text-copper">
                     Questions:{' '}
                     {test._count
                       ? test._count.questions
@@ -495,14 +493,14 @@ export default function ManageTestsPage() {
                         : 0}
                   </p>
                 </div>
-                <div className="mt-3 flex justify-end border-t border-gray-200 pt-2">
+                <div className="mt-3 flex justify-end border-t border-ink/10 pt-2">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDeleteTest(test.id);
                     }}
                     disabled={deletingTestId === test.id}
-                    className={`rounded-md px-3 py-1 text-xs font-medium shadow-sm transition-colors ${deletingTestId === test.id ? 'bg-gray-200 text-gray-500' : 'bg-red-500 text-primary-white hover:bg-red-600 focus:ring-2 focus:ring-red-500 focus:ring-offset-1'}`}
+                    className={`rounded-md px-3 py-1 text-xs font-medium shadow-sm transition-colors ${deletingTestId === test.id ? 'bg-ink/10 text-ink/50' : 'bg-red-500 text-parchment hover:bg-red-600 focus:ring-2 focus:ring-red-500 focus:ring-offset-1'}`}
                   >
                     {deletingTestId === test.id ? 'Deleting...' : 'Delete Test'}
                   </button>
@@ -514,22 +512,22 @@ export default function ManageTestsPage() {
       </section>
 
       {selectedTest && (
-        <section className="mt-8 rounded-lg border-t-4 border-military-green bg-primary-white p-4 shadow-2xl">
+        <section className="mt-8 rounded-lg border-t-4 border-moss bg-parchment/80 p-4 shadow-2xl">
           <div className="mb-4 flex flex-wrap items-center justify-between border-b pb-2">
-            <h2 className="text-xl font-semibold text-military-green">
+            <h2 className="text-xl font-semibold text-moss">
               Details for:{' '}
-              <span className="text-accent-orange">{selectedTest.title}</span>
+              <span className="text-copper">{selectedTest.title}</span>
             </h2>
             <button
               onClick={() => setSelectedTest(null)}
-              className="mt-2 rounded-md border px-3 py-1.5 text-sm font-medium text-text-light transition hover:bg-gray-100 md:mt-0"
+              className="mt-2 rounded-md border px-3 py-1.5 text-sm font-medium text-ink/60 transition hover:bg-parchment/90 md:mt-0"
             >
               Close Details
             </button>
           </div>
 
           {isLoadingSelectedTest && (
-            <p className="text-text-light">Loading questions...</p>
+            <p className="text-ink/60">Loading questions...</p>
           )}
           {errorSelectedTest && (
             <p className="text-red-500">Error: {errorSelectedTest}</p>
@@ -540,11 +538,11 @@ export default function ManageTestsPage() {
               {/* Left Column: Questions List & Invite */}
               <div>
                 <div className="mb-6">
-                  <h3 className="mb-3 text-lg font-semibold text-text-dark">
+                  <h3 className="mb-3 text-lg font-semibold text-ink">
                     Existing Questions ({selectedTest.questions.length})
                   </h3>
                   {selectedTest.questions.length === 0 ? (
-                    <p className="rounded-md bg-gray-50 p-3 text-text-light">
+                    <p className="rounded-md bg-parchment p-3 text-ink/60">
                       No questions yet. Add one using the form.
                     </p>
                   ) : (
@@ -554,15 +552,15 @@ export default function ManageTestsPage() {
                           key={q.id}
                           className="rounded-md border bg-off-white p-3 shadow-sm"
                         >
-                          <div className="font-medium text-text-dark">
+                          <div className="font-medium text-ink">
                             {index + 1}.{' '}
                             {q.promptText.length > 80
                               ? q.promptText.substring(0, 80) + '...'
                               : q.promptText}
                           </div>
-                          <p className="mt-1 text-xs text-text-light">
+                          <p className="mt-1 text-xs text-ink/60">
                             Type:{' '}
-                            <span className="font-semibold text-accent-orange">
+                            <span className="font-semibold text-copper">
                               General
                             </span>{' '}
                             | Timer: {q.timerSeconds}s
@@ -573,7 +571,7 @@ export default function ManageTestsPage() {
                                 // For now, show alert. Full edit functionality can be implemented later
                                 alert('Edit functionality coming soon!');
                               }}
-                              className="rounded px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              className="rounded px-3 py-1 text-xs font-medium text-slateblue hover:bg-slateblue/10 focus:outline-none focus:ring-2 focus:ring-slateblue/40"
                             >
                               Edit
                             </button>
@@ -615,7 +613,7 @@ export default function ManageTestsPage() {
                 </div>
 
                 <div className="border-t pt-6">
-                  <h3 className="mb-4 text-xl font-semibold text-text-dark">
+                  <h3 className="mb-4 text-xl font-semibold text-ink">
                     Create Invitation
                   </h3>
 
@@ -689,15 +687,15 @@ export default function ManageTestsPage() {
                     </p>
                   )}
                   {createdInvitationLink && (
-                    <div className="mt-4 rounded-md border border-green-300 bg-green-50 p-3">
-                      <p className="mb-1 text-sm text-green-700">
+                    <div className="mt-4 rounded-md border border-moss/40 bg-moss/10 p-3">
+                      <p className="mb-1 text-sm text-moss">
                         Invitation created! Share this link:
                       </p>
                       <input
                         type="text"
                         readOnly
                         value={createdInvitationLink}
-                        className={inputClasses + ' bg-primary-white'}
+                        className={inputClasses + ' bg-parchment/80'}
                         onFocus={(e) => e.target.select()}
                       />
                     </div>
@@ -707,7 +705,7 @@ export default function ManageTestsPage() {
 
               {/* Right Column: Add New Question Form */}
               <div className="rounded-lg bg-off-white p-6 shadow-inner">
-                <h3 className="mb-5 border-b pb-2 text-xl font-semibold text-text-dark">
+                <h3 className="mb-5 border-b pb-2 text-xl font-semibold text-ink">
                   Add New Question
                 </h3>
                 <form onSubmit={handleAddQuestionSubmit} className="space-y-5">

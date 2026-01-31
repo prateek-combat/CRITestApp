@@ -49,11 +49,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100 p-4">
-      {/* Animated background elements */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+    <div className="relative flex min-h-screen items-center justify-center bg-parchment p-4 text-ink">
+      {/* Atmospheric background */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="bg-archive-wash absolute inset-0" />
+        <div className="bg-archive-grid absolute inset-0 opacity-40" />
+        <div className="noise-overlay absolute inset-0 opacity-20 mix-blend-multiply" />
         <motion.div
-          className="absolute -right-40 -top-40 h-80 w-80 rounded-full bg-military-green/5 blur-3xl"
+          className="absolute -right-40 -top-40 h-80 w-80 rounded-full bg-copper/15 blur-3xl"
           animate={{
             x: [0, 30, 0],
             y: [0, -30, 0],
@@ -65,7 +68,7 @@ export default function LoginPage() {
           }}
         />
         <motion.div
-          className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-accent-orange/5 blur-3xl"
+          className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-moss/20 blur-3xl"
           animate={{
             x: [0, -30, 0],
             y: [0, 30, 0],
@@ -95,18 +98,21 @@ export default function LoginPage() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ type: 'spring', duration: 0.5 }}
-            className="mb-4 inline-flex rounded-2xl bg-gradient-to-br from-military-green to-primary-600 p-3 shadow-xl"
+            className="mb-4 inline-flex rounded-2xl border border-ink/20 bg-parchment/80 p-3 shadow-xl"
           >
-            <Lock className="h-8 w-8 text-white" />
+            <Lock className="h-8 w-8 text-ink" />
           </motion.div>
-          <h2 className="text-2xl font-bold text-gray-900">Welcome back</h2>
-          <p className="mt-1 text-sm text-gray-600">
+          <h2 className="text-2xl font-bold text-ink">Welcome back</h2>
+          <p className="mt-1 text-sm text-ink/60">
             Sign in to access the platform
           </p>
         </motion.div>
 
         {/* Login Card */}
-        <Card variant="default" className="p-6 shadow-xl">
+        <Card
+          variant="default"
+          className="border border-ink/10 bg-parchment/80 p-6 shadow-xl"
+        >
           {error && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
@@ -126,7 +132,7 @@ export default function LoginPage() {
             transition={{ delay: 0.3 }}
             className="space-y-4"
           >
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-ink/60">
               Access is restricted to pre-registered admin accounts.
             </p>
             <Button
@@ -171,7 +177,7 @@ export default function LoginPage() {
         >
           <Link
             href="/"
-            className="text-sm text-gray-600 transition-colors hover:text-military-green"
+            className="text-sm text-ink/60 transition-colors hover:text-ink"
           >
             ← Back to home
           </Link>

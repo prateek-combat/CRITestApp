@@ -114,31 +114,46 @@ export default function JobProfileInvitationPage() {
     }
   };
 
+  const BackgroundShell = ({
+    children,
+    maxWidth = 'max-w-md',
+  }: {
+    children: React.ReactNode;
+    maxWidth?: string;
+  }) => (
+    <div className="relative flex min-h-screen items-center justify-center bg-parchment p-4 text-ink">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="bg-archive-wash absolute inset-0" />
+        <div className="bg-archive-grid absolute inset-0 opacity-40" />
+        <div className="noise-overlay absolute inset-0 opacity-20 mix-blend-multiply" />
+      </div>
+      <div className={`relative z-10 w-full ${maxWidth}`}>{children}</div>
+    </div>
+  );
+
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+      <BackgroundShell>
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-brand-600"></div>
-          <p className="mt-4 text-gray-600">Loading invitation...</p>
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-ink/60"></div>
+          <p className="mt-4 text-ink/60">Loading invitation...</p>
         </div>
-      </div>
+      </BackgroundShell>
     );
   }
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="w-full max-w-md rounded-lg bg-white p-8 text-center shadow-lg">
+      <BackgroundShell>
+        <div className="w-full rounded-lg border border-ink/10 bg-parchment/80 p-8 text-center shadow-lg">
           <div className="mb-4 text-6xl text-red-500">❌</div>
-          <h1 className="mb-2 text-2xl font-bold text-gray-900">
-            Invitation Error
-          </h1>
-          <p className="mb-4 text-gray-600">{error}</p>
-          <p className="text-sm text-gray-500">
+          <h1 className="mb-2 text-2xl font-bold text-ink">Invitation Error</h1>
+          <p className="mb-4 text-ink/60">{error}</p>
+          <p className="text-sm text-ink/50">
             Please contact the administrator if you believe this is an error.
           </p>
         </div>
-      </div>
+      </BackgroundShell>
     );
   }
 
@@ -150,52 +165,50 @@ export default function JobProfileInvitationPage() {
 
   if (isExpired) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="w-full max-w-md rounded-lg bg-white p-8 text-center shadow-lg">
+      <BackgroundShell>
+        <div className="w-full rounded-lg border border-ink/10 bg-parchment/80 p-8 text-center shadow-lg">
           <div className="mb-4 text-6xl text-yellow-500">⚠️</div>
-          <h1 className="mb-2 text-2xl font-bold text-gray-900">
+          <h1 className="mb-2 text-2xl font-bold text-ink">
             Invitation Expired
           </h1>
-          <p className="mb-6 text-gray-600">
+          <p className="mb-6 text-ink/60">
             This invitation has expired and is no longer valid.
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-ink/50">
             Please contact the administrator for a new invitation.
           </p>
         </div>
-      </div>
+      </BackgroundShell>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
+    <BackgroundShell>
+      <div className="w-full rounded-lg border border-ink/10 bg-parchment/80 p-8 shadow-lg">
         <div className="mb-8 text-center">
-          <div className="mb-4 text-6xl text-brand-600">📝</div>
-          <h1 className="mb-2 text-2xl font-bold text-gray-900">
+          <div className="mb-4 text-6xl text-copper">📝</div>
+          <h1 className="mb-2 text-2xl font-bold text-ink">
             {invitation.jobProfile.name}
           </h1>
-          <p className="mb-4 text-gray-600">
+          <p className="mb-4 text-ink/60">
             You are invited to complete this assessment
           </p>
-          <div className="rounded-lg bg-brand-50 p-4 text-sm text-brand-700">
+          <div className="rounded-lg bg-copper/10 p-4 text-sm text-copper">
             <p className="font-semibold">{invitation.candidateName}</p>
-            <p className="text-brand-600">{invitation.candidateEmail}</p>
+            <p className="text-copper">{invitation.candidateEmail}</p>
           </div>
         </div>
 
         {/* Before you begin section */}
         <div className="mb-8 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Before you begin
-          </h2>
+          <h2 className="text-lg font-semibold text-ink">Before you begin</h2>
 
           <div className="space-y-3">
             <div className="flex items-start space-x-3">
-              <Shield className="mt-0.5 h-5 w-5 text-brand-600" />
+              <Shield className="mt-0.5 h-5 w-5 text-copper" />
               <div>
-                <p className="font-medium text-gray-900">Secure Environment</p>
-                <p className="text-sm text-gray-600">
+                <p className="font-medium text-ink">Secure Environment</p>
+                <p className="text-sm text-ink/60">
                   Ensure you&apos;re in a quiet, private space with stable
                   internet
                 </p>
@@ -203,32 +216,30 @@ export default function JobProfileInvitationPage() {
             </div>
 
             <div className="flex items-start space-x-3">
-              <Clock className="mt-0.5 h-5 w-5 text-brand-600" />
+              <Clock className="mt-0.5 h-5 w-5 text-copper" />
               <div>
-                <p className="font-medium text-gray-900">Time Commitment</p>
-                <p className="text-sm text-gray-600">
+                <p className="font-medium text-ink">Time Commitment</p>
+                <p className="text-sm text-ink/60">
                   Plan for uninterrupted time to complete the assessment
                 </p>
               </div>
             </div>
 
             <div className="flex items-start space-x-3">
-              <Monitor className="mt-0.5 h-5 w-5 text-brand-600" />
+              <Monitor className="mt-0.5 h-5 w-5 text-copper" />
               <div>
-                <p className="font-medium text-gray-900">
-                  Technical Requirements
-                </p>
-                <p className="text-sm text-gray-600">
+                <p className="font-medium text-ink">Technical Requirements</p>
+                <p className="text-sm text-ink/60">
                   Use a desktop or laptop with a webcam and microphone
                 </p>
               </div>
             </div>
 
             <div className="flex items-start space-x-3">
-              <Info className="mt-0.5 h-5 w-5 text-brand-600" />
+              <Info className="mt-0.5 h-5 w-5 text-copper" />
               <div>
-                <p className="font-medium text-gray-900">Assessment Rules</p>
-                <p className="text-sm text-gray-600">
+                <p className="font-medium text-ink">Assessment Rules</p>
+                <p className="text-sm text-ink/60">
                   Complete honestly and follow all instructions provided
                 </p>
               </div>
@@ -245,7 +256,7 @@ export default function JobProfileInvitationPage() {
         <button
           onClick={handleStartAssessment}
           disabled={starting}
-          className="w-full rounded-lg bg-brand-600 px-4 py-3 font-medium text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-opacity-20 disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full rounded-lg bg-ink px-4 py-3 font-medium text-white transition-colors hover:bg-ink/90 focus:outline-none focus:ring-2 focus:ring-copper/40 focus:ring-opacity-20 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {starting ? (
             <span className="flex items-center justify-center">
@@ -276,10 +287,10 @@ export default function JobProfileInvitationPage() {
           )}
         </button>
 
-        <div className="mt-6 text-center text-sm text-gray-500">
+        <div className="mt-6 text-center text-sm text-ink/50">
           <p>Expires: {new Date(invitation.expiresAt).toLocaleDateString()}</p>
         </div>
       </div>
-    </div>
+    </BackgroundShell>
   );
 }

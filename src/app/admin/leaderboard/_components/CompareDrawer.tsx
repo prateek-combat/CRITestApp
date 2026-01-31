@@ -11,7 +11,7 @@ const RadarCompare = dynamic(() => import('./RadarCompare'), {
   ssr: false,
   loading: () => (
     <div className="flex h-96 items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
+      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-slateblue/50"></div>
     </div>
   ),
 });
@@ -94,15 +94,15 @@ export default function CompareDrawer() {
       />
 
       {/* Drawer */}
-      <div className="fixed right-0 top-0 z-50 h-full w-full max-w-4xl overflow-y-auto bg-white shadow-xl">
+      <div className="fixed right-0 top-0 z-50 h-full w-full max-w-4xl overflow-y-auto bg-parchment/80 shadow-xl">
         <div className="p-6">
           {/* Header */}
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-bold text-ink">
                 Compare Candidates
               </h2>
-              <p className="mt-1 text-sm text-gray-600">
+              <p className="mt-1 text-sm text-ink/60">
                 Side-by-side performance comparison for {selected.length}{' '}
                 candidate{selected.length !== 1 ? 's' : ''}
               </p>
@@ -112,17 +112,17 @@ export default function CompareDrawer() {
                 stopCompare();
                 clear();
               }}
-              className="rounded-full p-2 transition-colors hover:bg-gray-100"
+              className="rounded-full p-2 transition-colors hover:bg-parchment/90"
             >
-              <X className="h-6 w-6 text-gray-400" />
+              <X className="h-6 w-6 text-ink/40" />
             </button>
           </div>
 
           {/* Loading State */}
           {isLoading && (
             <div className="flex items-center justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-blue-500"></div>
-              <p className="ml-3 text-gray-600">Loading comparison data...</p>
+              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-slateblue/50"></div>
+              <p className="ml-3 text-ink/60">Loading comparison data...</p>
             </div>
           )}
 
@@ -157,46 +157,46 @@ export default function CompareDrawer() {
           {!isLoading && !error && candidates.length > 0 && (
             <div className="space-y-8">
               {/* Radar Chart */}
-              <div className="rounded-lg bg-gray-50 p-6">
-                <h3 className="mb-4 text-lg font-semibold text-gray-900">
+              <div className="rounded-lg bg-parchment p-6">
+                <h3 className="mb-4 text-lg font-semibold text-ink">
                   Performance Comparison
                 </h3>
                 <RadarCompare candidates={candidates} />
               </div>
 
               {/* Summary Table */}
-              <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-                <div className="border-b border-gray-200 px-6 py-4">
-                  <h3 className="text-lg font-semibold text-gray-900">
+              <div className="overflow-hidden rounded-lg border border-ink/10 bg-parchment/80">
+                <div className="border-b border-ink/10 px-6 py-4">
+                  <h3 className="text-lg font-semibold text-ink">
                     Detailed Comparison
                   </h3>
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                  <table className="min-w-full divide-y divide-ink/10">
+                    <thead className="bg-parchment">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-ink/50">
                           Metric
                         </th>
                         {candidates.map((candidate) => (
                           <th
                             key={candidate.attemptId}
-                            className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500"
+                            className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-ink/50"
                           >
-                            <div className="text-sm font-medium normal-case text-gray-900">
+                            <div className="text-sm font-medium normal-case text-ink">
                               {candidate.candidateName}
                             </div>
-                            <div className="text-xs normal-case text-gray-500">
+                            <div className="text-xs normal-case text-ink/50">
                               Rank #{candidate.rank}
                             </div>
                           </th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
+                    <tbody className="divide-y divide-ink/10 bg-parchment/80">
                       <tr>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-ink">
                           Composite Score
                         </td>
                         {candidates.map((candidate) => (
@@ -204,24 +204,24 @@ export default function CompareDrawer() {
                             key={candidate.attemptId}
                             className="whitespace-nowrap px-6 py-4 text-center"
                           >
-                            <div className="text-lg font-bold text-gray-900">
+                            <div className="text-lg font-bold text-ink">
                               {candidate.composite.toFixed(1)}
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-ink/50">
                               {candidate.percentile.toFixed(1)}th percentile
                             </div>
                           </td>
                         ))}
                       </tr>
 
-                      <tr className="bg-gray-50">
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                      <tr className="bg-parchment">
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-ink">
                           Logical Reasoning
                         </td>
                         {candidates.map((candidate) => (
                           <td
                             key={candidate.attemptId}
-                            className="whitespace-nowrap px-6 py-4 text-center text-sm text-gray-900"
+                            className="whitespace-nowrap px-6 py-4 text-center text-sm text-ink"
                           >
                             {candidate.scoreLogical.toFixed(1)}
                           </td>
@@ -229,27 +229,27 @@ export default function CompareDrawer() {
                       </tr>
 
                       <tr>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-ink">
                           Verbal Reasoning
                         </td>
                         {candidates.map((candidate) => (
                           <td
                             key={candidate.attemptId}
-                            className="whitespace-nowrap px-6 py-4 text-center text-sm text-gray-900"
+                            className="whitespace-nowrap px-6 py-4 text-center text-sm text-ink"
                           >
                             {candidate.scoreVerbal.toFixed(1)}
                           </td>
                         ))}
                       </tr>
 
-                      <tr className="bg-gray-50">
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                      <tr className="bg-parchment">
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-ink">
                           Numerical Reasoning
                         </td>
                         {candidates.map((candidate) => (
                           <td
                             key={candidate.attemptId}
-                            className="whitespace-nowrap px-6 py-4 text-center text-sm text-gray-900"
+                            className="whitespace-nowrap px-6 py-4 text-center text-sm text-ink"
                           >
                             {candidate.scoreNumerical.toFixed(1)}
                           </td>
@@ -257,27 +257,27 @@ export default function CompareDrawer() {
                       </tr>
 
                       <tr>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-ink">
                           Attention to Detail
                         </td>
                         {candidates.map((candidate) => (
                           <td
                             key={candidate.attemptId}
-                            className="whitespace-nowrap px-6 py-4 text-center text-sm text-gray-900"
+                            className="whitespace-nowrap px-6 py-4 text-center text-sm text-ink"
                           >
                             {candidate.scoreAttention.toFixed(1)}
                           </td>
                         ))}
                       </tr>
 
-                      <tr className="bg-gray-50">
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                      <tr className="bg-parchment">
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-ink">
                           Other
                         </td>
                         {candidates.map((candidate) => (
                           <td
                             key={candidate.attemptId}
-                            className="whitespace-nowrap px-6 py-4 text-center text-sm text-gray-900"
+                            className="whitespace-nowrap px-6 py-4 text-center text-sm text-ink"
                           >
                             {candidate.scoreOther.toFixed(1)}
                           </td>
@@ -285,13 +285,13 @@ export default function CompareDrawer() {
                       </tr>
 
                       <tr>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-ink">
                           Test Duration
                         </td>
                         {candidates.map((candidate) => (
                           <td
                             key={candidate.attemptId}
-                            className="whitespace-nowrap px-6 py-4 text-center text-sm text-gray-900"
+                            className="whitespace-nowrap px-6 py-4 text-center text-sm text-ink"
                           >
                             {formatDuration(candidate.durationSeconds)}
                           </td>
@@ -303,20 +303,20 @@ export default function CompareDrawer() {
               </div>
 
               {/* Actions */}
-              <div className="flex items-center justify-between border-t border-gray-200 pt-4">
-                <p className="text-sm text-gray-600">
+              <div className="flex items-center justify-between border-t border-ink/10 pt-4">
+                <p className="text-sm text-ink/60">
                   You can select up to 5 candidates for comparison
                 </p>
                 <div className="flex space-x-3">
                   <button
                     onClick={clear}
-                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="rounded-md border border-ink/20 bg-parchment/80 px-4 py-2 text-sm font-medium text-ink/70 hover:bg-parchment focus:outline-none focus:ring-2 focus:ring-slateblue/40 focus:ring-offset-2"
                   >
                     Clear Selection
                   </button>
                   <button
                     onClick={() => window.print()}
-                    className="rounded-md border border-transparent bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                    className="rounded-md border border-transparent bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-ink/90 focus:outline-none focus:ring-2 focus:ring-copper/40 focus:ring-offset-2"
                   >
                     Export Report
                   </button>

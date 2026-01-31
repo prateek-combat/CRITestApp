@@ -59,15 +59,15 @@ export default function CreateTestPage() {
   };
 
   return (
-    <div className="min-h-screen space-y-6 bg-gray-100 p-4 md:p-6 lg:p-8">
+    <div className="min-h-screen space-y-6 bg-parchment/90 p-4 md:p-6 lg:p-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Create New Test</h1>
-          <p className="text-gray-600">Set up a new assessment test</p>
+          <h1 className="text-2xl font-bold text-ink">Create New Test</h1>
+          <p className="text-ink/60">Set up a new assessment test</p>
         </div>
         <Link
           href="/admin/tests"
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          className="flex items-center gap-2 text-ink/60 hover:text-ink"
         >
           <svg
             className="h-4 w-4"
@@ -86,7 +86,7 @@ export default function CreateTestPage() {
         </Link>
       </div>
 
-      <div className="rounded-lg border border-gray-200 bg-white shadow-md transition-shadow duration-300 hover:shadow-lg">
+      <div className="rounded-lg border border-ink/10 bg-parchment/80 shadow-md transition-shadow duration-300 hover:shadow-lg">
         <form onSubmit={handleSubmit} className="space-y-6 p-6">
           {error && (
             <div
@@ -121,7 +121,7 @@ export default function CreateTestPage() {
             <div>
               <label
                 htmlFor="title"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-sm font-medium text-ink/70"
               >
                 Test Title *
               </label>
@@ -132,7 +132,7 @@ export default function CreateTestPage() {
                 value={formData.title}
                 onChange={handleChange}
                 required
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500"
+                className="w-full rounded-lg border border-ink/20 px-3 py-2 focus:border-copper/50 focus:ring-2 focus:ring-copper/40"
                 placeholder="Enter test title"
               />
             </div>
@@ -140,7 +140,7 @@ export default function CreateTestPage() {
             <div>
               <label
                 htmlFor="description"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-sm font-medium text-ink/70"
               >
                 Test Description
               </label>
@@ -150,7 +150,7 @@ export default function CreateTestPage() {
                 value={formData.description}
                 onChange={handleChange}
                 rows={4}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500"
+                className="w-full rounded-lg border border-ink/20 px-3 py-2 focus:border-copper/50 focus:ring-2 focus:ring-copper/40"
                 placeholder="Enter test description (optional)"
               />
             </div>
@@ -162,16 +162,16 @@ export default function CreateTestPage() {
                 name="allowReview"
                 checked={formData.allowReview}
                 onChange={handleChange}
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                className="mt-1 h-4 w-4 rounded border-ink/20 text-copper focus:ring-copper/40"
               />
               <div className="flex-1">
                 <label
                   htmlFor="allowReview"
-                  className="block text-sm font-medium text-gray-700"
+                  className="block text-sm font-medium text-ink/70"
                 >
                   Allow Review & Navigation
                 </label>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-ink/50">
                   When enabled, candidates can bookmark questions, review their
                   answers, and navigate back to previous questions. When
                   disabled, candidates can only move forward through the test.
@@ -180,17 +180,17 @@ export default function CreateTestPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-4 border-t border-gray-200 pt-6">
+          <div className="flex items-center justify-end gap-4 border-t border-ink/10 pt-6">
             <Link
               href="/admin/tests"
-              className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              className="rounded-lg bg-parchment/90 px-4 py-2 text-sm font-medium text-ink/70 transition-colors hover:bg-ink/10 focus:outline-none focus:ring-2 focus:ring-copper/40 focus:ring-offset-2"
             >
               Cancel
             </Link>
             <button
               type="submit"
               disabled={loading || !formData.title.trim()}
-              className="rounded-lg bg-brand-500 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg bg-copper/100 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-ink focus:outline-none focus:ring-2 focus:ring-copper/40 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading ? 'Creating...' : 'Create Test'}
             </button>
@@ -199,13 +199,13 @@ export default function CreateTestPage() {
       </div>
 
       <div
-        className="rounded-md border-l-4 border-primary-500 bg-primary-100 p-4 text-primary-700"
+        className="bg-slateblue/12 rounded-md border-l-4 border-slateblue/40 p-4 text-slateblue"
         role="alert"
       >
         <div className="flex">
           <div className="py-1">
             <svg
-              className="mr-3 h-6 w-6 text-blue-500"
+              className="mr-3 h-6 w-6 text-slateblue"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"

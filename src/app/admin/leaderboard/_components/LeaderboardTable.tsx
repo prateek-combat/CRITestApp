@@ -72,13 +72,13 @@ const InlineBar = ({ value, max = 100 }: { value: number; max?: number }) => {
 
   return (
     <div className="flex items-center space-x-1">
-      <div className="h-1.5 flex-1 rounded-full bg-gray-200">
+      <div className="h-1.5 flex-1 rounded-full bg-ink/10">
         <div
-          className="h-1.5 rounded-full bg-primary-500 transition-all duration-300"
+          className="h-1.5 rounded-full bg-slateblue transition-all duration-300"
           style={{ width: `${percentage}%` }}
         />
       </div>
-      <span className="w-8 text-right text-xs text-gray-600">
+      <span className="w-8 text-right text-xs text-ink/60">
         {value !== null && value !== undefined ? `${value.toFixed(0)}%` : '0%'}
       </span>
     </div>
@@ -124,9 +124,9 @@ const SortButton = ({
       <div className="flex flex-col">
         {isActive ? (
           currentOrder === 'asc' ? (
-            <ChevronUp className="h-4 w-4 text-blue-600" />
+            <ChevronUp className="h-4 w-4 text-slateblue" />
           ) : (
-            <ChevronDown className="h-4 w-4 text-blue-600" />
+            <ChevronDown className="h-4 w-4 text-slateblue" />
           )
         ) : (
           <div className="flex flex-col opacity-30">
@@ -186,26 +186,26 @@ export default function LeaderboardTable({
 
   const getRankBadgeColor = (rank: number): string => {
     if (rank === 1) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-    if (rank === 2) return 'bg-gray-100 text-gray-800 border-gray-200';
-    if (rank === 3) return 'bg-orange-100 text-orange-800 border-orange-200';
-    if (rank <= 10) return 'bg-primary-100 text-primary-800 border-primary-200';
-    return 'bg-gray-50 text-gray-600 border-gray-200';
+    if (rank === 2) return 'bg-parchment/90 text-ink border-ink/10';
+    if (rank === 3) return 'bg-copper/12 text-orange-800 border-copper/30';
+    if (rank <= 10) return 'bg-slateblue/12 text-slateblue border-slateblue/20';
+    return 'bg-parchment text-ink/60 border-ink/10';
   };
 
   const getStatusBadgeColor = (status: string): string => {
     switch (status) {
       case 'COMPLETED':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-moss/12 text-green-800 border-moss/30';
       case 'TERMINATED':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'TIMED_OUT':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+        return 'bg-copper/12 text-orange-800 border-copper/30';
       case 'ABANDONED':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-parchment/90 text-ink border-ink/10';
       case 'IN_PROGRESS':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-slateblue/12 text-slateblue border-slateblue/30';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-parchment/90 text-ink border-ink/10';
     }
   };
 
@@ -426,25 +426,25 @@ export default function LeaderboardTable({
   };
 
   return (
-    <div className="overflow-hidden rounded-lg bg-white shadow">
+    <div className="overflow-hidden rounded-lg bg-parchment/80 shadow">
       {/* Search Box */}
-      <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
+      <div className="border-b border-ink/10 bg-parchment px-6 py-4">
         <form onSubmit={handleSearchSubmit} className="flex gap-3">
           <div className="relative max-w-md flex-1">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <Search className="h-5 w-5 text-gray-400" />
+              <Search className="h-5 w-5 text-ink/40" />
             </div>
             <input
               type="text"
               placeholder="Search candidates by name or email..."
               value={localSearchValue}
               onChange={(e) => setLocalSearchValue(e.target.value)}
-              className="block w-full rounded-md border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm leading-5 placeholder-gray-500 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              className="block w-full rounded-md border border-ink/20 bg-parchment/80 py-2 pl-10 pr-3 text-sm leading-5 placeholder-ink/40 focus:border-copper/50 focus:outline-none focus:ring-1 focus:ring-copper/40"
             />
           </div>
           <button
             type="submit"
-            className="rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            className="rounded-md bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-ink/90 focus:outline-none focus:ring-2 focus:ring-copper/40 focus:ring-offset-2"
           >
             Search
           </button>
@@ -457,7 +457,7 @@ export default function LeaderboardTable({
                   onSearchChange('');
                 }
               }}
-              className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              className="rounded-md border border-ink/20 bg-parchment/80 px-4 py-2 text-sm font-medium text-ink/70 hover:bg-parchment focus:outline-none focus:ring-2 focus:ring-copper/40 focus:ring-offset-2"
             >
               Clear
             </button>
@@ -467,9 +467,9 @@ export default function LeaderboardTable({
 
       {/* Compare Bar */}
       {selected.length > 0 && (
-        <div className="border-b border-primary-200 bg-primary-50 px-6 py-3">
+        <div className="border-b border-slateblue/20 bg-slateblue/10 px-6 py-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-primary-900">
+            <span className="text-sm font-medium text-ink">
               {selected.length} candidate{selected.length !== 1 ? 's' : ''}{' '}
               selected for comparison
             </span>
@@ -483,12 +483,12 @@ export default function LeaderboardTable({
               {selected.length >= 2 ? (
                 <button
                   onClick={startCompare}
-                  className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-blue-700"
+                  className="rounded bg-slateblue px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-slateblue/80"
                 >
                   Compare Now
                 </button>
               ) : (
-                <span className="text-xs text-blue-700">
+                <span className="text-xs text-slateblue">
                   Select at least 2 candidates to compare
                 </span>
               )}
@@ -500,28 +500,28 @@ export default function LeaderboardTable({
       {/* Header with Risk Score Legend */}
       <div className="mb-3 flex items-center justify-end px-6 pt-4">
         <div className="flex items-center space-x-3 text-xs">
-          <span className="text-gray-500">Risk Score Highlighting:</span>
+          <span className="text-ink/50">Risk Score Highlighting:</span>
           <span className="flex items-center space-x-1">
-            <span className="inline-block h-3 w-6 rounded border border-green-200 bg-green-100"></span>
-            <span className="text-gray-600">Low (&lt;2.5)</span>
+            <span className="bg-moss/12 inline-block h-3 w-6 rounded border border-moss/30"></span>
+            <span className="text-ink/60">Low (&lt;2.5)</span>
           </span>
           <span className="flex items-center space-x-1">
             <span className="inline-block h-3 w-6 rounded border border-yellow-200 bg-yellow-100"></span>
-            <span className="text-gray-600">Medium (2.5-5)</span>
+            <span className="text-ink/60">Medium (2.5-5)</span>
           </span>
           <span className="flex items-center space-x-1">
             <span className="inline-block h-3 w-6 rounded border border-red-200 bg-red-100"></span>
-            <span className="text-gray-600">High (&gt;5)</span>
+            <span className="text-ink/60">High (&gt;5)</span>
           </span>
         </div>
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full divide-y divide-gray-200 text-xs">
-          <thead className="bg-gray-50">
+        <table className="w-full divide-y divide-ink/10 text-xs">
+          <thead className="bg-parchment">
             <tr>
-              <th className="px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+              <th className="px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wider text-ink/50">
                 <SortButton
                   column="rank"
                   currentSort={data.filters.sortBy}
@@ -529,7 +529,7 @@ export default function LeaderboardTable({
                   onSort={onSort}
                 />
               </th>
-              <th className="px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+              <th className="px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wider text-ink/50">
                 <SortButton
                   column="candidateName"
                   currentSort={data.filters.sortBy}
@@ -537,7 +537,7 @@ export default function LeaderboardTable({
                   onSort={onSort}
                 />
               </th>
-              <th className="px-2 py-1.5 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+              <th className="px-2 py-1.5 text-center text-xs font-medium uppercase tracking-wider text-ink/50">
                 <SortButton
                   column="composite"
                   currentSort={data.filters.sortBy}
@@ -546,7 +546,7 @@ export default function LeaderboardTable({
                 />
               </th>
               {showDetailedColumns && (
-                <th className="px-2 py-1.5 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-2 py-1.5 text-center text-xs font-medium uppercase tracking-wider text-ink/50">
                   <SortButton
                     column="percentile"
                     currentSort={data.filters.sortBy}
@@ -556,7 +556,7 @@ export default function LeaderboardTable({
                 </th>
               )}
               {showDetailedColumns && visibleColumns.scoreLogical && (
-                <th className="px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wider text-ink/50">
                   <SortButton
                     column="scoreLogical"
                     currentSort={data.filters.sortBy}
@@ -566,7 +566,7 @@ export default function LeaderboardTable({
                 </th>
               )}
               {showDetailedColumns && visibleColumns.scoreVerbal && (
-                <th className="px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wider text-ink/50">
                   <SortButton
                     column="scoreVerbal"
                     currentSort={data.filters.sortBy}
@@ -576,7 +576,7 @@ export default function LeaderboardTable({
                 </th>
               )}
               {showDetailedColumns && visibleColumns.scoreNumerical && (
-                <th className="px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wider text-ink/50">
                   <SortButton
                     column="scoreNumerical"
                     currentSort={data.filters.sortBy}
@@ -586,7 +586,7 @@ export default function LeaderboardTable({
                 </th>
               )}
               {showDetailedColumns && visibleColumns.scoreAttention && (
-                <th className="px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wider text-ink/50">
                   <SortButton
                     column="scoreAttention"
                     currentSort={data.filters.sortBy}
@@ -596,7 +596,7 @@ export default function LeaderboardTable({
                 </th>
               )}
               {showDetailedColumns && visibleColumns.scoreOther && (
-                <th className="px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wider text-ink/50">
                   <SortButton
                     column="scoreOther"
                     currentSort={data.filters.sortBy}
@@ -605,7 +605,7 @@ export default function LeaderboardTable({
                   />
                 </th>
               )}
-              <th className="px-2 py-1.5 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+              <th className="px-2 py-1.5 text-center text-xs font-medium uppercase tracking-wider text-ink/50">
                 <SortButton
                   column="completedAt"
                   currentSort={data.filters.sortBy}
@@ -613,15 +613,15 @@ export default function LeaderboardTable({
                   onSort={onSort}
                 />
               </th>
-              <th className="px-2 py-1.5 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+              <th className="px-2 py-1.5 text-center text-xs font-medium uppercase tracking-wider text-ink/50">
                 Status
               </th>
-              <th className="px-2 py-1.5 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+              <th className="px-2 py-1.5 text-center text-xs font-medium uppercase tracking-wider text-ink/50">
                 <div className="flex items-center justify-center space-x-2">
                   <span>Actions</span>
                   <button
                     onClick={() => setShowDetailedColumns(!showDetailedColumns)}
-                    className="inline-flex items-center rounded-md bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200"
+                    className="inline-flex items-center rounded-md bg-parchment/90 px-1.5 py-0.5 text-xs font-medium text-ink/70 transition-colors hover:bg-ink/10"
                     title={
                       showDetailedColumns
                         ? 'Hide detailed columns'
@@ -644,7 +644,7 @@ export default function LeaderboardTable({
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 bg-white">
+          <tbody className="divide-y divide-ink/10 bg-parchment/80">
             {data.rows.map((candidate) => {
               // Normalize risk score if it's on the old scale (> 10)
               const normalizedRiskScore =
@@ -662,14 +662,14 @@ export default function LeaderboardTable({
                     normalizedRiskScore !== null &&
                     normalizedRiskScore !== undefined
                       ? normalizedRiskScore < 2.5
-                        ? 'bg-green-50 hover:bg-green-100'
+                        ? 'hover:bg-moss/12 bg-moss/10'
                         : normalizedRiskScore >= 2.5 && normalizedRiskScore <= 5
                           ? 'bg-yellow-50 hover:bg-yellow-100'
                           : 'bg-red-50 hover:bg-red-100'
-                      : 'hover:bg-gray-50'
+                      : 'hover:bg-parchment'
                   } ${
                     isSelected(candidate.attemptId)
-                      ? 'ring-2 ring-primary-500'
+                      ? 'ring-2 ring-slateblue/40'
                       : ''
                   }`}
                   title={
@@ -690,29 +690,29 @@ export default function LeaderboardTable({
 
                   <td className="whitespace-nowrap px-2 py-1.5">
                     <div>
-                      <div className="text-xs font-medium text-gray-900">
+                      <div className="text-xs font-medium text-ink">
                         {candidate.candidateName}
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-ink/50">
                         {candidate.candidateEmail}
                       </div>
                     </div>
                   </td>
 
                   <td className="whitespace-nowrap px-2 py-1.5 text-center">
-                    <div className="text-sm font-bold text-gray-900">
+                    <div className="text-sm font-bold text-ink">
                       {candidate.composite !== null &&
                       candidate.composite !== undefined
                         ? `${candidate.composite.toFixed(1)}%`
                         : 'N/A'}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-ink/50">
                       {showWeightedScores &&
                       candidate.compositeUnweighted !== undefined &&
                       candidate.compositeUnweighted !== candidate.composite ? (
                         <div className="space-y-0.5">
                           <div>Weighted</div>
-                          <div className="text-gray-400">
+                          <div className="text-ink/40">
                             (Unweighted:{' '}
                             {candidate.compositeUnweighted.toFixed(1)}%)
                           </div>
@@ -725,13 +725,13 @@ export default function LeaderboardTable({
 
                   {showDetailedColumns && (
                     <td className="whitespace-nowrap px-2 py-1.5 text-center">
-                      <div className="text-xs font-bold text-gray-900">
+                      <div className="text-xs font-bold text-ink">
                         {candidate.percentile !== null &&
                         candidate.percentile !== undefined
                           ? `${candidate.percentile.toFixed(1)}th`
                           : 'N/A'}
                       </div>
-                      <div className="text-xs text-gray-500">Percentile</div>
+                      <div className="text-xs text-ink/50">Percentile</div>
                     </td>
                   )}
 
@@ -765,7 +765,7 @@ export default function LeaderboardTable({
                     </td>
                   )}
 
-                  <td className="whitespace-nowrap px-2 py-1.5 text-center text-xs text-gray-500">
+                  <td className="whitespace-nowrap px-2 py-1.5 text-center text-xs text-ink/50">
                     {formatDate(candidate.completedAt)}
                   </td>
 
@@ -779,7 +779,7 @@ export default function LeaderboardTable({
                       {candidate.status === 'TERMINATED' &&
                         candidate.terminationReason && (
                           <div
-                            className="text-xs text-gray-500"
+                            className="text-xs text-ink/50"
                             title={candidate.terminationReason}
                           >
                             {candidate.terminationReason.length > 20
@@ -798,7 +798,7 @@ export default function LeaderboardTable({
                           <span
                             className={`${
                               normalizedRiskScore < 2.5
-                                ? 'text-green-700'
+                                ? 'text-moss'
                                 : normalizedRiskScore <= 5
                                   ? 'text-yellow-700'
                                   : 'text-red-700'
@@ -807,13 +807,13 @@ export default function LeaderboardTable({
                             {normalizedRiskScore.toFixed(1)}
                           </span>
                         ) : (
-                          <span className="text-gray-400">-</span>
+                          <span className="text-ink/40">-</span>
                         )
                       ) : (
-                        <span className="text-gray-400">N/A</span>
+                        <span className="text-ink/40">N/A</span>
                       )}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-ink/50">
                       {candidate.proctoringEnabled ? 'Enabled' : 'Disabled'}
                     </div>
                   </td>
@@ -825,7 +825,7 @@ export default function LeaderboardTable({
                         variant="outline"
                         size="xs"
                         startIcon={<Eye className="h-3 w-3" />}
-                        className="border-blue-200 bg-blue-100 text-blue-700 hover:border-blue-300 hover:bg-blue-200"
+                        className="bg-slateblue/12 border-slateblue/30 text-slateblue hover:border-slateblue/40 hover:bg-slateblue/15"
                         title="View Analysis"
                       >
                         Analysis
@@ -838,7 +838,7 @@ export default function LeaderboardTable({
                           )
                         }
                         disabled={exportingPdf === candidate.attemptId}
-                        className="inline-flex items-center rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-200 disabled:opacity-50"
+                        className="bg-moss/12 inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium text-moss transition-colors hover:bg-green-200 disabled:opacity-50"
                         title="Export PDF Report"
                       >
                         {exportingPdf === candidate.attemptId ? (
@@ -858,10 +858,10 @@ export default function LeaderboardTable({
                         }
                         className={`rounded px-1.5 py-0.5 text-xs font-medium transition-colors ${
                           isSelected(candidate.attemptId)
-                            ? 'bg-primary-600 text-white hover:bg-primary-700'
+                            ? 'bg-ink text-white hover:bg-ink/90'
                             : selected.length >= 5
-                              ? 'cursor-not-allowed bg-gray-100 text-gray-400'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                              ? 'cursor-not-allowed bg-parchment/90 text-ink/40'
+                              : 'bg-parchment/90 text-ink/70 hover:bg-ink/10'
                         }`}
                         title={
                           isSelected(candidate.attemptId)
@@ -902,9 +902,9 @@ export default function LeaderboardTable({
       </div>
 
       {/* Pagination and Summary */}
-      <div className="border-t border-gray-200 bg-gray-50 px-3 py-2">
+      <div className="border-t border-ink/10 bg-parchment px-3 py-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center text-xs text-gray-700">
+          <div className="flex items-center text-xs text-ink/70">
             <span className="font-medium">
               📊 Showing {Math.min(data.rows.length, data.pagination.pageSize)}{' '}
               of {data.pagination.total} candidates
@@ -918,7 +918,7 @@ export default function LeaderboardTable({
                 <button
                   onClick={() => onPageChange(data.pagination.page - 1)}
                   disabled={!data.pagination.hasPrevious}
-                  className="inline-flex items-center rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center rounded-md border border-ink/20 bg-parchment/80 px-2 py-1 text-xs font-medium text-ink/70 hover:bg-parchment disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <ChevronLeft className="mr-1 h-3 w-3" />
                   Previous
@@ -966,7 +966,7 @@ export default function LeaderboardTable({
                         return (
                           <span
                             key={`ellipsis-${index}`}
-                            className="px-2 text-xs text-gray-500"
+                            className="px-2 text-xs text-ink/50"
                           >
                             ...
                           </span>
@@ -980,8 +980,8 @@ export default function LeaderboardTable({
                           onClick={() => onPageChange(pageNum)}
                           className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${
                             currentPage === pageNum
-                              ? 'bg-brand-600 text-white'
-                              : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                              ? 'bg-ink text-white'
+                              : 'border border-ink/20 bg-parchment/80 text-ink/70 hover:bg-parchment'
                           }`}
                         >
                           {pageNum}
@@ -994,14 +994,14 @@ export default function LeaderboardTable({
                 <button
                   onClick={() => onPageChange(data.pagination.page + 1)}
                   disabled={!data.pagination.hasNext}
-                  className="inline-flex items-center rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center rounded-md border border-ink/20 bg-parchment/80 px-2 py-1 text-xs font-medium text-ink/70 hover:bg-parchment disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Next
                   <ChevronRight className="ml-1 h-3 w-3" />
                 </button>
               </div>
             )}
-            <div className="border-l pl-2 text-xs text-gray-500">
+            <div className="border-l pl-2 text-xs text-ink/50">
               Results update instantly when changing weight profiles
             </div>
           </div>

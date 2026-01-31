@@ -27,17 +27,17 @@ export const CompactButton: React.FC<CompactButtonProps> = ({
   loading = false,
 }) => {
   const baseStyles =
-    'relative inline-flex items-center justify-center font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1';
+    'relative inline-flex items-center justify-center font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-copper/40 focus:ring-offset-1';
 
   const variantStyles = {
     primary:
-      'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 focus:ring-blue-500 border border-blue-700/50 shadow-md hover:shadow-lg',
+      'bg-ink text-parchment hover:bg-ink/90 border border-ink/80 shadow-md hover:shadow-lg',
     secondary:
-      'bg-white text-gray-700 border-2 border-gray-300 hover:bg-gray-50 hover:border-gray-400 focus:ring-gray-500 shadow-sm hover:shadow-md',
+      'bg-parchment/80 text-ink border border-ink/20 hover:bg-parchment hover:border-ink/30 shadow-sm hover:shadow-md',
     danger:
       'bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 focus:ring-red-500 border border-red-700/50 shadow-md hover:shadow-lg',
     ghost:
-      'text-gray-700 bg-gray-50 hover:bg-gray-100 hover:text-gray-900 focus:ring-gray-500 border-2 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md',
+      'text-ink/70 bg-transparent hover:bg-ink/5 hover:text-ink border border-ink/10 hover:border-ink/20 shadow-sm hover:shadow-md',
   };
 
   const sizeStyles = {

@@ -189,12 +189,12 @@ export default function TestEditPage({
     const options = ['A', 'B', 'C', 'D', 'E'];
     return (
       <div className="mt-4 space-y-3">
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-ink/70">
           Answer Weights (1-5 scale)
         </label>
         {options.map((option, index) => (
           <div key={option} className="flex items-center space-x-4">
-            <span className="w-16 text-sm font-medium text-gray-700">
+            <span className="w-16 text-sm font-medium text-ink/70">
               Option {option}:
             </span>
             <div className="flex space-x-2">
@@ -206,14 +206,14 @@ export default function TestEditPage({
                     value={weight}
                     checked={weights[option] === weight}
                     onChange={() => onChange(option, weight)}
-                    className="mr-1 h-4 w-4 text-brand-600 focus:ring-brand-500"
+                    className="mr-1 h-4 w-4 text-copper focus:ring-copper/40"
                   />
-                  <span className="text-sm text-gray-600">{weight}</span>
+                  <span className="text-sm text-ink/60">{weight}</span>
                 </label>
               ))}
             </div>
             <div className="flex-1">
-              <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+              <div className="h-2 overflow-hidden rounded-full bg-ink/10">
                 <div
                   className="h-full bg-gradient-to-r from-red-400 via-yellow-400 to-green-400 transition-all duration-300"
                   style={{ width: `${(weights[option] / 5) * 100}%` }}
@@ -598,14 +598,14 @@ export default function TestEditPage({
 
   if (loading)
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4 md:p-6 lg:p-8">
-        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-brand-500"></div>
-        <p className="ml-4 text-lg text-gray-700">Loading test details...</p>
+      <div className="flex min-h-screen items-center justify-center bg-parchment/90 p-4 md:p-6 lg:p-8">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-copper/50"></div>
+        <p className="ml-4 text-lg text-ink/70">Loading test details...</p>
       </div>
     );
   if (error)
     return (
-      <div className="min-h-screen bg-gray-100 p-4 md:p-6 lg:p-8">
+      <div className="min-h-screen bg-parchment/90 p-4 md:p-6 lg:p-8">
         <div
           className="rounded-md border-l-4 border-red-500 bg-red-100 p-4 text-red-700"
           role="alert"
@@ -623,7 +623,7 @@ export default function TestEditPage({
     );
   if (!test)
     return (
-      <div className="min-h-screen bg-gray-100 p-4 md:p-6 lg:p-8">
+      <div className="min-h-screen bg-parchment/90 p-4 md:p-6 lg:p-8">
         <div
           className="rounded-md border-l-4 border-yellow-500 bg-yellow-100 p-4 text-yellow-700"
           role="alert"
@@ -641,14 +641,14 @@ export default function TestEditPage({
     );
 
   return (
-    <div className="min-h-screen space-y-8 bg-gray-100 p-4 md:p-6 lg:p-8">
-      <div className="flex flex-col items-start justify-between gap-4 rounded-lg border border-gray-200 bg-white p-6 shadow-md md:flex-row md:items-center">
+    <div className="min-h-screen space-y-8 bg-parchment/90 p-4 md:p-6 lg:p-8">
+      <div className="flex flex-col items-start justify-between gap-4 rounded-lg border border-ink/10 bg-parchment/80 p-6 shadow-md md:flex-row md:items-center">
         <div className="flex-auto">
-          <h1 className="text-3xl font-bold text-gray-900">{test.title}</h1>
-          <p className="mt-2 text-base text-gray-600">
+          <h1 className="text-3xl font-bold text-ink">{test.title}</h1>
+          <p className="mt-2 text-base text-ink/60">
             {test.description || 'No description provided.'}
           </p>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-ink/50">
             {test.questions.length} question
             {test.questions.length !== 1 ? 's' : ''}
           </p>
@@ -658,7 +658,7 @@ export default function TestEditPage({
             onClick={() => setShowImportForm(!showImportForm)}
             className={`rounded-lg px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
               showImportForm
-                ? 'bg-gray-500 hover:bg-gray-600 focus:ring-gray-500'
+                ? 'bg-parchment0 hover:bg-ink/60 focus:ring-copper/40'
                 : 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
             }`}
           >
@@ -668,8 +668,8 @@ export default function TestEditPage({
             onClick={() => setShowQuestionForm(!showQuestionForm)}
             className={`rounded-lg px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
               showQuestionForm
-                ? 'bg-gray-500 hover:bg-gray-600 focus:ring-gray-500'
-                : 'bg-brand-500 hover:bg-brand-600 focus:ring-brand-500'
+                ? 'bg-parchment0 hover:bg-ink/60 focus:ring-copper/40'
+                : 'bg-copper/100 hover:bg-ink focus:ring-copper/40'
             }`}
           >
             {showQuestionForm ? 'Cancel' : 'Add Question'}
@@ -681,7 +681,7 @@ export default function TestEditPage({
                 disabled={isDeletingTest}
                 className={`rounded-lg px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                   isDeletingTest
-                    ? 'cursor-not-allowed bg-gray-400'
+                    ? 'cursor-not-allowed bg-ink/40'
                     : 'bg-yellow-600 hover:bg-yellow-700 focus:ring-yellow-500'
                 }`}
                 title="Archive test (can be restored later)"
@@ -693,7 +693,7 @@ export default function TestEditPage({
                 disabled={isDeletingTest}
                 className={`rounded-lg px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
                   isDeletingTest
-                    ? 'cursor-not-allowed bg-gray-400'
+                    ? 'cursor-not-allowed bg-ink/40'
                     : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
                 }`}
                 title="⚠️ PERMANENTLY delete test (cannot be undone!)"
@@ -703,7 +703,7 @@ export default function TestEditPage({
             </>
           )}
           {session?.user?.role !== 'SUPER_ADMIN' && (
-            <div className="flex items-center text-xs italic text-gray-500">
+            <div className="flex items-center text-xs italic text-ink/50">
               Archive/Delete: Super Admin only
             </div>
           )}
@@ -714,18 +714,18 @@ export default function TestEditPage({
       {test && (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {/* Total Questions Card */}
-          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-md">
+          <div className="rounded-lg border border-ink/10 bg-parchment/80 p-6 shadow-md">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-brand-500 text-white">
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-copper/100 text-white">
                   📝
                 </div>
               </div>
               <div className="ml-4">
-                <div className="text-sm font-medium text-gray-500">
+                <div className="text-sm font-medium text-ink/50">
                   Total Questions
                 </div>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl font-bold text-ink">
                   {test.questions.length}
                 </div>
               </div>
@@ -733,34 +733,34 @@ export default function TestEditPage({
           </div>
 
           {/* Question Types Card */}
-          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-md">
+          <div className="rounded-lg border border-ink/10 bg-parchment/80 p-6 shadow-md">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm font-medium text-gray-500">
+                <div className="text-sm font-medium text-ink/50">
                   Question Types
                 </div>
                 <div className="mt-2 space-y-1">
                   <div className="flex items-center text-sm">
                     <span className="mr-2">📝</span>
-                    <span className="text-gray-600">
+                    <span className="text-ink/60">
                       Objective: {getPersonalityStats().totalObjective}
                     </span>
                   </div>
                   <div className="flex items-center text-sm">
                     <span className="mr-2">🧠</span>
-                    <span className="text-gray-600">
+                    <span className="text-ink/60">
                       Personality: {getPersonalityStats().totalPersonality}
                     </span>
                   </div>
                 </div>
               </div>
-              <div className="text-2xl font-bold text-purple-600">
+              <div className="text-2xl font-bold text-slateblue">
                 {getPersonalityStats().personalityPercentage}%
               </div>
             </div>
             <div className="mt-3">
-              <div className="text-xs text-gray-500">Personality Questions</div>
-              <div className="mt-1 h-2 overflow-hidden rounded-full bg-gray-200">
+              <div className="text-xs text-ink/50">Personality Questions</div>
+              <div className="mt-1 h-2 overflow-hidden rounded-full bg-ink/10">
                 <div
                   className="h-full bg-purple-500 transition-all duration-300"
                   style={{
@@ -772,21 +772,21 @@ export default function TestEditPage({
           </div>
 
           {/* Personality Dimensions Card */}
-          <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-md">
+          <div className="rounded-lg border border-ink/10 bg-parchment/80 p-6 shadow-md">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-green-500 text-white">
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-moss/100 text-white">
                   🎯
                 </div>
               </div>
               <div className="ml-4">
-                <div className="text-sm font-medium text-gray-500">
+                <div className="text-sm font-medium text-ink/50">
                   Personality Dimensions
                 </div>
-                <div className="text-2xl font-bold text-gray-900">
+                <div className="text-2xl font-bold text-ink">
                   {getPersonalityStats().dimensionsCovered}
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-ink/50">
                   {getPersonalityStats().totalPersonality > 0
                     ? 'covered'
                     : 'none used'}
@@ -799,8 +799,8 @@ export default function TestEditPage({
 
       {/* Personality Coverage Section */}
       {test && getPersonalityStats().totalPersonality > 0 && (
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-md">
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">
+        <div className="rounded-lg border border-ink/10 bg-parchment/80 p-6 shadow-md">
+          <h3 className="mb-4 text-lg font-semibold text-ink">
             🧠 Personality Assessment Coverage
           </h3>
           <div className="space-y-4">
@@ -808,34 +808,34 @@ export default function TestEditPage({
               ({ dimension, count }) => (
                 <div
                   key={dimension.id}
-                  className="flex items-center justify-between rounded-lg bg-gray-50 p-3"
+                  className="flex items-center justify-between rounded-lg bg-parchment p-3"
                 >
                   <div className="flex items-center space-x-3">
-                    <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-0.5 text-sm font-medium text-green-800">
+                    <span className="bg-moss/12 inline-flex items-center rounded-full px-3 py-0.5 text-sm font-medium text-green-800">
                       {dimension.code}
                     </span>
                     <div>
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-ink">
                         {dimension.name}
                       </div>
                       {dimension.description && (
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-ink/50">
                           {dimension.description}
                         </div>
                       )}
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-ink">
                       {count} questions
                     </span>
                     {count < 3 && (
-                      <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-1 text-xs font-medium text-orange-800">
+                      <span className="bg-copper/12 inline-flex items-center rounded-full px-2 py-1 text-xs font-medium text-orange-800">
                         ⚠️ Too few
                       </span>
                     )}
                     {count >= 3 && (
-                      <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+                      <span className="bg-moss/12 inline-flex items-center rounded-full px-2 py-1 text-xs font-medium text-green-800">
                         ✅ Good
                       </span>
                     )}
@@ -847,7 +847,7 @@ export default function TestEditPage({
             {Object.values(getPersonalityStats().dimensionCounts).some(
               ({ count }) => count < 3
             ) && (
-              <div className="mt-4 rounded-lg border border-orange-200 bg-orange-50 p-4">
+              <div className="mt-4 rounded-lg border border-copper/30 bg-copper/10 p-4">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
                     <svg
@@ -866,7 +866,7 @@ export default function TestEditPage({
                     <h4 className="text-sm font-medium text-orange-800">
                       Recommendation
                     </h4>
-                    <p className="mt-1 text-sm text-orange-700">
+                    <p className="mt-1 text-sm text-copper">
                       Some personality dimensions have fewer than 3 questions.
                       Consider adding more questions for better assessment
                       reliability.
@@ -881,7 +881,7 @@ export default function TestEditPage({
 
       {/* Import Result Success Message */}
       {importResult && (
-        <div className="rounded-lg border border-green-200 bg-green-50 p-4 shadow-sm">
+        <div className="rounded-lg border border-moss/30 bg-moss/10 p-4 shadow-sm">
           <div className="flex items-center">
             <svg
               className="mr-2 h-5 w-5 text-green-400"
@@ -898,9 +898,7 @@ export default function TestEditPage({
               <p className="font-medium text-green-800">
                 ✅ Successfully imported {importResult.imported} questions!
               </p>
-              <p className="mt-1 text-sm text-green-700">
-                {importResult.message}
-              </p>
+              <p className="mt-1 text-sm text-moss">{importResult.message}</p>
             </div>
           </div>
         </div>
@@ -908,8 +906,8 @@ export default function TestEditPage({
 
       {/* Import Form */}
       {showImportForm && (
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-md">
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">
+        <div className="rounded-lg border border-ink/10 bg-parchment/80 p-6 shadow-md">
+          <h3 className="mb-4 text-lg font-semibold text-ink">
             Import Questions from Excel or CSV
           </h3>
           <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
@@ -923,10 +921,10 @@ export default function TestEditPage({
 
           <div className="space-y-6">
             {/* Template Download */}
-            <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+            <div className="rounded-lg border border-slateblue/30 bg-slateblue/10 p-4">
               <div className="flex items-start">
                 <svg
-                  className="mr-2 mt-0.5 h-5 w-5 text-blue-400"
+                  className="mr-2 mt-0.5 h-5 w-5 text-slateblue/70"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -937,23 +935,23 @@ export default function TestEditPage({
                   />
                 </svg>
                 <div className="flex-1">
-                  <h4 className="text-sm font-medium text-blue-800">
+                  <h4 className="text-sm font-medium text-slateblue">
                     Download Template First
                   </h4>
-                  <p className="mt-1 text-sm text-blue-700">
+                  <p className="mt-1 text-sm text-slateblue">
                     Download the template with correct headers, instructions,
                     and examples. Choose your preferred format:
                   </p>
                   <div className="mt-3 flex gap-3">
                     <button
                       onClick={handleDownloadExcel}
-                      className="text-sm text-blue-600 underline hover:text-blue-800"
+                      className="text-sm text-slateblue underline hover:text-slateblue"
                     >
                       📥 Excel Template (.xlsx)
                     </button>
                     <button
                       onClick={handleDownloadCSV}
-                      className="text-sm text-blue-600 underline hover:text-blue-800"
+                      className="text-sm text-slateblue underline hover:text-slateblue"
                     >
                       📄 CSV Template (.csv)
                     </button>
@@ -966,7 +964,7 @@ export default function TestEditPage({
             <div>
               <label
                 htmlFor="excel-file"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-sm font-medium text-ink/70"
               >
                 Select Excel or CSV File
               </label>
@@ -975,10 +973,10 @@ export default function TestEditPage({
                 id="excel-file"
                 accept=".xlsx,.xls,.csv"
                 onChange={handleFileChange}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-brand-700 hover:file:bg-brand-100"
+                className="block w-full text-sm text-ink/50 file:mr-4 file:rounded-lg file:border-0 file:bg-copper/10 file:px-4 file:py-2 file:text-sm file:font-medium file:text-copper hover:file:bg-copper/20"
               />
               {importFile && (
-                <p className="mt-2 text-sm text-green-600">
+                <p className="mt-2 text-sm text-moss">
                   ✓ Selected: {importFile.name}
                 </p>
               )}
@@ -1017,7 +1015,7 @@ export default function TestEditPage({
                 </div>
 
                 {/* Error Summary */}
-                <div className="mb-4 rounded-lg border border-red-200 bg-white p-3">
+                <div className="mb-4 rounded-lg border border-red-200 bg-parchment/80 p-3">
                   <h5 className="mb-2 font-medium text-red-800">
                     📊 Error Summary:
                   </h5>
@@ -1064,7 +1062,7 @@ export default function TestEditPage({
                   {importErrors.slice(0, 20).map((error, index) => (
                     <div
                       key={index}
-                      className="rounded-lg border border-red-300 bg-white p-3"
+                      className="rounded-lg border border-red-300 bg-parchment/80 p-3"
                     >
                       <div className="mb-2 flex items-start justify-between">
                         <div className="flex items-center">
@@ -1112,11 +1110,11 @@ export default function TestEditPage({
                 </div>
 
                 {/* Common Solutions */}
-                <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-4">
-                  <h5 className="mb-2 font-medium text-blue-800">
+                <div className="mt-4 rounded-lg border border-slateblue/30 bg-slateblue/10 p-4">
+                  <h5 className="mb-2 font-medium text-slateblue">
                     🛠️ Common Solutions:
                   </h5>
-                  <ul className="space-y-1 text-sm text-blue-700">
+                  <ul className="space-y-1 text-sm text-slateblue">
                     <li>
                       • <strong>NEW:</strong> Supports both OBJECTIVE and
                       PERSONALITY questions
@@ -1195,7 +1193,7 @@ export default function TestEditPage({
                   ) as HTMLInputElement;
                   if (fileInput) fileInput.value = '';
                 }}
-                className="rounded-lg bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                className="rounded-lg bg-ink/10 px-4 py-2 text-sm font-medium text-ink/70 shadow-sm transition-colors hover:bg-ink/20 focus:outline-none focus:ring-2 focus:ring-copper/40 focus:ring-offset-2"
               >
                 Cancel
               </button>
@@ -1207,7 +1205,7 @@ export default function TestEditPage({
       {showQuestionForm && (
         <form
           onSubmit={handleAddQuestion}
-          className="mt-6 space-y-6 rounded-lg border border-gray-200 bg-white p-6 shadow-md"
+          className="mt-6 space-y-6 rounded-lg border border-ink/10 bg-parchment/80 p-6 shadow-md"
         >
           {error && (
             <div
@@ -1220,7 +1218,7 @@ export default function TestEditPage({
           )}
           {/* Question Type Toggle */}
           <div>
-            <label className="mb-3 block text-sm font-medium text-gray-700">
+            <label className="mb-3 block text-sm font-medium text-ink/70">
               Question Type
             </label>
             <div className="flex space-x-4">
@@ -1235,9 +1233,9 @@ export default function TestEditPage({
                       e.target.value as 'OBJECTIVE' | 'PERSONALITY'
                     )
                   }
-                  className="mr-2 h-4 w-4 text-brand-600 focus:ring-brand-500"
+                  className="mr-2 h-4 w-4 text-copper focus:ring-copper/40"
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-ink/70">
                   📝 General (Right/Wrong)
                 </span>
               </label>
@@ -1252,9 +1250,9 @@ export default function TestEditPage({
                       e.target.value as 'OBJECTIVE' | 'PERSONALITY'
                     )
                   }
-                  className="mr-2 h-4 w-4 text-brand-600 focus:ring-brand-500"
+                  className="mr-2 h-4 w-4 text-copper focus:ring-copper/40"
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-ink/70">
                   🧠 Personality Assessment
                 </span>
               </label>
@@ -1264,7 +1262,7 @@ export default function TestEditPage({
           <div>
             <label
               htmlFor="promptText"
-              className="mb-1 block text-sm font-medium text-gray-700"
+              className="mb-1 block text-sm font-medium text-ink/70"
             >
               Question Text
             </label>
@@ -1273,7 +1271,7 @@ export default function TestEditPage({
               id="promptText"
               required
               rows={3}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+              className="w-full rounded-lg border border-ink/20 px-3 py-2 focus:border-copper/50 focus:ring-2 focus:ring-copper/40 sm:text-sm"
               placeholder="Enter the question text..."
             />
           </div>
@@ -1281,7 +1279,7 @@ export default function TestEditPage({
           <div>
             <label
               htmlFor="category"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-ink/70"
             >
               Category *
             </label>
@@ -1289,7 +1287,7 @@ export default function TestEditPage({
               name="category"
               id="category"
               required
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+              className="mt-1 block w-full rounded-lg border border-ink/20 px-3 py-2 focus:border-copper/50 focus:ring-2 focus:ring-copper/40 sm:text-sm"
             >
               <option value="">Select a category</option>
               {QUESTION_CATEGORIES.map((category) => (
@@ -1305,7 +1303,7 @@ export default function TestEditPage({
             <div>
               <label
                 htmlFor="personalityDimensionId"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-ink/70"
               >
                 Personality Dimension *
               </label>
@@ -1313,7 +1311,7 @@ export default function TestEditPage({
                 name="personalityDimensionId"
                 id="personalityDimensionId"
                 required={questionType === 'PERSONALITY'}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+                className="mt-1 block w-full rounded-lg border border-ink/20 px-3 py-2 focus:border-copper/50 focus:ring-2 focus:ring-copper/40 sm:text-sm"
               >
                 <option value="">Select a personality dimension</option>
                 {personalityDimensions.map((dimension) => (
@@ -1323,7 +1321,7 @@ export default function TestEditPage({
                 ))}
               </select>
               {personalityDimensions.length === 0 && (
-                <p className="mt-1 text-sm text-orange-600">
+                <p className="mt-1 text-sm text-copper">
                   No personality dimensions available. Please create one first.
                 </p>
               )}
@@ -1333,7 +1331,7 @@ export default function TestEditPage({
           {/* Answer Options - Objective Questions */}
           {questionType === 'OBJECTIVE' && (
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="mb-1 block text-sm font-medium text-ink/70">
                 Answer Options (Mark the correct one)
               </label>
               <div className="mt-2 space-y-3">
@@ -1343,7 +1341,7 @@ export default function TestEditPage({
                       type="text"
                       name={`option${index}`}
                       required
-                      className="flex-grow rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+                      className="flex-grow rounded-lg border border-ink/20 px-3 py-2 focus:border-copper/50 focus:ring-2 focus:ring-copper/40 sm:text-sm"
                       placeholder={`Option ${String.fromCharCode(65 + index)}`}
                     />
                     <input
@@ -1351,7 +1349,7 @@ export default function TestEditPage({
                       name="correctAnswerIndex"
                       value={index}
                       required
-                      className="h-5 w-5 border-gray-300 text-brand-600 focus:ring-brand-500"
+                      className="h-5 w-5 border-ink/20 text-copper focus:ring-copper/40"
                     />
                   </div>
                 ))}
@@ -1362,20 +1360,20 @@ export default function TestEditPage({
           {/* Answer Options - Personality Questions */}
           {questionType === 'PERSONALITY' && (
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="mb-1 block text-sm font-medium text-ink/70">
                 Answer Options (A-E) - No right answer
               </label>
               <div className="mt-2 space-y-3">
                 {[0, 1, 2, 3, 4].map((index) => (
                   <div key={index} className="flex items-center gap-3">
-                    <span className="w-8 text-sm font-medium text-gray-600">
+                    <span className="w-8 text-sm font-medium text-ink/60">
                       {String.fromCharCode(65 + index)}:
                     </span>
                     <input
                       type="text"
                       name={`option${index}`}
                       required
-                      className="flex-grow rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+                      className="flex-grow rounded-lg border border-ink/20 px-3 py-2 focus:border-copper/50 focus:ring-2 focus:ring-copper/40 sm:text-sm"
                       placeholder={`Option ${String.fromCharCode(65 + index)}`}
                     />
                   </div>
@@ -1391,7 +1389,7 @@ export default function TestEditPage({
             <div>
               <label
                 htmlFor="timerSeconds"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-ink/70"
               >
                 Time Limit (seconds)
               </label>
@@ -1399,7 +1397,7 @@ export default function TestEditPage({
                 name="timerSeconds"
                 id="timerSeconds"
                 required
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+                className="mt-1 block w-full rounded-lg border border-ink/20 px-3 py-2 focus:border-copper/50 focus:ring-2 focus:ring-copper/40 sm:text-sm"
               >
                 <option value="15">15 seconds</option>
                 <option value="30">30 seconds</option>
@@ -1411,7 +1409,7 @@ export default function TestEditPage({
             <div>
               <label
                 htmlFor="sectionTag"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-ink/70"
               >
                 Section Tag
               </label>
@@ -1419,13 +1417,13 @@ export default function TestEditPage({
                 type="text"
                 name="sectionTag"
                 id="sectionTag"
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+                className="mt-1 block w-full rounded-lg border border-ink/20 px-3 py-2 focus:border-copper/50 focus:ring-2 focus:ring-copper/40 sm:text-sm"
                 placeholder="e.g., Logical, Mathematical, etc."
               />
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 border-t border-gray-200 pt-6">
+          <div className="flex justify-end gap-3 border-t border-ink/10 pt-6">
             <button
               type="button"
               onClick={() => {
@@ -1433,13 +1431,13 @@ export default function TestEditPage({
                 setQuestionType('OBJECTIVE');
                 setAnswerWeights({ A: 3, B: 3, C: 3, D: 3, E: 3 });
               }}
-              className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              className="rounded-lg bg-parchment/90 px-4 py-2 text-sm font-medium text-ink/70 transition-colors hover:bg-ink/10 focus:outline-none focus:ring-2 focus:ring-copper/40 focus:ring-offset-2"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="rounded-lg bg-brand-500 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg bg-copper/100 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-ink focus:outline-none focus:ring-2 focus:ring-copper/40 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Add Question
             </button>
@@ -1451,12 +1449,10 @@ export default function TestEditPage({
       {showEditForm && editingQuestion && (
         <form
           onSubmit={handleUpdateQuestion}
-          className="mt-6 space-y-6 rounded-lg border border-gray-200 bg-white p-6 shadow-md"
+          className="mt-6 space-y-6 rounded-lg border border-ink/10 bg-parchment/80 p-6 shadow-md"
         >
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Edit Question
-            </h3>
+            <h3 className="text-lg font-semibold text-ink">Edit Question</h3>
             <button
               type="button"
               onClick={() => {
@@ -1465,7 +1461,7 @@ export default function TestEditPage({
                 setEditQuestionType('OBJECTIVE');
                 setEditAnswerWeights({ A: 3, B: 3, C: 3, D: 3, E: 3 });
               }}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-ink/40 hover:text-ink/60"
             >
               ✕
             </button>
@@ -1484,7 +1480,7 @@ export default function TestEditPage({
           <div>
             <label
               htmlFor="edit-promptText"
-              className="mb-1 block text-sm font-medium text-gray-700"
+              className="mb-1 block text-sm font-medium text-ink/70"
             >
               Question Text
             </label>
@@ -1494,14 +1490,14 @@ export default function TestEditPage({
               required
               rows={3}
               defaultValue={editingQuestion.promptText}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+              className="w-full rounded-lg border border-ink/20 px-3 py-2 focus:border-copper/50 focus:ring-2 focus:ring-copper/40 sm:text-sm"
               placeholder="Enter the question text..."
             />
           </div>
 
           {/* Question Type Toggle */}
           <div>
-            <label className="mb-3 block text-sm font-medium text-gray-700">
+            <label className="mb-3 block text-sm font-medium text-ink/70">
               Question Type
             </label>
             <div className="flex space-x-4">
@@ -1516,9 +1512,9 @@ export default function TestEditPage({
                       e.target.value as 'OBJECTIVE' | 'PERSONALITY'
                     )
                   }
-                  className="mr-2 h-4 w-4 text-brand-600 focus:ring-brand-500"
+                  className="mr-2 h-4 w-4 text-copper focus:ring-copper/40"
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-ink/70">
                   📝 General (Right/Wrong)
                 </span>
               </label>
@@ -1533,9 +1529,9 @@ export default function TestEditPage({
                       e.target.value as 'OBJECTIVE' | 'PERSONALITY'
                     )
                   }
-                  className="mr-2 h-4 w-4 text-brand-600 focus:ring-brand-500"
+                  className="mr-2 h-4 w-4 text-copper focus:ring-copper/40"
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-ink/70">
                   🧠 Personality Assessment
                 </span>
               </label>
@@ -1545,7 +1541,7 @@ export default function TestEditPage({
           <div>
             <label
               htmlFor="edit-category"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-ink/70"
             >
               Category *
             </label>
@@ -1554,7 +1550,7 @@ export default function TestEditPage({
               id="edit-category"
               required
               defaultValue={editingQuestion.category}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+              className="mt-1 block w-full rounded-lg border border-ink/20 px-3 py-2 focus:border-copper/50 focus:ring-2 focus:ring-copper/40 sm:text-sm"
             >
               <option value="">Select a category</option>
               {QUESTION_CATEGORIES.map((category) => (
@@ -1570,7 +1566,7 @@ export default function TestEditPage({
             <div>
               <label
                 htmlFor="edit-personalityDimensionId"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-ink/70"
               >
                 Personality Dimension *
               </label>
@@ -1579,7 +1575,7 @@ export default function TestEditPage({
                 id="edit-personalityDimensionId"
                 required={editQuestionType === 'PERSONALITY'}
                 defaultValue={editingQuestion.personalityDimensionId || ''}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+                className="mt-1 block w-full rounded-lg border border-ink/20 px-3 py-2 focus:border-copper/50 focus:ring-2 focus:ring-copper/40 sm:text-sm"
               >
                 <option value="">Select a personality dimension</option>
                 {personalityDimensions.map((dimension) => (
@@ -1594,7 +1590,7 @@ export default function TestEditPage({
           {/* Answer Options - Objective Questions */}
           {editQuestionType === 'OBJECTIVE' && (
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="mb-1 block text-sm font-medium text-ink/70">
                 Answer Options (Mark the correct one)
               </label>
               <div className="mt-2 space-y-3">
@@ -1605,7 +1601,7 @@ export default function TestEditPage({
                       name={`option${index}`}
                       required
                       defaultValue={editingQuestion.answerOptions[index] || ''}
-                      className="flex-grow rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+                      className="flex-grow rounded-lg border border-ink/20 px-3 py-2 focus:border-copper/50 focus:ring-2 focus:ring-copper/40 sm:text-sm"
                       placeholder={`Option ${String.fromCharCode(65 + index)}`}
                     />
                     <input
@@ -1616,7 +1612,7 @@ export default function TestEditPage({
                       defaultChecked={
                         index === editingQuestion.correctAnswerIndex
                       }
-                      className="h-5 w-5 border-gray-300 text-brand-600 focus:ring-brand-500"
+                      className="h-5 w-5 border-ink/20 text-copper focus:ring-copper/40"
                     />
                   </div>
                 ))}
@@ -1627,13 +1623,13 @@ export default function TestEditPage({
           {/* Answer Options - Personality Questions */}
           {editQuestionType === 'PERSONALITY' && (
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label className="mb-1 block text-sm font-medium text-ink/70">
                 Answer Options (A-E) - No right answer
               </label>
               <div className="mt-2 space-y-3">
                 {[0, 1, 2, 3, 4].map((index) => (
                   <div key={index} className="flex items-center gap-3">
-                    <span className="w-8 text-sm font-medium text-gray-600">
+                    <span className="w-8 text-sm font-medium text-ink/60">
                       {String.fromCharCode(65 + index)}:
                     </span>
                     <input
@@ -1641,7 +1637,7 @@ export default function TestEditPage({
                       name={`option${index}`}
                       required
                       defaultValue={editingQuestion.answerOptions[index] || ''}
-                      className="flex-grow rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+                      className="flex-grow rounded-lg border border-ink/20 px-3 py-2 focus:border-copper/50 focus:ring-2 focus:ring-copper/40 sm:text-sm"
                       placeholder={`Option ${String.fromCharCode(65 + index)}`}
                     />
                   </div>
@@ -1661,7 +1657,7 @@ export default function TestEditPage({
             <div>
               <label
                 htmlFor="edit-timerSeconds"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-ink/70"
               >
                 Time Limit (seconds)
               </label>
@@ -1670,7 +1666,7 @@ export default function TestEditPage({
                 id="edit-timerSeconds"
                 required
                 defaultValue={editingQuestion.timerSeconds}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+                className="mt-1 block w-full rounded-lg border border-ink/20 px-3 py-2 focus:border-copper/50 focus:ring-2 focus:ring-copper/40 sm:text-sm"
               >
                 <option value="15">15 seconds</option>
                 <option value="30">30 seconds</option>
@@ -1682,7 +1678,7 @@ export default function TestEditPage({
             <div>
               <label
                 htmlFor="edit-sectionTag"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-ink/70"
               >
                 Section Tag
               </label>
@@ -1691,13 +1687,13 @@ export default function TestEditPage({
                 name="sectionTag"
                 id="edit-sectionTag"
                 defaultValue={editingQuestion.sectionTag || ''}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 sm:text-sm"
+                className="mt-1 block w-full rounded-lg border border-ink/20 px-3 py-2 focus:border-copper/50 focus:ring-2 focus:ring-copper/40 sm:text-sm"
                 placeholder="e.g., Logical, Mathematical, etc."
               />
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 border-t border-gray-200 pt-6">
+          <div className="flex justify-end gap-3 border-t border-ink/10 pt-6">
             <button
               type="button"
               onClick={() => {
@@ -1706,13 +1702,13 @@ export default function TestEditPage({
                 setEditQuestionType('OBJECTIVE');
                 setEditAnswerWeights({ A: 3, B: 3, C: 3, D: 3, E: 3 });
               }}
-              className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              className="rounded-lg bg-parchment/90 px-4 py-2 text-sm font-medium text-ink/70 transition-colors hover:bg-ink/10 focus:outline-none focus:ring-2 focus:ring-copper/40 focus:ring-offset-2"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="rounded-lg bg-brand-500 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg bg-copper/100 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-ink focus:outline-none focus:ring-2 focus:ring-copper/40 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Update Question
             </button>
@@ -1722,19 +1718,19 @@ export default function TestEditPage({
 
       <div className="mt-8">
         <div className="mb-6 flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-          <h2 className="text-xl font-semibold text-gray-900">
+          <h2 className="text-xl font-semibold text-ink">
             Questions ({getFilteredQuestions().length}
             {questionFilter !== 'ALL' ? ` of ${test.questions.length}` : ''})
           </h2>
 
           {/* Question Type Filter */}
-          <div className="flex items-center space-x-1 rounded-lg border border-gray-200 bg-white p-1">
+          <div className="flex items-center space-x-1 rounded-lg border border-ink/10 bg-parchment/80 p-1">
             <button
               onClick={() => setQuestionFilter('ALL')}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 questionFilter === 'ALL'
-                  ? 'bg-brand-500 text-white'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  ? 'bg-copper/100 text-white'
+                  : 'text-ink/60 hover:bg-parchment/90 hover:text-ink'
               }`}
             >
               All ({test.questions.length})
@@ -1743,8 +1739,8 @@ export default function TestEditPage({
               onClick={() => setQuestionFilter('OBJECTIVE')}
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 questionFilter === 'OBJECTIVE'
-                  ? 'bg-blue-500 text-white'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  ? 'bg-slateblue/100 text-white'
+                  : 'text-ink/60 hover:bg-parchment/90 hover:text-ink'
               }`}
             >
               📝 General ({getPersonalityStats().totalObjective})
@@ -1754,7 +1750,7 @@ export default function TestEditPage({
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 questionFilter === 'PERSONALITY'
                   ? 'bg-purple-500 text-white'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  : 'text-ink/60 hover:bg-parchment/90 hover:text-ink'
               }`}
             >
               🧠 Personality ({getPersonalityStats().totalPersonality})
@@ -1762,9 +1758,9 @@ export default function TestEditPage({
           </div>
         </div>
         {getFilteredQuestions().length === 0 ? (
-          <div className="rounded-lg border border-gray-200 bg-white p-8 text-center shadow-md">
+          <div className="rounded-lg border border-ink/10 bg-parchment/80 p-8 text-center shadow-md">
             <svg
-              className="mx-auto h-12 w-12 text-gray-400"
+              className="mx-auto h-12 w-12 text-ink/40"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -1778,12 +1774,12 @@ export default function TestEditPage({
                 d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
               />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">
+            <h3 className="mt-2 text-sm font-medium text-ink">
               {test.questions.length === 0
                 ? 'No questions yet'
                 : `No ${questionFilter.toLowerCase()} questions`}
             </h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-ink/50">
               {test.questions.length === 0
                 ? 'Add the first question to this test using the form above.'
                 : `Try selecting a different filter or add ${questionFilter.toLowerCase()} questions.`}
@@ -1799,31 +1795,31 @@ export default function TestEditPage({
               return (
                 <div
                   key={question.id}
-                  className="rounded-lg border border-gray-200 bg-white p-6 shadow-md"
+                  className="rounded-lg border border-ink/10 bg-parchment/80 p-6 shadow-md"
                 >
                   <div className="mb-3 flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <h3 className="text-lg font-semibold text-gray-800">
+                      <h3 className="text-lg font-semibold text-ink">
                         {question.questionType === 'PERSONALITY' ? '🧠' : '📝'}{' '}
                         Question {originalIndex + 1}
                       </h3>
                       {question.questionType === 'PERSONALITY' ? (
-                        <span className="inline-flex items-center rounded-full bg-purple-100 px-3 py-0.5 text-xs font-medium text-purple-800">
+                        <span className="bg-slateblue/12 inline-flex items-center rounded-full px-3 py-0.5 text-xs font-medium text-purple-800">
                           Personality
                         </span>
                       ) : (
-                        <span className="inline-flex items-center rounded-full bg-blue-100 px-3 py-0.5 text-xs font-medium text-blue-800">
+                        <span className="bg-slateblue/12 inline-flex items-center rounded-full px-3 py-0.5 text-xs font-medium text-slateblue">
                           General
                         </span>
                       )}
                       {question.sectionTag && (
-                        <span className="inline-flex items-center rounded-full bg-primary-100 px-3 py-0.5 text-xs font-medium text-primary-800">
+                        <span className="bg-slateblue/12 inline-flex items-center rounded-full px-3 py-0.5 text-xs font-medium text-slateblue">
                           {question.sectionTag}
                         </span>
                       )}
                       {question.questionType === 'PERSONALITY' &&
                         question.personalityDimension && (
-                          <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-0.5 text-xs font-medium text-green-800">
+                          <span className="bg-moss/12 inline-flex items-center rounded-full px-3 py-0.5 text-xs font-medium text-green-800">
                             {question.personalityDimension.name}
                           </span>
                         )}
@@ -1832,7 +1828,7 @@ export default function TestEditPage({
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEditQuestion(question)}
-                        className="rounded-md bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="bg-slateblue/12 rounded-md px-3 py-1 text-sm font-medium text-slateblue hover:bg-slateblue/15 focus:outline-none focus:ring-2 focus:ring-slateblue/40"
                       >
                         Edit
                       </button>
@@ -1847,7 +1843,7 @@ export default function TestEditPage({
                   <div className="mt-2">
                     <MarkdownRenderer
                       content={question.promptText}
-                      className="text-sm text-gray-600"
+                      className="text-sm text-ink/60"
                     />
                   </div>
                   {question.promptImageUrl && (
@@ -1862,14 +1858,14 @@ export default function TestEditPage({
                   <div className="mt-4">
                     {question.questionType === 'PERSONALITY' ? (
                       <div>
-                        <div className="mb-1 text-sm font-medium text-gray-700">
+                        <div className="mb-1 text-sm font-medium text-ink/70">
                           Answer Options (No right answer):
                         </div>
                         <ul className="mt-2 space-y-1">
                           {question.answerOptions.map((option, optionIndex) => (
                             <li
                               key={optionIndex}
-                              className="flex items-center justify-between text-sm text-gray-500"
+                              className="flex items-center justify-between text-sm text-ink/50"
                             >
                               <span>
                                 {String.fromCharCode(65 + optionIndex)}.{' '}
@@ -1881,7 +1877,7 @@ export default function TestEditPage({
                                 </span>
                               </span>
                               {question.answerWeights && (
-                                <span className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-400">
+                                <span className="rounded bg-parchment/90 px-2 py-1 text-xs text-ink/40">
                                   Weight:{' '}
                                   {question.answerWeights[
                                     String.fromCharCode(65 + optionIndex)
@@ -1891,14 +1887,14 @@ export default function TestEditPage({
                             </li>
                           ))}
                         </ul>
-                        <div className="mt-2 rounded bg-purple-50 p-2 text-xs text-purple-600">
+                        <div className="mt-2 rounded bg-purple-50 p-2 text-xs text-slateblue">
                           💡 This is a personality assessment question -
                           responses are weighted, not right/wrong
                         </div>
                       </div>
                     ) : (
                       <div>
-                        <div className="mb-1 text-sm font-medium text-gray-700">
+                        <div className="mb-1 text-sm font-medium text-ink/70">
                           Options:
                         </div>
                         <ul className="mt-2 space-y-1">
@@ -1907,8 +1903,8 @@ export default function TestEditPage({
                               key={optionIndex}
                               className={`text-sm ${
                                 optionIndex === question.correctAnswerIndex
-                                  ? 'font-medium text-green-600'
-                                  : 'text-gray-500'
+                                  ? 'font-medium text-moss'
+                                  : 'text-ink/50'
                               }`}
                             >
                               {String.fromCharCode(65 + optionIndex)}.{' '}
@@ -1926,7 +1922,7 @@ export default function TestEditPage({
                       </div>
                     )}
                   </div>
-                  <div className="mt-3 text-sm text-gray-500">
+                  <div className="mt-3 text-sm text-ink/50">
                     Time limit: {question.timerSeconds} seconds
                   </div>
                 </div>

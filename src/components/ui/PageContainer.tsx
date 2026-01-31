@@ -17,7 +17,7 @@ export const PageContainer: React.FC<PageContainerProps> = ({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className={`min-h-screen space-y-3 p-3 md:p-4 lg:p-6 ${className}`}
+      className={`min-h-screen space-y-4 p-4 text-ink md:p-6 lg:p-8 ${className}`}
     >
       {children}
     </motion.div>
@@ -43,8 +43,8 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
       className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
     >
       <div className="space-y-1">
-        <h1 className="text-xl font-bold text-gray-900">{title}</h1>
-        {subtitle && <p className="text-sm text-gray-600">{subtitle}</p>}
+        <h1 className="text-xl font-bold text-ink">{title}</h1>
+        {subtitle && <p className="text-sm text-ink/60">{subtitle}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </motion.div>
@@ -67,7 +67,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={`rounded-lg border border-gray-200 bg-white shadow-sm ${
+      className={`rounded-lg border border-ink/10 bg-parchment/80 shadow-sm ${
         noPadding ? '' : 'p-3'
       } ${className}`}
     >

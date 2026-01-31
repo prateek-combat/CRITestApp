@@ -11,9 +11,9 @@ export const CompactTable: React.FC<CompactTableProps> = ({
 }) => {
   return (
     <div
-      className={`overflow-hidden rounded-lg border border-gray-200 bg-white ${className}`}
+      className={`overflow-hidden rounded-lg border border-ink/10 bg-parchment/80 ${className}`}
     >
-      <table className="min-w-full divide-y divide-gray-200">{children}</table>
+      <table className="min-w-full divide-y divide-ink/10">{children}</table>
     </div>
   );
 };
@@ -26,7 +26,7 @@ export const CompactTableHeader: React.FC<CompactTableHeaderProps> = ({
   children,
 }) => {
   return (
-    <thead className="bg-gray-50">
+    <thead className="bg-ink/5">
       <tr>{children}</tr>
     </thead>
   );
@@ -40,7 +40,7 @@ export const CompactTableBody: React.FC<CompactTableBodyProps> = ({
   children,
 }) => {
   return (
-    <tbody className="divide-y divide-gray-200 bg-white">{children}</tbody>
+    <tbody className="divide-y divide-ink/10 bg-parchment/80">{children}</tbody>
   );
 };
 
@@ -58,7 +58,7 @@ export const CompactTableRow: React.FC<CompactTableRowProps> = ({
   return (
     <tr
       onClick={onClick}
-      className={`hover:bg-gray-50 ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      className={`hover:bg-ink/5 ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
       {children}
     </tr>
@@ -87,7 +87,7 @@ export const CompactTableCell: React.FC<CompactTableCellProps> = ({
   if (header) {
     return (
       <th
-        className={`px-4 py-2 text-xs font-medium uppercase tracking-wider text-gray-500 ${alignClasses[align]} ${className}`}
+        className={`px-4 py-2 text-xs font-medium uppercase tracking-wider text-ink/50 ${alignClasses[align]} ${className}`}
       >
         {children}
       </th>
@@ -95,7 +95,9 @@ export const CompactTableCell: React.FC<CompactTableCellProps> = ({
   }
 
   return (
-    <td className={`px-4 py-3 text-sm ${alignClasses[align]} ${className}`}>
+    <td
+      className={`px-4 py-3 text-sm text-ink ${alignClasses[align]} ${className}`}
+    >
       {children}
     </td>
   );
@@ -117,11 +119,9 @@ export const CompactEmptyState: React.FC<CompactEmptyStateProps> = ({
 }) => {
   return (
     <div className="py-8 text-center">
-      <div className="mb-3 flex justify-center text-gray-400">{icon}</div>
-      <h3 className="mb-1 text-sm font-medium text-gray-900">{title}</h3>
-      {description && (
-        <p className="mb-3 text-sm text-gray-500">{description}</p>
-      )}
+      <div className="mb-3 flex justify-center text-ink/40">{icon}</div>
+      <h3 className="mb-1 text-sm font-medium text-ink">{title}</h3>
+      {description && <p className="mb-3 text-sm text-ink/50">{description}</p>}
       {action && <div className="flex justify-center">{action}</div>}
     </div>
   );

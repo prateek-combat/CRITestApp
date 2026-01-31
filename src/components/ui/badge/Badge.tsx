@@ -40,26 +40,22 @@ const Badge: React.FC<BadgeProps> = ({
   // Define color styles for variants
   const variants = {
     light: {
-      primary:
-        'bg-primary-50 text-primary-500 dark:bg-primary-500/15 dark:text-primary-400',
-      success:
-        'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500',
-      error:
-        'bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500',
-      warning:
-        'bg-warning-50 text-warning-600 dark:bg-warning-500/15 dark:text-orange-400',
-      info: 'bg-blue-light-50 text-blue-light-500 dark:bg-blue-light-500/15 dark:text-blue-light-500',
-      light: 'bg-gray-100 text-gray-700 dark:bg-white/5 dark:text-white/80',
-      dark: 'bg-gray-500 text-white dark:bg-white/5 dark:text-white',
+      primary: 'bg-ink/10 text-ink',
+      success: 'bg-moss/12 text-moss',
+      error: 'bg-red-50 text-red-600',
+      warning: 'bg-copper/12 text-copper',
+      info: 'bg-slateblue/12 text-slateblue',
+      light: 'bg-parchment text-ink/70',
+      dark: 'bg-ink text-parchment',
     },
     solid: {
-      primary: 'bg-primary-500 text-white dark:text-white',
-      success: 'bg-success-500 text-white dark:text-white',
-      error: 'bg-error-500 text-white dark:text-white',
-      warning: 'bg-warning-500 text-white dark:text-white',
-      info: 'bg-blue-light-500 text-white dark:text-white',
-      light: 'bg-gray-400 dark:bg-white/5 text-white dark:text-white/80',
-      dark: 'bg-gray-700 text-white dark:text-white',
+      primary: 'bg-ink text-parchment',
+      success: 'bg-moss text-parchment',
+      error: 'bg-red-600 text-white',
+      warning: 'bg-copper text-parchment',
+      info: 'bg-slateblue text-parchment',
+      light: 'bg-parchment text-ink',
+      dark: 'bg-ink text-parchment',
     },
   };
 

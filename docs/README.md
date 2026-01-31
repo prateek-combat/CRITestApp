@@ -27,6 +27,10 @@
 - [Architecture](technical/ARCHITECTURE.md) - System architecture overview
 - [Technical Debt](technical/TECHNICAL_DEBT.md) - Known technical debt and improvement areas
 
+## 🎨 Design
+
+- [Design Philosophy](design/DESIGN_PHILOSOPHY.md) - Visual and UX principles for CRITest
+
 ## 📖 Guides
 
 - [Markdown Guide](guides/MARKDOWN_GUIDE.md) - Markdown formatting guide for questions

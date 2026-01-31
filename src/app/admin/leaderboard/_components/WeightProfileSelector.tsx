@@ -242,11 +242,11 @@ export default function WeightProfileSelector({
       <div className="flex flex-wrap items-center gap-4">
         {/* Sort Options - Always visible */}
         <div className="flex items-center gap-2">
-          <label className="text-xs font-medium text-gray-700">Sort:</label>
+          <label className="text-xs font-medium text-ink/70">Sort:</label>
           <select
             value={pendingSortBy}
             onChange={(e) => setPendingSortBy(e.target.value)}
-            className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="rounded-md border border-ink/20 bg-parchment/80 px-2 py-1 text-xs focus:border-slateblue/50 focus:outline-none focus:ring-1 focus:ring-slateblue/40"
           >
             <option value="composite">Score %</option>
             <option value="rank">Rank</option>
@@ -259,13 +259,13 @@ export default function WeightProfileSelector({
             <option value="scoreOther">Other %</option>
             <option value="completedAt">Date</option>
           </select>
-          <div className="flex rounded-md border border-gray-300">
+          <div className="flex rounded-md border border-ink/20">
             <button
               onClick={() => setPendingSortOrder('asc')}
               className={`px-2 py-1 text-xs ${
                 pendingSortOrder === 'asc'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  ? 'bg-slateblue/100 text-white'
+                  : 'bg-parchment/80 text-ink/70 hover:bg-parchment'
               }`}
               title="Ascending"
             >
@@ -275,8 +275,8 @@ export default function WeightProfileSelector({
               onClick={() => setPendingSortOrder('desc')}
               className={`px-2 py-1 text-xs ${
                 pendingSortOrder === 'desc'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  ? 'bg-slateblue/100 text-white'
+                  : 'bg-parchment/80 text-ink/70 hover:bg-parchment'
               }`}
               title="Descending"
             >
@@ -288,7 +288,7 @@ export default function WeightProfileSelector({
         {/* Advanced Filters Toggle */}
         <button
           onClick={() => setExpandedSection(expandedSection ? null : 'filters')}
-          className="flex items-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-1 text-xs hover:bg-gray-50"
+          className="flex items-center gap-1 rounded-md border border-ink/20 bg-parchment/80 px-3 py-1 text-xs hover:bg-parchment"
         >
           <span>Advanced Filters</span>
           {expandedSection === 'filters' ? (
@@ -300,12 +300,12 @@ export default function WeightProfileSelector({
 
         {/* Filter Status Badges */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500">Active:</span>
-          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs">
+          <span className="text-xs text-ink/50">Active:</span>
+          <span className="rounded-full bg-parchment/90 px-2 py-0.5 text-xs">
             Weights: {getWeightsStatus()}
           </span>
           {onScoreThresholdChange && (
-            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs">
+            <span className="rounded-full bg-parchment/90 px-2 py-0.5 text-xs">
               Risk: {getRiskScoreStatus()}
             </span>
           )}
@@ -318,8 +318,8 @@ export default function WeightProfileSelector({
             disabled={!isValidTotal}
             className={`ml-auto rounded px-3 py-1 text-xs font-medium transition-colors ${
               isValidTotal
-                ? 'bg-blue-500 text-white hover:bg-blue-600'
-                : 'cursor-not-allowed bg-gray-300 text-gray-500'
+                ? 'bg-slateblue/100 text-white hover:bg-slateblue'
+                : 'cursor-not-allowed bg-ink/20 text-ink/50'
             }`}
           >
             Apply Changes
@@ -329,17 +329,17 @@ export default function WeightProfileSelector({
 
       {/* Expandable Advanced Filters */}
       {expandedSection === 'filters' && (
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+        <div className="rounded-lg border border-ink/10 bg-parchment p-4">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {/* Category Weights */}
             <div>
-              <h4 className="mb-3 text-sm font-semibold text-gray-900">
+              <h4 className="mb-3 text-sm font-semibold text-ink">
                 Category Weights
               </h4>
               <div className="space-y-2">
                 {Object.entries(pendingWeights).map(([category, value]) => (
                   <div key={category} className="flex items-center gap-3">
-                    <label className="w-24 text-xs font-medium text-gray-700">
+                    <label className="w-24 text-xs font-medium text-ink/70">
                       {categoryLabels[category as keyof CategoryWeights]}:
                     </label>
                     <input
@@ -353,7 +353,7 @@ export default function WeightProfileSelector({
                           parseInt(e.target.value)
                         )
                       }
-                      className="h-1.5 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-200"
+                      className="h-1.5 flex-1 cursor-pointer appearance-none rounded-lg bg-ink/10"
                       style={{
                         background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${value}%, #e5e7eb ${value}%, #e5e7eb 100%)`,
                       }}
@@ -369,15 +369,15 @@ export default function WeightProfileSelector({
                           parseInt(e.target.value) || 0
                         )
                       }
-                      className="w-12 rounded border border-gray-300 px-1 py-0.5 text-center text-xs"
+                      className="w-12 rounded border border-ink/20 px-1 py-0.5 text-center text-xs"
                     />
-                    <span className="text-xs text-gray-500">%</span>
+                    <span className="text-xs text-ink/50">%</span>
                   </div>
                 ))}
-                <div className="mt-3 flex items-center justify-between border-t border-gray-200 pt-3">
+                <div className="mt-3 flex items-center justify-between border-t border-ink/10 pt-3">
                   <span
                     className={`text-sm font-medium ${
-                      isValidTotal ? 'text-gray-700' : 'text-red-600'
+                      isValidTotal ? 'text-ink/70' : 'text-red-600'
                     }`}
                   >
                     Total: {totalWeight}%
@@ -393,7 +393,7 @@ export default function WeightProfileSelector({
                       };
                       setPendingWeights(equalWeights);
                     }}
-                    className="rounded border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                    className="rounded border border-ink/20 bg-parchment/80 px-3 py-1 text-xs text-ink/70 hover:bg-parchment"
                   >
                     Reset to Equal
                   </button>
@@ -404,21 +404,21 @@ export default function WeightProfileSelector({
             {/* Risk Score Filter */}
             {onScoreThresholdChange && (
               <div>
-                <h4 className="mb-3 text-sm font-semibold text-gray-900">
+                <h4 className="mb-3 text-sm font-semibold text-ink">
                   Risk Score Filter
                 </h4>
                 <div className="space-y-3">
                   <div className="flex gap-2">
-                    <span className="text-xs font-medium text-gray-700">
+                    <span className="text-xs font-medium text-ink/70">
                       Show candidates with risk score:
                     </span>
-                    <div className="flex rounded-md border border-gray-300">
+                    <div className="flex rounded-md border border-ink/20">
                       <button
                         onClick={() => setPendingThresholdMode('above')}
                         className={`px-3 py-1 text-xs font-medium transition-colors ${
                           pendingThresholdMode === 'above'
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-white text-gray-700 hover:bg-gray-50'
+                            ? 'bg-slateblue/100 text-white'
+                            : 'bg-parchment/80 text-ink/70 hover:bg-parchment'
                         }`}
                       >
                         Above
@@ -427,8 +427,8 @@ export default function WeightProfileSelector({
                         onClick={() => setPendingThresholdMode('below')}
                         className={`px-3 py-1 text-xs font-medium transition-colors ${
                           pendingThresholdMode === 'below'
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-white text-gray-700 hover:bg-gray-50'
+                            ? 'bg-slateblue/100 text-white'
+                            : 'bg-parchment/80 text-ink/70 hover:bg-parchment'
                         }`}
                       >
                         Below
@@ -437,13 +437,13 @@ export default function WeightProfileSelector({
                   </div>
                   <div>
                     <div className="mb-2 flex items-center justify-between">
-                      <label className="text-xs font-medium text-gray-700">
+                      <label className="text-xs font-medium text-ink/70">
                         Threshold: {pendingThreshold?.toFixed(1) || '0.0'}
                       </label>
                       {pendingThreshold !== null && pendingThreshold > 0 && (
                         <button
                           onClick={() => setPendingThreshold(null)}
-                          className="text-xs text-blue-600 hover:text-blue-800"
+                          className="text-xs text-slateblue hover:text-slateblue"
                         >
                           Clear filter
                         </button>
@@ -459,12 +459,12 @@ export default function WeightProfileSelector({
                         const value = parseFloat(e.target.value);
                         setPendingThreshold(value === 0 ? null : value);
                       }}
-                      className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200"
+                      className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-ink/10"
                       style={{
                         background: `linear-gradient(to right, #f59e0b 0%, #f59e0b ${(pendingThreshold ?? 0) * 10}%, #e5e7eb ${(pendingThreshold ?? 0) * 10}%, #e5e7eb 100%)`,
                       }}
                     />
-                    <div className="mt-1 flex justify-between text-xs text-gray-500">
+                    <div className="mt-1 flex justify-between text-xs text-ink/50">
                       <span>0</span>
                       <span>2.5</span>
                       <span>5</span>
@@ -472,7 +472,7 @@ export default function WeightProfileSelector({
                       <span>10</span>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-ink/50">
                     {pendingThreshold === null || pendingThreshold === 0
                       ? 'No risk score filtering applied'
                       : `Showing candidates with risk score ${

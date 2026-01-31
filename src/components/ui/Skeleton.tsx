@@ -18,7 +18,7 @@ const Skeleton: React.FC<SkeletonProps> = ({
   height,
   count = 1,
 }) => {
-  const baseClasses = 'bg-gray-200 animate-pulse relative overflow-hidden';
+  const baseClasses = 'bg-ink/10 animate-pulse relative overflow-hidden';
 
   const variantClasses = {
     text: 'h-4 rounded',

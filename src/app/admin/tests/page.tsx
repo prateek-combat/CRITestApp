@@ -291,14 +291,14 @@ export default function TestsPage() {
 
     if (link.maxUses && link.usedCount >= link.maxUses) {
       return (
-        <span className="inline-flex items-center rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-800">
+        <span className="bg-copper/12 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-orange-800">
           Limit Reached
         </span>
       );
     }
 
     return (
-      <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+      <span className="bg-moss/12 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-green-800">
         Active
       </span>
     );
@@ -492,19 +492,19 @@ export default function TestsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'COMPLETED':
-        return 'text-green-600 bg-green-100';
+        return 'text-moss bg-moss/12';
       case 'OPENED':
-        return 'text-blue-600 bg-blue-100';
+        return 'text-slateblue bg-slateblue/12';
       case 'SENT':
         return 'text-yellow-600 bg-yellow-100';
       case 'PENDING':
-        return 'text-gray-600 bg-gray-100';
+        return 'text-ink/60 bg-parchment/90';
       case 'EXPIRED':
         return 'text-red-600 bg-red-100';
       case 'CANCELLED':
         return 'text-red-600 bg-red-100';
       default:
-        return 'text-gray-600 bg-gray-100';
+        return 'text-ink/60 bg-parchment/90';
     }
   };
 
@@ -647,7 +647,7 @@ export default function TestsPage() {
               Go to{' '}
               <Link
                 href="/admin/job-profiles"
-                className="font-medium text-blue-600 underline hover:text-blue-800"
+                className="font-medium text-slateblue underline hover:text-slateblue"
               >
                 Job Profiles
               </Link>{' '}
@@ -690,15 +690,13 @@ export default function TestsPage() {
 
           {testsLoading ? (
             <div className="flex justify-center py-6">
-              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-brand-500"></div>
+              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-copper/50"></div>
             </div>
           ) : tests.length === 0 ? (
             <div className={`${componentStyles.card} text-center`}>
-              <Settings className="mx-auto h-10 w-10 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">
-                No tests
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
+              <Settings className="mx-auto h-10 w-10 text-ink/40" />
+              <h3 className="mt-2 text-sm font-medium text-ink">No tests</h3>
+              <p className="mt-1 text-sm text-ink/50">
                 Get started by creating your first test.
               </p>
               <div className="mt-4">
@@ -713,7 +711,7 @@ export default function TestsPage() {
             </div>
           ) : (
             <div className={componentStyles.table}>
-              <table className="min-w-full divide-y divide-gray-200">
+              <table className="min-w-full divide-y divide-ink/10">
                 <thead className={designSystem.table.header}>
                   <tr>
                     <th className={designSystem.table.headerCell}>
@@ -737,33 +735,33 @@ export default function TestsPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
+                <tbody className="divide-y divide-ink/10 bg-parchment/80">
                   {tests.map((test) => (
                     <tr key={test.id} className={designSystem.table.row}>
                       <td className={designSystem.table.cell}>
                         <div>
-                          <h3 className="text-sm font-medium text-gray-900">
+                          <h3 className="text-sm font-medium text-ink">
                             {test.title}
                           </h3>
                           {test.description && (
-                            <p className="mt-0.5 line-clamp-1 text-xs text-gray-500">
+                            <p className="mt-0.5 line-clamp-1 text-xs text-ink/50">
                               {test.description}
                             </p>
                           )}
                         </div>
                       </td>
                       <td className={`${designSystem.table.cell} text-center`}>
-                        <span className="text-sm font-medium text-gray-900">
+                        <span className="text-sm font-medium text-ink">
                           {test.questionsCount}
                         </span>
                       </td>
                       <td className={`${designSystem.table.cell} text-center`}>
-                        <span className="text-sm font-medium text-gray-900">
+                        <span className="text-sm font-medium text-ink">
                           {test.invitationsCount}
                         </span>
                       </td>
                       <td className={designSystem.table.cell}>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-ink/50">
                           {new Date(test.createdAt).toLocaleDateString()}
                         </span>
                       </td>
@@ -771,7 +769,7 @@ export default function TestsPage() {
                         <div className="flex items-center justify-end space-x-1">
                           <Link
                             href={`/admin/tests/${test.id}`}
-                            className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                            className="rounded p-1 text-ink/60 transition-colors hover:bg-parchment/90 hover:text-ink"
                             title="Edit Test"
                           >
                             <Edit className="h-4 w-4" />
@@ -800,7 +798,7 @@ export default function TestsPage() {
                                 alert('Failed to create preview link');
                               }
                             }}
-                            className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                            className="rounded p-1 text-ink/60 transition-colors hover:bg-parchment/90 hover:text-ink"
                             title="Preview Test"
                           >
                             <Eye className="h-4 w-4" />
@@ -812,7 +810,7 @@ export default function TestsPage() {
                                 title: test.title,
                               });
                             }}
-                            className="rounded p-1 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                            className="rounded p-1 text-ink/60 transition-colors hover:bg-parchment/90 hover:text-ink"
                             title="Email Notifications"
                           >
                             <Bell className="h-4 w-4" />
@@ -851,19 +849,19 @@ export default function TestsPage() {
         {false && (
           <div className="page-transition-slide-up space-y-3">
             {/* Send Invitation Form */}
-            <div className="micro-lift rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
-              <h2 className="mb-3 text-base font-semibold text-gray-900">
+            <div className="micro-lift rounded-lg border border-ink/10 bg-parchment/80 p-3 shadow-sm">
+              <h2 className="mb-3 text-base font-semibold text-ink">
                 Send Invitation
               </h2>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700">
+                  <label className="block text-xs font-medium text-ink/70">
                     Test
                   </label>
                   <select
                     value={selectedTestId}
                     onChange={(e) => setSelectedTestId(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
+                    className="mt-1 block w-full rounded-md border-ink/20 text-sm shadow-sm focus:border-copper/50 focus:ring-copper/40"
                   >
                     <option value="">Select a test</option>
                     {tests.map((test) => (
@@ -874,7 +872,7 @@ export default function TestsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700">
+                  <label className="block text-xs font-medium text-ink/70">
                     Email
                   </label>
                   <input
@@ -882,11 +880,11 @@ export default function TestsPage() {
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
                     placeholder="candidate@example.com"
-                    className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
+                    className="mt-1 block w-full rounded-md border-ink/20 text-sm shadow-sm focus:border-copper/50 focus:ring-copper/40"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700">
+                  <label className="block text-xs font-medium text-ink/70">
                     Custom Message (Optional)
                   </label>
                   <input
@@ -894,20 +892,20 @@ export default function TestsPage() {
                     value={customMessage}
                     onChange={(e) => setCustomMessage(e.target.value)}
                     placeholder="Additional message..."
-                    className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
+                    className="mt-1 block w-full rounded-md border-ink/20 text-sm shadow-sm focus:border-copper/50 focus:ring-copper/40"
                   />
                 </div>
                 <div className="flex items-end space-x-1.5">
                   <button
                     onClick={sendInvitationEmail}
                     disabled={!newEmail || !selectedTestId || sendingInvite}
-                    className="rounded-md bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+                    className="rounded-md bg-ink px-3 py-1.5 text-xs font-medium text-white hover:bg-ink/90 disabled:opacity-50"
                   >
                     {sendingInvite ? 'Sending...' : 'Send'}
                   </button>
                   <button
                     onClick={() => setShowBulkForm(!showBulkForm)}
-                    className="rounded-md bg-gray-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700"
+                    className="rounded-md bg-ink/60 px-3 py-1.5 text-xs font-medium text-white hover:bg-ink/70"
                   >
                     Bulk
                   </button>
@@ -923,7 +921,7 @@ export default function TestsPage() {
 
               {showBulkForm && (
                 <div className="mt-3 border-t pt-3">
-                  <label className="block text-xs font-medium text-gray-700">
+                  <label className="block text-xs font-medium text-ink/70">
                     Bulk Email Addresses
                   </label>
                   <textarea
@@ -931,7 +929,7 @@ export default function TestsPage() {
                     onChange={(e) => setBulkEmails(e.target.value)}
                     placeholder="Enter email addresses (one per line or comma-separated)"
                     rows={3}
-                    className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
+                    className="mt-1 block w-full rounded-md border-ink/20 text-sm shadow-sm focus:border-copper/50 focus:ring-copper/40"
                   />
                   <div className="mt-2 flex space-x-2">
                     <button
@@ -939,13 +937,13 @@ export default function TestsPage() {
                       disabled={
                         !bulkEmails.trim() || !selectedTestId || sendingBulk
                       }
-                      className="rounded-md bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+                      className="rounded-md bg-ink px-3 py-1.5 text-xs font-medium text-white hover:bg-ink/90 disabled:opacity-50"
                     >
                       {sendingBulk ? 'Sending...' : 'Send Bulk Invitations'}
                     </button>
                     <button
                       onClick={() => setShowBulkForm(false)}
-                      className="rounded-md bg-gray-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700"
+                      className="rounded-md bg-ink/60 px-3 py-1.5 text-xs font-medium text-white hover:bg-ink/70"
                     >
                       Cancel
                     </button>
@@ -955,10 +953,10 @@ export default function TestsPage() {
             </div>
 
             {/* Filters */}
-            <div className="micro-scale rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+            <div className="micro-scale rounded-lg border border-ink/10 bg-parchment/80 p-3 shadow-sm">
               <div className="grid gap-3 sm:grid-cols-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700">
+                  <label className="block text-xs font-medium text-ink/70">
                     Search
                   </label>
                   <input
@@ -966,11 +964,11 @@ export default function TestsPage() {
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Search emails or tests..."
-                    className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
+                    className="mt-1 block w-full rounded-md border-ink/20 text-sm shadow-sm focus:border-copper/50 focus:ring-copper/40"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700">
+                  <label className="block text-xs font-medium text-ink/70">
                     Status
                   </label>
                   <select
@@ -978,7 +976,7 @@ export default function TestsPage() {
                     onChange={(e) =>
                       setStatusFilter(e.target.value as FilterStatus)
                     }
-                    className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
+                    className="mt-1 block w-full rounded-md border-ink/20 text-sm shadow-sm focus:border-copper/50 focus:ring-copper/40"
                   >
                     <option value="ALL">All Statuses</option>
                     <option value="PENDING">Pending</option>
@@ -990,13 +988,13 @@ export default function TestsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-700">
+                  <label className="block text-xs font-medium text-ink/70">
                     Test
                   </label>
                   <select
                     value={selectedTestId}
                     onChange={(e) => setSelectedTestId(e.target.value)}
-                    className="mt-1 block w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500"
+                    className="mt-1 block w-full rounded-md border-ink/20 text-sm shadow-sm focus:border-copper/50 focus:ring-copper/40"
                   >
                     <option value="">All Tests</option>
                     {tests.map((test) => (
@@ -1012,51 +1010,51 @@ export default function TestsPage() {
             {/* Invitations List */}
             {invitationsLoading ? (
               <div className="flex justify-center py-6">
-                <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-brand-500"></div>
+                <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-copper/50"></div>
               </div>
             ) : (
-              <div className="micro-lift overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+              <div className="micro-lift overflow-hidden rounded-lg border border-ink/10 bg-parchment/80 shadow-sm">
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                  <table className="min-w-full divide-y divide-ink/10">
+                    <thead className="bg-parchment">
                       <tr>
-                        <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-ink/50">
                           Candidate
                         </th>
-                        <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-ink/50">
                           Test
                         </th>
-                        <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-ink/50">
                           Status
                         </th>
-                        <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-ink/50">
                           Score
                         </th>
-                        <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                        <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wider text-ink/50">
                           Actions
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
+                    <tbody className="divide-y divide-ink/10 bg-parchment/80">
                       {filteredInvitations.map((invitation) => (
                         <tr key={invitation.id}>
                           <td className="whitespace-nowrap px-3 py-2">
                             <div>
-                              <div className="text-sm font-medium text-gray-900">
+                              <div className="text-sm font-medium text-ink">
                                 {invitation.candidateName || invitation.email}
                               </div>
                               {invitation.candidateName && (
-                                <div className="text-xs text-gray-500">
+                                <div className="text-xs text-ink/50">
                                   {invitation.email}
                                 </div>
                               )}
                             </div>
                           </td>
                           <td className="whitespace-nowrap px-3 py-2">
-                            <div className="text-sm text-gray-900">
+                            <div className="text-sm text-ink">
                               {invitation.test.title}
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-ink/50">
                               {invitation.type === 'public'
                                 ? 'Public Link'
                                 : 'Invitation'}
@@ -1069,7 +1067,7 @@ export default function TestsPage() {
                               {invitation.status}
                             </span>
                           </td>
-                          <td className="whitespace-nowrap px-3 py-2 text-sm text-gray-900">
+                          <td className="whitespace-nowrap px-3 py-2 text-sm text-ink">
                             {invitation.testAttempt?.rawScore !== undefined
                               ? `${invitation.testAttempt.rawScore}%`
                               : '-'}
@@ -1081,7 +1079,7 @@ export default function TestsPage() {
                                   href={`/admin/analytics/analysis/${invitation.testAttempt.id}`}
                                   variant="outline"
                                   size="xs"
-                                  className="border-brand-600 text-brand-600 hover:bg-brand-50"
+                                  className="border-copper/50 text-copper hover:bg-copper/10"
                                 >
                                   View Analysis
                                 </LinkButton>
@@ -1094,7 +1092,7 @@ export default function TestsPage() {
                                   disabled={
                                     processingInvitation === invitation.id
                                   }
-                                  className="text-orange-600 hover:text-orange-900 disabled:cursor-not-allowed disabled:opacity-50"
+                                  className="text-copper hover:text-copper disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                   {processingInvitation === invitation.id
                                     ? 'Revoking...'

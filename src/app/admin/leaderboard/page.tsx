@@ -30,8 +30,8 @@ export default function LeaderboardPage() {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-brand-500 border-t-transparent"></div>
-          <p className="mt-3 text-sm text-gray-600">Loading...</p>
+          <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-copper/50 border-t-transparent"></div>
+          <p className="mt-3 text-sm text-ink/60">Loading...</p>
         </div>
       </div>
     );
@@ -69,7 +69,7 @@ export default function LeaderboardPage() {
               <li>Export results as PDF reports</li>
               <li>Filter by job profiles and test types</li>
             </ul>
-            <p className="text-sm font-medium text-blue-700">
+            <p className="text-sm font-medium text-slateblue">
               💡 Tip: Use the weight profiles to customize scoring for different
               roles!
             </p>
@@ -79,10 +79,8 @@ export default function LeaderboardPage() {
         <Suspense
           fallback={
             <div className="flex items-center justify-center py-6">
-              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-brand-500"></div>
-              <p className="ml-3 text-sm text-gray-600">
-                Loading leaderboard...
-              </p>
+              <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-copper/50"></div>
+              <p className="ml-3 text-sm text-ink/60">Loading leaderboard...</p>
             </div>
           }
         >

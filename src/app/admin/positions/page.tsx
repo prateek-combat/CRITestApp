@@ -303,30 +303,30 @@ export default function PositionsPage() {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
-          <p className="mt-4 text-gray-600">Loading positions...</p>
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-slateblue/50 border-t-transparent"></div>
+          <p className="mt-4 text-ink/60">Loading positions...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-parchment py-8">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-3xl font-bold text-ink">
                 Position Management
               </h1>
-              <p className="mt-2 text-sm text-gray-600">
+              <p className="mt-2 text-sm text-ink/60">
                 Manage job positions and assign tests to them
               </p>
             </div>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 rounded-lg border-2 border-blue-700/50 bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl"
+              className="inline-flex items-center gap-2 rounded-lg border-2 border-ink/80 bg-ink px-4 py-2 text-sm font-medium text-white shadow-lg transition-all duration-200 hover:bg-ink/90 hover:shadow-xl"
             >
               <Plus className="h-4 w-4" />
               Create Position
@@ -352,7 +352,7 @@ export default function PositionsPage() {
               <li>Track active vs archived tests for each position</li>
               <li>Filter positions by department and search by name/code</li>
             </ul>
-            <p className="text-sm font-medium text-blue-700">
+            <p className="text-sm font-medium text-slateblue">
               💡 Tip: Assign tests to positions, then use Job Profiles to invite
               candidates!
             </p>
@@ -363,21 +363,21 @@ export default function PositionsPage() {
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-1 items-center gap-4">
             <div className="relative max-w-md flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" />
               <input
                 type="text"
                 placeholder="Search positions..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-md border border-gray-300 py-2 pl-10 pr-4 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full rounded-md border border-ink/20 py-2 pl-10 pr-4 text-sm focus:border-slateblue/50 focus:outline-none focus:ring-1 focus:ring-slateblue/40"
               />
             </div>
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-gray-400" />
+              <Filter className="h-4 w-4 text-ink/40" />
               <select
                 value={departmentFilter}
                 onChange={(e) => setDepartmentFilter(e.target.value)}
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="rounded-md border border-ink/20 px-3 py-2 text-sm focus:border-slateblue/50 focus:outline-none focus:ring-1 focus:ring-slateblue/40"
               >
                 <option value="all">All Departments</option>
                 {departments.map((dept) => (
@@ -413,15 +413,15 @@ export default function PositionsPage() {
           {filteredPositions.map((position) => (
             <div
               key={position.id}
-              className="relative rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+              className="relative rounded-lg border border-ink/10 bg-parchment/80 p-6 shadow-sm transition-shadow hover:shadow-md"
             >
               {/* Status Badge */}
               <div className="absolute right-4 top-4">
                 <span
                   className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                     position.isActive
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
+                      ? 'bg-moss/12 text-green-800'
+                      : 'bg-parchment/90 text-ink'
                   }`}
                 >
                   {position.isActive ? 'Active' : 'Inactive'}
@@ -430,14 +430,12 @@ export default function PositionsPage() {
 
               {/* Position Info */}
               <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-ink">
                   {position.name}
                 </h3>
-                <p className="font-mono text-sm text-gray-500">
-                  {position.code}
-                </p>
+                <p className="font-mono text-sm text-ink/50">{position.code}</p>
                 {position.description && (
-                  <p className="mt-2 text-sm text-gray-600">
+                  <p className="mt-2 text-sm text-ink/60">
                     {position.description}
                   </p>
                 )}
@@ -446,13 +444,13 @@ export default function PositionsPage() {
               {/* Department & Level */}
               <div className="mb-4 flex flex-wrap gap-2">
                 {position.department && (
-                  <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+                  <span className="inline-flex items-center rounded-md bg-slateblue/10 px-2 py-1 text-xs font-medium text-slateblue">
                     <Building2 className="mr-1 h-3 w-3" />
                     {position.department}
                   </span>
                 )}
                 {position.level && (
-                  <span className="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700">
+                  <span className="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-slateblue">
                     <Target className="mr-1 h-3 w-3" />
                     {position.level}
                   </span>
@@ -462,16 +460,16 @@ export default function PositionsPage() {
               {/* Stats */}
               <div className="mb-4 grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <div className="text-2xl font-bold text-blue-600">
+                  <div className="text-2xl font-bold text-slateblue">
                     {position.activeTestCount}
                   </div>
-                  <div className="text-xs text-gray-500">Active Tests</div>
+                  <div className="text-xs text-ink/50">Active Tests</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-gray-600">
+                  <div className="text-2xl font-bold text-ink/60">
                     {position.testCount}
                   </div>
-                  <div className="text-xs text-gray-500">Total Tests</div>
+                  <div className="text-xs text-ink/50">Total Tests</div>
                 </div>
               </div>
 
@@ -479,7 +477,7 @@ export default function PositionsPage() {
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => openAssignTestModal(position)}
-                  className="inline-flex items-center rounded-md bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100"
+                  className="hover:bg-moss/12 inline-flex items-center rounded-md bg-moss/10 px-3 py-1.5 text-xs font-medium text-moss"
                 >
                   <TestTube className="mr-1 h-3 w-3" />
                   Assign Tests
@@ -487,13 +485,13 @@ export default function PositionsPage() {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => openEditModal(position)}
-                    className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                    className="rounded-md p-1.5 text-ink/40 hover:bg-parchment/90 hover:text-ink/60"
                   >
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDeletePosition(position)}
-                    className="rounded-md p-1.5 text-gray-400 hover:bg-red-100 hover:text-red-600"
+                    className="rounded-md p-1.5 text-ink/40 hover:bg-red-100 hover:text-red-600"
                     disabled={position.testCount > 0}
                     title={
                       position.testCount > 0
@@ -511,11 +509,11 @@ export default function PositionsPage() {
 
         {filteredPositions.length === 0 && (
           <div className="py-12 text-center">
-            <Users className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">
+            <Users className="mx-auto h-12 w-12 text-ink/40" />
+            <h3 className="mt-2 text-sm font-medium text-ink">
               No positions found
             </h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <p className="mt-1 text-sm text-ink/50">
               {searchTerm || departmentFilter !== 'all'
                 ? 'Try adjusting your search or filters.'
                 : 'Get started by creating your first position.'}
@@ -529,24 +527,24 @@ export default function PositionsPage() {
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
             <div
-              className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+              className="bg-parchment0 fixed inset-0 bg-opacity-75 transition-opacity"
               onClick={() => setShowCreateModal(false)}
             />
 
-            <div className="inline-block transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6 sm:align-middle">
+            <div className="inline-block transform overflow-hidden rounded-lg bg-parchment/80 px-4 pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6 sm:align-middle">
               <form onSubmit={handleCreatePosition}>
                 <div className="mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">
+                  <h3 className="text-lg font-medium text-ink">
                     Create New Position
                   </h3>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-ink/50">
                     Add a new job position to the system.
                   </p>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-ink/70">
                       Position Name *
                     </label>
                     <input
@@ -556,13 +554,13 @@ export default function PositionsPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, name: e.target.value })
                       }
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-md border border-ink/20 px-3 py-2 shadow-sm focus:border-slateblue/50 focus:outline-none focus:ring-1 focus:ring-slateblue/40"
                       placeholder="e.g. Software Engineer"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-ink/70">
                       Position Code *
                     </label>
                     <input
@@ -575,13 +573,13 @@ export default function PositionsPage() {
                           code: e.target.value.toUpperCase(),
                         })
                       }
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-md border border-ink/20 px-3 py-2 shadow-sm focus:border-slateblue/50 focus:outline-none focus:ring-1 focus:ring-slateblue/40"
                       placeholder="e.g. SWE"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-ink/70">
                       Department
                     </label>
                     <input
@@ -590,13 +588,13 @@ export default function PositionsPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, department: e.target.value })
                       }
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-md border border-ink/20 px-3 py-2 shadow-sm focus:border-slateblue/50 focus:outline-none focus:ring-1 focus:ring-slateblue/40"
                       placeholder="e.g. Engineering"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-ink/70">
                       Level
                     </label>
                     <input
@@ -605,13 +603,13 @@ export default function PositionsPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, level: e.target.value })
                       }
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-md border border-ink/20 px-3 py-2 shadow-sm focus:border-slateblue/50 focus:outline-none focus:ring-1 focus:ring-slateblue/40"
                       placeholder="e.g. Senior, Junior, Lead"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-ink/70">
                       Description
                     </label>
                     <textarea
@@ -623,7 +621,7 @@ export default function PositionsPage() {
                         })
                       }
                       rows={3}
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-md border border-ink/20 px-3 py-2 shadow-sm focus:border-slateblue/50 focus:outline-none focus:ring-1 focus:ring-slateblue/40"
                       placeholder="Brief description of the position..."
                     />
                   </div>
@@ -636,11 +634,11 @@ export default function PositionsPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, isActive: e.target.checked })
                       }
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded border-ink/20 text-slateblue focus:ring-slateblue/40"
                     />
                     <label
                       htmlFor="isActive"
-                      className="ml-2 block text-sm text-gray-900"
+                      className="ml-2 block text-sm text-ink"
                     >
                       Active position
                     </label>
@@ -651,14 +649,14 @@ export default function PositionsPage() {
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
-                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="rounded-md border border-ink/20 bg-parchment/80 px-4 py-2 text-sm font-medium text-ink/70 shadow-sm hover:bg-parchment focus:outline-none focus:ring-2 focus:ring-slateblue/40 focus:ring-offset-2"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={processing}
-                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                    className="rounded-md bg-slateblue px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slateblue/80 focus:outline-none focus:ring-2 focus:ring-slateblue/40 focus:ring-offset-2 disabled:opacity-50"
                   >
                     {processing ? 'Creating...' : 'Create Position'}
                   </button>
@@ -674,24 +672,24 @@ export default function PositionsPage() {
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
             <div
-              className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+              className="bg-parchment0 fixed inset-0 bg-opacity-75 transition-opacity"
               onClick={() => setShowEditModal(false)}
             />
 
-            <div className="inline-block transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6 sm:align-middle">
+            <div className="inline-block transform overflow-hidden rounded-lg bg-parchment/80 px-4 pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6 sm:align-middle">
               <form onSubmit={handleUpdatePosition}>
                 <div className="mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">
+                  <h3 className="text-lg font-medium text-ink">
                     Edit Position
                   </h3>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-ink/50">
                     Update position details.
                   </p>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-ink/70">
                       Position Name *
                     </label>
                     <input
@@ -701,12 +699,12 @@ export default function PositionsPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, name: e.target.value })
                       }
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-md border border-ink/20 px-3 py-2 shadow-sm focus:border-slateblue/50 focus:outline-none focus:ring-1 focus:ring-slateblue/40"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-ink/70">
                       Position Code *
                     </label>
                     <input
@@ -719,12 +717,12 @@ export default function PositionsPage() {
                           code: e.target.value.toUpperCase(),
                         })
                       }
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-md border border-ink/20 px-3 py-2 shadow-sm focus:border-slateblue/50 focus:outline-none focus:ring-1 focus:ring-slateblue/40"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-ink/70">
                       Department
                     </label>
                     <input
@@ -733,12 +731,12 @@ export default function PositionsPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, department: e.target.value })
                       }
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-md border border-ink/20 px-3 py-2 shadow-sm focus:border-slateblue/50 focus:outline-none focus:ring-1 focus:ring-slateblue/40"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-ink/70">
                       Level
                     </label>
                     <input
@@ -747,12 +745,12 @@ export default function PositionsPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, level: e.target.value })
                       }
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-md border border-ink/20 px-3 py-2 shadow-sm focus:border-slateblue/50 focus:outline-none focus:ring-1 focus:ring-slateblue/40"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-ink/70">
                       Description
                     </label>
                     <textarea
@@ -764,7 +762,7 @@ export default function PositionsPage() {
                         })
                       }
                       rows={3}
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="mt-1 block w-full rounded-md border border-ink/20 px-3 py-2 shadow-sm focus:border-slateblue/50 focus:outline-none focus:ring-1 focus:ring-slateblue/40"
                     />
                   </div>
 
@@ -776,11 +774,11 @@ export default function PositionsPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, isActive: e.target.checked })
                       }
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded border-ink/20 text-slateblue focus:ring-slateblue/40"
                     />
                     <label
                       htmlFor="editIsActive"
-                      className="ml-2 block text-sm text-gray-900"
+                      className="ml-2 block text-sm text-ink"
                     >
                       Active position
                     </label>
@@ -791,14 +789,14 @@ export default function PositionsPage() {
                   <button
                     type="button"
                     onClick={() => setShowEditModal(false)}
-                    className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="rounded-md border border-ink/20 bg-parchment/80 px-4 py-2 text-sm font-medium text-ink/70 shadow-sm hover:bg-parchment focus:outline-none focus:ring-2 focus:ring-slateblue/40 focus:ring-offset-2"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={processing}
-                    className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                    className="rounded-md bg-slateblue px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slateblue/80 focus:outline-none focus:ring-2 focus:ring-slateblue/40 focus:ring-offset-2 disabled:opacity-50"
                   >
                     {processing ? 'Updating...' : 'Update Position'}
                   </button>
@@ -814,16 +812,16 @@ export default function PositionsPage() {
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex min-h-screen items-end justify-center px-4 pb-20 pt-4 text-center sm:block sm:p-0">
             <div
-              className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+              className="bg-parchment0 fixed inset-0 bg-opacity-75 transition-opacity"
               onClick={() => setShowAssignTestModal(false)}
             />
 
-            <div className="inline-block transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6 sm:align-middle">
+            <div className="inline-block transform overflow-hidden rounded-lg bg-parchment/80 px-4 pb-4 pt-5 text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl sm:p-6 sm:align-middle">
               <div className="mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
+                <h3 className="text-lg font-medium text-ink">
                   Assign Tests to {selectedPosition.name}
                 </h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-ink/50">
                   Select which tests should be associated with this position.
                 </p>
               </div>
@@ -835,8 +833,8 @@ export default function PositionsPage() {
                       key={test.id}
                       className={`flex items-center justify-between rounded-lg border p-4 ${
                         test.isArchived
-                          ? 'border-gray-200 bg-gray-50'
-                          : 'border-gray-300 bg-white'
+                          ? 'border-ink/10 bg-parchment'
+                          : 'border-ink/20 bg-parchment/80'
                       }`}
                     >
                       <div className="flex items-center">
@@ -853,16 +851,14 @@ export default function PositionsPage() {
                               );
                             }
                           }}
-                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="h-4 w-4 rounded border-ink/20 text-slateblue focus:ring-slateblue/40"
                           disabled={test.isArchived}
                         />
                         <div className="ml-3">
                           <label
                             htmlFor={`test-${test.id}`}
                             className={`text-sm font-medium ${
-                              test.isArchived
-                                ? 'text-gray-500'
-                                : 'text-gray-900'
+                              test.isArchived ? 'text-ink/50' : 'text-ink'
                             }`}
                           >
                             {test.title}
@@ -870,9 +866,7 @@ export default function PositionsPage() {
                           {test.description && (
                             <p
                               className={`text-xs ${
-                                test.isArchived
-                                  ? 'text-gray-400'
-                                  : 'text-gray-500'
+                                test.isArchived ? 'text-ink/40' : 'text-ink/50'
                               }`}
                             >
                               {test.description}
@@ -882,7 +876,7 @@ export default function PositionsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         {test.isArchived && (
-                          <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
+                          <span className="inline-flex items-center rounded-full bg-parchment/90 px-2 py-1 text-xs font-medium text-ink/60">
                             Archived
                           </span>
                         )}
@@ -902,14 +896,14 @@ export default function PositionsPage() {
                 <button
                   type="button"
                   onClick={() => setShowAssignTestModal(false)}
-                  className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className="rounded-md border border-ink/20 bg-parchment/80 px-4 py-2 text-sm font-medium text-ink/70 shadow-sm hover:bg-parchment focus:outline-none focus:ring-2 focus:ring-slateblue/40 focus:ring-offset-2"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAssignTests}
                   disabled={processing}
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+                  className="rounded-md bg-slateblue px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slateblue/80 focus:outline-none focus:ring-2 focus:ring-slateblue/40 focus:ring-offset-2 disabled:opacity-50"
                 >
                   {processing ? 'Assigning...' : 'Assign Tests'}
                 </button>

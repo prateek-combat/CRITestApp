@@ -28,24 +28,24 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
 
   const variantStyles = {
     info: {
-      container: 'bg-blue-50 border-blue-200 text-blue-900',
-      icon: 'text-blue-600',
-      button: 'text-blue-700 hover:text-blue-900 hover:bg-blue-100',
+      container: 'bg-slateblue/10 border-slateblue/20 text-ink',
+      icon: 'text-slateblue',
+      button: 'text-ink/70 hover:text-ink hover:bg-slateblue/10',
     },
     warning: {
-      container: 'bg-amber-50 border-amber-200 text-amber-900',
-      icon: 'text-amber-600',
-      button: 'text-amber-700 hover:text-amber-900 hover:bg-amber-100',
+      container: 'bg-copper/10 border-copper/20 text-ink',
+      icon: 'text-copper',
+      button: 'text-ink/70 hover:text-ink hover:bg-copper/10',
     },
     success: {
-      container: 'bg-green-50 border-green-200 text-green-900',
-      icon: 'text-green-600',
-      button: 'text-green-700 hover:text-green-900 hover:bg-green-100',
+      container: 'bg-moss/10 border-moss/20 text-ink',
+      icon: 'text-moss',
+      button: 'text-ink/70 hover:text-ink hover:bg-moss/10',
     },
     neutral: {
-      container: 'bg-gray-50 border-gray-200 text-gray-900',
-      icon: 'text-gray-600',
-      button: 'text-gray-700 hover:text-gray-900 hover:bg-gray-100',
+      container: 'bg-parchment/80 border-ink/10 text-ink',
+      icon: 'text-ink/50',
+      button: 'text-ink/70 hover:text-ink hover:bg-ink/5',
     },
   };
 
