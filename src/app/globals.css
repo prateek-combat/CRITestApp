@@ -621,14 +621,14 @@ body {
 /* Atmospheric backgrounds */
 .bg-archive-wash {
   background:
-    radial-gradient(1200px 600px at 12% -8%, rgba(154, 78, 42, 0.14), transparent 60%),
-    radial-gradient(900px 500px at 88% 10%, rgba(78, 94, 61, 0.18), transparent 55%);
+    radial-gradient(1200px 600px at 12% -8%, rgb(var(--color-copper) / 0.14), transparent 60%),
+    radial-gradient(900px 500px at 88% 10%, rgb(var(--color-moss) / 0.18), transparent 55%);
 }
 
 .bg-archive-grid {
   background-image:
-    linear-gradient(rgba(20, 24, 30, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(20, 24, 30, 0.06) 1px, transparent 1px);
+    linear-gradient(rgb(var(--color-ink) / 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--color-ink) / 0.06) 1px, transparent 1px);
   background-size: 28px 28px;
   background-position: -1px -1px;
 }
@@ -1906,9 +1906,9 @@ body {
   padding: 2px;
   background: linear-gradient(
     135deg,
-    rgba(var(--color-copper), 0.9),
-    rgba(var(--color-moss), 0.8),
-    rgba(var(--color-slateblue), 0.85)
+    rgb(var(--color-copper) / 0.9),
+    rgb(var(--color-moss) / 0.8),
+    rgb(var(--color-slateblue) / 0.85)
   );
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -1923,17 +1923,17 @@ body {
 
 /* Archival Border Styles */
 .border-tactical {
-  border: 1px solid rgba(var(--color-ink), 0.12);
+  border: 1px solid rgb(var(--color-ink) / 0.12);
   box-shadow: 
-    0 0 0 1px rgba(var(--color-ink), 0.05),
+    0 0 0 1px rgb(var(--color-ink) / 0.05),
     0 1px 2px 0 rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
 }
 
 .border-tactical:hover {
-  border-color: rgba(var(--color-ink), 0.25);
+  border-color: rgb(var(--color-ink) / 0.25);
   box-shadow: 
-    0 0 0 1px rgba(var(--color-ink), 0.12),
+    0 0 0 1px rgb(var(--color-ink) / 0.12),
     0 4px 6px -1px rgba(0, 0, 0, 0.1),
     0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
@@ -1942,15 +1942,15 @@ body {
 .card-military {
   background: linear-gradient(
     135deg,
-    rgba(var(--color-parchment), 0.9) 0%,
+    rgb(var(--color-parchment) / 0.9) 0%,
     rgba(255, 255, 255, 0.9) 100%
   );
-  border: 1px solid rgba(var(--color-ink), 0.12);
+  border: 1px solid rgb(var(--color-ink) / 0.12);
   border-radius: 0.5rem;
   box-shadow: 
     0 1px 3px 0 rgba(0, 0, 0, 0.1),
     0 1px 2px 0 rgba(0, 0, 0, 0.06),
-    inset 0 0 0 1px rgba(var(--color-ink), 0.04);
+    inset 0 0 0 1px rgb(var(--color-ink) / 0.04);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
@@ -1965,9 +1965,9 @@ body {
   height: 3px;
   background: linear-gradient(
     90deg,
-    rgba(var(--color-moss), 0.9),
-    rgba(var(--color-copper), 0.9),
-    rgba(var(--color-slateblue), 0.9)
+    rgb(var(--color-moss) / 0.9),
+    rgb(var(--color-copper) / 0.9),
+    rgb(var(--color-slateblue) / 0.9)
   );
   transform: translateX(-100%);
   animation: slideAccent 8s ease-in-out infinite;
@@ -1984,14 +1984,14 @@ body {
   box-shadow: 
     0 10px 15px -3px rgba(0, 0, 0, 0.1),
     0 4px 6px -2px rgba(0, 0, 0, 0.05),
-    0 0 0 1px rgba(var(--color-ink), 0.2),
-    0 0 20px rgba(var(--color-copper), 0.1);
+    0 0 0 1px rgb(var(--color-ink) / 0.2),
+    0 0 20px rgb(var(--color-copper) / 0.1);
 }
 
 /* Archival Input Styles */
 .input-tactical {
-  background: rgba(var(--color-parchment), 0.9);
-  border: 1px solid rgba(var(--color-ink), 0.15);
+  background: rgb(var(--color-parchment) / 0.9);
+  border: 1px solid rgb(var(--color-ink) / 0.15);
   border-radius: 0.375rem;
   transition: all 0.2s ease;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -1999,9 +1999,9 @@ body {
 
 .input-tactical:focus {
   outline: none;
-  border-color: rgba(var(--color-copper), 0.6);
+  border-color: rgb(var(--color-copper) / 0.6);
   box-shadow: 
-    0 0 0 3px rgba(var(--color-copper), 0.15),
+    0 0 0 3px rgb(var(--color-copper) / 0.15),
     0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
@@ -2023,7 +2023,7 @@ body {
   height: 0;
   background: radial-gradient(
     circle,
-    rgba(var(--color-copper), 0.25) 0%,
+    rgb(var(--color-copper) / 0.25) 0%,
     transparent 70%
   );
   transition: all 0.5s ease;
@@ -2046,37 +2046,37 @@ body {
 .shadow-tactical-sm {
   box-shadow: 
     0 1px 2px 0 rgba(0, 0, 0, 0.05),
-    0 0 0 1px rgba(var(--color-ink), 0.05);
+    0 0 0 1px rgb(var(--color-ink) / 0.05);
 }
 
 .shadow-tactical {
   box-shadow: 
     0 1px 3px 0 rgba(0, 0, 0, 0.1),
     0 1px 2px 0 rgba(0, 0, 0, 0.06),
-    0 0 0 1px rgba(var(--color-ink), 0.05);
+    0 0 0 1px rgb(var(--color-ink) / 0.05);
 }
 
 .shadow-tactical-lg {
   box-shadow: 
     0 10px 15px -3px rgba(0, 0, 0, 0.1),
     0 4px 6px -2px rgba(0, 0, 0, 0.05),
-    0 0 0 1px rgba(var(--color-ink), 0.1);
+    0 0 0 1px rgb(var(--color-ink) / 0.1);
 }
 
 .shadow-tactical-xl {
   box-shadow: 
     0 20px 25px -5px rgba(0, 0, 0, 0.1),
     0 10px 10px -5px rgba(0, 0, 0, 0.04),
-    0 0 0 1px rgba(var(--color-ink), 0.1),
-    0 0 30px rgba(var(--color-copper), 0.1);
+    0 0 0 1px rgb(var(--color-ink) / 0.1),
+    0 0 30px rgb(var(--color-copper) / 0.1);
 }
 
 /* Archival Glass Morphism */
 .glass-tactical {
-  background: rgba(var(--color-parchment), 0.85);
+  background: rgb(var(--color-parchment) / 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(var(--color-ink), 0.15);
+  border: 1px solid rgb(var(--color-ink) / 0.15);
   box-shadow: 
     0 8px 32px 0 rgba(31, 38, 135, 0.1),
     inset 0 0 0 1px rgba(255, 255, 255, 0.35);
@@ -2086,24 +2086,24 @@ body {
 .bg-gradient-military {
   background: linear-gradient(
     135deg,
-    rgba(var(--color-parchment), 0.9) 0%,
-    rgba(var(--color-moss), 0.06) 100%
+    rgb(var(--color-parchment) / 0.9) 0%,
+    rgb(var(--color-moss) / 0.06) 100%
   );
 }
 
 .bg-gradient-military-dark {
   background: linear-gradient(
     135deg,
-    rgba(var(--color-ink), 1) 0%,
-    rgba(var(--color-slateblue), 1) 100%
+    rgb(var(--color-ink) / 1) 0%,
+    rgb(var(--color-slateblue) / 1) 100%
   );
 }
 
 .bg-gradient-accent {
   background: linear-gradient(
     135deg,
-    rgba(var(--color-copper), 1) 0%,
-    rgba(var(--color-moss), 1) 100%
+    rgb(var(--color-copper) / 1) 0%,
+    rgb(var(--color-moss) / 1) 100%
   );
 }
 
@@ -2113,7 +2113,7 @@ body {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(var(--color-ink), 0.18),
+    rgb(var(--color-ink) / 0.18),
     transparent
   );
   margin: 1rem 0;
@@ -2124,9 +2124,9 @@ body {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(var(--color-moss), 0.9),
-    rgba(var(--color-copper), 0.9),
-    rgba(var(--color-slateblue), 0.9),
+    rgb(var(--color-moss) / 0.9),
+    rgb(var(--color-copper) / 0.9),
+    rgb(var(--color-slateblue) / 0.9),
     transparent
   );
   margin: 1.5rem 0;
@@ -2134,7 +2134,7 @@ body {
 
 /* Enhanced Table Styles */
 .table-tactical {
-  border: 1px solid rgba(var(--color-ink), 0.12);
+  border: 1px solid rgb(var(--color-ink) / 0.12);
   border-radius: 0.5rem;
   overflow: hidden;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
@@ -2143,20 +2143,20 @@ body {
 .table-tactical thead {
   background: linear-gradient(
     135deg,
-    rgba(var(--color-parchment), 0.9) 0%,
-    rgba(var(--color-copper), 0.05) 100%
+    rgb(var(--color-parchment) / 0.9) 0%,
+    rgb(var(--color-copper) / 0.05) 100%
   );
-  border-bottom: 2px solid rgba(var(--color-ink), 0.12);
+  border-bottom: 2px solid rgb(var(--color-ink) / 0.12);
 }
 
 .table-tactical tbody tr {
-  border-bottom: 1px solid rgba(var(--color-ink), 0.08);
+  border-bottom: 1px solid rgb(var(--color-ink) / 0.08);
   transition: all 0.2s ease;
 }
 
 .table-tactical tbody tr:hover {
-  background: rgba(var(--color-ink), 0.03);
-  box-shadow: inset 0 0 0 1px rgba(var(--color-ink), 0.05);
+  background: rgb(var(--color-ink) / 0.03);
+  box-shadow: inset 0 0 0 1px rgb(var(--color-ink) / 0.05);
 }
 
 /* Status Badge Styles */
@@ -2172,15 +2172,15 @@ body {
 }
 
 .badge-success {
-  background: rgba(var(--color-moss), 0.12);
+  background: rgb(var(--color-moss) / 0.12);
   color: rgb(var(--color-moss));
-  border-color: rgba(var(--color-moss), 0.25);
+  border-color: rgb(var(--color-moss) / 0.25);
 }
 
 .badge-warning {
-  background: rgba(var(--color-copper), 0.12);
+  background: rgb(var(--color-copper) / 0.12);
   color: rgb(var(--color-copper));
-  border-color: rgba(var(--color-copper), 0.25);
+  border-color: rgb(var(--color-copper) / 0.25);
 }
 
 .badge-error {
@@ -2190,16 +2190,16 @@ body {
 }
 
 .badge-info {
-  background: rgba(var(--color-slateblue), 0.12);
+  background: rgb(var(--color-slateblue) / 0.12);
   color: rgb(var(--color-slateblue));
-  border-color: rgba(var(--color-slateblue), 0.25);
+  border-color: rgb(var(--color-slateblue) / 0.25);
 }
 
 /* Overlay Effects */
 .overlay-tactical {
   position: fixed;
   inset: 0;
-  background: rgba(var(--color-ink), 0.35);
+  background: rgb(var(--color-ink) / 0.35);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   z-index: 40;
@@ -2211,17 +2211,17 @@ body {
   position: relative;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid rgba(var(--color-ink), 0.15);
+  border: 1px solid rgb(var(--color-ink) / 0.15);
   background: linear-gradient(
     135deg,
-    rgba(var(--color-parchment), 0.95) 0%,
+    rgb(var(--color-parchment) / 0.95) 0%,
     rgba(255, 255, 255, 0.9) 100%
   );
   backdrop-filter: blur(10px);
   box-shadow: 
     0 1px 3px 0 rgba(0, 0, 0, 0.1),
     0 1px 2px 0 rgba(0, 0, 0, 0.06),
-    inset 0 0 0 1px rgba(var(--color-ink), 0.05);
+    inset 0 0 0 1px rgb(var(--color-ink) / 0.05);
 }
 
 .interactive-card::before {
@@ -2244,8 +2244,8 @@ body {
   box-shadow: 
     0 20px 25px -5px rgba(0, 0, 0, 0.1),
     0 10px 10px -5px rgba(0, 0, 0, 0.04),
-    0 0 0 1px rgba(var(--color-copper), 0.12);
-  border-color: rgba(var(--color-copper), 0.22);
+    0 0 0 1px rgb(var(--color-copper) / 0.12);
+  border-color: rgb(var(--color-copper) / 0.22);
 }
 
 .interactive-card:active {
@@ -2351,7 +2351,7 @@ body {
 /* Tactical Progress Bars */
 .progress-tactical {
   height: 4px;
-  background: rgba(var(--color-ink), 0.1);
+  background: rgb(var(--color-ink) / 0.1);
   border-radius: 9999px;
   overflow: hidden;
   position: relative;
@@ -2361,8 +2361,8 @@ body {
   height: 100%;
   background: linear-gradient(
     90deg,
-    rgba(var(--color-moss), 1),
-    rgba(var(--color-copper), 1)
+    rgb(var(--color-moss) / 1),
+    rgb(var(--color-copper) / 1)
   );
   border-radius: 9999px;
   transition: width 0.5s ease;
@@ -2412,8 +2412,8 @@ body {
 
 /* Global Container Enhancement */
 .container-tactical {
-  background: rgba(var(--color-parchment), 0.9);
-  border: 1px solid rgba(var(--color-ink), 0.12);
+  background: rgb(var(--color-parchment) / 0.9);
+  border: 1px solid rgb(var(--color-ink) / 0.12);
   border-radius: 0.5rem;
   box-shadow: 
     0 1px 3px 0 rgba(0, 0, 0, 0.1),
@@ -2431,7 +2431,7 @@ body {
   background: linear-gradient(
     135deg,
     transparent 30%,
-    rgba(var(--color-copper), 0.1),
+    rgb(var(--color-copper) / 0.1),
     transparent 70%
   );
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -2460,10 +2460,10 @@ body {
   right: 0;
   bottom: 0;
   background-image: 
-    radial-gradient(1100px 600px at 10% -10%, rgba(var(--color-copper), 0.12), transparent 60%),
-    radial-gradient(900px 500px at 90% 8%, rgba(var(--color-moss), 0.15), transparent 55%),
-    linear-gradient(rgba(20, 24, 30, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(20, 24, 30, 0.05) 1px, transparent 1px);
+    radial-gradient(1100px 600px at 10% -10%, rgb(var(--color-copper) / 0.12), transparent 60%),
+    radial-gradient(900px 500px at 90% 8%, rgb(var(--color-moss) / 0.15), transparent 55%),
+    linear-gradient(rgb(var(--color-ink) / 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--color-ink) / 0.05) 1px, transparent 1px);
   background-size: auto, auto, 32px 32px, 32px 32px;
   background-position: 0 0, 0 0, -1px -1px, -1px -1px;
   pointer-events: none;

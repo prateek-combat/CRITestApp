@@ -291,14 +291,14 @@ export default function TestsPage() {
 
     if (link.maxUses && link.usedCount >= link.maxUses) {
       return (
-        <span className="bg-copper/12 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-orange-800">
+        <span className="bg-copper/12 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-copper">
           Limit Reached
         </span>
       );
     }
 
     return (
-      <span className="bg-moss/12 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-green-800">
+      <span className="bg-moss/12 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-moss">
         Active
       </span>
     );

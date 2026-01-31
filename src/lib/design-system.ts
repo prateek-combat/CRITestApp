@@ -133,21 +133,15 @@ export const designSystem = {
   },
 
   // Container styles
-  containers: {
-    base: 'container-tactical',
-    page: 'admin-page-container',
-    content: 'admin-content-wrapper',
-    glass: 'glass-tactical',
-    card: 'card-military',
-  },
-
   // Background gradients
   gradients: {
     military: 'bg-gradient-military',
     militaryDark: 'bg-gradient-military-dark',
     accent: 'bg-gradient-accent',
   },
-};
+} as const;
+
+export type DesignSystem = typeof designSystem;
 
 // Helper function to combine classes
 export function cn(...classes: (string | undefined | null | false)[]): string {
@@ -156,9 +150,9 @@ export function cn(...classes: (string | undefined | null | false)[]): string {
 
 // Preset component combinations
 export const componentStyles = {
-  pageContainer: cn(designSystem.containers.page),
+  pageContainer: cn(designSystem.spacing.pageWrapper),
   contentWrapper: cn(designSystem.spacing.page),
-  card: cn(designSystem.containers.card, designSystem.card.hover),
+  card: cn(designSystem.card.base, designSystem.card.hover),
   table: cn(designSystem.table.container),
   button: {
     primary: cn(designSystem.button.base, designSystem.button.primary),
@@ -168,6 +162,6 @@ export const componentStyles = {
   modal: {
     overlay: designSystem.modal.overlay,
     container: designSystem.modal.container,
-    content: cn(designSystem.modal.content, designSystem.containers.glass),
+    content: cn(designSystem.modal.content),
   },
 };
