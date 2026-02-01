@@ -1,6 +1,7 @@
 /**
  * Integration Tests - Database Operations
  * These tests verify database operations work correctly
+ * @jest-environment node
  */
 
 // Mock environment variables for testing

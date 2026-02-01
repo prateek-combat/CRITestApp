@@ -17,7 +17,8 @@ const customJestConfig = {
     '^@/lib/(.*)$': '<rootDir>/src/lib/$1',
   },
   testMatch: [
-    '**/__tests__/**/*.(js|jsx|ts|tsx)',
+    '**/__tests__/**/*.test.(js|jsx|ts|tsx)',
+    '**/__tests__/**/*.spec.(js|jsx|ts|tsx)',
     '**/*.(test|spec).(js|jsx|ts|tsx)',
   ],
   testPathIgnorePatterns: [
@@ -32,11 +33,43 @@ const customJestConfig = {
     '!src/**/*.stories.{js,jsx,ts,tsx}',
   ],
   coverageThreshold: {
+    // Global thresholds set to current baseline - increase as coverage improves
     global: {
-      branches: 0,
-      functions: 0,
-      lines: 0,
-      statements: 0,
+      branches: 1,
+      functions: 3,
+      lines: 2,
+      statements: 2,
+    },
+    // Security-critical files should maintain high coverage
+    './src/lib/rate-limit.ts': {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+    './src/lib/csrf.ts': {
+      branches: 50,
+      functions: 90,
+      lines: 75,
+      statements: 75,
+    },
+    './src/lib/worker-auth.ts': {
+      branches: 100,
+      functions: 100,
+      lines: 100,
+      statements: 100,
+    },
+    './src/lib/validation-utils.ts': {
+      branches: 100,
+      functions: 100,
+      lines: 100,
+      statements: 100,
+    },
+    './src/lib/env-validation.ts': {
+      branches: 90,
+      functions: 100,
+      lines: 95,
+      statements: 95,
     },
   },
   setupFiles: ['<rootDir>/config/jest/jest.env.js'],

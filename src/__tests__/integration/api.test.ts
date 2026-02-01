@@ -1,6 +1,7 @@
 /**
  * Integration Tests - API Endpoints
  * These tests verify the API routes work correctly with the database
+ * @jest-environment node
  */
 
 import { NextRequest } from 'next/server';
